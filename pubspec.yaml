@@ -1,0 +1,108 @@
+name: biztonic_pos
+description: A new Flutter project for BiztonicPOS.
+publish_to: 'none'
+version: 1.0.4+12
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Firebase & Backend
+  firebase_core: ^4.5.0
+  cloud_firestore: ^6.1.3
+  firebase_auth: ^6.2.0
+  firebase_crashlytics: ^5.0.8
+  
+  # State Management
+  provider: ^6.1.1
+  crypto: ^3.0.3
+
+  # Offline Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Hardware Integration
+  flutter_blue_plus: ^1.36.0 # Bluetooth BLE
+  usb_serial: ^0.5.2
+  battery_plus: ^6.2.1 # Updated for Android 14 compatibility
+  esc_pos_utils_plus: ^2.0.4
+  
+  # UI Components
+  cupertino_icons: ^1.0.2
+  # flutter_colorpicker: ^1.0.3 # Removed: unused
+  google_fonts: ^4.0.4
+  intl: ^0.19.0
+  collection: ^1.18.0
+  
+  # Navigation & Utils
+  go_router: ^14.3.0
+  shared_preferences: ^2.3.3
+  uuid: ^4.5.1
+  sqflite: ^2.3.0 
+  # sqflite_sqlcipher: ^3.1.3 # Removed
+  # flutter_secure_storage: ^9.0.0 # Removed
+  path: ^1.8.3
+  permission_handler: ^11.3.1
+  network_info_plus: ^4.0.2
+  # http: ^0.13.6 # Removed: unused (dio used instead)
+  fl_chart: ^0.65.0
+  pdf: ^3.10.8
+  printing: ^5.11.1
+  flutter_staggered_grid_view: ^0.7.0
+  connectivity_plus: ^6.1.0
+  # video_player: ^2.10.1 # Removed: unused - saves ~3-5MB
+  table_calendar: ^3.1.3
+  cloud_functions: ^6.0.7
+  math_expressions: ^2.5.0
+  google_sign_in: ^6.2.1
+  googleapis: ^13.1.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.7
+  image_picker: ^1.2.1
+  image: ^4.0.17
+  file_picker: ^10.3.8
+
+  path_provider: ^2.1.5
+  path_provider_windows: ^2.3.0
+  kiosk_mode: 0.7.0
+  package_info_plus: ^8.0.0
+  url_launcher: ^6.2.0
+  dio: ^5.7.0
+
+
+
+  # webview_flutter: any # Removed: unused - saves ~2-4MB
+  flutter_thermal_printer:
+    path: packages/flutter_thermal_printer
+  cached_network_image: ^3.3.1
+  qr_flutter: ^4.1.0
+  sqflite_common_ffi: ^2.3.0 
+  sqflite_common_ffi_web: ^0.4.0
+  open_file: ^3.5.11
+  universal_html: ^2.3.0
+  flutter_contacts: ^1.1.9+2
+  url_strategy: ^0.3.0
+  excel: ^4.0.6
+  share_plus: ^12.0.1
+
+dependency_overrides:
+  image: ^4.0.17
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+  integration_test:
+    sdk: flutter
+  patrol: ^3.7.0
+
+flutter:
+  uses-material-design: true
+  assets:
+
+    - assets/logo.jpg

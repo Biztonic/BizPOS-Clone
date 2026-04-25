@@ -1,0 +1,70 @@
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/services/sync_service.dart';
+
+class SyncStatusWidget extends StatelessWidget {
+  const SyncStatusWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: SyncService(),
+      builder: (context, _) {
+        final service = SyncService();
+        final isOnline = service.isOnline;
+        final pending = service.pendingUploadCount;
+        final isSyncing = service.syncStatus == "Syncing...";
+        
+        Color statusColor = Colors.green;
+        IconData statusIcon = Icons.cloud_done;
+        String tooltip = "Synced";
+
+        if (!isOnline) {
+          statusColor = Colors.grey;
+          statusIcon = Icons.cloud_off;
+          tooltip = "Offline";
+          if (pending > 0) {
+             tooltip = "Offline ($pending pending)";
+             statusColor = Colors.orange;
+          }
+        } else if (isSyncing || pending > 0) {
+          statusColor = Colors.blue;
+          statusIcon = Icons.sync;
+          tooltip = "Syncing ($pending pending)...";
+        }
+
+        return Tooltip(
+          message: tooltip,
+          child: Container(
+             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+             margin: const EdgeInsets.symmetric(horizontal: 8),
+             decoration: BoxDecoration(
+               color: statusColor.withValues(alpha: 0.1),
+               borderRadius: BorderRadius.circular(12),
+               border: Border.all(color: statusColor.withValues(alpha: 0.3))
+             ),
+             child: Row(
+               mainAxisSize: MainAxisSize.min,
+               children: [
+                 if (isSyncing)
+                   SizedBox(
+                     width: 12, height: 12,
+                     child: CircularProgressIndicator(strokeWidth: 2, color: statusColor),
+                   )
+                 else
+                   Icon(statusIcon, color: statusColor, size: 16),
+                 
+                 if (pending > 0) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      "$pending", 
+                      style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)
+                    )
+                 ]
+               ],
+             ),
+          ),
+        );
+      },
+    );
+  }
+}

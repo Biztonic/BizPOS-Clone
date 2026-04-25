@@ -1,0 +1,183 @@
+﻿// ignore_for_file: curly_braces_in_flow_control_structures
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../providers/dashboard_provider.dart';
+
+class CustomerDisplayScreen extends StatelessWidget {
+  const CustomerDisplayScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<DashboardProvider>(context);
+    final storeId = provider.activeStoreId;
+
+    if (storeId == null) {
+      return const Scaffold(body: Center(child: Text("Please select a store first.")));
+    }
+
+    final Stream<QuerySnapshot> statusStream = FirebaseFirestore.instance
+        .collection('orders')
+        .where('storeId', isEqualTo: storeId)
+        .where('status', whereIn: ['Preparing', 'Ready']) // Preparing and Ready are relevant for public
+        .snapshots();
+
+    return Scaffold(
+      backgroundColor: Colors.black, // High contrast for TV/Display
+      appBar: AppBar(
+        title: const Text('Order Status'),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        centerTitle: true,
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: statusStream,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+             // Often index error initially
+             return Center(child: Text('Waiting for system... (${snapshot.error})', style: const TextStyle(color: Colors.white)));
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final docs = snapshot.data?.docs ?? [];
+          // Client-side sort: Oldest first (FIFO)
+          docs.sort((a, b) {
+             dynamic dateA = (a.data() as Map<String, dynamic>)['date'];
+             dynamic dateB = (b.data() as Map<String, dynamic>)['date'];
+             
+             DateTime? dA, dB;
+             
+             // Robust Parse A
+             if (dateA is Timestamp) {
+               dA = dateA.toDate();
+             } else if (dateA is String) dA = DateTime.tryParse(dateA);
+             else if (dateA is int) dA = DateTime.fromMillisecondsSinceEpoch(dateA);
+
+             // Robust Parse B
+             if (dateB is Timestamp) {
+               dB = dateB.toDate();
+             } else if (dateB is String) dB = DateTime.tryParse(dateB);
+             else if (dateB is int) dB = DateTime.fromMillisecondsSinceEpoch(dateB);
+             
+             if (dA == null || dB == null) return 0;
+             return dA.compareTo(dB);
+          });
+
+          final preparing = docs.map((d) {
+             final data = d.data() as Map<String, dynamic>;
+             data['orderId'] = d.id; // Inject Document ID
+             return data;
+          }).where((d) => d['status'] == 'Preparing').toList();
+
+          final ready = docs.map((d) {
+             final data = d.data() as Map<String, dynamic>;
+             data['orderId'] = d.id; // Inject Document ID
+             return data;
+          }).where((d) => d['status'] == 'Ready').toList();
+
+          
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 600;
+              final content = [
+                  // Preparing Column
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          color: Colors.orange.shade800,
+                          width: double.infinity,
+                          child: const Text("PREPARING", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                        ),
+                        Expanded(
+                          child: GridView.builder(
+                            padding: const EdgeInsets.all(16),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: isMobile ? 3 : 2, 
+                              childAspectRatio: isMobile ? 1.5 : 3, 
+                              crossAxisSpacing: 10, 
+                              mainAxisSpacing: 10
+                            ),
+                            itemCount: preparing.length,
+                            itemBuilder: (context, index) {
+                               final doc = preparing[index];
+                               return _buildTicket(doc['orderId']?.toString() ?? '????', false);
+                            },
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                  if (!isMobile) const VerticalDivider(color: Colors.white, width: 2),
+                  if (isMobile) const Divider(color: Colors.white, height: 2),
+                  // Ready Column
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          color: Colors.green.shade700,
+                          width: double.infinity,
+                          child: const Text("READY FOR PICKUP", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                        ),
+                        Expanded(
+                          child: GridView.builder(
+                            padding: const EdgeInsets.all(16),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: isMobile ? 3 : 2, 
+                              childAspectRatio: isMobile ? 1.5 : 2.5, 
+                              crossAxisSpacing: 10, 
+                              mainAxisSpacing: 10
+                            ),
+                            itemCount: ready.length,
+                            itemBuilder: (context, index) {
+                               final doc = ready[index]; 
+                               return _buildTicket(doc['orderId']?.toString() ?? '????', true);
+                            },
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+              ];
+
+              return isMobile 
+                  ? Column(children: content)
+                  : Row(children: content);
+            }
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTicket(String id, bool isReady) {
+    // Truncate ID if too long (e.g. UUID)
+    final displayId = id.length > 5 ? id.substring(id.length - 4) : id;
+
+    return Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: isReady ? Colors.green.shade100 : Colors.orange.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: isReady ? Colors.green : Colors.orange, width: 2)
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          "#$displayId", 
+          style: TextStyle(
+            fontSize: isReady ? 32 : 24, 
+            fontWeight: FontWeight.bold,
+            color: Colors.black
+          )
+        ),
+      ),
+    );
+  }
+}

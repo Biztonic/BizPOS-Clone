@@ -1,0 +1,50 @@
+﻿// ignore_for_file: deprecated_member_use
+import 'dart:async';
+import 'package:flutter/services.dart';
+
+class ScannerService {
+  // Singleton
+  static final ScannerService _instance = ScannerService._internal();
+  factory ScannerService() => _instance;
+  ScannerService._internal();
+
+  final StreamController<String> _scanController = StreamController<String>.broadcast();
+  Stream<String> get scanStream => _scanController.stream;
+
+  // Buffer for HID keyboard input
+  String _buffer = '';
+  DateTime _lastKeyTime = DateTime.now();
+
+  void init() {
+    // Listen to raw keyboard events
+    RawKeyboard.instance.addListener(_handleKeyEvent);
+  }
+
+  void dispose() {
+    RawKeyboard.instance.removeListener(_handleKeyEvent);
+    _scanController.close();
+  }
+
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (event is RawKeyDownEvent) {
+      final now = DateTime.now();
+      // If time between keys is too long, reset buffer (manual typing vs scanner)
+      if (now.difference(_lastKeyTime).inMilliseconds > 100) {
+        _buffer = '';
+      }
+      _lastKeyTime = now;
+
+      if (event.logicalKey == LogicalKeyboardKey.enter) {
+        if (_buffer.isNotEmpty) {
+          _scanController.add(_buffer);
+          _buffer = '';
+        }
+      } else {
+        // Append printable characters
+        if (event.character != null && event.character!.isNotEmpty) {
+          _buffer += event.character!;
+        }
+      }
+    }
+  }
+}
