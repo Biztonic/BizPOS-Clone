@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Generic Thermal Printer (matches interface class 7 = Printer) -->
+    <!-- Note: Android filtering by class/subclass/protocol is done in Java, not XML filter usually. 
+         But we can list common VIDs if needed. Leaving empty/generic allows intent to work widely? 
+         Actually, XML filter requires vendor-id. Without it, it might not filter anything (match none).
+         
+         However, for UsbManager.getDeviceList() to work, we don't strictly *need* this unless we rely on intent launch.
+         But adding the file prevents valid resource reference errors if we add metadata.
+    -->
+    <usb-device vendor-id="1155" /> <!-- Common Thermal VID -->
+    <usb-device vendor-id="1046" /> <!-- Nuvoton node -->
+    <usb-device vendor-id="8137" /> <!-- Another common one -->
+    <usb-device vendor-id="4070" /> <!-- XPrinter approx? -->
+    <usb-device vendor-id="0483" /> <!-- STMicroelectronics (often used) -->
+</resources>

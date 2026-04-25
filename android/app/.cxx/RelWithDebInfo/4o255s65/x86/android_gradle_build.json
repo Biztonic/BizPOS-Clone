@@ -1,0 +1,28 @@
+{
+  "buildFiles": [
+    "D:\\Biztonic_Distributor\\flutter_sdk\\flutter\\packages\\flutter_tools\\gradle\\src\\main\\groovy\\CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "d:\\BizPOS_APP\\toolchain\\android\\cmake\\3.22.1\\bin\\ninja.exe",
+      "-C",
+      "D:\\BizPOS_APP\\android\\app\\.cxx\\RelWithDebInfo\\4o255s65\\x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "d:\\BizPOS_APP\\toolchain\\android\\cmake\\3.22.1\\bin\\ninja.exe",
+    "-C",
+    "D:\\BizPOS_APP\\android\\app\\.cxx\\RelWithDebInfo\\4o255s65\\x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {},
+  "toolchains": {
+    "toolchain": {
+      "cCompilerExecutable": "D:\\BizPOS_APP\\toolchain\\android\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang.exe",
+      "cppCompilerExecutable": "D:\\BizPOS_APP\\toolchain\\android\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe"
+    }
+  },
+  "cFileExtensions": [],
+  "cppFileExtensions": []
+}

@@ -1,0 +1,51 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    // Avoid cross-drive issues in Gradle caching by placing C: drive plugin builds on C:
+    if (project.projectDir.absolutePath.startsWith("C:")) {
+        project.buildDir = new File("C:/BizPOS_Temp_Build", project.name)
+    } else {
+        project.buildDir = "${rootProject.buildDir}/${project.name}"
+    }
+}
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+// AGP 8.0+ requires a namespace. Inject one for older plugins.
+subprojects {
+    project.plugins.withId("com.android.application") {
+        project.android {
+            if (namespace == null) {
+                namespace = "com.biztonic.pos." + project.name.replace("-", "_")
+            }
+        }
+    }
+    project.plugins.withId("com.android.library") {
+        project.android {
+            if (namespace == null) {
+                namespace = "com.biztonic.pos." + project.name.replace("-", "_")
+            }
+        }
+    }
+
+    // Force stable legacy versions compatible with compileSdk 34/35
+    configurations.all {
+        resolutionStrategy {
+            force 'androidx.activity:activity-ktx:1.9.0'
+            force 'androidx.activity:activity:1.9.0'
+            force 'androidx.core:core-ktx:1.13.1'
+            force 'androidx.core:core:1.13.1'
+        }
+    }
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
