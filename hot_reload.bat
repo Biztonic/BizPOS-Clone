@@ -1,0 +1,3 @@
+@echo off
+echo Triggering Hot Reload...
+powershell -Command "$wshell = New-Object -ComObject wscript.shell; if ($wshell.AppActivate('FlutterApp-Chrome')) { Start-Sleep -Milliseconds 100; $wshell.SendKeys('r') } else { Write-Host 'Could not find the Flutter app window. Start it using run_chrome.bat first.'; Start-Sleep -Seconds 3 }"

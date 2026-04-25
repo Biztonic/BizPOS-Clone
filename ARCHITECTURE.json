@@ -1,0 +1,1413 @@
+{
+    "application": {
+        "name": "BizPOS (Biztonic Point-Of-Sale)",
+        "version": "1.0.4+12",
+        "description": "Multi-platform POS system with offline-first architecture, Firebase backend, and comprehensive business management features",
+        "platforms": [
+            "Android",
+            "iOS",
+            "Web",
+            "Windows",
+            "macOS",
+            "Linux"
+        ],
+        "sdk": "Flutter >=3.0.0 <4.0.0"
+    },
+    "architecture": {
+        "pattern": "Provider Pattern (State Management)",
+        "data_flow": "Offline-First with Cloud Sync",
+        "layers": {
+            "presentation": "Flutter Widgets & Screens",
+            "business_logic": "Providers (ChangeNotifier)",
+            "data": "Repository Pattern",
+            "storage": {
+                "local": [
+                    "SQLite (sqflite)",
+                    "Hive (key-value)"
+                ],
+                "cloud": "Firebase Firestore"
+            }
+        },
+        "sync_strategy": {
+            "type": "Strict Ledger-Based Event Sourcing",
+            "description": "Authoritative atomic events (Ledger) drive all state changes. Client-side materialized views are eventually consistent.",
+            "phases": [
+                "1. Local Write (SQL + Local Business Event)",
+                "2. Ledger PUSH (Atomic BusinessEvents with IdempotencyKey)",
+                "3. Cloud Materialization (Function builds orders/inventory/customers)",
+                "4. State Sync (Pull materialized docs using serverUpdatedAt)"
+            ],
+            "frequency_options": [
+                "LIVE",
+                "DAILY",
+                "WEEKLY",
+                "MANUAL"
+            ],
+            "default": "LIVE",
+            "interval": "5 minutes",
+            "authoritative_clock": "Firebase ServerTimestamp (Authoritative)",
+            "conflict_resolution": {
+                "rule": "Idempotent Ledger Append",
+                "logic": "Server ignores duplicate IdempotencyKeys; state is rebuilt from events."
+            },
+            "id_generation": {
+                "format": "PREFIX-DEVICEID(8)-TIMESTAMP-RANDOM(4)",
+                "example": "ORD-A1B2C3D4-1737970000-E5F6"
+            }
+        }
+    },
+    "backend": {
+        "platform": "Firebase",
+        "services": {
+            "authentication": {
+                "service": "Firebase Auth",
+                "methods": [
+                    "Email/Password",
+                    "Google Sign-In"
+                ],
+                "employee_login": {
+                    "type": "PIN-based (4-digit)",
+                    "format": "Store ID + Employee ID + PIN",
+                    "dummy_email_pattern": "{shortCode}_{employeeId}@biztonic.pos"
+                }
+            },
+            "database": {
+                "service": "Firebase Firestore",
+                "type": "NoSQL Document Database",
+                "collections": {
+                    "users": {
+                        "description": "User profiles and authentication data",
+                        "document_id": "Firebase Auth UID",
+                        "fields": {
+                            "email": "string",
+                            "name": "string",
+                            "role": "string (Super Admin | Admin | Owner | Manager | Cashier | Kitchen Staff | Waiter | Unauthorized)",
+                            "storeId": "string (nullable)",
+                            "franchiseId": "string (nullable)",
+                            "accessibleStoreIds": "array<string>",
+                            "photoBase64": "string (nullable)",
+                            "phoneNumber": "string (nullable)",
+                            "employeeId": "string (4-digit, nullable)",
+                            "pin": "string (4-digit, nullable)",
+                            "demoStatus": "string (pending | approved | rejected | none)",
+                            "createdAt": "timestamp"
+                        },
+                        "indexes": [
+                            "role",
+                            "storeId",
+                            "employeeId"
+                        ]
+                    },
+                    "stores": {
+                        "description": "Store/outlet information",
+                        "document_id": "Auto-generated",
+                        "fields": {
+                            "name": "string",
+                            "owner": "string (user UID)",
+                            "ownerEmail": "string",
+                            "subscriptionPlan": "string (Free | Basic | Startup | Pro | Enterprise | Premium)",
+                            "status": "string (Active | Suspended | Inactive)",
+                            "storeType": "string (Restaurant | Retail | Cafe | etc.)",
+                            "shortCode": "string (6-character unique code)",
+                            "franchiseId": "string (nullable)",
+                            "franchiseName": "string (nullable)",
+                            "address": "string",
+                            "phone": "string",
+                            "taxRate": "number",
+                            "isTaxEnabled": "boolean",
+                            "trackInventory": "boolean",
+                            "image": "string (URL)",
+                            "gstin": "string",
+                            "subscriptionExpiry": "timestamp",
+                            "receipt": "object (ReceiptSettings)",
+                            "payment": "object (PaymentSettings)"
+                        },
+                        "subcollections": {
+                            "employees": {
+                                "description": "Store-specific employees",
+                                "fields": "Same as users collection",
+                                "path": "stores/{storeId}/employees/{employeeId}"
+                            }
+                        }
+                    },
+                    "orders": {
+                        "description": "Sales orders and transactions",
+                        "document_id": "Auto-generated with device prefix",
+                        "id_format": "ORD-{DEVICEID}-{TIMESTAMP}-{RANDOM}",
+                        "fields": {
+                            "storeId": "string",
+                            "items": "array<OrderItem>",
+                            "total": "number",
+                            "discount": "number",
+                            "date": "timestamp",
+                            "status": "string (New | Preparing | Ready | Completed | Cancelled)",
+                            "customer": "object (Customer, nullable)",
+                            "customerRefId": "string (nullable)",
+                            "customerName": "string (nullable)",
+                            "customerPhone": "string (nullable)",
+                            "type": "string (Dine-In | Takeaway | Delivery)",
+                            "paymentMethod": "string (Cash | Card | UPI | Other)",
+                            "tableId": "string (nullable)",
+                            "tableName": "string (nullable)",
+                            "seatNumbers": "array<int> (nullable)",
+                            "synced": "boolean",
+                            "updatedAt": "timestamp (client)",
+                            "serverUpdatedAt": "timestamp (authoritative)",
+                            "voidedAt": "timestamp (nullable)",
+                            "voidedBy": "string (nullable)",
+                            "voidReason": "string (nullable)",
+                            "syncStatus": "string (PENDING | SYNCED | FAILED)",
+                            "deviceId": "string (8-char entropy)",
+                            "businessDayId": "string (YYYY-MM-DD_STOREID)",
+                            "lastSyncedAt": "timestamp (nullable)",
+                            "version": "integer (Optimistic Locking)",
+                            "taxRateSnapshot": "double (Fiscal Audit)",
+                            "discountSnapshot": "double (Fiscal Audit)",
+                            "idempotencyKey": "string (docId)"
+                        },
+                        "indexes": [
+                            "storeId",
+                            "date",
+                            "status",
+                            "syncStatus"
+                        ]
+                    },
+                    "inventory": {
+                        "description": "Product catalog and stock management",
+                        "document_id": "Auto-generated with device prefix",
+                        "id_format": "INV-{DEVICEID}-{TIMESTAMP}-{RANDOM}",
+                        "fields": {
+                            "storeId": "string",
+                            "name": "string",
+                            "category": "string",
+                            "price": "number",
+                            "quantity": "number",
+                            "status": "string (Available | Out of Stock | Discontinued)",
+                            "image": "string (URL, nullable)",
+                            "sku": "string (nullable)",
+                            "cost": "number",
+                            "unit": "string",
+                            "expiryDate": "string (nullable)",
+                            "trackStock": "boolean",
+                            "centralItemId": "string (nullable, reference to central_catalog)",
+                            "storeType": "string (nullable)",
+                            "updatedAt": "timestamp",
+                            "deletedAt": "timestamp (nullable)",
+                            "syncStatus": "string (PENDING | SYNCED)",
+                            "deviceId": "string",
+                            "version": "integer (Optimistic Locking)"
+                        },
+                        "indexes": [
+                            "storeId",
+                            "category",
+                            "status",
+                            "syncStatus"
+                        ]
+                    },
+                    "customers": {
+                        "description": "Customer database and loyalty",
+                        "document_id": "Auto-generated with device prefix",
+                        "id_format": "CUST-{DEVICEID}-{TIMESTAMP}-{RANDOM}",
+                        "fields": {
+                            "storeId": "string",
+                            "name": "string",
+                            "email": "string (nullable)",
+                            "mobile": "string",
+                            "phone": "string (nullable)",
+                            "whatsapp": "string (nullable)",
+                            "taxNumber": "string (nullable)",
+                            "billingAddress": "string (nullable)",
+                            "shippingAddress": "string (nullable)",
+                            "avatar": "string (nullable)",
+                            "joinDate": "timestamp",
+                            "totalSpent": "number",
+                            "loyaltyPoints": "number",
+                            "tier": "string (Bronze | Silver | Gold | Platinum)",
+                            "visitCount": "number",
+                            "lastVisit": "timestamp",
+                            "updatedAt": "timestamp",
+                            "deletedAt": "timestamp (nullable)",
+                            "syncStatus": "string (PENDING | SYNCED)",
+                            "deviceId": "string"
+                        },
+                        "indexes": [
+                            "storeId",
+                            "mobile",
+                            "email",
+                            "syncStatus"
+                        ]
+                    },
+                    "roles": {
+                        "description": "Custom role definitions and permissions",
+                        "document_id": "Auto-generated",
+                        "fields": {
+                            "storeId": "string (nullable for system roles)",
+                            "name": "string",
+                            "permissions": "map<string, boolean>",
+                            "isSystem": "boolean",
+                            "description": "string (nullable)",
+                            "storeAccessMode": "string (single | multi_full | franchise)",
+                            "createdAt": "timestamp",
+                            "updatedAt": "timestamp",
+                            "deletedAt": "timestamp (nullable)",
+                            "syncStatus": "string (PENDING | SYNCED)"
+                        },
+                        "system_roles": [
+                            "Super Admin",
+                            "Admin",
+                            "Owner",
+                            "Manager",
+                            "Cashier",
+                            "Kitchen Staff",
+                            "Waiter"
+                        ]
+                    },
+                    "tables": {
+                        "description": "Restaurant table management",
+                        "document_id": "Auto-generated",
+                        "fields": {
+                            "storeId": "string",
+                            "name": "string",
+                            "capacity": "number",
+                            "floorId": "string (nullable)",
+                            "status": "string (Available | Occupied | Reserved)",
+                            "currentOrderId": "string (nullable)",
+                            "position": "object {x: number, y: number}"
+                        }
+                    },
+                    "floors": {
+                        "description": "Restaurant floor layouts",
+                        "document_id": "Auto-generated",
+                        "fields": {
+                            "storeId": "string",
+                            "name": "string",
+                            "order": "number"
+                        }
+                    },
+                    "central_catalog": {
+                        "description": "Global product catalog for all stores",
+                        "document_id": "Auto-generated",
+                        "fields": {
+                            "name": "string",
+                            "category": "string",
+                            "basePrice": "number",
+                            "image": "string (URL)",
+                            "description": "string",
+                            "storeTypes": "array<string>"
+                        },
+                        "access": "Admin only (write), All authenticated (read)"
+                    },
+                    "plans": {
+                        "description": "Subscription plans and pricing",
+                        "document_id": "Plan name",
+                        "fields": {
+                            "name": "string",
+                            "price": "number",
+                            "features": "array<string>",
+                            "limits": "object {employees: number, stores: number, etc.}"
+                        }
+                    },
+                    "settings": {
+                        "description": "Store-specific settings",
+                        "document_id": "Store ID",
+                        "fields": {
+                            "receipt": "object (ReceiptSettings)",
+                            "payment": "object (PaymentSettings)",
+                            "tax": "object (TaxSettings)",
+                            "printer": "object (PrinterSettings)"
+                        }
+                    }
+                }
+            },
+            "storage": {
+                "service": "Firebase Storage",
+                "usage": [
+                    "Product images",
+                    "Store logos",
+                    "User avatars",
+                    "Receipt templates"
+                ]
+            },
+            "crashlytics": {
+                "service": "Firebase Crashlytics",
+                "purpose": "Error tracking and crash reporting"
+            }
+        },
+        "security_rules": {
+            "authentication_required": true,
+            "role_based_access": true,
+            "store_isolation": true,
+            "helper_functions": {
+                "isAuthenticated": "Checks if user is logged in",
+                "getUserData": "Fetches user profile from users collection",
+                "isStoreAuthorized": "Validates user access to specific store"
+            },
+            "collection_rules": {
+                "users": "Read: All authenticated, Write: Self or Admin",
+                "stores": "Read: All authenticated, Write: Store authorized users",
+                "orders": "Read/Write: Store authorized users only",
+                "inventory": "Read/Write: Store authorized users only",
+                "customers": "Read/Write: Store authorized users only",
+                "central_catalog": "Read: All authenticated, Write: Admin only",
+                "plans": "Read: All authenticated, Write: Admin only"
+            }
+        }
+    },
+    "frontend": {
+        "framework": "Flutter",
+        "state_management": {
+            "library": "Provider (v6.1.1)",
+            "providers": {
+                "AuthProvider": {
+                    "file": "lib/providers/auth_provider.dart",
+                    "responsibilities": [
+                        "User authentication",
+                        "Session management",
+                        "Login/Logout"
+                    ],
+                    "state": [
+                        "currentUser",
+                        "isAuthenticated",
+                        "authStatus"
+                    ]
+                },
+                "DashboardProvider": {
+                    "file": "lib/providers/dashboard_provider.dart",
+                    "responsibilities": [
+                        "UI Orchestration",
+                        "Cross-provider coordination",
+                        "Navigation handling",
+                        "Legacy support",
+                        "Global Data Aggregation (Super Admin View)"
+                    ],
+                    "state": [
+                        "proxied state (orders, customers, store)",
+                        "UI loading states"
+                    ]
+                },
+                "StoreProvider": {
+                    "file": "lib/providers/store_provider.dart",
+                    "responsibilities": [
+                        "Session management (activeStoreId)",
+                        "Store Settings (Theme, Config)",
+                        "Subscription Plans",
+                        "Subscription Policy Enforcement (Helpers)",
+                        "Store CRUD"
+                    ],
+                    "state": [
+                        "activeStore",
+                        "activeStoreId",
+                        "currentTheme",
+                        "stores"
+                    ]
+                },
+                "OrderProvider": {
+                    "file": "lib/providers/order_provider.dart",
+                    "responsibilities": [
+                        "Order Lifecycle (Place, Refund, Update)",
+                        "Offline Order Queueing",
+                        "Subscription Limit Enforcement (Monthly Limits)",
+                        "Cart Management"
+                    ],
+                    "state": [
+                        "orders",
+                        "currentCart",
+                        "isLoading"
+                    ]
+                },
+                "CustomerProvider": {
+                    "file": "lib/providers/customer_provider.dart",
+                    "responsibilities": [
+                        "Customer CRUD",
+                        "Loyalty Points",
+                        "Customer Lookup",
+                        "Global Customer Retrieval (Super Admin)"
+                    ],
+                    "state": [
+                        "customers",
+                        "selectedCustomer"
+                    ]
+                },
+                "InventoryProvider": {
+                    "file": "lib/providers/inventory_provider.dart",
+                    "responsibilities": [
+                        "Inventory CRUD operations",
+                        "Stock management & Batch updates",
+                        "Event sourcing (Inventory Movements)",
+                        "Dynamic collection probing",
+                        "Dynamic collection probing",
+                        "Sync integration",
+                        "Global Inventory Fetching (Super Admin)"
+                    ],
+                    "state": [
+                        "storeInventory",
+                        "centralInventory",
+                        "debugCollectionFound"
+                    ]
+                },
+                "LocaleProvider": {
+                    "file": "lib/providers/locale_provider.dart",
+                    "responsibilities": [
+                        "Internationalization",
+                        "Language switching"
+                    ],
+                    "supported_languages": [
+                        "English",
+                        "Hindi",
+                        "Marathi"
+                    ]
+                }
+            }
+        },
+        "local_storage": {
+            "sqflite": {
+                "database_name": "biztonic.db",
+                "version": 11,
+                "tables": {
+                    "orders": {
+                        "columns": [
+                            "id",
+                            "storeId",
+                            "total",
+                            "discount",
+                            "date",
+                            "status",
+                            "type",
+                            "paymentMethod",
+                            "customerName",
+                            "customerPhone",
+                            "tableId",
+                            "tableName",
+                            "synced",
+                            "updatedAt",
+                            "deletedAt",
+                            "syncStatus",
+                            "deviceId",
+                            "lastSyncedAt",
+                            "businessDayId",
+                            "version",
+                            "taxRateSnapshot",
+                            "discountSnapshot",
+                            "voidedAt",
+                            "voidedBy",
+                            "voidReason"
+                        ],
+                        "primary_key": "id",
+                        "foreign_keys": []
+                    },
+                    "order_items": {
+                        "columns": [
+                            "id",
+                            "orderId",
+                            "itemId",
+                            "name",
+                            "price",
+                            "quantity",
+                            "note",
+                            "seatIndex"
+                        ],
+                        "primary_key": "id (AUTOINCREMENT)",
+                        "foreign_keys": [
+                            "orderId REFERENCES orders(id) ON DELETE CASCADE"
+                        ]
+                    },
+                    "inventory": {
+                        "columns": [
+                            "id",
+                            "storeId",
+                            "name",
+                            "category",
+                            "price",
+                            "quantity",
+                            "status",
+                            "image",
+                            "sku",
+                            "cost",
+                            "unit",
+                            "expiryDate",
+                            "trackStock",
+                            "centralItemId",
+                            "storeType",
+                            "updatedAt",
+                            "deletedAt",
+                            "syncStatus",
+                            "deviceId",
+                            "lastSyncedAt"
+                        ],
+                        "primary_key": "id"
+                    },
+                    "customers": {
+                        "columns": [
+                            "id",
+                            "storeId",
+                            "name",
+                            "email",
+                            "mobile",
+                            "phone",
+                            "whatsapp",
+                            "taxNumber",
+                            "billingAddress",
+                            "shippingAddress",
+                            "avatar",
+                            "joinDate",
+                            "totalSpent",
+                            "loyaltyPoints",
+                            "tier",
+                            "visitCount",
+                            "lastVisit",
+                            "updatedAt",
+                            "deletedAt",
+                            "syncStatus",
+                            "deviceId",
+                            "lastSyncedAt"
+                        ],
+                        "primary_key": "id"
+                    },
+                    "employees": {
+                        "columns": [
+                            "id",
+                            "storeId",
+                            "name",
+                            "email",
+                            "role",
+                            "employeeId",
+                            "pin",
+                            "createdAt",
+                            "updatedAt",
+                            "deletedAt",
+                            "syncStatus",
+                            "deviceId",
+                            "lastSyncedAt"
+                        ],
+                        "primary_key": "id"
+                    },
+                    "roles": {
+                        "columns": [
+                            "id",
+                            "storeId",
+                            "name",
+                            "permissions",
+                            "isSystem",
+                            "description",
+                            "storeAccessMode",
+                            "createdAt",
+                            "updatedAt",
+                            "deletedAt",
+                            "syncStatus",
+                            "lastSyncedAt"
+                        ],
+                        "primary_key": "id"
+                    },
+                    "business_events": {
+                        "columns": [
+                            "id",
+                            "storeId",
+                            "entityType",
+                            "entityId",
+                            "eventType",
+                            "amount",
+                            "quantity",
+                            "createdAt",
+                            "deviceId",
+                            "synced",
+                            "syncedAt"
+                        ],
+                        "primary_key": "id"
+                    },
+                    "monthly_order_counter": {
+                        "columns": [
+                            "storeId",
+                            "yearMonth",
+                            "count"
+                        ],
+                        "primary_key": "storeId, yearMonth"
+                    },
+                    "plan_tokens": {
+                        "columns": [
+                            "storeId",
+                            "token",
+                            "signature",
+                            "validUntil"
+                        ],
+                        "primary_key": "storeId"
+                    },
+                    "cache_inventory_quantities": {
+                        "columns": [
+                            "itemId",
+                            "storeId",
+                            "quantity"
+                        ],
+                        "primary_key": "itemId"
+                    }
+                },
+                "pragmas": {
+                    "foreign_keys": "ON",
+                    "journal_mode": "WAL",
+                    "busy_timeout": "3000"
+                }
+            },
+            "hive": {
+                "boxes": {
+                    "settings": "App settings and preferences",
+                    "cache_inventory": "Cached inventory data",
+                    "sync_queue_v2_{userId}": "Pending sync operations"
+                }
+            }
+        },
+        "services": {
+            "SyncService": {
+                "file": "lib/services/sync_service.dart",
+                "type": "Singleton",
+                "responsibilities": [
+                    "Bidirectional data synchronization",
+                    "Queue management for offline operations",
+                    "Conflict resolution",
+                    "Delta sync with timestamps",
+                    "Device ID generation and tracking",
+                    "Plan-based Sync Intervals (Bronze/Gold/Diamond)",
+                    "Plan-based Sync Intervals (Bronze/Gold/Diamond)",
+                    "Feature gating (Basic/Silver Sync Block)",
+                    "Multi-Store Operation Routing (Global View Context)"
+                ],
+                "sync_collections": [
+                    "orders",
+                    "inventory",
+                    "customers",
+                    "employees",
+                    "roles"
+                ],
+                "queue_format": {
+                    "type": "CREATE | UPDATE | DELETE",
+                    "collection": "string",
+                    "docId": "string",
+                    "payload": "object",
+                    "retryCount": "number",
+                    "createdAt": "timestamp",
+                    "deviceId": "string"
+                }
+            },
+            "SubscriptionService": {
+                "file": "lib/services/subscription_service.dart",
+                "type": "Stateless Service",
+                "responsibilities": [
+                    "Subscription Policy Engine",
+                    "Order Limit Enforcement",
+                    "Sync Permission Logic",
+                    "Plan Feature Gates",
+                    "Global Access Control (Super Admin Override)"
+                ]
+            },
+            "Repository": {
+                "file": "lib/services/repository.dart",
+                "type": "Singleton",
+                "responsibilities": [
+                    "SQLite CRUD operations for orders, inventory, customers"
+                ],
+                "methods": [
+                    "insertOrder",
+                    "getOrders",
+                    "getOrderCountSince",
+                    "deleteOrder",
+                    "insertInventory",
+                    "getInventory",
+                    "deleteInventory",
+                    "insertCustomer",
+                    "getCustomers",
+                    "deleteCustomer",
+                    "markAsSynced"
+                ]
+            },
+            "InventoryMovementRepository": {
+                "file": "lib/services/inventory_movement_repository.dart",
+                "responsibilities": [
+                    "Track stock history",
+                    "Event sourcing for inventory"
+                ],
+                "methods": [
+                    "insertMovement",
+                    "getMovements",
+                    "getQuantityForDate"
+                ]
+            },
+            "EmployeeRepository": {
+                "file": "lib/services/employee_repository.dart",
+                "responsibilities": [
+                    "SQLite CRUD operations for employees"
+                ],
+                "methods": [
+                    "insertEmployee",
+                    "getEmployeesByStore",
+                    "getEmployeeById",
+                    "deleteEmployee",
+                    "updateEmployeeRole",
+                    "markAsSynced",
+                    "getPendingEmployees"
+                ]
+            },
+            "RoleRepository": {
+                "file": "lib/services/role_repository.dart",
+                "responsibilities": [
+                    "SQLite CRUD operations for roles"
+                ],
+                "methods": [
+                    "insertRole",
+                    "insertRoleWithStore",
+                    "getRolesByStore",
+                    "getSystemRoles",
+                    "getAllRoles",
+                    "deleteRole",
+                    "markAsSynced"
+                ]
+            },
+            "DatabaseHelper": {
+                "file": "lib/services/database_helper.dart",
+                "type": "Singleton",
+                "responsibilities": [
+                    "SQLite database initialization and migrations"
+                ],
+                "current_version": 9
+            },
+            "TokenService": {
+                "file": "lib/services/token_service.dart",
+                "type": "Singleton",
+                "responsibilities": [
+                    "Signed Plan Token Verification (Enterprise Security)",
+                    "Local Usage Counter Management",
+                    "Subscription Policy Enforcement"
+                ]
+            },
+            "UniversalPrinterService": {
+                "file": "lib/services/universal_printer_service.dart",
+                "responsibilities": [
+                    "Multi-platform printing support"
+                ],
+                "supported_types": [
+                    "USB",
+                    "Bluetooth",
+                    "Network",
+                    "Thermal"
+                ]
+            },
+            "DeviceManagerService": {
+                "file": "lib/services/device_manager_service.dart",
+                "responsibilities": [
+                    "Hardware device management",
+                    "Printer discovery",
+                    "Scanner integration"
+                ]
+            },
+            "GoogleDriveService": {
+                "file": "lib/services/google_drive_service.dart",
+                "responsibilities": [
+                    "Cloud backup to Google Drive",
+                    "Data export"
+                ]
+            },
+            "UpdateService": {
+                "file": "lib/services/update_service.dart",
+                "responsibilities": [
+                    "App version checking",
+                    "Auto-update notifications"
+                ]
+            }
+        },
+        "screens": {
+            "authentication": {
+                "AuthScreen": "lib/screens/auth_screen.dart",
+                "EmployeeLoginScreen": "lib/screens/auth/employee_login_screen.dart",
+                "StationLockScreen": "lib/screens/auth/station_lock_screen.dart",
+                "CompleteProfileScreen": "lib/screens/complete_profile_screen.dart"
+            },
+            "onboarding": {
+                "PlanSelectionScreen": "lib/screens/onboarding/plan_selection_screen.dart"
+            },
+            "dashboard": {
+                "DashboardScreen": "lib/screens/dashboard_screen.dart",
+                "DashboardOverviewScreen": "lib/screens/dashboard_overview_screen.dart",
+                "AdminDashboardScreen": "lib/screens/admin_dashboard_screen.dart"
+            },
+            "pos": {
+                "POSScreen": "lib/screens/pos_screen.dart",
+                "SalesScreen": "lib/screens/sales_screen.dart"
+            },
+            "inventory": {
+                "InventoryScreen": "lib/screens/inventory_screen.dart",
+                "AddEditInventoryScreen": "lib/screens/add_edit_inventory_screen.dart"
+            },
+            "customers": {
+                "CustomersScreen": "lib/screens/customers_screen.dart",
+                "CustomerDetailScreen": "lib/screens/customer_detail_screen.dart",
+                "AddEditCustomerScreen": "lib/screens/add_edit_customer_screen.dart"
+            },
+            "tables": {
+                "TableManagementScreen": "lib/screens/tables/table_management_screen.dart",
+                "FloorManagementScreen": "lib/screens/tables/floor_management_screen.dart"
+            },
+            "admin": {
+                "UserRoleManagementScreen": "lib/screens/admin/user_role_management_screen.dart",
+                "RoleConfigurationScreen": "lib/screens/admin/role_configuration_screen.dart",
+                "ManageRolesScreen": "lib/screens/admin/manage_roles_screen.dart",
+                "StoreManagementScreen": "lib/screens/admin/store_management_screen.dart",
+                "FranchiseScreen": "lib/screens/admin/franchise_screen.dart",
+                "CentralCatalogScreen": "lib/screens/admin/central_catalog_screen.dart",
+                "ManageStoreTypesScreen": "lib/screens/admin/manage_store_types_screen.dart"
+            },
+            "settings": {
+                "SettingsScreen": "lib/screens/settings_screen.dart",
+                "ManageEmployeesScreen": "lib/screens/settings/manage_employees_screen.dart",
+                "SyncBackupSettingsSection": "lib/screens/settings/sync_backup_settings_section.dart"
+            },
+            "displays": {
+                "KitchenDisplayScreen": "lib/screens/kitchen_display_screen.dart",
+                "CustomerDisplayScreen": "lib/screens/customer_display_screen.dart",
+                "CFDScreen": "lib/screens/cfd_screen.dart",
+                "DigitalMenuBoard": "lib/screens/digital_menu_board.dart",
+                "SelfOrderingScreen": "lib/screens/self_ordering_screen.dart"
+            },
+            "reports": {
+                "ReportsScreen": "lib/screens/reports_screen.dart"
+            },
+            "printer": {
+                "PrinterScreen": "lib/screens/printer_screen.dart"
+            }
+        },
+        "widgets": {
+            "SyncStatusWidget": {
+                "file": "lib/widgets/sync_status_widget.dart",
+                "responsibilities": [
+                    "Visualizing offline/online status",
+                    "Showing pending sync queue count",
+                    "Real-time connectivity feedback"
+                ]
+            }
+        },
+        "models": {
+            "OrderModel": {
+                "file": "lib/models/order_model.dart",
+                "properties": [
+                    "id",
+                    "storeId",
+                    "items",
+                    "total",
+                    "discount",
+                    "date",
+                    "status",
+                    "customer",
+                    "type",
+                    "paymentMethod",
+                    "tableId",
+                    "tableName",
+                    "seatNumbers",
+                    "synced",
+                    "updatedAt",
+                    "deletedAt",
+                    "syncStatus",
+                    "deviceId"
+                ],
+                "nested": {
+                    "OrderItem": [
+                        "item",
+                        "quantity",
+                        "note",
+                        "seatIndex"
+                    ]
+                }
+            },
+            "InventoryItem": {
+                "file": "lib/models/inventory_item.dart",
+                "properties": [
+                    "id",
+                    "storeId",
+                    "name",
+                    "category",
+                    "price",
+                    "quantity",
+                    "status",
+                    "image",
+                    "sku",
+                    "cost",
+                    "unit",
+                    "expiryDate",
+                    "trackStock",
+                    "centralItemId",
+                    "storeType",
+                    "updatedAt",
+                    "deletedAt",
+                    "syncStatus",
+                    "deviceId"
+                ]
+            },
+            "Customer": {
+                "file": "lib/models/customer.dart",
+                "properties": [
+                    "id",
+                    "storeId",
+                    "name",
+                    "email",
+                    "mobile",
+                    "phone",
+                    "whatsapp",
+                    "taxNumber",
+                    "billingAddress",
+                    "shippingAddress",
+                    "avatar",
+                    "joinDate",
+                    "totalSpent",
+                    "loyaltyPoints",
+                    "tier",
+                    "visitCount",
+                    "lastVisit",
+                    "updatedAt",
+                    "deletedAt",
+                    "syncStatus",
+                    "deviceId"
+                ]
+            },
+            "UserProfile": {
+                "file": "lib/models/user_profile.dart",
+                "properties": [
+                    "uid",
+                    "email",
+                    "name",
+                    "role",
+                    "storeId",
+                    "franchiseId",
+                    "createdAt",
+                    "accessibleStoreIds",
+                    "photoBase64",
+                    "phoneNumber",
+                    "employeeId",
+                    "pin",
+                    "demoStatus"
+                ]
+            },
+            "Store": {
+                "file": "lib/models/store.dart",
+                "properties": [
+                    "id",
+                    "name",
+                    "owner",
+                    "ownerEmail",
+                    "subscriptionPlan",
+                    "status",
+                    "storeType",
+                    "shortCode",
+                    "franchiseId",
+                    "franchiseName",
+                    "address",
+                    "phone",
+                    "taxRate",
+                    "isTaxEnabled",
+                    "trackInventory",
+                    "image",
+                    "gstin",
+                    "subscriptionExpiry",
+                    "receipt",
+                    "payment"
+                ]
+            },
+            "RoleModel": {
+                "file": "lib/models/role_model.dart",
+                "properties": [
+                    "id",
+                    "name",
+                    "permissions",
+                    "isSystem",
+                    "description",
+                    "storeAccessMode"
+                ]
+            },
+            "TableModel": {
+                "file": "lib/models/table_model.dart",
+                "properties": [
+                    "id",
+                    "storeId",
+                    "name",
+                    "capacity",
+                    "floorId",
+                    "status",
+                    "currentOrderId",
+                    "position"
+                ]
+            }
+        }
+    },
+    "data_flow": {
+        "create_order_workflow": {
+            "steps": [
+                "1. User selects items in POS screen",
+                "2. Calculate total with discounts/taxes",
+                "3. Generate unique order ID (ORD-{DEVICEID}-{TIMESTAMP}-{RANDOM})",
+                "4. Write to local SQLite database with syncStatus='PENDING'",
+                "5. Update UI immediately (optimistic update)",
+                "6. Generate Ledger Event (CREATE_ORDER)",
+                "7. SyncService pushes Event + Resulting Doc to Firebase",
+                "8. On success: Update local syncStatus='SYNCED' and version++"
+            ],
+            "offline_behavior": "Full functionality, queues for later sync",
+            "conflict_resolution": "Version-based fencing; ServerTimestamp authoritative",
+            "deletion_policy": "NO_HARD_DELETE — Orders are VOIDED only to preserve audit trail.",
+            "immutability_policy": "Terminal Status Lock — No edits allowed once Completed | Cancelled | VOID | Refunded.",
+            "financial_safety": "Snapshots — Tax and Item Price frozen at time of creation.",
+            "sync_mode": "Strict Ledger — Direct writes to orders collection blocked; events only."
+        },
+        "create_employee_workflow": {
+            "steps": [
+                "1. Store owner navigates to Manage Employees",
+                "2. Clicks 'Add Employee' button",
+                "3. Fills form: Name, Role, 4-digit PIN",
+                "4. System generates unique employee ID (EMP-{DEVICEID}-...)",
+                "5. Creates dummy email: {empId}@biztonic.pos",
+                "6. Write to local storage immediately (Optimistic UI)",
+                "7. Queue operation in SyncService (regardless of connectivity)",
+                "8. If online: SyncService pushes to cloud immediately",
+                "9. Employee can login immediately with generated credentials"
+            ],
+            "online_required": "None (Offline supported)",
+            "offline_access": "Full creation and management"
+        },
+        "sync_workflow": {
+            "trigger_conditions": [
+                "Manual sync button",
+                "Periodic timer (every 5 minutes if LIVE mode)",
+                "Network reconnection",
+                "App startup"
+            ],
+            "process": [
+                "1. Check online status",
+                "2. PUSH: Process outbound queue (local → cloud)",
+                "3. For each queued operation: Execute Firebase write",
+                "4. On success: Mark as synced, remove from queue",
+                "5. On failure: Increment retry count (max 5)",
+                "6. PULL: Fetch delta updates (cloud → local)",
+                "7. Query each collection with updatedAt > lastSyncTime",
+                "8. Upsert received documents to local database",
+                "9. Update lastSyncTime checkpoint",
+                "10. Notify UI of sync completion"
+            ],
+            "special_handling": {
+                "employees": "Fetched from subcollection stores/{storeId}/employees",
+                "roles": "Fetch both system roles (storeId=null) and store-specific roles"
+            }
+        }
+    },
+    "dependencies": {
+        "firebase": {
+            "firebase_core": "^3.11.0",
+            "cloud_firestore": "^5.6.1",
+            "firebase_auth": "^5.4.1",
+            "firebase_crashlytics": "^4.3.0"
+        },
+        "state_management": {
+            "provider": "^6.1.1"
+        },
+        "local_storage": {
+            "hive": "^2.2.3",
+            "hive_flutter": "^1.1.0",
+            "sqflite": "^2.3.0",
+            "sqflite_common_ffi": "^2.3.0",
+            "sqflite_common_ffi_web": "^0.4.0",
+            "shared_preferences": "^2.3.3"
+        },
+        "hardware": {
+            "flutter_blue_plus": "^1.36.0",
+            "usb_serial": "^0.5.2",
+            "flutter_thermal_printer": "^1.0.0",
+            "esc_pos_utils_plus": "^2.0.4"
+        },
+        "ui": {
+            "google_fonts": "^4.0.4",
+            "flutter_colorpicker": "^1.0.3",
+            "fl_chart": "^1.1.1",
+            "flutter_staggered_grid_view": "^0.7.0",
+            "cached_network_image": "^3.3.1",
+            "qr_flutter": "^4.1.0"
+        },
+        "utilities": {
+            "uuid": "^4.5.1",
+            "intl": "^0.20.2",
+            "path": "^1.8.3",
+            "http": "^0.13.6",
+            "dio": "^5.7.0",
+            "connectivity_plus": "^6.1.0",
+            "permission_handler": "^11.3.1",
+            "package_info_plus": "^8.0.0",
+            "url_launcher": "^6.2.0"
+        },
+        "documents": {
+            "pdf": "^3.10.8",
+            "printing": "^5.11.1"
+        },
+        "google_services": {
+            "google_sign_in": "^6.2.1",
+            "googleapis": "^13.1.0",
+            "extension_google_sign_in_as_googleapis_auth": "^2.0.7"
+        },
+        "navigation": {
+            "go_router": "^14.3.0"
+        },
+        "media": {
+            "image_picker": "^1.2.1",
+            "image": "^4.0.17",
+            "file_picker": "^10.3.8",
+            "video_player": "^2.10.1"
+        },
+        "other": {
+            "table_calendar": "^3.1.3",
+            "math_expressions": "^3.1.0",
+            "kiosk_mode": "^0.8.0",
+            "battery_plus": "^6.2.1"
+        }
+    },
+    "features": {
+        "core": [
+            "Multi-store management",
+            "Offline-first POS",
+            "Role-based access control",
+            "Inventory management",
+            "Customer relationship management",
+            "Table management (restaurants)",
+            "Multi-payment methods",
+            "Receipt printing (USB/Bluetooth/Network)",
+            "Real-time sync",
+            "Reports and analytics"
+        ],
+        "advanced": [
+            "Franchise management",
+            "Central catalog",
+            "Seat-wise billing",
+            "Kitchen display system",
+            "Customer facing display",
+            "Self-ordering kiosk",
+            "Digital menu board",
+            "Google Drive backup",
+            "Multi-language support",
+            "Subscription management",
+            "Demo mode"
+        ],
+        "hardware_integration": [
+            "Thermal printers (ESC/POS)",
+            "Barcode scanners",
+            "Weighing scales",
+            "Cash drawers",
+            "Customer displays"
+        ]
+    },
+    "subscription_plans": {
+        "Free": {
+            "price": 0,
+            "employee_limit": 2,
+            "store_limit": 1,
+            "features": [
+                "Basic POS",
+                "Offline mode",
+                "Receipt printing"
+            ]
+        },
+        "Basic": {
+            "price": "Variable",
+            "employee_limit": 5,
+            "store_limit": 1,
+            "features": [
+                "All Free features",
+                "Inventory tracking",
+                "Customer management"
+            ]
+        },
+        "Startup": {
+            "price": "Variable",
+            "employee_limit": 5,
+            "store_limit": 3,
+            "features": [
+                "All Basic features",
+                "Multi-store",
+                "Reports"
+            ]
+        },
+        "Pro": {
+            "price": "Variable",
+            "employee_limit": 9999,
+            "store_limit": 10,
+            "features": [
+                "All Startup features",
+                "Advanced analytics",
+                "API access"
+            ]
+        },
+        "Enterprise": {
+            "price": "Variable",
+            "employee_limit": 9999,
+            "store_limit": 9999,
+            "features": [
+                "All Pro features",
+                "Franchise management",
+                "Priority support"
+            ]
+        },
+        "Premium": {
+            "price": "Variable",
+            "employee_limit": 9999,
+            "store_limit": 9999,
+            "features": [
+                "All Enterprise features",
+                "Custom development",
+                "Dedicated support"
+            ]
+        }
+    },
+    "user_roles": {
+        "Super Admin": {
+            "level": 1,
+            "permissions": [
+                "All permissions",
+                "System configuration",
+                "User management",
+                "Plan management"
+            ],
+            "access": "Global"
+        },
+        "Admin": {
+            "level": 2,
+            "permissions": [
+                "Store management",
+                "User management",
+                "Reports",
+                "Settings"
+            ],
+            "access": "Multi-store or Franchise"
+        },
+        "Owner": {
+            "level": 3,
+            "permissions": [
+                "Store settings",
+                "Employee management",
+                "Reports",
+                "Inventory"
+            ],
+            "access": "Single store"
+        },
+        "Manager": {
+            "level": 4,
+            "permissions": [
+                "POS operations",
+                "Inventory",
+                "Reports",
+                "Customer management"
+            ],
+            "access": "Single store"
+        },
+        "Cashier": {
+            "level": 5,
+            "permissions": [
+                "POS operations",
+                "View inventory",
+                "Customer lookup"
+            ],
+            "access": "Single store"
+        },
+        "Kitchen Staff": {
+            "level": 6,
+            "permissions": [
+                "View orders",
+                "Update order status"
+            ],
+            "access": "Kitchen display only"
+        },
+        "Waiter": {
+            "level": 7,
+            "permissions": [
+                "Create orders",
+                "View tables",
+                "Update order status"
+            ],
+            "access": "Table management and orders"
+        },
+        "Unauthorized": {
+            "level": 8,
+            "permissions": [
+                "None"
+            ],
+            "access": "No access"
+        }
+    },
+    "offline_capabilities": {
+        "fully_offline": [
+            "POS operations",
+            "Order creation",
+            "Inventory lookup",
+            "Customer lookup",
+            "Receipt printing",
+            "View reports (cached data)",
+            "Employee creation (Queued)"
+        ],
+        "requires_initial_sync": [
+            "Role assignment",
+            "Store settings",
+            "Inventory updates"
+        ],
+        "online_only": [
+            "User registration (Store Owner)",
+            "Store creation",
+            "Subscription management",
+            "Central catalog access",
+            "Google Drive backup"
+        ]
+    },
+    "id_generation_strategy": {
+        "format": "{PREFIX}-{DEVICEID}-{TIMESTAMP}-{RANDOM}",
+        "prefixes": {
+            "orders": "ORD",
+            "inventory": "INV",
+            "customers": "CUST",
+            "employees": "EMP"
+        },
+        "device_id": {
+            "type": "UUID v4",
+            "storage": "Hive settings box",
+            "persistence": "Permanent per device",
+            "length": "First 5 characters used in ID"
+        },
+        "timestamp": {
+            "format": "Seconds since epoch",
+            "purpose": "Chronological ordering"
+        },
+        "random": {
+            "format": "UUID v4 substring",
+            "length": "4 characters",
+            "purpose": "Collision prevention"
+        },
+        "example": "ORD-A1B2C-1706012345-X9Y8"
+    },
+    "performance_optimizations": {
+        "database": [
+            "SQLite WAL mode for concurrent reads",
+            "Indexed queries on storeId, date, status",
+            "Batch inserts for sync operations",
+            "Foreign key constraints with CASCADE delete"
+        ],
+        "ui": [
+            "Lazy loading for large lists",
+            "Cached network images",
+            "Optimistic UI updates",
+            "Debounced search (500ms)"
+        ],
+        "sync": [
+            "Delta sync with timestamps",
+            "Configurable sync frequency",
+            "Queue deduplication",
+            "Retry with exponential backoff (max 5 retries)"
+        ]
+    },
+    "testing": {
+        "unit_tests": "flutter_test SDK",
+        "integration_tests": "integration_test SDK",
+        "platforms_tested": [
+            "Android",
+            "Windows",
+            "Web (partial)"
+        ],
+        "known_issues": {
+            "web": "win32 package incompatibility prevents web compilation"
+        }
+    }
+}

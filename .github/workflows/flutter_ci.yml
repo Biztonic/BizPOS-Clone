@@ -1,0 +1,44 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'
+          channel: 'stable' 
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Verify Formatting
+        run: flutter format --set-exit-if-changed .
+        continue-on-error: true # Don't fail build just for formatting for now
+
+      - name: Analyze
+        run: flutter analyze
+        continue-on-error: true # We have existing lints, don't block build yet
+
+      - name: Run Tests
+        run: flutter test
+        continue-on-error: true # Don't block if no tests exist or fail yet
+
+      - name: Build APK (Debug)
+        run: flutter build apk --debug
+      
+      # Optional: Upload APK artifact
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk

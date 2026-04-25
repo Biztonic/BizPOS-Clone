@@ -1,0 +1,28 @@
+{
+  "name": "bizpos",
+  "version": "1.0.0",
+  "description": "This is the Flutter implementation of the Biztonic POS system.",
+  "main": "firebase_full_cleanup.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Biztonic/Biztonic_Point-Of-Sale.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Biztonic/Biztonic_Point-Of-Sale/issues"
+  },
+  "homepage": "https://github.com/Biztonic/Biztonic_Point-Of-Sale#readme",
+  "dependencies": {
+    "firebase": "^12.10.0"
+  }
+}

@@ -1,0 +1,17 @@
+
+.git
+.gitignore
+.idea
+.vscode
+build/
+# android/
+ios/
+macos/
+linux/
+windows/
+test/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+

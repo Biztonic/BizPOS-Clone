@@ -1,0 +1,21 @@
+FROM ghcr.io/cirruslabs/flutter:stable
+
+# Force Java 17 (fixes version mismatch)
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+
+WORKDIR /app
+
+# Copy pubspec first (Docker cache optimization)
+COPY pubspec.yaml pubspec.lock ./
+RUN flutter pub get
+
+# Copy full project
+COPY . .
+
+# Accept Android licenses
+RUN yes | flutter doctor --android-licenses
+
+# Build release APK
+RUN flutter build apk --release
