@@ -36,13 +36,17 @@ import 'package:biztonic_pos/models/subscription_history.dart';
 import 'package:biztonic_pos/services/printer_manager_service.dart';
 import 'package:biztonic_pos/services/database_helper.dart';
 
-enum ReportPeriod { today, yesterday, last7Days, last30Days, custom }
+import 'package:biztonic_pos/features/reporting/domain/entities/report_period.dart';
+import 'package:biztonic_pos/features/reporting/domain/entities/dashboard_stats.dart';
+import 'package:biztonic_pos/features/reporting/domain/use_cases/get_dashboard_stats.dart';
 
 class DashboardProvider with ChangeNotifier {
   final FirebaseFirestore _db = getFirestore();
   final FirebaseAuth _auth = FirebaseAuth.instance; 
   final SyncService _syncService = SyncService();
   final Repository _repository = Repository(); 
+  late final GetDashboardStatsUseCase _getStatsUseCase;
+  
   final EmployeeRepository _employeeRepository = EmployeeRepository();
   SyncService get syncService => _syncService;
 
@@ -58,6 +62,13 @@ class DashboardProvider with ChangeNotifier {
   bool _isInitialized = false;
   bool _isFetchingUserData = false; // Prevent redundant concurrent fetches
   bool get isInitialized => _isInitialized;
+  
+  // Missing fields restored
+  List<UserProfile> _systemUsers = [];
+  bool _subscriptionHistoryLoaded = false;
+  List<InventoryItem> _centralInventory = [];
+  // Redefine if missing, or we can just hope it's not complaining about it
+  List<SubscriptionHistory> get rejectedSubscriptions => _subscriptionHistory.where((s) => s.status == 'REJECTED').toList();
   bool _isOnline = true;
   bool _isLoading = false;
   List<CounterModel> _counters = [];
@@ -103,6 +114,7 @@ class DashboardProvider with ChangeNotifier {
      });
 
      _syncService.addListener(_onSyncUpdate);
+     _getStatsUseCase = GetDashboardStatsUseCase(_repository);
      debugPrint('✅ DashboardProvider Constructor END');
   }
 
@@ -340,25 +352,32 @@ class DashboardProvider with ChangeNotifier {
   }
 
   void _onInventoryChange() {
-      _clearDashboardCache();
+      _scheduleStatsCalculation();
       notifyListeners();
   }
   
-  Map<String, dynamic>? _cachedSalesReport;
-  List<Map<String, dynamic>>? _cachedWeeklySales;
-  Map<String, double>? _cachedPaymentStats;
-  List<Map<String, dynamic>>? _cachedTopProducts;
-  List<Map<String, dynamic>>? _cachedTopCustomers;
-  Map<String, dynamic>? _cachedDailySummary;
-  Map<String, dynamic>? _cachedSmartStats;
-  List<Map<String, dynamic>>? _cachedActualSalesData;
-  Map<String, double>? _cachedCategorySalesStats;
+  DashboardStats _stats = DashboardStats.empty();
+  DashboardStats get stats => _stats;
 
-  Map<String, double> getPaymentStats() {
-    if (_cachedPaymentStats != null) return _cachedPaymentStats!;
-    _scheduleStatsCalculation();
-    return {};
-  }
+  Map<String, double> getPaymentStats() => _stats.paymentStats;
+  Map<String, dynamic> get salesReport => _stats.salesReport;
+  List<Map<String, dynamic>> get weeklySales => _stats.weeklySales;
+  Map<String, double> get categorySales => _stats.categorySales;
+  List<Map<String, dynamic>> get topProducts => _stats.topProducts;
+  List<Map<String, dynamic>> get actualSalesData => _stats.actualSalesData;
+  Map<String, dynamic> get smartStats => {
+    'totalSales': _stats.totalSales,
+    'totalOrders': _stats.totalOrders,
+    'todaySales': _stats.todaySales,
+    'todayOrders': _stats.todayOrders,
+    'monthSales': _stats.monthSales,
+    'monthOrders': _stats.monthOrders,
+    'avgDailySale': _stats.avgDailySale,
+    'avgOrderValue': _stats.avgOrderValue,
+  };
+
+  int get peakHour => _stats.peakHour;
+  int get leastHour => _stats.leastHour;
   
   bool _isComputingStats = false;
   Timer? _statsDebounceTimer;
@@ -395,290 +414,24 @@ class DashboardProvider with ChangeNotifier {
     _isComputingStats = true;
     
     try {
-      // Small delay to allow UI to breathe
-      await Future.delayed(Duration.zero);
+      final params = GetDashboardStatsParams(
+        orders: _orders,
+        activeStoreId: _activeStoreId,
+        period: _selectedPeriod,
+        isNative: kIsWeb ? false : (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS),
+      );
+
+      _stats = await _getStatsUseCase.execute(params);
       
-      // We calculate stats in blocks to avoid blocking the event loop for too long
-      final newSmartStats = await computeSmartStats(_orders);
-      _cachedSmartStats = newSmartStats;
-      
-      // Notify only once after major update
-      notifyListeners();
-      
-      final newWeeklySales = await computeWeeklySales(_orders, _selectedPeriod);
-      _cachedWeeklySales = newWeeklySales;
-      
-      final newTopProducts = await computeTopProducts(_orders, _selectedPeriod);
-      _cachedTopProducts = newTopProducts;
-
-      // NEW: Offload Actual Sales Data
-      _cachedActualSalesData = await compute(_calcActualSalesTask, {
-        'orders': _orders,
-        'period': _selectedPeriod,
-      });
-
-      // NEW: Offload Category Stats
-      final startDate = _getStartDateForPeriod();
-      _cachedCategorySalesStats = await compute(_calcCategorySalesTask, {
-        'orders': _orders,
-        'startDate': startDate,
-      });
-
-      // NEW: Offload Sales Report
-      _cachedSalesReport = await compute(_calcSalesReportTask, {
-        'orders': _orders,
-        'startDate': startDate,
-      });
-
-      // NEW: Offload Payment Stats
-      _cachedPaymentStats = await compute(_calcPaymentStatsTask, {
-        'orders': _orders,
-        'startDate': startDate,
-      });
-
       _isComputingStats = false;
       notifyListeners();
     } catch (e) {
-      debugPrint("Error computing dashboard stats: $e");
+      debugPrint("❌ Error computing dashboard stats: $e");
       _isComputingStats = false;
     }
   }
 
-  // Non-blocking version of smart stats calculation
-  Future<Map<String, dynamic>> computeSmartStats(List<OrderModel> currentOrders) async {
-    // Optimization: Fetch counts from Repository (SQL) for native platforms before entry
-    int sqlTodayCount = 0;
-    int sqlMonthCount = 0;
-    
-    if (!kIsWeb && _activeStoreId != null) {
-      final now = DateTime.now();
-      final dateStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-      final yearMonth = "${now.year}-${now.month.toString().padLeft(2, '0')}";
-      sqlTodayCount = await _repository.getDailyOrderCount(_activeStoreId!, dateStr);
-      sqlMonthCount = await _repository.getMonthlyOrderCount(_activeStoreId!, yearMonth);
-    }
 
-    return await compute(_calcSmartStatsTask, {
-      'orders': currentOrders,
-      'sqlTodayCount': sqlTodayCount,
-      'sqlMonthCount': sqlMonthCount,
-      'isNative': !kIsWeb,
-    });
-  }
-
-  static Map<String, dynamic> _calcSmartStatsTask(Map<String, dynamic> params) {
-    final List<OrderModel> data = params['orders'];
-    final int sqlTodayCount = params['sqlTodayCount'];
-    final int sqlMonthCount = params['sqlMonthCount'];
-    final bool isNative = params['isNative'];
-    
-    double totalSales = 0;
-    double todaySales = 0;
-    int todayCount = 0;
-    int monthCount = 0;
-    double monthSales = 0;
-    final now = DateTime.now();
-
-    for (var o in data) {
-        if (o.status == 'Cancelled' || o.status == 'VOID') continue;
-        
-        // Treat Refunded as zero-value for revenue, but keep in order count?
-        // Decision: User wants zero-value for "calculations", usually Net Sales.
-        // If we want Net Order Count, we skip it. If we want Gross Order Count, we keep it.
-        // Following Repository pattern: getSalesStats excludes Cancelled/VOID but includes Refunded with 0 sum.
-        // However, it's better to exclude Refunded from "Active" stats to show Net Performance.
-        if (o.status == 'Refunded') {
-            // totalSales += 0; // Value is 0
-            // continue; // Skips from count as well, providing NET stats.
-        }
-
-        double orderTotal = o.status == 'Refunded' ? 0 : o.total;
-        totalSales += orderTotal;
-
-        if (o.date.day == now.day && o.date.month == now.month && o.date.year == now.year) {
-            todaySales += orderTotal;
-            if (o.status != 'Refunded') todayCount++;
-        }
-        if (o.date.month == now.month && o.date.year == now.year) {
-            monthSales += orderTotal;
-            if (o.status != 'Refunded') monthCount++;
-        }
-    }
-    
-    // Use SQL counts if available for better accuracy/speed on Native
-    final finalTodayCount = isNative ? sqlTodayCount : todayCount;
-    final finalMonthCount = isNative ? sqlMonthCount : monthCount;
-
-    return {
-       'totalSales': totalSales,
-       'totalOrders': data.length,
-       'todaySales': todaySales,
-       'todayOrders': finalTodayCount,
-       'monthSales': monthSales,
-       'monthOrders': finalMonthCount,
-       'avgDailySale': monthSales / 30,
-       'avgOrderValue': data.isNotEmpty ? totalSales / data.length : 0.0
-    };
-  }
-
-  Future<List<Map<String, dynamic>>> computeWeeklySales(List<OrderModel> currentOrders, ReportPeriod period) async {
-      return await compute(_calcWeeklySalesTask, {'orders': currentOrders, 'period': period});
-  }
-
-  static List<Map<String, dynamic>> _calcWeeklySalesTask(Map<String, dynamic> params) {
-      final List<OrderModel> dataOrders = params['orders'];
-      final ReportPeriod selectedPeriod = params['period'];
-      
-      int days = 7;
-      if (selectedPeriod == ReportPeriod.today) days = 1;
-      else if (selectedPeriod == ReportPeriod.yesterday) days = 2; 
-      else if (selectedPeriod == ReportPeriod.last30Days) days = 30;
-
-      final now = DateTime.now();
-      List<Map<String, dynamic>> data = [];
-      for (int i = days - 1; i >= 0; i--) {
-          final day = now.subtract(Duration(days: i));
-          final dayOrders = dataOrders.where((o) => 
-            o.date.day == day.day && 
-            o.date.month == day.month && 
-            o.date.year == day.year && 
-            o.status != 'Cancelled' && 
-            o.status != 'VOID' && 
-            o.status != 'Refunded'
-          ).toList();
-          double sum = 0;
-          for(var o in dayOrders) sum += o.total;
-          data.add({'day': "${day.day}/${day.month}", 'sales': sum});
-      }
-      return data;
-  }
-
-  Future<List<Map<String, dynamic>>> computeTopProducts(List<OrderModel> currentOrders, ReportPeriod period) async {
-      return await compute(_calcTopProductsTask, {'orders': currentOrders, 'period': period});
-  }
-
-  static List<Map<String, dynamic>> _calcTopProductsTask(Map<String, dynamic> params) {
-      final List<OrderModel> dataOrders = params['orders'];
-      final ReportPeriod selectedPeriod = params['period'];
-      
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      DateTime startDate;
-      switch (selectedPeriod) {
-          case ReportPeriod.today: startDate = today; break;
-          case ReportPeriod.yesterday: startDate = today.subtract(const Duration(days: 1)); break;
-          case ReportPeriod.last7Days: startDate = today.subtract(const Duration(days: 7)); break;
-          case ReportPeriod.last30Days: startDate = today.subtract(const Duration(days: 30)); break;
-          case ReportPeriod.custom: startDate = today.subtract(const Duration(days: 7)); break;
-      }
-
-      final sales = <String, int>{};
-      for (var o in dataOrders) {
-          if (o.status == 'Cancelled' || o.status == 'VOID' || o.status == 'Refunded') continue;
-          if (o.date.isBefore(startDate)) continue;
-          for (var item in o.items) {
-             final int qty = item.quantity.toInt();
-             sales[item.item.name] = (sales[item.item.name] ?? 0) + qty;
-          }
-      }
-      final sortedKeys = sales.keys.toList()..sort((a,b) => sales[b]!.compareTo(sales[a]!));
-      return sortedKeys.take(5).map((k) => {'name': k, 'quantity': sales[k], 'revenue': 0.0}).toList();
-  }
-
-  static List<Map<String, dynamic>> _calcActualSalesTask(Map<String, dynamic> params) {
-      final List<OrderModel> orders = params['orders'];
-      final ReportPeriod selectedPeriod = params['period'];
-      
-      int days = 7;
-      if (selectedPeriod == ReportPeriod.today) days = 1;
-      else if (selectedPeriod == ReportPeriod.yesterday) days = 2;
-      else if (selectedPeriod == ReportPeriod.last30Days) days = 30;
-
-      final now = DateTime.now();
-      final Map<String, double> salesMap = {};
-      final List<String> orderedKeys = [];
-      for (int i = days - 1; i >= 0; i--) {
-          final day = now.subtract(Duration(days: i));
-          final key = "${day.day}/${day.month}";
-          salesMap[key] = 0.0;
-          orderedKeys.add(key);
-      }
-      for (var o in orders) {
-          if (o.status == 'Cancelled' || o.status == 'VOID' || o.status == 'Refunded') continue;
-          final diff = now.difference(o.date).inDays;
-          if (diff < days && diff >= 0) {
-             final key = "${o.date.day}/${o.date.month}";
-             if (salesMap.containsKey(key)) {
-                salesMap[key] = (salesMap[key] ?? 0) + o.total;
-             }
-          }
-      }
-      return orderedKeys.map((key) => {'day': key, 'sales': salesMap[key]!, 'isForecast': false}).toList();
-  }
-
-  static Map<String, double> _calcCategorySalesTask(Map<String, dynamic> params) {
-      final List<OrderModel> orders = params['orders'];
-      final DateTime startDate = params['startDate'];
-      
-      Map<String, double> stats = {};
-      double grossSales = 0;
-      bool hasRecentOrders = false;
-
-      for (var o in orders) {
-         if (o.status == 'Cancelled' || o.status == 'VOID' || o.status == 'Refunded') continue;
-         if (o.date.isBefore(startDate)) continue;
-         
-         hasRecentOrders = true;
-         grossSales += o.total;
-         
-         for (var orderItem in o.items) {
-            final category = orderItem.category ?? orderItem.item.category ?? 'Uncategorized';
-            stats[category] = (stats[category] ?? 0.0) + (orderItem.item.price * orderItem.quantity);
-         }
-      }
-      
-      if (stats.isEmpty && hasRecentOrders) {
-          stats['Uncategorized'] = grossSales;
-      }
-      return stats;
-  }
-
-  static Map<String, dynamic> _calcSalesReportTask(Map<String, dynamic> params) {
-      final List<OrderModel> orders = params['orders'];
-      final DateTime startDate = params['startDate'];
-      
-      final periodOrders = orders.where((o) => o.date.isAfter(startDate)).toList();
-      final activeOrders = periodOrders.where((o) => o.status != 'Cancelled' && o.status != 'VOID' && o.status != 'Refunded').toList();
-      final totalSales = activeOrders.fold(0.0, (sum, o) => sum + o.total);
-      
-      final refundedCount = periodOrders.where((o) => o.status == 'Refunded').length;
-      
-      return {
-         'totalSales': totalSales, 
-         'totalOrders': activeOrders.length,
-         'cancelled': periodOrders.where((o) => o.status == 'Cancelled').length,
-         'refunded': refundedCount,
-         'averageOrderValue': activeOrders.isNotEmpty ? totalSales / activeOrders.length : 0.0,
-      };
-  }
-
-  static Map<String, double> _calcPaymentStatsTask(Map<String, dynamic> params) {
-    final List<OrderModel> orders = params['orders'];
-    final DateTime startDate = params['startDate'];
-    
-    Map<String, double> stats = {};
-    for (var o in orders) {
-      if (o.status == 'Cancelled' || o.status == 'VOID') continue;
-      if (o.date.isBefore(startDate)) continue;
-
-      final method = o.paymentMethod.isEmpty ? 'Unknown' : o.paymentMethod;
-      // Consistent with Repository: Refunded orders contribute 0 to sales total
-      final double orderValue = o.status == 'Refunded' ? 0.0 : o.total;
-      
-      stats[method] = (stats[method] ?? 0.0) + orderValue;
-    }
-    return stats;
-  }
 
   void _onCustomerChange() {
     if (_customerProvider != null) {
@@ -1146,6 +899,12 @@ class DashboardProvider with ChangeNotifier {
       }
   }
 
+  Future<void> loadEmployeeProfileForVirtualLogin(String uid, Map<String, dynamic> userData) async {
+      _userProfile = UserProfile.fromMap(userData, uid);
+      _activeRole = userData['role'] ?? 'Cashier';
+      notifyListeners();
+  }
+
   Future<void> clearSession() async {
        // 1. FIRESTORE CLEANUP (While Authenticated)
        try {
@@ -1231,51 +990,18 @@ class DashboardProvider with ChangeNotifier {
     return true;
   }
 
-  Future<void> _refreshSmartStats() async {
-      _cachedSmartStats = getSmartStats();
-      notifyListeners();
-  }
 
-  void _recalculateStats() {
-      notifyListeners();
-  }
   
   ReportPeriod _selectedPeriod = ReportPeriod.last7Days;
   ReportPeriod get selectedPeriod => _selectedPeriod;
 
   void setReportPeriod(ReportPeriod period) {
       _selectedPeriod = period;
-      _clearDashboardCache();
+      _scheduleStatsCalculation();
       notifyListeners();
   }
   
-  void _clearDashboardCache() {
-      _cachedSmartStats = null;
-      _cachedSalesReport = null;
-      _cachedWeeklySales = null;
-      _cachedPaymentStats = null;
-      _cachedTopProducts = null;
-      _cachedTopCustomers = null;
-      _cachedDailySummary = null;
-      _cachedActualSalesData = null;
-      _cachedCategorySalesStats = null;
-  }
 
-  Map<String, dynamic> getSmartStats() {
-      if (_cachedSmartStats != null) return _cachedSmartStats!;
-      _scheduleStatsCalculation();
-      return _emptyStats();
-  }
-
-  Map<String, dynamic> _emptyStats() => {
-    'totalSales': 0.0, 'ordersCount': 0, 'todaySales': 0.0, 'todayOrders': 0, 'avgOrderValue': 0.0
-  };
-
-  List<Map<String, dynamic>> getWeeklySalesData() {
-      if (_cachedWeeklySales != null) return _cachedWeeklySales!;
-      _scheduleStatsCalculation();
-      return [];
-  }
 
   List<Map<String, dynamic>> getSalesForecast() {
       final now = DateTime.now();
@@ -1289,66 +1015,7 @@ class DashboardProvider with ChangeNotifier {
       });
   }
 
-  List<Map<String, dynamic>> getActualSalesData() {
-      if (_cachedActualSalesData != null) return _cachedActualSalesData!;
-      _scheduleStatsCalculation();
-      return [];
-  }
 
-  List<Map<String, dynamic>> getTopSellingProducts() {
-      if (_cachedTopProducts != null) return _cachedTopProducts!;
-      _scheduleStatsCalculation();
-      return [];
-  }
-
-  List<Map<String, dynamic>> getTopCustomers() => [];
-
-  Map<String, dynamic> getSalesReport() {
-      if (_cachedSalesReport != null) return _cachedSalesReport!;
-      _scheduleStatsCalculation();
-      return {
-         'totalSales': 0.0, 'totalOrders': 0, 'cancelled': 0, 'averageOrderValue': 0.0
-      };
-  }
-
-  double calculateGrossSales() {
-      final startDate = _getStartDateForPeriod();
-      return orders
-        .where((o) => o.date.isAfter(startDate) && o.status != 'Cancelled' && o.status != 'VOID')
-        .fold(0.0, (sum, o) => sum + o.total);
-  }
-
-  Map<String, double> getCategorySalesStats() {
-      if (_cachedCategorySalesStats != null) return _cachedCategorySalesStats!;
-      _scheduleStatsCalculation();
-      return {};
-  }
-
-  DateTime _getStartDateForPeriod() {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      switch (_selectedPeriod) {
-          case ReportPeriod.today: return today;
-          case ReportPeriod.yesterday: return today.subtract(const Duration(days: 1));
-          case ReportPeriod.last7Days: return today.subtract(const Duration(days: 7));
-          case ReportPeriod.last30Days: return today.subtract(const Duration(days: 30));
-          case ReportPeriod.custom: return today.subtract(const Duration(days: 7));
-      }
-  }
-
-  Future<void> loadEmployeeProfileForVirtualLogin(String uid, dynamic userData) async {
-    try {
-      _userProfile = UserProfile.fromMap(userData, uid);
-      _activeRole = _userProfile!.role;
-      _uiStyle = UIStyle.car_dashboard;
-      if (_userProfile!.storeId != null) {
-          await setActiveStoreId(_userProfile!.storeId!);
-      }
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 
   void saveKioskPreference(bool enabled) {
     if (Hive.isBoxOpen('settings')) {
@@ -1432,7 +1099,7 @@ class DashboardProvider with ChangeNotifier {
     if (_isReloading && !force) return;
     if (_isDemoMode) return; 
     _isReloading = true;
-    _clearDashboardCache();
+
     try {
       final uid = _activeStoreId;
       bool isGlobalView = uid == null && (_isDeveloperMode && _activeRole == 'Super Admin');
@@ -1492,8 +1159,7 @@ class DashboardProvider with ChangeNotifier {
              syncService.setActiveStoreId(_activeStoreId!);
           }
       }
-      _clearDashboardCache();
-      await _refreshSmartStats();
+      _scheduleStatsCalculation();
       if ((_storeInventory.isEmpty || _orders.isEmpty) && _isOnline && _activeStoreId != null && !_hasForcedSync) {
          _hasForcedSync = true;
          Future.delayed(const Duration(seconds: 2), () => _syncService.forceSyncDown());
@@ -1522,18 +1188,13 @@ class DashboardProvider with ChangeNotifier {
   String? _activeStoreId;
   String _activeRole = 'Unauthorized';
   bool _isDataControlGridView = true;
-  final List<InventoryItem> _centralInventory = [];
   List<InventoryItem> _storeInventory = [];
   List<OrderModel> _orders = [];
   List<Customer> _customers = [];
   List<UserProfile> _employees = [];
-  List<UserProfile> _systemUsers = [];
   List<UserProfile> _superAdmins = [];
   List<SubscriptionHistory> _subscriptionHistory = [];
   List<SubscriptionHistory> get subscriptionHistory => _subscriptionHistory;
-  final List<SubscriptionRequest> _rejectedSubscriptions = [];
-  List<SubscriptionRequest> get rejectedSubscriptions => _rejectedSubscriptions;
-  bool _subscriptionHistoryLoaded = false;
   bool _isDarkMode = false;
   final bool _isDemoMode = false;
   bool _isDeveloperMode = false;

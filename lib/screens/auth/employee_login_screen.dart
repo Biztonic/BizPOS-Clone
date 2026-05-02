@@ -431,7 +431,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
        debugPrint("Device tracking update failed: $e");
     }
 
-    await provider.loadEmployeeProfileForVirtualLogin(uid, userData);
+    await provider.loadEmployeeProfileForVirtualLogin(uid, Map<String, dynamic>.from(userData));
     if (mounted) context.go('/dashboard');
   }
 

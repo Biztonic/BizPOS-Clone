@@ -114,7 +114,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
 
     // Calculate Insights
     // Calculate Insights
-    final smartStats = provider.getSmartStats();
+    final smartStats = provider.smartStats;
     double totalSales = (smartStats['totalSales'] as num? ?? 0).toDouble(); // Legacy/Global or Month? User asked for Month in smart card.
     // Actually, Interactive Card expects specific inputs. Let's just prep the map.
     // The previous manual calc was "All Time".
@@ -289,7 +289,9 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                 SizedBox(
                                   height: 200,
                                   child: _RushedHoursCard(
-                                     orders: provider.orders,
+                                     peakHour: provider.peakHour,
+                                     leastHour: provider.leastHour,
+                                     hasOrders: provider.orders.isNotEmpty,
                                      isDarkMode: isDarkMode,
                                   ),
                                 ),
@@ -297,7 +299,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                 SizedBox(
                                   height: 200,
                                   child: _TopSellingProductsCard(
-                                     orders: provider.orders,
+                                     topProducts: provider.topProducts,
                                      isDarkMode: isDarkMode,
                                   ),
                                 ),
@@ -372,14 +374,16 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
 
                                       // 2. Rushed Hours (Historical Density)
                                       Expanded(child: _RushedHoursCard(
-                                         orders: provider.orders,
+                                         peakHour: provider.peakHour,
+                                         leastHour: provider.leastHour,
+                                         hasOrders: provider.orders.isNotEmpty,
                                          isDarkMode: isDarkMode,
                                       )),
                                       const SizedBox(width: 16),
 
                                       // 3. Top Selling Products
                                       Expanded(child: _TopSellingProductsCard(
-                                         orders: provider.orders,
+                                         topProducts: provider.topProducts,
                                          isDarkMode: isDarkMode,
                                       )),
                                       const SizedBox(width: 16),
@@ -440,17 +444,9 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
   void _showCalculator(BuildContext context, bool isDarkMode) {
      final provider = Provider.of<DashboardProvider>(context, listen: false);
      
-     // Calculate Basic Stats
-     double todaysSale = 0;
-     int todaysOrders = 0;
-     final now = DateTime.now();
-     
-     for (var o in provider.orders) {
-        if (o.date.year == now.year && o.date.month == now.month && o.date.day == now.day) {
-           todaysSale += o.total;
-           todaysOrders++;
-        }
-     }
+     final stats = provider.smartStats;
+     final todaysSale = stats['todaySales'] as double;
+     final todaysOrders = stats['todayOrders'] as int;
      
      Navigator.push(
         context,
@@ -1299,10 +1295,17 @@ class _PerformanceIndexCard extends StatelessWidget {
 }
 
 class _RushedHoursCard extends StatefulWidget {
-  final List<OrderModel> orders;
+  final int? peakHour;
+  final int? leastHour;
+  final bool hasOrders;
   final bool isDarkMode;
 
-  const _RushedHoursCard({required this.orders, required this.isDarkMode});
+  const _RushedHoursCard({
+    required this.peakHour, 
+    required this.leastHour, 
+    required this.hasOrders,
+    required this.isDarkMode
+  });
 
   @override
   State<_RushedHoursCard> createState() => _RushedHoursCardState();
@@ -1313,34 +1316,8 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
 
   @override
   Widget build(BuildContext context) {
-    Map<int, int> hourlyCounts = {};
-    for (var o in widget.orders) {
-      int hour = o.date.hour;
-      hourlyCounts[hour] = (hourlyCounts[hour] ?? 0) + 1;
-    }
-
-    int peakHour = 0;
-    int peakCount = -1;
-    int leastHour = 0;
-    int leastCount = 999999;
-
-    // We only consider "business hours" (e.g. 8 AM to 11 PM) for Free Hours to be useful
-    // or we just find the minimum among hours that have at least some traffic historically.
-    for (int h = 0; h < 24; h++) {
-      int count = hourlyCounts[h] ?? 0;
-      if (count > peakCount) {
-        peakCount = count;
-        peakHour = h;
-      }
-      // For Free Hour, we want the quietest period during typical active hours (9AM-9PM)
-      // because 3 AM is obviously free but not useful for planning.
-      if (h >= 9 && h <= 21) {
-         if (count < leastCount) {
-            leastCount = count;
-            leastHour = h;
-         }
-      }
-    }
+    int peakHour = widget.peakHour ?? 0;
+    int leastHour = widget.leastHour ?? 0;
 
     String formatHour(int hour) {
       final h = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
@@ -1403,7 +1380,7 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      widget.orders.isEmpty ? "--" : formatHour(_showFreeHours ? leastHour : peakHour), 
+                      widget.hasOrders ? formatHour(_showFreeHours ? leastHour : peakHour) : "--", 
                       style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: CarDashboardTheme.textColor(widget.isDarkMode), letterSpacing: -1)
                     ),
                   ),
@@ -1426,25 +1403,15 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
 }
 
 class _TopSellingProductsCard extends StatelessWidget {
-  final List<OrderModel> orders;
+  final List<Map<String, dynamic>> topProducts;
   final bool isDarkMode;
 
-  const _TopSellingProductsCard({required this.orders, required this.isDarkMode});
+  const _TopSellingProductsCard({required this.topProducts, required this.isDarkMode});
 
   @override
   Widget build(BuildContext context) {
-    // Calculate Top Products
-    Map<String, int> productCounts = {};
-    for (var o in orders) {
-      for (var item in o.items) {
-        productCounts[item.item.name] = (productCounts[item.item.name] ?? 0) + item.quantity;
-      }
-    }
-
-    var sortedProducts = productCounts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    
-    var top5 = sortedProducts.take(4).toList(); // Take 4 to fit well
+    // Take 4 to fit well
+    var topDisplay = topProducts.take(4).toList();
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1465,16 +1432,16 @@ class _TopSellingProductsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          if (top5.isEmpty)
+          if (topDisplay.isEmpty)
             const Expanded(child: Center(child: Text("Waiting for sales...", style: TextStyle(fontSize: 14, color: Colors.grey))))
           else
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.zero,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: top5.length,
+                itemCount: topDisplay.length,
                 itemBuilder: (context, index) {
-                  final item = top5[index];
+                  final item = topDisplay[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12.0),
                     child: Row(
@@ -1490,11 +1457,11 @@ class _TopSellingProductsCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: Text(item.key, 
+                          child: Text(item['name'] ?? "", 
                             maxLines: 1, overflow: TextOverflow.ellipsis,
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: CarDashboardTheme.textColor(isDarkMode))),
                         ),
-                        Text("${item.value}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: CarDashboardTheme.successColor(isDarkMode))),
+                        Text("${item['quantity'] ?? 0}", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: CarDashboardTheme.primaryColor(isDarkMode))),
                       ],
                     ),
                   );

@@ -11,6 +11,7 @@ import 'package:biztonic_pos/services/token_service.dart'; // NEW
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
+import 'package:biztonic_pos/features/billing/domain/use_cases/checkout_order.dart';
 
 class OrderProvider with ChangeNotifier {
   final FirebaseFirestore _db = getFirestore(); // ignore: unused_field
@@ -158,126 +159,34 @@ class OrderProvider with ChangeNotifier {
   Future<void> placeOrder(OrderModel order, Store? activeStore) async {
     if (activeStore == null) throw Exception("No active store selected");
 
-    final tokenService = TokenService();
-    
     // 1. Enforce Subscription Limits (Fast check via memory cache)
     if (!_isUnrestricted) {
       await _syncService.checkOrderLimit(activeStore.id);
     }
 
-    // 2. Generate Entities and Metadata (Synchronous)
-    final now = DateTime.now();
-    String businessDayId = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${activeStore.id}";
-    String yearMonth = "${now.year}-${now.month.toString().padLeft(2, '0')}";
-    String orderId = order.id.isNotEmpty ? order.id : _syncService.generateUniqueId('ORD');
+    // --- DELEGATE TO USE CASE FOR LOCAL PERSISTENCE AND EVENTS ---
+    final useCase = CheckoutOrderUseCase(_repository);
     
-    final orderWithMeta = order.copyWith(id: orderId);
-    final hiveSafeData = orderWithMeta.toHiveMap();
-    hiveSafeData['businessDayId'] = businessDayId; 
-
-    final eventId = _syncService.generateUniqueId('EVT');
-    final event = BusinessEvent(
-      id: eventId,
-      storeId: activeStore.id,
-      entityType: 'ORDER',
-      entityId: orderId,
-      eventType: 'CREATE',
-      amount: order.total,
-      quantity: 0,
-      createdAt: now,
+    // We execute this concurrently or sequentially? We want optimistic UI!
+    // We don't have the final ID until the UseCase generates it...
+    // Let's await the UseCase first. (It should be very fast because it only does Hive + SQLite).
+    
+    final result = await useCase.execute(CheckoutOrderParams(
+      order: order,
+      activeStore: activeStore,
       deviceId: _syncService.deviceId ?? 'unknown',
-    );
+    ));
+    
+    if (result != null) {
+      // --- OPTIMISTIC UI: UPDATE LOCAL STATE IMMEDIATELY ---
+      _orders.insert(0, result.orderWithMeta);
+      notifyListeners();
 
-    List<InventoryMovement> movements = [];
-    if (activeStore.trackInventory == true) {
-       for (var item in order.items) {
-          if (!item.item.trackStock) continue;
-          
-          final movementId = _syncService.generateUniqueId('MVT');
-          movements.add(InventoryMovement(
-            id: movementId,
-            itemId: item.item.id,
-            storeId: activeStore.id,
-            type: 'SALE',
-            delta: -item.quantity,
-            orderId: orderId,
-            deviceId: _syncService.deviceId ?? 'unknown',
-            createdAt: now,
-            syncStatus: 'PENDING',
-          ));
-       }
+      // Update sync counts UI (the actual queuing is now handled by SyncEngine listening to OrderCreatedEvent)
+      await _syncService.refreshLocalCounts(notify: true);
+    } else {
+      throw Exception("Failed to process order checkout locally");
     }
-
-    // --- OPTIMISTIC UI: UPDATE LOCAL STATE IMMEDIATELY ---
-    _orders.insert(0, orderWithMeta);
-    notifyListeners();
-
-    // --- BACKGROUND PERSISTENCE: OFFLOAD HEAVY I/O ---
-    unawaited(() async {
-      try {
-        // 1. UPDATE HIVE CACHE FIRST (Fast safety net — guarantees data survives restart)
-        final orderBox = Hive.box('cache_orders');
-        await orderBox.put(orderId, {...hiveSafeData, 'syncStatus': 'PENDING'});
-        
-        if (movements.isNotEmpty) {
-           final invBox = Hive.box('cache_inventory');
-           for (var m in movements) {
-              final raw = invBox.get(m.itemId);
-              if (raw != null && raw is Map) {
-                final itemData = Map<String, dynamic>.from(raw);
-                final currentQty = (itemData['quantity'] as num?)?.toInt() ?? 0;
-                itemData['quantity'] = currentQty + m.delta;
-                await invBox.put(m.itemId, itemData);
-              }
-           }
-        }
-
-        // 2. ATOMIC LOCAL DATABASE (SQLite) — heavier but provides relational integrity
-        if (!kIsWeb) {
-          await _repository.performAtomicCheckout(
-            order: orderWithMeta,
-            event: event,
-            movements: movements,
-            storeId: activeStore.id,
-            yearMonth: yearMonth,
-          );
-        } else {
-          await tokenService.incrementOrderCounter(activeStore.id);
-        }
-
-        // 3. QUEUE FOR CLOUD SYNC
-        await _syncService.queueOperation(
-          collection: 'orders',
-          docId: orderId,
-          action: 'create',
-          payload: Map<String, dynamic>.from(hiveSafeData),
-        );
-
-        await _syncService.queueOperation(
-          collection: 'business_events',
-          docId: event.id,
-          action: 'create',
-          payload: event.toMap(),
-        );
-
-        for (var movement in movements) {
-          await _syncService.queueOperation(
-            collection: 'inventory_movements',
-            docId: movement.id,
-            action: 'create',
-            payload: {
-              ...movement.toMap(),
-              'createdAt': movement.createdAt.toIso8601String(),
-            },
-          );
-        }
-
-        // 4. Final UI Refresh
-        await _syncService.refreshLocalCounts(notify: true);
-      } catch (e) {
-        debugPrint('❌ CRITICAL: Background Persistence Failed: $e');
-      }
-    }());
   }
 
   Future<void> updateOrder(OrderModel order) async {
