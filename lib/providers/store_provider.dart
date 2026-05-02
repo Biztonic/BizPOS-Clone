@@ -324,11 +324,12 @@ class StoreProvider with ChangeNotifier {
 
   Future<String> addStore(String name, String ownerEmail, {String? address, String? phone}) async {
       final user = _auth.currentUser;
-      
+      final email = ownerEmail.toLowerCase().trim();
+
       // 1. AVOID DUPLICATES: Check if a store with this name already exists for this owner
       try {
         final existingQuery = await _db.collection('stores')
-            .where('ownerEmail', isEqualTo: ownerEmail)
+            .where('ownerEmail', isEqualTo: email)
             .where('name', isEqualTo: name.trim())
             .get();
             
@@ -336,7 +337,7 @@ class StoreProvider with ChangeNotifier {
            final existingId = existingQuery.docs.first.id;
            debugPrint('🏬 StoreProvider: Store "$name" already exists ($existingId). Skipping creation.');
            // Ensure it's linked if not already (safeguard)
-           if (user != null && user.email == ownerEmail) {
+           if (user != null && user.email == email) {
               await _db.collection('users').doc(user.uid).set({
                  'storeIds': FieldValue.arrayUnion([existingId]),
               }, SetOptions(merge: true));
@@ -347,23 +348,169 @@ class StoreProvider with ChangeNotifier {
       } catch (e) {
         debugPrint('⚠️ StoreProvider: Existence check failed: $e');
       }
+      
+      // --- AUTO-ASSIGN SUBSCRIPTION FROM SALES APP ---
+      String subscriptionPlan = 'Basic';
+      List<String> addons = [];
+      DateTime? expiry;
+      String? foundRequestId;
+
+      try {
+        final emailList = {email.trim(), email.toLowerCase().trim()}.toList();
+        debugPrint('🔍 StoreProvider: Searching for pending subscriptions for $emailList...');
+
+        // 1. PRIORITIZE 'subscription_requests' (Most recent purchases from Sales App)
+        QuerySnapshot? subQuery;
+        // Expanded list of fields where Sales App might store the email
+        final searchFields = ['ownerEmail', 'userId', 'customerEmail', 'email', 'customer_email', 'buyer_email', 'contactEmail'];
+        
+        for (final field in searchFields) {
+          final q = await _db.collection('subscription_requests')
+              .where(field, whereIn: emailList)
+              .get();
+              
+          // Filter 'PENDING' locally to avoid requiring composite Firestore indexes
+          final pendingDocs = q.docs.where((doc) {
+             final data = doc.data() as Map<String, dynamic>;
+             return data['status'] == 'PENDING';
+          }).toList();
+          
+          if (pendingDocs.isNotEmpty) {
+            // Reconstruct a pseudo QuerySnapshot or just assign the first pending doc
+            subQuery = q; // We'll just pass the whole query result and filter it below
+            debugPrint('🎯 StoreProvider: Found pending subscription via $field');
+            break;
+          }
+        }
+
+        if (subQuery != null && subQuery.docs.isNotEmpty) {
+           // Filter to only PENDING ones locally
+           final docs = subQuery.docs.where((doc) {
+               final data = doc.data() as Map<String, dynamic>;
+               return data['status'] == 'PENDING';
+           }).toList();
+           
+           if (docs.isNotEmpty) {
+             // Sort by createdAt descending to get the latest purchase
+             try {
+               docs.sort((a, b) {
+                 final tA = a.get('createdAt');
+                 final tB = b.get('createdAt');
+                 if (tA == null || tB == null) return 0;
+                 return (tB as dynamic).compareTo(tA);
+               });
+             } catch (e) {
+               debugPrint('⚠️ StoreProvider: Failed to sort subscription requests: $e');
+             }
+             
+             final subDoc = docs.first;
+             final subData = subDoc.data() as Map<String, dynamic>;
+             foundRequestId = subDoc.id;
+           
+           // Robust plan name extraction
+           subscriptionPlan = subData['planType'] ?? subData['planName'] ?? subData['plan'] ?? subData['subscription_plan'] ?? 'Standard';
+           
+           // Ensure it's not defaulted to 'Basic' if we found a request
+           if (subscriptionPlan.toLowerCase() == 'basic' || subscriptionPlan.isEmpty) {
+              subscriptionPlan = 'Standard'; 
+           }
+
+           addons = List<String>.from(subData['selectedAddons'] ?? subData['addons'] ?? subData['purchased_addons'] ?? []);
+           
+           final duration = subData['durationInDays'] ?? subData['duration'] ?? 365; // Default to 1 year for pre-paid if unspecified
+           expiry = DateTime.now().add(Duration(days: duration));
+           debugPrint('🎫 StoreProvider: Detected pre-paid subscription ($subscriptionPlan, Addons: ${addons.length}) for $email');
+           }
+        }
+
+        // 2. FALLBACK: Check user profile directly (Legacy or pre-synced data)
+        if (expiry == null) {
+          debugPrint('🔍 StoreProvider: No pending requests. Checking user profiles...');
+          var userData;
+          
+          if (user != null) {
+            final userDoc = await _db.collection('users').doc(user.uid).get();
+            userData = userDoc.data();
+          }
+          
+          // Fallback: Check legacy email-keyed docs
+          if (userData == null || (!userData.containsKey('subscriptionPlan') && !userData.containsKey('planType') && !userData.containsKey('plan'))) {
+             final legacyDoc = await _db.collection('users').doc(email).get();
+             if (legacyDoc.exists) {
+                userData = legacyDoc.data();
+             } else {
+                final legacyDocLower = await _db.collection('users').doc(email.toLowerCase().trim()).get();
+                if (legacyDocLower.exists) {
+                   userData = legacyDocLower.data();
+                }
+             }
+          }
+
+          if (userData != null) {
+            final possiblePlan = userData['subscriptionPlan'] ?? userData['planType'] ?? userData['plan'] ?? userData['subscription_plan'];
+            if (possiblePlan != null) {
+              subscriptionPlan = possiblePlan.toString();
+              addons = List<String>.from(userData['addons'] ?? userData['selectedAddons'] ?? userData['purchased_addons'] ?? []);
+              
+              final expiryVal = userData['subscriptionExpiry'] ?? userData['expiryDate'] ?? userData['expiry'];
+              if (expiryVal != null) {
+                expiry = _parseDateTime(expiryVal);
+              } else {
+                final duration = userData['durationInDays'] ?? userData['duration'] ?? 365;
+                expiry = DateTime.now().add(Duration(days: duration));
+              }
+              debugPrint('🎫 StoreProvider: Found subscription ($subscriptionPlan) in user data');
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ StoreProvider: Subscription check failed: $e');
+      }
 
       final docRef = _db.collection('stores').doc();
       final newStore = Store(
          id: docRef.id,
          name: name,
          owner: user?.uid ?? name,
-         ownerEmail: ownerEmail,
+         ownerEmail: email,
          status: 'Active',
          storeType: 'Restaurant',
-         address: address, // NEW
-         phone: phone, // NEW
+         subscriptionPlan: subscriptionPlan,
+         addons: addons,
+         purchasedAddons: addons, // Sync purchased addons
+         subscriptionExpiry: expiry,
+         address: address, 
+         phone: phone, 
          receipt: ReceiptSettings(),
          payment: PaymentSettings(),
          kds: KdsSettings(), 
       );
       
       await docRef.set(newStore.toMap());
+
+      // Consume the subscription request if it was found
+      try {
+          if (foundRequestId != null) {
+              await _db.collection('subscription_requests').doc(foundRequestId).update({
+                  'status': 'APPROVED',
+                  'storeId': docRef.id,
+                  'storeName': name,
+                  'approvedAt': FieldValue.serverTimestamp(),
+              });
+              
+              // Also add to subscription_history for record keeping
+              await _db.collection('stores').doc(docRef.id).collection('subscription_history').add({
+                  'planName': subscriptionPlan,
+                  'startDate': FieldValue.serverTimestamp(),
+                  'endDate': expiry,
+                  'status': 'Active',
+                  'amount': 0.0, // Pre-paid
+                  'paymentId': 'SALES_APP_PREPAID',
+              });
+          }
+      } catch (e) {
+         debugPrint('⚠️ StoreProvider: Error consuming subscription request: $e');
+      }
 
       // LINK TO USER
       if (user != null) {
@@ -1053,5 +1200,15 @@ class StoreProvider with ChangeNotifier {
       output[key.toString()] = value;
     }
     return output;
+  }
+  DateTime? _parseDateTime(dynamic val) {
+    if (val == null) return null;
+    if (val is DateTime) return val;
+    try {
+      if (val.runtimeType.toString().contains('Timestamp')) return val.toDate();
+    } catch (_) {}
+    if (val is int) return DateTime.fromMillisecondsSinceEpoch(val);
+    if (val is String) return DateTime.tryParse(val);
+    return null;
   }
 }

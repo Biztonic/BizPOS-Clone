@@ -278,13 +278,44 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
               backgroundColor: Colors.indigo.withValues(alpha: 0.1),
               child: const Icon(Icons.receipt_long, color: Colors.indigo, size: 20),
             ),
-            title: Text(item['storeName'] ?? 'Unknown Store', style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Row(
+              children: [
+                Expanded(child: Text(item['storeName'] ?? (item['ownerEmail'] ?? 'New Request'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(item['status']).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: _getStatusColor(item['status']).withValues(alpha: 0.2)),
+                  ),
+                  child: Text(
+                    (item['status'] ?? 'PENDING').toString().toUpperCase(),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _getStatusColor(item['status'])),
+                  ),
+                ),
+              ],
+            ),
             subtitle: Text("${df.format(createdAt)} • $plan ($cycle)"),
             trailing: Text("₹$amount", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
           );
         },
       ),
     );
+  }
+
+  Color _getStatusColor(dynamic status) {
+    switch (status?.toString().toUpperCase()) {
+      case 'APPROVED':
+      case 'COMPLETED':
+        return Colors.green;
+      case 'PENDING':
+        return Colors.orange;
+      case 'FAILED':
+      case 'CANCELLED':
+        return Colors.red;
+      default:
+        return Colors.blueGrey;
+    }
   }
 
   Widget _buildAddonAdoptionChart() {

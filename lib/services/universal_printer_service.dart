@@ -9,6 +9,7 @@ import '../models/settings.dart'; // Added import
 import '../features/receipt_printing/models/receipt_config.dart';
 import '../features/receipt_printing/models/receipt_content.dart';
 import '../features/receipt_printing/core/receipt_generator.dart';
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 
 class UniversalPrinterService {
   final _flutterThermalPrinter = kIsWeb ? null : FlutterThermalPrinter.instance;

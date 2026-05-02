@@ -275,7 +275,7 @@ class DashboardProvider with ChangeNotifier {
     final uid = _auth.currentUser?.uid;
     final cachedStores = await OfflineService().getCachedUserStores(uid: uid);
     if (cachedStores.isNotEmpty) {
-      _stores = cachedStores.map((m) => Store.fromMap(m, m['id'] ?? '')).toList();
+      _stores = cachedStores.map((m) => Store.fromMap(m, m['id']?.toString() ?? '')).toList();
       debugPrint('📦 DashboardProvider: Loaded ${_stores.length} stores from cache (safety-net, uid: $uid)');
       _hasCheckedStores = true;
       notifyListeners();
@@ -976,15 +976,6 @@ class DashboardProvider with ChangeNotifier {
       }
   }
 
-  Map<String, double> getPaymentStats() {
-      Map<String, double> stats = {};
-      final safeOrders = orders.where((o) => o.status != 'Cancelled').toList();
-      for (var o in safeOrders) {
-          stats[o.paymentMethod] = (stats[o.paymentMethod] ?? 0) + o.total;
-      }
-      return stats;
-  }
-
   Future<void> fetchStores() async {
       if (_storeProvider != null) await _storeProvider!.fetchStores(isSuperAdmin: isSuperAdmin);
   }
@@ -1345,7 +1336,7 @@ class DashboardProvider with ChangeNotifier {
       }
   }
 
-  Future<void> loadEmployeeProfileForVirtualLogin(String uid, Map<String, dynamic> userData) async {
+  Future<void> loadEmployeeProfileForVirtualLogin(String uid, dynamic userData) async {
     try {
       _userProfile = UserProfile.fromMap(userData, uid);
       _activeRole = _userProfile!.role;
@@ -2323,7 +2314,7 @@ class DashboardProvider with ChangeNotifier {
            // Load cached stores list so hasAnyStore returns true (prevents /create-store redirect)
            final cachedStores = await OfflineService().getCachedUserStores(uid: uid);
            if (cachedStores.isNotEmpty) {
-              _stores = cachedStores.map((m) => Store.fromMap(m, m['id'] ?? '')).toList();
+              _stores = cachedStores.map((m) => Store.fromMap(Map<String, dynamic>.from(m), m['id']?.toString() ?? '')).toList();
               debugPrint('📦 DashboardProvider: Loaded ${_stores.length} stores from cache (storeProvider pending)');
               _hasCheckedStores = true;
               
@@ -2491,21 +2482,22 @@ class DashboardProvider with ChangeNotifier {
         }
       }
 
-      // 2. Fetch approved subscription requests for revenue and history
-      final requestSnap = await _db.collection('subscription_requests')
-          .where('status', isEqualTo: 'APPROVED')
-          .get();
+      // 2. Fetch subscription requests for revenue and history
+      final requestSnap = await _db.collection('subscription_requests').get();
           
       double totalValue = 0;
       List<Map<String, dynamic>> recentHistory = [];
 
       for (var d in requestSnap.docs) {
         final data = d.data();
+        final status = data['status'] ?? 'PENDING';
         final amount = (data['amount'] ?? 0.0).toDouble();
-        totalValue += amount;
         
-        final sName = data['storeName'] ?? 'Unknown Store';
-        storeRevenue[sName] = (storeRevenue[sName] ?? 0.0) + amount;
+        if (status == 'APPROVED' || status == 'COMPLETED') {
+           totalValue += amount;
+           final sName = data['storeName'] ?? 'Unknown Store';
+           storeRevenue[sName] = (storeRevenue[sName] ?? 0.0) + amount;
+        }
         
         recentHistory.add({
           ...data,

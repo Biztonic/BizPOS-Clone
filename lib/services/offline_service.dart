@@ -221,13 +221,13 @@ class OfflineService {
   }
 
   /// Get the cached user profile for a specific [uid].
-  Future<Map<String, dynamic>?> getCachedUserProfile({String? uid}) async {
+  Future<Map?> getCachedUserProfile({String? uid}) async {
     if (!Hive.isBoxOpen(_userBoxName)) await Hive.openBox(_userBoxName);
     final box = Hive.box(_userBoxName);
     final key = uid != null ? 'profile_$uid' : 'profile';
     final data = box.get(key);
     if (data != null) {
-      return Map<String, dynamic>.from(data as Map);
+      return data as Map;
     }
     return null;
   }
@@ -267,13 +267,13 @@ class OfflineService {
     await box.put("last_pinned_$key", DateTime.now().toIso8601String());
   }
 
-  Future<Map<String, dynamic>?> getPinnedStore({String? uid}) async {
+  Future<Map?> getPinnedStore({String? uid}) async {
     if (!Hive.isBoxOpen(_pinnedStoreBoxName)) await Hive.openBox(_pinnedStoreBoxName);
     final box = Hive.box(_pinnedStoreBoxName);
     final key = uid != null ? "current_$uid" : "current";
     final data = box.get(key);
     if (data != null) {
-      return Map<String, dynamic>.from(data as Map);
+      return data as Map;
     }
     return null;
   }
@@ -296,12 +296,12 @@ class OfflineService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getCachedStoreEmployees(String storeId) async {
+  Future<List<Map>> getCachedStoreEmployees(String storeId) async {
     if (!Hive.isBoxOpen(_employeesCacheBoxName)) await Hive.openBox(_employeesCacheBoxName);
     final box = Hive.box(_employeesCacheBoxName);
     return box.values
       .where((e) => (e as Map)['storeId'] == storeId)
-      .map((e) => Map<String, dynamic>.from(e as Map))
+      .map((e) => e as Map)
       .toList();
   }
 
@@ -326,19 +326,19 @@ class OfflineService {
   }
 
   /// Get the cached store list for a specific [uid].
-  Future<List<Map<String, dynamic>>> getCachedUserStores({String? uid}) async {
+  Future<List<Map>> getCachedUserStores({String? uid}) async {
     if (!Hive.isBoxOpen(_storesCacheBoxName)) await Hive.openBox(_storesCacheBoxName);
     final box = Hive.box(_storesCacheBoxName);
     final key = uid != null ? 'stores_$uid' : 'stores_global';
     final data = box.get(key);
     if (data != null && data is List) {
-      return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      return data.map((e) => e as Map).toList();
     }
     // Backward compat: try old format (indexed values) if uid-keyed data not found
     if (uid != null) {
       final fallback = box.get('stores_global');
       if (fallback != null && fallback is List) {
-        return fallback.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        return fallback.map((e) => e as Map).toList();
       }
     }
     return [];

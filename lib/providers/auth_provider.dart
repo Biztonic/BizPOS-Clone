@@ -229,4 +229,77 @@ class AuthProvider with ChangeNotifier {
   Future<void> sendPasswordResetEmail(String email) async {
     await _auth.sendPasswordResetEmail(email: email);
   }
+
+  Future<bool> checkIfNewCustomer(String email) async {
+    try {
+      final inputEmail = email.trim();
+      final cleanEmail = inputEmail.toLowerCase();
+      debugPrint('🔍 AuthProvider: Checking if $cleanEmail is a new customer...');
+      
+      // 1. Fetch all documents matching this email to see the full state
+      final query = await getFirestore().collection('users')
+          .where('email', whereIn: [inputEmail, cleanEmail])
+          .get();
+
+      bool hasActiveUser = false;
+      bool hasPendingActivation = false;
+
+      // Check by doc field query results
+      for (var doc in query.docs) {
+        final data = doc.data();
+        final bool needsPwd = data['needsInitialPassword'] == true || data['needsInitialPassword'] == 'true';
+        final bool isPlaceholderId = doc.id.contains('@');
+        final bool lacksRealUid = data['uid'] == null || data['uid'] == '' || data['uid'] == doc.id;
+
+        if (needsPwd || (isPlaceholderId && lacksRealUid)) {
+          hasPendingActivation = true;
+        } else {
+          // It's a UID-keyed doc with no pending flag -> Active User
+          hasActiveUser = true;
+        }
+      }
+
+      // Check by direct doc ID if query didn't find anything (edge case for doc IDs)
+      if (query.docs.isEmpty) {
+        final docIdsToCheck = {inputEmail, cleanEmail};
+        for (final docId in docIdsToCheck) {
+           final directDoc = await getFirestore().collection('users').doc(docId).get();
+           if (directDoc.exists) {
+              final data = directDoc.data();
+              if (data?['needsInitialPassword'] == true || data?['uid'] == docId) {
+                hasPendingActivation = true;
+              }
+           }
+        }
+      }
+
+      // 2. Check 'subscription_requests' (Sales App integration) as a fallback signal
+      // Only if we haven't found an active user yet
+      if (!hasActiveUser && !hasPendingActivation) {
+        final subFields = ['ownerEmail', 'userId', 'customerEmail', 'email'];
+        for (final field in subFields) {
+          final subQuery = await getFirestore()
+              .collection('subscription_requests')
+              .where(field, whereIn: [inputEmail, cleanEmail])
+              .where('status', isEqualTo: 'PENDING')
+              .limit(1)
+              .get();
+          if (subQuery.docs.isNotEmpty) {
+            debugPrint('📄 AuthProvider: Found PENDING subscription request via $field for $cleanEmail');
+            hasPendingActivation = true;
+            break;
+          }
+        }
+      }
+
+      // ONLY redirect if we have a lead/placeholder AND NO active user account
+      // This allows manual signups to correctly coexist with/override Sales App leads
+      final result = hasPendingActivation && !hasActiveUser;
+      debugPrint('🔎 AuthProvider: Check Results for $cleanEmail - Pending: $hasPendingActivation, Active: $hasActiveUser -> Redirect: $result');
+      return result;
+    } catch (e) {
+      debugPrint('⚠️ AuthProvider: Error in checkIfNewCustomer: $e');
+      return false;
+    }
+  }
 }

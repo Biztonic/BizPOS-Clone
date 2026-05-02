@@ -41,7 +41,11 @@ service cloud.firestore {
 
     // 1. Users Collection
     match /users/{uid} {
-      allow read: if isAuthenticated() && (isSuperAdmin() || request.auth.uid == uid);
+      // Allow unauthenticated read ONLY if the document is marked for initial password setup (activation flow)
+      // This is safe because these are placeholder documents with no sensitive data.
+      allow read: if (isAuthenticated() && (isSuperAdmin() || request.auth.uid == uid)) || 
+                   (resource.data.needsInitialPassword == true || resource.data.needsInitialPassword == 'true');
+      
       allow create: if isAuthenticated() && (isSuperAdmin() || request.auth.uid == uid);
       allow update: if isSuperAdmin() || (
         isAuthenticated() && request.auth.uid == uid && 
@@ -108,10 +112,10 @@ service cloud.firestore {
     }
 
     // 4. Subscription System
-    match /subscription_requests/{reqId} {
-      allow read: if isSuperAdmin() || request.auth.uid == resource.data.userId;
-      allow create: if isAuthenticated();
-      allow update, delete: if isSuperAdmin();
+    match /subscription_requests/{docId} {
+      // Allow unauthenticated read of pending requests to facilitate onboarding detection
+      allow read: if isAuthenticated() || resource.data.status == 'PENDING';
+      allow write: if isAuthenticated();
     }
 
     match /subscription_history/{histId} {

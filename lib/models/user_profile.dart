@@ -42,7 +42,7 @@ class UserProfile {
   });
 
 
-  factory UserProfile.fromMap(Map<String, dynamic> data, String id) {
+  factory UserProfile.fromMap(dynamic data, String id) {
     return UserProfile(
       uid: id,
       email: data['email'] ?? '',

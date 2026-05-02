@@ -111,7 +111,7 @@ class ReceiptTextStyle {
     };
   }
 
-  factory ReceiptTextStyle.fromMap(Map<String, dynamic> map) {
+  factory ReceiptTextStyle.fromMap(Map map) {
     return ReceiptTextStyle(
       size: map['size'] ?? 1,
       isBold: map['isBold'] ?? false,
@@ -169,7 +169,7 @@ class ReceiptSettings {
     this.regularStyle = const ReceiptTextStyle(size: 0),
   });
 
-  factory ReceiptSettings.fromMap(Map<String, dynamic> data) {
+  factory ReceiptSettings.fromMap(Map data) {
     return ReceiptSettings(
       header: data['header'] ?? '',
       footer: data['footer'] ?? '',
@@ -287,7 +287,7 @@ class ModuleSettings {
     this.reports = true,
   });
 
-  factory ModuleSettings.fromMap(Map<String, dynamic> data) {
+  factory ModuleSettings.fromMap(Map data) {
     return ModuleSettings(
       pos: data['pos'] ?? true,
       kds: data['kds'] ?? false,
@@ -313,7 +313,7 @@ class DashboardSettings {
 
   DashboardSettings({this.theme = 'classic'});
 
-  factory DashboardSettings.fromMap(Map<String, dynamic> data) {
+  factory DashboardSettings.fromMap(Map data) {
     return DashboardSettings(
       theme: data['theme'] ?? 'classic',
     );
@@ -328,7 +328,7 @@ class SyncSettings {
 
   SyncSettings({this.interval = 'Immediate', this.autoSync = true});
 
-  factory SyncSettings.fromMap(Map<String, dynamic> data) {
+  factory SyncSettings.fromMap(Map data) {
     return SyncSettings(
       interval: data['interval'] ?? 'Immediate',
       autoSync: data['autoSync'] ?? true,
@@ -354,7 +354,7 @@ class KdsSettings {
     this.categoryFilters = const [],
   });
 
-  factory KdsSettings.fromMap(Map<String, dynamic> data) {
+  factory KdsSettings.fromMap(Map data) {
     return KdsSettings(
       soundEnabled: data['soundEnabled'] ?? true,
       fontSize: (data['fontSize'] ?? 16.0).toDouble(),
@@ -394,7 +394,7 @@ class PaymentSettings {
     this.upiName = '',
   });
 
-  factory PaymentSettings.fromMap(Map<String, dynamic> data) {
+  factory PaymentSettings.fromMap(Map data) {
     return PaymentSettings(
       upiId: data['upiId'] ?? '',
       upiName: data['upiName'] ?? '',

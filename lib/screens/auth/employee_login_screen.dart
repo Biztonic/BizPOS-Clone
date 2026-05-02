@@ -29,9 +29,9 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
   bool _isFetchingDetails = false;
 
   // Pinned Store state
-  Map<String, dynamic>? _pinnedStore;
-  List<Map<String, dynamic>> _pinnedEmployees = [];
-  Map<String, dynamic>? _selectedEmployee;
+  Map? _pinnedStore;
+  List<Map> _pinnedEmployees = [];
+  Map? _selectedEmployee;
   bool _showManualForm = false;
   bool _isPinnedLoading = true;
 
@@ -81,9 +81,9 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
             if (storeMap is Store) {
               _pinnedStore = storeMap.toMap();
             } else {
-              _pinnedStore = Map<String, dynamic>.from(storeMap);
+              _pinnedStore = Map.from(storeMap);
             }
-            _selectedEmployee = Map<String, dynamic>.from(employeeMap);
+            _selectedEmployee = Map.from(employeeMap);
             _showManualForm = false;
             _isPinnedLoading = false;
           });
@@ -300,7 +300,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
           final uid = map['uid'];
           final storedPin = map['pinHash'] ?? map['pin'];
           if (PinUtils.verifyPin(pin, uid, storedPin)) {
-            await _finalizeLogin(uid, Map<String, dynamic>.from(map));
+            await _finalizeLogin(uid, Map.from(map));
             return;
           } else {
             throw "Invalid PIN.";
@@ -400,7 +400,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
     }
   }
 
-  Future<void> _finalizeLogin(String uid, Map<String, dynamic> userData) async {
+  Future<void> _finalizeLogin(String uid, Map userData) async {
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     provider.setLoading(true);
     User? user = FirebaseAuth.instance.currentUser;

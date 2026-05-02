@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "biztonic-pos-v2"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

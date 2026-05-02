@@ -12,6 +12,7 @@ import 'package:biztonic_pos/models/order_model.dart';
 import 'package:biztonic_pos/models/inventory_item.dart';
 import 'package:biztonic_pos/models/customer.dart';
 import 'package:biztonic_pos/models/user_profile.dart';
+import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:hive_flutter/hive_flutter.dart'; 
 import 'package:uuid/uuid.dart';
 

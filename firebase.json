@@ -1,8 +1,8 @@
 {
-    "firestore": {
-        "rules": "firestore.rules",
-        "indexes": "firebase_indexes.json"
-    },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firebase_indexes.json"
+  },
   "functions": [
     {
       "source": "functions",
@@ -14,5 +14,11 @@
         "firebase-functions-test"
       ]
     }
-  ]
+  ],
+  "auth": {
+    "providers": {
+      "anonymous": true,
+      "emailPassword": true
+    }
+  }
 }

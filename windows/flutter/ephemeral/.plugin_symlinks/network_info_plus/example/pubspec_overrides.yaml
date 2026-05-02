@@ -1,6 +1,0 @@
-# melos_managed_dependency_overrides: network_info_plus,network_info_plus_platform_interface
-dependency_overrides:
-  network_info_plus:
-    path: ..
-  network_info_plus_platform_interface:
-    path: ../../network_info_plus_platform_interface

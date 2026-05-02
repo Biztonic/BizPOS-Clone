@@ -29,6 +29,7 @@ import 'package:biztonic_pos/screens/auth/employee_login_screen.dart'; // NEW
 import 'package:biztonic_pos/screens/splash_screen.dart'; // NEW
 import 'package:biztonic_pos/screens/auth/create_store_screen.dart';
 import 'package:biztonic_pos/screens/auth/store_select_screen.dart';
+import 'package:biztonic_pos/screens/auth/set_password_screen.dart'; // NEW
 import 'package:biztonic_pos/screens/printer_screen.dart';
 import 'package:biztonic_pos/screens/pos_screen.dart';
 import 'package:biztonic_pos/screens/inventory_screen.dart';
@@ -314,7 +315,7 @@ class _BizPOSAppState extends State<BizPOSApp> {
         final isLoggedIn = authProvider.isLoggedIn;
         final isLoggingIn = state.uri.path == '/login';
         final isEmployeeLogin = state.uri.path == '/employee-login'; // FIXED: use path to ignore query params
-        // final isEmployeeLogin = state.uri.path == '/employee-login'; // ALREADY FIXED ABOVE
+        final isSetPassword = state.uri.path == '/set-password'; // NEW
         final isSplash = state.uri.path == '/splash';
 
         if (isSplash) return null; // Allow splash to show
@@ -324,7 +325,7 @@ class _BizPOSAppState extends State<BizPOSApp> {
            if (!isLoggedIn) return '/login';
            return '/dashboard'; // Let the main logic decide the final destination
         }
-        if (!isLoggedIn && !isLoggingIn && !isEmployeeLogin) return '/login';        
+        if (!isLoggedIn && !isLoggingIn && !isEmployeeLogin && !isSetPassword) return '/login';        
 
         // Onboarding Logic
         if (isLoggedIn) {
@@ -428,6 +429,13 @@ class _BizPOSAppState extends State<BizPOSApp> {
         GoRoute(
           path: '/select-store',
           builder: (context, state) => const StoreSelectScreen(),
+        ),
+        GoRoute(
+          path: '/set-password',
+          builder: (context, state) {
+            final email = state.uri.queryParameters['email'] ?? '';
+            return SetPasswordScreen(email: email);
+          },
         ),
 
         // REMOVED: Complete profile route (mobile number requirement)

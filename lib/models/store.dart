@@ -58,7 +58,7 @@ class Store {
     this.autoActivateSubscription = true,
   });
 
-  factory Store.fromMap(Map<String, dynamic> data, String id) {
+  factory Store.fromMap(Map data, String id) {
     return Store(
       id: id,
       name: data['name'] ?? '',

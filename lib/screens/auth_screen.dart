@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // NEW
 import 'package:go_router/go_router.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -39,26 +40,50 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    final email = _emailController.text.trim();
+    
+    // Basic email validation first to allow new customer check
+    if (email.isEmpty || !email.contains('@')) {
+      _formKey.currentState!.validate();
+      return;
+    }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
     try {
       if (_isLogin) {
+        // 1. Check if this is a new customer from the Sales App activation flow
+        // We do this BEFORE full validation so password isn't required yet
+        final needsActivation = await authProvider.checkIfNewCustomer(email);
+        if (needsActivation) {
+          if (mounted) {
+            context.push('/set-password?email=$email');
+          }
+          return;
+        }
+
+        // 2. Proceed with normal login validation (now password IS required)
+        if (!_formKey.currentState!.validate()) return;
+
         await authProvider.signInWithEmail(
-          _emailController.text.trim(),
+          email,
           _passwordController.text.trim(),
         );
       } else {
+        // Sign Up flow
+        if (!_formKey.currentState!.validate()) return;
         await authProvider.signUpWithEmail(
-          _emailController.text.trim(),
+          email,
           _passwordController.text.trim(),
           _mobileController.text.trim(),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red.shade400),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red.shade400),
+        );
+      }
     }
   }
 
@@ -136,7 +161,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildBrandingPane(bool isDark) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(64),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -333,14 +358,42 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 ),
                 const SizedBox(height: 20),
 
-                // Toggle
+                // Toggle & Manual Activation
                 Center(
-                  child: TextButton(
-                    onPressed: () => setState(() => _isLogin = !_isLogin),
-                    child: Text(
-                      _isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In",
-                      style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
+                  child: Column(
+                    children: [
+                      TextButton(
+                        onPressed: () => setState(() => _isLogin = !_isLogin),
+                        child: Text(
+                          _isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In",
+                          style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      if (_isLogin) ...[
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () {
+                            final email = _emailController.text.trim();
+                            if (email.isEmpty || !email.contains('@')) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Please enter your email address first')),
+                              );
+                              return;
+                            }
+                            context.push('/set-password?email=$email');
+                          },
+                          child: Text(
+                            "Converted from Sales App? Activate Account",
+                            style: TextStyle(
+                              color: isDark ? Colors.blue.shade300 : const Color(0xFF667eea),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
