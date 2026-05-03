@@ -14,6 +14,7 @@ import 'package:biztonic_pos/screens/dashboard_theme/dashboard_insights_screen.d
 import 'package:biztonic_pos/screens/dashboard_theme/car_dashboard_pos_screen.dart';
 import 'package:biztonic_pos/utils/car_dashboard_theme.dart';
 import 'package:biztonic_pos/screens/universal_shell.dart';
+import 'package:biztonic_pos/core/design/density/app_density.dart'; // NEW
 import 'package:biztonic_pos/providers/auth_provider.dart';
 import 'package:biztonic_pos/providers/dashboard_provider.dart';
 import 'package:biztonic_pos/providers/inventory_provider.dart'; 
@@ -627,11 +628,48 @@ class _BizPOSAppState extends State<BizPOSApp> {
       builder: (context, themeData, _) {
         return Consumer<LocaleProvider>(
           builder: (context, localeProvider, _) {
+            final appDensity = themeData.uiStyle == UIStyle.car_dashboard 
+                ? AppDensity.touch 
+                : AppDensity.comfortable; // Default or fetched from settings later
+
             // Overlay Automotive Theme if active
             if (themeData.uiStyle == UIStyle.car_dashboard) {
-              return MaterialApp.router(
-                title: 'BizPOS Auto',
-                theme: CarDashboardTheme.getThemeData(isDark: themeData.isDarkMode),
+              return AppDensityProvider(
+                density: appDensity,
+                child: MaterialApp.router(
+                  title: 'BizPOS Auto',
+                  theme: CarDashboardTheme.getThemeData(isDark: themeData.isDarkMode),
+                  themeMode: themeData.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+                  locale: localeProvider.locale,
+                  localizationsDelegates: const [
+                    AppLocalizationsDelegate(),
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  supportedLocales: const [
+                    Locale('en'), // English
+                    Locale('hi'), // Hindi
+                    Locale('mr'), // Marathi
+                  ],
+                  routerConfig: _router,
+                  debugShowCheckedModeBanner: false,
+                ),
+              );
+            }
+
+            return AppDensityProvider(
+              density: appDensity,
+              child: MaterialApp.router(
+                title: 'BizPOS',
+                theme: AppTheme.getTheme(themeData.currentTheme, false,
+                    customSeed: themeData.customThemeColor != null
+                        ? Color(themeData.customThemeColor!)
+                        : null),
+                darkTheme: AppTheme.getTheme(themeData.currentTheme, true,
+                    customSeed: themeData.customThemeColor != null
+                        ? Color(themeData.customThemeColor!)
+                        : null),
                 themeMode: themeData.isDarkMode ? ThemeMode.dark : ThemeMode.light,
                 locale: localeProvider.locale,
                 localizationsDelegates: const [
@@ -647,34 +685,7 @@ class _BizPOSAppState extends State<BizPOSApp> {
                 ],
                 routerConfig: _router,
                 debugShowCheckedModeBanner: false,
-              );
-            }
-
-            return MaterialApp.router(
-              title: 'BizPOS',
-              theme: AppTheme.getTheme(themeData.currentTheme, false,
-                  customSeed: themeData.customThemeColor != null
-                      ? Color(themeData.customThemeColor!)
-                      : null),
-              darkTheme: AppTheme.getTheme(themeData.currentTheme, true,
-                  customSeed: themeData.customThemeColor != null
-                      ? Color(themeData.customThemeColor!)
-                      : null),
-              themeMode: themeData.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-              locale: localeProvider.locale,
-              localizationsDelegates: const [
-                AppLocalizationsDelegate(),
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: const [
-                Locale('en'), // English
-                Locale('hi'), // Hindi
-                Locale('mr'), // Marathi
-              ],
-              routerConfig: _router,
-              debugShowCheckedModeBanner: false,
+              ),
             );
           },
         );

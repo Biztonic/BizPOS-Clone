@@ -15,6 +15,9 @@ import '../models/table_model.dart'; // NEW
 import '../services/printer_manager_service.dart';
 import '../utils/theme.dart';
 import '../widgets/inventory_image_widget.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/components/atoms/app_button.dart';
+import '../core/design/tokens/app_spacing.dart';
 
 class POSScreen extends StatefulWidget {
   final TableModel? preSelectedTable; // NEW
@@ -134,75 +137,60 @@ class _POSScreenState extends State<POSScreen> {
       return const CarDashboardPOSScreen();
     }
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Row(
+    return PosScaffold(
+      mainContent: Column(
         children: [
-          // LEFT SIDE: Products
+          _buildHeader(context),
           Expanded(
-            flex: 7,
-            child: Column(
-              children: [
-                _buildHeader(context),
-                Expanded(
-                  child: Selector<DashboardProvider, List<InventoryItem>>(
-                    selector: (_, p) => p.storeInventory,
-                    builder: (context, inventory, _) {
-                      final categories = ['All', ...inventory.map((e) => e.category.trim().isEmpty ? 'Uncategorized' : e.category.trim()).toSet()];
-                      final filteredProducts = inventory.where((item) {
-                        final itemCategory = item.category.trim().isEmpty ? 'Uncategorized' : item.category.trim();
-                        final matchesCategory = _selectedCategory == 'All' || itemCategory == _selectedCategory;
-                        final matchesSearch = item.name.toLowerCase().contains(_searchQuery.toLowerCase());
-                        return matchesCategory && matchesSearch;
-                      }).toList();
+            child: Selector<DashboardProvider, List<InventoryItem>>(
+              selector: (_, p) => p.storeInventory,
+              builder: (context, inventory, _) {
+                final categories = ['All', ...inventory.map((e) => e.category.trim().isEmpty ? 'Uncategorized' : e.category.trim()).toSet()];
+                final filteredProducts = inventory.where((item) {
+                  final itemCategory = item.category.trim().isEmpty ? 'Uncategorized' : item.category.trim();
+                  final matchesCategory = _selectedCategory == 'All' || itemCategory == _selectedCategory;
+                  final matchesSearch = item.name.toLowerCase().contains(_searchQuery.toLowerCase());
+                  return matchesCategory && matchesSearch;
+                }).toList();
 
-                      return Column(
-                        children: [
-                          _buildCategoryTabs(categories),
-                          Expanded(
-                            child: _buildProductGrid(filteredProducts),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // RIGHT SIDE: Cart (Desktop/Tablet only)
-          if (!isMobile)
-            Expanded(
-              flex: 3,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(-4, 0),
+                return Column(
+                  children: [
+                    _buildCategoryTabs(categories),
+                    Expanded(
+                      child: _buildProductGrid(filteredProducts),
                     ),
                   ],
-                ),
-                child: Selector<DashboardProvider, _PosCartData>(
-                  selector: (_, p) => _PosCartData(
-                    cartItemCount: p.cart.length,
-                    cartTotalQuantity: p.cart.values.fold(0, (a, b) => a + (b as int? ?? 0)),
-                    activeStoreId: p.activeStore?.id ?? '',
-                    inventoryLength: p.storeInventory.length,
-                  ),
-                  builder: (context, data, _) {
-                    final provider = Provider.of<DashboardProvider>(context, listen: false);
-                    return _buildCartSection(provider);
-                  },
-                ),
-              ),
+                );
+              },
             ),
+          ),
         ],
       ),
-      floatingActionButton: isMobile
+      rightPanel: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(-4, 0),
+            ),
+          ],
+        ),
+        child: Selector<DashboardProvider, _PosCartData>(
+          selector: (_, p) => _PosCartData(
+            cartItemCount: p.cart.length,
+            cartTotalQuantity: p.cart.values.fold(0, (a, b) => a + (b as int? ?? 0)),
+            activeStoreId: p.activeStore?.id ?? '',
+            inventoryLength: p.storeInventory.length,
+          ),
+          builder: (context, data, _) {
+            final provider = Provider.of<DashboardProvider>(context, listen: false);
+            return _buildCartSection(provider);
+          },
+        ),
+      ),
+      bottomBar: isMobile
           ? Selector<DashboardProvider, _PosCartData>(
               selector: (_, p) => _PosCartData(
                 cartItemCount: p.cart.length,
@@ -212,11 +200,16 @@ class _POSScreenState extends State<POSScreen> {
               ),
               builder: (context, data, _) {
                 final provider = Provider.of<DashboardProvider>(context, listen: false);
-                return FloatingActionButton.extended(
-                  onPressed: () => _showMobileCart(context, provider),
-                  icon: const Icon(Icons.shopping_cart),
-                  label: Text("${data.cartTotalQuantity} Items"),
-                  backgroundColor: Theme.of(context).primaryColor,
+                return SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: AppButton.primary(
+                      label: "Cart - ${data.cartTotalQuantity} Items",
+                      icon: Icons.shopping_cart,
+                      onPressed: () => _showMobileCart(context, provider),
+                      size: AppButtonSize.large,
+                    ),
+                  ),
                 );
               },
             )
@@ -579,8 +572,11 @@ class _POSScreenState extends State<POSScreen> {
                 child: DemoTarget(
                      step: 'pos_pay',
                      instruction: "Click Checkout to complete the order",
-                     child: ElevatedButton(
+                     child: AppButton.primary(
                       key: const Key('checkout_button'),
+                      label: "CHECKOUT",
+                      size: AppButtonSize.large,
+                      isLoading: _isProcessing,
                       onPressed: provider.cart.isNotEmpty && !_isProcessing ? () {
                          // Validation
                          if (_orderType == 'Dine-In' && _selectedTable == null) {
@@ -589,20 +585,6 @@ class _POSScreenState extends State<POSScreen> {
                          if (provider.demoStep == 'pos_pay') provider.nextDemoStep();
                          _processSale();
                       } : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _isProcessing ? Colors.grey : Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: _isProcessing ? 0 : 4,
-                      ),
-                      child: _isProcessing 
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                        : const Text("CHECKOUT", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
                     ),
                   ),
               ),

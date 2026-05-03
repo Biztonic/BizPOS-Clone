@@ -1,64 +1,69 @@
-﻿// ignore_for_file: deprecated_member_use, constant_identifier_names
+// ignore_for_file: deprecated_member_use, constant_identifier_names
 import 'package:flutter/material.dart';
+import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_radius.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF29ABE2); // Vibrant Blue
-  static const Color secondaryColor = Color(0xFFF5F5F5); // Light Gray
-  static const Color accentColor = Color(0xFF90EE90); // Soft Green
-  static const Color errorColor = Color(0xFFFF4C4C); // Red
-
   static ThemeData getTheme(AppColorTheme theme, bool isDark, {Color? customSeed}) {
     final seedColor = customSeed ?? themeColors[theme]!;
     
     if (isDark) {
       return ThemeData(
         useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: AppColors.backgroundDark,
         colorScheme: ColorScheme.fromSeed(
           seedColor: seedColor,
           primary: seedColor,
-          secondary: seedColor.withValues(alpha: 0.8),
-          background: const Color(0xFF1E1E1E),
-          error: errorColor,
+          secondary: seedColor.withOpacity(0.8),
+          surface: AppColors.surfaceDark,
+          error: AppColors.error,
           brightness: Brightness.dark,
         ),
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'Roboto'),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E1E1E),
-          foregroundColor: Colors.white,
+        textTheme: ThemeData.dark().textTheme.apply(fontFamily: AppTypography.fontFamily),
+        appBarTheme: AppBarTheme(
+          backgroundColor: AppColors.surfaceDark,
+          foregroundColor: AppColors.textPrimaryDark,
           elevation: 0,
           centerTitle: false,
         ),
-        drawerTheme: const DrawerThemeData(
-          backgroundColor: Color(0xFF1E1E1E),
+        drawerTheme: DrawerThemeData(
+          backgroundColor: AppColors.surfaceDark,
         ),
         cardTheme: CardThemeData(
-          color: const Color(0xFF2C2C2C),
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: AppColors.surfaceDark,
+          elevation: 1,
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+          margin: EdgeInsets.zero,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: seedColor,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFF2C2C2C),
+          fillColor: AppColors.surfaceDark,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.grey),
+            borderRadius: AppRadius.borderMd,
+            borderSide: const BorderSide(color: AppColors.borderDark),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.grey),
+            borderRadius: AppRadius.borderMd,
+            borderSide: const BorderSide(color: AppColors.borderDark),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.borderMd,
             borderSide: BorderSide(color: seedColor, width: 2),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: AppRadius.borderMd,
+            borderSide: const BorderSide(color: AppColors.error),
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -66,52 +71,58 @@ class AppTheme {
     } else {
       return ThemeData(
         useMaterial3: true,
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: AppColors.backgroundLight,
         colorScheme: ColorScheme.fromSeed(
           seedColor: seedColor,
           primary: seedColor,
-          secondary: seedColor.withValues(alpha: 0.8),
-          background: secondaryColor,
-          error: errorColor,
+          secondary: seedColor.withOpacity(0.8),
+          surface: AppColors.surfaceLight,
+          error: AppColors.error,
           brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: secondaryColor,
-        textTheme: ThemeData.light().textTheme.apply(fontFamily: 'Roboto'),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+        textTheme: ThemeData.light().textTheme.apply(fontFamily: AppTypography.fontFamily),
+        appBarTheme: AppBarTheme(
+          backgroundColor: AppColors.surfaceLight,
+          foregroundColor: AppColors.textPrimaryLight,
           elevation: 0,
           centerTitle: false,
         ),
-        drawerTheme: const DrawerThemeData(
-          backgroundColor: Colors.white,
+        drawerTheme: DrawerThemeData(
+          backgroundColor: AppColors.surfaceLight,
         ),
         cardTheme: CardThemeData(
-          color: Colors.white,
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: AppColors.surfaceLight,
+          elevation: 1,
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+          margin: EdgeInsets.zero,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: seedColor,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppColors.surfaceLight,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.grey),
+            borderRadius: AppRadius.borderMd,
+            borderSide: const BorderSide(color: AppColors.borderLight),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.grey),
+            borderRadius: AppRadius.borderMd,
+            borderSide: const BorderSide(color: AppColors.borderLight),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.borderMd,
             borderSide: BorderSide(color: seedColor, width: 2),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: AppRadius.borderMd,
+            borderSide: const BorderSide(color: AppColors.error),
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.black87),
@@ -119,7 +130,6 @@ class AppTheme {
     }
   }
 
-  // Deprecated: Use getTheme instead
   static ThemeData get lightTheme => getTheme(AppColorTheme.blue, false);
   static ThemeData get darkTheme => getTheme(AppColorTheme.blue, true);
 }
@@ -133,14 +143,15 @@ enum AppColorTheme {
 }
 
 const Map<AppColorTheme, Color> themeColors = {
-  AppColorTheme.blue: Color(0xFF29ABE2),
-  AppColorTheme.green: Color(0xFF2E7D32),
-  AppColorTheme.red: Color(0xFFD32F2F),
-  AppColorTheme.purple: Color(0xFF7B1FA2),
-  AppColorTheme.orange: Color(0xFFF57C00),
+  AppColorTheme.blue: Color(0xFF0F62FE), // Updated to Enterprise Blue
+  AppColorTheme.green: Color(0xFF24A148),
+  AppColorTheme.red: Color(0xFFDA1E28),
+  AppColorTheme.purple: Color(0xFF8A3FFC),
+  AppColorTheme.orange: Color(0xFFFF832B),
 };
 
 enum UIStyle {
   standard,
   car_dashboard,
 }
+

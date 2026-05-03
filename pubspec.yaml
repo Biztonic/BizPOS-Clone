@@ -100,6 +100,10 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   patrol: ^3.7.0
+  widgetbook: ^3.19.0
+  widgetbook_annotation: ^3.8.0
+  build_runner: ^2.15.0
+  widgetbook_generator: ^3.19.0
 
 flutter:
   uses-material-design: true

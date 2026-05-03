@@ -14,6 +14,7 @@ import '../services/update_service.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'settings/subscription_reminder_dialog.dart';
+import '../core/design/layouts/pos_scaffold.dart';
 
 // Responsive Utility
 
@@ -152,234 +153,196 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
            SystemNavigator.pop();
         }
       },
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Use standard breakpoint from Responsive class logic
-          // We use 1024 (isDesktop) for permanent sidebar
-          final isDesktop = constraints.maxWidth >= 1024;
-
-          if (isDesktop) {
-            // DESKTOP LAYOUT (Permanent Sidebar)
-            return Scaffold(
-              body: Row(
-                children: [
-                  // SIDEBAR
-                  Container(
-                    width: 280,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      border: Border(right: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
-                    ),
-                    child: Column(
-                      children: [
-                        // Sidebar Header (Logo/User) - Simplified 
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-                          child: Row(
-                            children: [
-                              Container(
-                                 padding: const EdgeInsets.all(8),
-                                 decoration: BoxDecoration(color: Theme.of(context).primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                                 child: Icon(Icons.storefront, color: Theme.of(context).primaryColor, size: 28),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      dashboardProvider.activeStore?.name ?? 'BizPOS', 
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (dashboardProvider.userProfile?.name != null)
-                                      Text(
-                                        dashboardProvider.userProfile!.name,
-                                        style: TextStyle(
-                                          fontSize: 12, 
-                                          color: Theme.of(context).textTheme.bodySmall?.color,
-                                          fontWeight: FontWeight.w500
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    const SizedBox(height: 4),
-                                    // Offline Status Badge
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: dashboardProvider.isOnline ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: dashboardProvider.isOnline ? Colors.green.withValues(alpha: 0.5) : Colors.orange.withValues(alpha: 0.5), width: 0.5),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            dashboardProvider.isOnline ? Icons.wifi : Icons.wifi_off,
-                                            size: 10,
-                                            color: dashboardProvider.isOnline ? Colors.green : Colors.orange,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            dashboardProvider.isOnline ? "Online" : "Offline Mode",
-                                            style: TextStyle(
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.bold,
-                                              color: dashboardProvider.isOnline ? Colors.green : Colors.orange,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Reuse existing drawer content logic but adapted for sidebar (remove user header if desired, or keep)
-                        // We'll reuse _buildDrawerContent but it has a specific header. Let's make a _buildSidebarMenu
-                        Expanded(
-                          child: _buildSidebarMenu(context, menuItems, authProvider, dashboardProvider),
-                        ),
-                      ],
+      child: PosScaffold(
+        appBar: AppBar(
+          title: Text(dashboardProvider.activeStore?.name ?? 'BizPOS'),
+          centerTitle: true,
+          actions: [
+            if (dashboardProvider.userProfile?.role == 'Super Admin')
+              InkWell(
+                onTap: () => dashboardProvider.toggleDeveloperMode(),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: dashboardProvider.isDeveloperMode ? Colors.red.withValues(alpha: 0.1) : Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: dashboardProvider.isDeveloperMode ? Colors.red : Colors.green),
+                  ),
+                  child: Text(
+                    dashboardProvider.isDeveloperMode ? AppLocalizations.t(context, 'developer_mode').substring(0, 3) : AppLocalizations.t(context, 'normal_mode').substring(0, 6),
+                    style: TextStyle(
+                      color: dashboardProvider.isDeveloperMode ? Colors.red : Colors.green, 
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 11
                     ),
                   ),
-                  
-                  // MAIN CONTENT
-                  Expanded(
-                    child: Scaffold(
-                      appBar: AppBar(
-                        // Minimal Appbar for Desktop (mostly for Actions)
-                        // title: Text(dashboardProvider.activeStore?.name ?? 'BizPOS'), // Already in sidebar
-                        elevation: 0,
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
-                        actions: [
-                          // Developer Mode Toggle (Super Admin Only)
-                          if (dashboardProvider.userProfile?.role == 'Super Admin')
-                             InkWell(
-                               onTap: () => dashboardProvider.toggleDeveloperMode(),
-                               borderRadius: BorderRadius.circular(20),
-                               child: Container(
-                                 margin: const EdgeInsets.symmetric(horizontal: 8), // Spacing
-                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                 decoration: BoxDecoration(
-                                   color: dashboardProvider.isDeveloperMode ? Colors.red.withValues(alpha: 0.1) : Colors.green.withValues(alpha: 0.1),
-                                   borderRadius: BorderRadius.circular(20),
-                                   border: Border.all(color: dashboardProvider.isDeveloperMode ? Colors.red : Colors.green),
-                                 ),
-                                 child: Text(
-                                   dashboardProvider.isDeveloperMode ? AppLocalizations.t(context, 'developer_mode') : AppLocalizations.t(context, 'normal_mode'),
-                                   style: TextStyle(
-                                     color: dashboardProvider.isDeveloperMode ? Colors.red : Colors.green, 
-                                     fontWeight: FontWeight.bold, 
-                                     fontSize: 11,
-                                     letterSpacing: 0.5
-                                   ),
-                                 ),
-                               ),
-                             ),
-
-
-                          const SizedBox(width: 16),
-                          IconButton(
-                            icon: Icon(dashboardProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode),
-                            onPressed: () => dashboardProvider.toggleTheme(),
-                            tooltip: dashboardProvider.isDarkMode ? 'Light Mode' : 'Dark Mode',
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.logout),
-                            onPressed: () {
-                               final isEmployee = dashboardProvider.activeRole != 'Store Owner' && dashboardProvider.activeRole != 'Admin';
-                               dashboardProvider.clearSession();
-                               authProvider.signOut();
-                               if (isEmployee) {
-                                  context.go('/employee-login');
-                               }
-                            },
-                            tooltip: 'Logout',
-                          ),
-                          const SizedBox(width: 16),
-                        ],
-                      ),
-                      body: Column(
-                        children: [
-                          if (shellData.pendingRecoveriesCount > 0)
-                            _buildRecoveryBanner(context, dashboardProvider),
-                          Expanded(
-                            child: (dashboardProvider.activeStoreId == null && !dashboardProvider.isLoading) && !(dashboardProvider.userProfile?.role == 'Super Admin' && dashboardProvider.isDeveloperMode)
-                                ? _buildStoreSelectionScreen(context, dashboardProvider)
-                                : widget.child,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            );
-          }
 
-          // MOBILE LAYOUT (Standard Drawer)
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(dashboardProvider.activeStore?.name ?? 'BizPOS'),
-              centerTitle: true,
-              actions: [
-                 if (dashboardProvider.userProfile?.role == 'Super Admin')
-                     InkWell(
-                       onTap: () => dashboardProvider.toggleDeveloperMode(),
-                       borderRadius: BorderRadius.circular(20),
-                       child: Container(
-                         margin: const EdgeInsets.symmetric(horizontal: 8),
-                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                         decoration: BoxDecoration(
-                           color: dashboardProvider.isDeveloperMode ? Colors.red.withValues(alpha: 0.1) : Colors.green.withValues(alpha: 0.1),
-                           borderRadius: BorderRadius.circular(20),
-                           border: Border.all(color: dashboardProvider.isDeveloperMode ? Colors.red : Colors.green),
-                         ),
-                         child: Text(
-                           dashboardProvider.isDeveloperMode ? AppLocalizations.t(context, 'developer_mode').substring(0, 3) : AppLocalizations.t(context, 'normal_mode').substring(0, 6),
-                           style: TextStyle(
-                             color: dashboardProvider.isDeveloperMode ? Colors.red : Colors.green, 
-                             fontWeight: FontWeight.bold, 
-                             fontSize: 11
-                           ),
-                         ),
-                       ),
-                     ),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () {
+                final isEmployee = dashboardProvider.activeRole != 'Store Owner' && dashboardProvider.activeRole != 'Admin';
+                dashboardProvider.clearSession();
+                authProvider.signOut();
+                if (isEmployee) {
+                  context.go('/employee-login');
+                }
+              },
+            ),
+          ],
+        ),
+        drawer: Drawer(
+          child: _buildDrawerContent(context, menuItems, authProvider, dashboardProvider),
+        ),
+        leftPanel: Container(
+          width: 280,
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+          ),
+          child: Column(
+            children: [
+              // Sidebar Header (Logo/User) - Simplified 
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: Theme.of(context).primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                      child: Icon(Icons.storefront, color: Theme.of(context).primaryColor, size: 28),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            dashboardProvider.activeStore?.name ?? 'BizPOS', 
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (dashboardProvider.userProfile?.name != null)
+                            Text(
+                              dashboardProvider.userProfile!.name,
+                              style: TextStyle(
+                                fontSize: 12, 
+                                color: Theme.of(context).textTheme.bodySmall?.color,
+                                fontWeight: FontWeight.w500
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          const SizedBox(height: 4),
+                          // Offline Status Badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: dashboardProvider.isOnline ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: dashboardProvider.isOnline ? Colors.green.withValues(alpha: 0.5) : Colors.orange.withValues(alpha: 0.5), width: 0.5),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  dashboardProvider.isOnline ? Icons.wifi : Icons.wifi_off,
+                                  size: 10,
+                                  color: dashboardProvider.isOnline ? Colors.green : Colors.orange,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  dashboardProvider.isOnline ? "Online" : "Offline Mode",
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: dashboardProvider.isOnline ? Colors.green : Colors.orange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Reuse existing drawer content logic but adapted for sidebar (remove user header if desired, or keep)
+              // We'll reuse _buildDrawerContent but it has a specific header. Let's make a _buildSidebarMenu
+              Expanded(
+                child: _buildSidebarMenu(context, menuItems, authProvider, dashboardProvider),
+              ),
+            ],
+          ),
+        ),
+        mainContent: Scaffold(
+          appBar: AppBar(
+            // Minimal Appbar for Desktop (mostly for Actions)
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
+            actions: [
+              // Developer Mode Toggle (Super Admin Only)
+              if (dashboardProvider.userProfile?.role == 'Super Admin')
+                InkWell(
+                  onTap: () => dashboardProvider.toggleDeveloperMode(),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8), // Spacing
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: dashboardProvider.isDeveloperMode ? Colors.red.withValues(alpha: 0.1) : Colors.green.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: dashboardProvider.isDeveloperMode ? Colors.red : Colors.green),
+                    ),
+                    child: Text(
+                      dashboardProvider.isDeveloperMode ? AppLocalizations.t(context, 'developer_mode') : AppLocalizations.t(context, 'normal_mode'),
+                      style: TextStyle(
+                        color: dashboardProvider.isDeveloperMode ? Colors.red : Colors.green, 
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 11,
+                        letterSpacing: 0.5
+                      ),
+                    ),
+                  ),
+                ),
 
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: () {
-                     final isEmployee = dashboardProvider.activeRole != 'Store Owner' && dashboardProvider.activeRole != 'Admin';
-                     dashboardProvider.clearSession();
-                     authProvider.signOut();
-                     if (isEmployee) {
-                        context.go('/employee-login');
-                     }
-                  },
-                ),
-              ],
-            ),
-            drawer: Drawer(
-              child: _buildDrawerContent(context, menuItems, authProvider, dashboardProvider),
-            ),
-            body: Column(
-              children: [
-                if (shellData.pendingRecoveriesCount > 0)
-                  _buildRecoveryBanner(context, dashboardProvider),
-                Expanded(
-                  child: (dashboardProvider.activeStoreId == null && !dashboardProvider.isLoading) && !(dashboardProvider.userProfile?.role == 'Super Admin' && dashboardProvider.isDeveloperMode)
-                      ? _buildStoreSelectionScreen(context, dashboardProvider)
-                      : widget.child,
-                ),
-              ],
-            ),
-          );
-        },
+              const SizedBox(width: 16),
+              IconButton(
+                icon: Icon(dashboardProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+                onPressed: () => dashboardProvider.toggleTheme(),
+                tooltip: dashboardProvider.isDarkMode ? 'Light Mode' : 'Dark Mode',
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.logout),
+                onPressed: () {
+                  final isEmployee = dashboardProvider.activeRole != 'Store Owner' && dashboardProvider.activeRole != 'Admin';
+                  dashboardProvider.clearSession();
+                  authProvider.signOut();
+                  if (isEmployee) {
+                    context.go('/employee-login');
+                  }
+                },
+                tooltip: 'Logout',
+              ),
+              const SizedBox(width: 16),
+            ],
+          ),
+          body: Column(
+            children: [
+              if (shellData.pendingRecoveriesCount > 0)
+                _buildRecoveryBanner(context, dashboardProvider),
+              Expanded(
+                child: (dashboardProvider.activeStoreId == null && !dashboardProvider.isLoading) && !(dashboardProvider.userProfile?.role == 'Super Admin' && dashboardProvider.isDeveloperMode)
+                    ? _buildStoreSelectionScreen(context, dashboardProvider)
+                    : widget.child,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
