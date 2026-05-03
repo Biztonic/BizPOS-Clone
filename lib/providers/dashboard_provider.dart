@@ -39,6 +39,9 @@ import 'package:biztonic_pos/services/database_helper.dart';
 import 'package:biztonic_pos/features/reporting/domain/entities/report_period.dart';
 import 'package:biztonic_pos/features/reporting/domain/entities/dashboard_stats.dart';
 import 'package:biztonic_pos/features/reporting/domain/use_cases/get_dashboard_stats.dart';
+import 'package:biztonic_pos/models/inventory_movement.dart';
+import 'package:biztonic_pos/services/inventory_movement_repository.dart';
+import 'package:biztonic_pos/features/inventory/domain/use_cases/adjust_stock.dart';
 
 class DashboardProvider with ChangeNotifier {
   final FirebaseFirestore _db = getFirestore();
@@ -1677,7 +1680,35 @@ class DashboardProvider with ChangeNotifier {
 
 
   Future<void> batchUpdateStock(dynamic changes) async {
-    // Logic to batch update stock in Firestore
+    if (changes is Map<String, int>) {
+      final useCase = AdjustStockUseCase(InventoryMovementRepository());
+      
+      for (var entry in changes.entries) {
+        final itemId = entry.key;
+        final newQty = entry.value;
+        final currentQty = getItemStock(itemId);
+        final delta = newQty - currentQty;
+        
+        if (delta != 0) {
+          final item = _storeInventory.firstWhere((i) => i.id == itemId, orElse: () => InventoryItem(id: '', name: '', price: 0, quantity: 0, status: '', category: '', trackStock: false));
+          if (item.id.isNotEmpty) {
+             await useCase.execute(AdjustStockParams(
+               movement: InventoryMovement(
+                 id: const Uuid().v4(),
+                 itemId: itemId,
+                 storeId: _activeStoreId ?? '',
+                 type: 'ADJUSTMENT',
+                 delta: delta,
+                 deviceId: 'system',
+                 createdAt: DateTime.now(),
+                 cost: item.cost ?? 0.0,
+                 syncStatus: 'PENDING',
+               )
+             ));
+          }
+        }
+      }
+    }
     notifyListeners();
   }
 

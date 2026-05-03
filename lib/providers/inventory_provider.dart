@@ -11,6 +11,9 @@ import 'package:biztonic_pos/services/inventory_repository.dart';
 import 'package:biztonic_pos/utils/google_drive_helper.dart';
 import 'package:biztonic_pos/services/image_cache_service.dart';
 import 'dart:io';
+import 'dart:async';
+import 'package:biztonic_pos/core/events/event_bus.dart';
+import 'package:biztonic_pos/core/events/app_events.dart';
 
 class InventoryProvider with ChangeNotifier {
   final InventoryRepository _repository = InventoryRepository();
@@ -18,7 +21,36 @@ class InventoryProvider with ChangeNotifier {
   final SyncService _syncService = SyncService();
   final FirebaseFirestore _db = getFirestore(); // Use 'bizpos' database
 
-  InventoryProvider();
+  StreamSubscription? _inventorySub;
+
+  InventoryProvider() {
+    _inventorySub = EventBus.instance.on<InventoryAdjustedEvent>((event) {
+      _handleInventoryAdjustment(event);
+    });
+  }
+
+  @override
+  void dispose() {
+    _inventorySub?.cancel();
+    super.dispose();
+  }
+
+  void _handleInventoryAdjustment(InventoryAdjustedEvent event) {
+    if (_stockMap.containsKey(event.itemId)) {
+      _stockMap[event.itemId] = (_stockMap[event.itemId] ?? 0) + event.delta;
+      
+      final index = _storeInventory.indexWhere((i) => i.id == event.itemId);
+      if (index != -1) {
+        final item = _storeInventory[index];
+        final newQty = _stockMap[event.itemId] ?? 0;
+        _storeInventory[index] = item.copyWith(
+          quantity: newQty,
+          status: newQty < (item.lowStockThreshold ?? 10) ? (newQty <= 0 ? 'Out of Stock' : 'Low Stock') : 'In Stock'
+        );
+        notifyListeners();
+      }
+    }
+  }
 
   List<InventoryItem> _storeInventory = [];
   final List<InventoryItem> _centralInventory = [];
@@ -239,24 +271,12 @@ class InventoryProvider with ChangeNotifier {
          // we typically DO NOT change stock via this method (use adjustments).
          // However, if the UI allows editing "Quantity" field directly, we must treat it as an adjustment.
          
-          final oldQty = _stockMap[item.id] ?? _storeInventory[index].quantity;
-          final newQty = item.quantity;
+          // Event Sourcing strictly forbids implicit overrides:
+          // We ignore incoming quantity here. If the UI wants to change quantity,
+          // it MUST use AdjustStockUseCase which creates a movement and fires InventoryAdjustedEvent.
           
-          if (newQty != oldQty && item.trackStock) {
-            // Implicit Adjustment
-            final delta = newQty - oldQty;
-            if (delta != 0) {
-               await _createStockMovement(
-                 itemId: item.id,
-                 storeId: item.storeId ?? _syncService.activeStoreId ?? '',
-                 type: 'ADJUSTMENT',
-                 delta: delta,
-                 reason: 'Manual edit',
-                 cost: item.cost ?? 0.0
-               );
-               _stockMap[item.id] = newQty;
-            }
-          }
+          // item = item.copyWith(quantity: oldQty); // Prevent overwriting cache value with old form value
+
           
           _costMap[item.id] = item.cost ?? 0.0;
           _storeInventory[index] = item;
@@ -288,42 +308,9 @@ class InventoryProvider with ChangeNotifier {
   
   // --- Stock Operations (Event Sourcing) ---
 
-  Future<void> batchUpdateStock(Map<String, int> changes) async {
-     // This method now treats changes as ABSOLUTE new quantities (from stock take)
-     // or could be deltas. Based on standard POS usage: "Update Stock" usually means "Set this to X".
-     // We will treat as "Set to X" by calculating delta.
-     
-    for (var entry in changes.entries) {
-      final itemId = entry.key;
-      final newQty = entry.value;
-      
-      final index = _storeInventory.indexWhere((i) => i.id == itemId);
-      if (index != -1) {
-        final item = _storeInventory[index];
-        final delta = newQty - item.quantity;
-        
-        if (delta != 0) {
-           await _createStockMovement(
-             itemId: itemId,
-             storeId: item.storeId!,
-             type: 'ADJUSTMENT',
-             delta: delta,
-             reason: 'Batch Update',
-             cost: item.cost ?? 0.0
-           );
-           
-            // Update Memory
-            _stockMap[itemId] = newQty;
-            _storeInventory[index] = item.copyWith(
-               quantity: newQty,
-               status: newQty < (item.lowStockThreshold ?? 10) ? (newQty <= 0 ? 'Out of Stock' : 'Low Stock') : 'In Stock'
-            );
-         }
-      }
-    }
-    notifyListeners();
-  }
-  
+  // NOTE: batchUpdateStock was removed. Stock updates should be dispatched
+  // exclusively via AdjustStockUseCase or during Checkout.
+
   Future<void> _createStockMovement({
     required String itemId,
     required String storeId,
@@ -407,3 +394,4 @@ class InventoryProvider with ChangeNotifier {
     );
   }
 }
+

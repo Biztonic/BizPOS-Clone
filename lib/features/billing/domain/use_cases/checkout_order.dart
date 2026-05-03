@@ -10,16 +10,19 @@ import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+import 'package:biztonic_pos/kernel/idempotency/idempotency_service.dart';
 
 class CheckoutOrderParams {
   final OrderModel order;
   final Store activeStore;
   final String deviceId;
+  final String idempotencyKey;
 
   CheckoutOrderParams({
     required this.order,
     required this.activeStore,
     required this.deviceId,
+    required this.idempotencyKey,
   });
 }
 
@@ -45,6 +48,19 @@ class CheckoutOrderUseCase extends UseCase<CheckoutOrderParams, CheckoutOrderRes
     final activeStore = params.activeStore;
     final deviceId = params.deviceId;
     
+    // Tier 1: Idempotency Check
+    final isNewRequest = await IdempotencyService().checkAndReserveKey(
+      key: params.idempotencyKey,
+      entityType: 'ORDER',
+      entityId: order.id.isNotEmpty ? order.id : 'NEW_ORDER',
+      deviceId: deviceId,
+    );
+
+    if (!isNewRequest) {
+      debugPrint('🛡️ Idempotency guard triggered: Duplicate checkout attempt blocked (Key: ${params.idempotencyKey})');
+      return null;
+    }
+
     final now = DateTime.now();
     String businessDayId = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${activeStore.id}";
     String yearMonth = "${now.year}-${now.month.toString().padLeft(2, '0')}";

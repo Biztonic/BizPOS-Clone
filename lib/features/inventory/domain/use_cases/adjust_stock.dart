@@ -23,7 +23,7 @@ class AdjustStockUseCase extends UseCase<AdjustStockParams, bool> {
       await repository.insertMovement(params.movement);
 
       // 2. Fire event
-      EventBus.instance.fire(InventoryUpdatedEvent(
+      EventBus.instance.fire(InventoryAdjustedEvent(
          itemId: params.movement.itemId,
          delta: params.movement.delta,
          storeId: params.movement.storeId,

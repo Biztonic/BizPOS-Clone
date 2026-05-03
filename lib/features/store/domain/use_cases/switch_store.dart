@@ -19,10 +19,10 @@ class SwitchStoreUseCase extends UseCase<SwitchStoreParams, bool> {
   Future<bool> execute(SwitchStoreParams params) async {
     try {
       // Setup offline database scope
-      await params.offlineService.init(params.store.id);
+      await params.offlineService.init();
 
-      // Fire StoreSwitchedEvent, listeners (Providers, SyncEngine) handle the rest
-      EventBus.instance.fire(StoreSwitchedEvent(storeId: params.store.id));
+      // Fire StoreChangedEvent, listeners (Providers, SyncEngine) handle the rest
+      EventBus.instance.fire(StoreChangedEvent(newStoreId: params.store.id));
       
       return true;
     } catch (e) {

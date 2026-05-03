@@ -27,7 +27,8 @@ class CreateOrderUseCase extends UseCase<CreateOrderParams, bool> {
       EventBus.instance.fire(OrderCreatedEvent(
          order: params.order,
          storeId: params.storeId,
-         deductStock: false,
+         event: null,
+         movements: const [],
       ));
       
       return true;
@@ -37,3 +38,4 @@ class CreateOrderUseCase extends UseCase<CreateOrderParams, bool> {
     }
   }
 }
+

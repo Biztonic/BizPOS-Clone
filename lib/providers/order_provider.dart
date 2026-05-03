@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:biztonic_pos/services/firestore_helper.dart';
@@ -171,10 +172,13 @@ class OrderProvider with ChangeNotifier {
     // We don't have the final ID until the UseCase generates it...
     // Let's await the UseCase first. (It should be very fast because it only does Hive + SQLite).
     
+    final idempotencyKey = const Uuid().v7();
+
     final result = await useCase.execute(CheckoutOrderParams(
       order: order,
       activeStore: activeStore,
       deviceId: _syncService.deviceId ?? 'unknown',
+      idempotencyKey: idempotencyKey,
     ));
     
     if (result != null) {

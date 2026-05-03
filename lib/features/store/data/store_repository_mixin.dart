@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:biztonic_pos/services/database_helper.dart';
 import 'package:biztonic_pos/models/user_profile.dart';
+import 'package:flutter/foundation.dart';
 
 mixin StoreRepositoryMixin {
   Future<Database> get database;

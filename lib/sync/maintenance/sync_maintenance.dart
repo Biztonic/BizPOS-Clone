@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
+import 'package:biztonic_pos/services/database_helper.dart';
 
 /// Handles cache repair, queue maintenance, and nuclear reset operations.
 ///
@@ -171,10 +172,90 @@ class SyncMaintenanceEngine {
   /// Repairs all pull modules by scanning for unsynced items and re-queuing them.
   Future<void> repairAllModules() async {
     int totalRepaired = 0;
+    
+    // 1. Purge corrupted queue entries first
+    await purgeCorruptedQueueEntries();
+    
+    // 2. Repair orphaned transaction journals
+    await repairTransactionJournals();
+
+    // 3. Re-queue unsynced items
     for (var module in SyncCollectionRegistry.pullModules) {
       totalRepaired += await repairUnsyncedItems(module);
     }
     debugPrint('🔧 [Maintenance] repairAllModules complete: $totalRepaired items repaired');
+  }
+
+  /// Purges sync queue entries that are structurally invalid or corrupted
+  Future<void> purgeCorruptedQueueEntries() async {
+    try {
+      final queueBox = _getQueueBox();
+      if (queueBox == null || !queueBox.isOpen) return;
+
+      final keysToRemove = [];
+      for (var key in queueBox.keys) {
+        final val = queueBox.get(key);
+        if (val is! Map) {
+          keysToRemove.add(key);
+          continue;
+        }
+
+        final docId = val['docId'];
+        final collection = val['collection'];
+        final action = val['type'];
+
+        // If fundamental fields are missing, it's corrupted
+        if (docId == null || collection == null || action == null) {
+          keysToRemove.add(key);
+        }
+      }
+
+      if (keysToRemove.isNotEmpty) {
+        await queueBox.deleteAll(keysToRemove);
+        debugPrint('⚠️ [Maintenance] Purged ${keysToRemove.length} corrupted sync queue entries');
+      }
+    } catch (e) {
+      debugPrint('⚠️ [Maintenance] Failed to purge corrupted queue entries: $e');
+    }
+  }
+
+  /// Finds interrupted/orphaned SQLite transactions and marks them FAILED
+  Future<void> repairTransactionJournals() async {
+    try {
+      final db = await DatabaseHelper().database;
+      
+      // Transactions older than 5 minutes that are still PENDING are considered orphaned
+      final fiveMinsAgo = DateTime.now().subtract(const Duration(minutes: 5)).toIso8601String();
+      
+      final pendingTxs = await db.query(
+        'transaction_journal',
+        where: 'status = ? AND createdAt < ?',
+        whereArgs: ['PENDING', fiveMinsAgo],
+      );
+
+      if (pendingTxs.isEmpty) return;
+
+      debugPrint('🔧 [Maintenance] Found ${pendingTxs.length} corrupted/interrupted transactions. Repairing...');
+
+      final batch = db.batch();
+      for (var tx in pendingTxs) {
+        batch.update(
+          'transaction_journal',
+          {
+            'status': 'FAILED',
+            'error': 'Crash interrupted transaction',
+            'completedAt': DateTime.now().toIso8601String(),
+          },
+          where: 'id = ?',
+          whereArgs: [tx['id']],
+        );
+      }
+      await batch.commit(noResult: true);
+      
+      debugPrint('⚠️ [Maintenance] Marked ${pendingTxs.length} orphaned transactions as FAILED');
+    } catch (e) {
+      debugPrint('⚠️ [Maintenance] Transaction journal repair failed: $e');
+    }
   }
 
   /// Clears sync metadata (last sync times) for a store, forcing a full re-pull.

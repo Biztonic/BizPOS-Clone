@@ -35,7 +35,7 @@ class DatabaseHelper {
     return _database!;
   }
 
-  static const int _version = 22;
+  static const int _version = 23;
   static String? _testDbName;
   @visibleForTesting
   static void setDbName(String name) => _testDbName = name;
@@ -596,6 +596,34 @@ class DatabaseHelper {
         ''');
       } catch(e) { /* Error ignored */ }
     }
+
+    // Migration V23: Tier 1 Platform Hardening (Idempotency & Transaction Journal)
+    if (oldVersion < 23) {
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS idempotency_keys (
+            key TEXT PRIMARY KEY,
+            entityType TEXT,
+            entityId TEXT,
+            deviceId TEXT,
+            createdAt TEXT
+          )
+        ''');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_idem_created ON idempotency_keys(createdAt)');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS transaction_journal (
+            id TEXT PRIMARY KEY,
+            storeId TEXT,
+            status TEXT,
+            operations TEXT,
+            createdAt TEXT,
+            completedAt TEXT,
+            error TEXT
+          )
+        ''');
+      } catch(e) { /* Error ignored */ }
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -977,6 +1005,29 @@ class DatabaseHelper {
     ''');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_notes_store ON notes(storeId)');
 
+    // 12. Idempotency & Transactions (Tier 1 Platform Hardening)
+    await db.execute('''
+      CREATE TABLE idempotency_keys (
+        key TEXT PRIMARY KEY,
+        entityType TEXT,
+        entityId TEXT,
+        deviceId TEXT,
+        createdAt TEXT
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_idem_created ON idempotency_keys(createdAt)');
+
+    await db.execute('''
+      CREATE TABLE transaction_journal (
+        id TEXT PRIMARY KEY,
+        storeId TEXT,
+        status TEXT,
+        operations TEXT,
+        createdAt TEXT,
+        completedAt TEXT,
+        error TEXT
+      )
+    ''');
   }
 
   // --- Helper Methods ---
@@ -999,7 +1050,8 @@ class DatabaseHelper {
       'store_settings', 'floors', 'tables', 'suppliers', 'notes',
       'inventory_movements', 'cache_inventory_quantities', 'business_events',
       'employee_attendance', 'employee_leaves', 'employee_payroll',
-      'expense_categories', 'expenses', 'payment_methods', 'activity_logs'
+      'expense_categories', 'expenses', 'payment_methods', 'activity_logs',
+      'idempotency_keys', 'transaction_journal'
     ];
     
     for (var table in tables) {

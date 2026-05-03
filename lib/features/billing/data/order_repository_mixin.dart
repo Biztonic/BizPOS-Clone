@@ -1,10 +1,14 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:biztonic_pos/services/database_helper.dart';
 import 'package:biztonic_pos/models/order_model.dart';
+import 'package:biztonic_pos/models/inventory_movement.dart';
+import 'package:biztonic_pos/models/business_ledger.dart';
+import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 
 mixin OrderRepositoryMixin {
   Future<Database> get database;
   DatabaseHelper get dbHelper;
+  InventoryMovementRepository get movementRepo;
 
   // --- ORDERS ---
   
@@ -68,6 +72,16 @@ mixin OrderRepositoryMixin {
   }) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
+      final txId = 'TX-${DateTime.now().millisecondsSinceEpoch}-${order.id}';
+      
+      // 0. Create Journal Entry (Pending)
+      await txn.insert('transaction_journal', {
+        'id': txId,
+        'storeId': storeId,
+        'status': 'PENDING',
+        'operations': '["ORDER_CREATE", "EVENT_CREATE", "INVENTORY_DEDUCT"]',
+        'createdAt': DateTime.now().toIso8601String(),
+      });
       // 1. Insert Order
       await txn.insert(
         'orders',
@@ -118,6 +132,17 @@ mixin OrderRepositoryMixin {
       for (var movement in movements) {
         await movementRepo.insertMovement(movement, txn: txn);
       }
+
+      // 6. Mark Journal Complete
+      await txn.update(
+        'transaction_journal',
+        {
+          'status': 'COMPLETED',
+          'completedAt': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [txId],
+      );
     });
   }
 
@@ -436,5 +461,8 @@ mixin OrderRepositoryMixin {
   }
   
 }
+
+
+
 
 
