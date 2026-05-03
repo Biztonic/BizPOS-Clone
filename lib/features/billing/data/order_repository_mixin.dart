@@ -4,6 +4,7 @@ import 'package:biztonic_pos/models/order_model.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
+import 'dart:convert';
 
 mixin OrderRepositoryMixin {
   Future<Database> get database;
@@ -71,17 +72,25 @@ mixin OrderRepositoryMixin {
     required String yearMonth,
   }) async {
     final db = await dbHelper.database;
+    final txId = 'TX-${DateTime.now().millisecondsSinceEpoch}-${order.id}';
+    final payload = jsonEncode({
+      'order': order.toSqlMap(),
+      'orderItems': order.items.map((e) => e.toSqlMap(order.id)).toList(),
+      'event': event.toMap(),
+      'movements': movements.map((e) => e.toSqlMap()).toList(),
+      'yearMonth': yearMonth,
+    });
+    
+    // 0. Create Journal Entry (Pending) OUTSIDE transaction
+    await db.insert('transaction_journal', {
+      'id': txId,
+      'storeId': storeId,
+      'status': 'PENDING',
+      'operations': payload,
+      'createdAt': DateTime.now().toIso8601String(),
+    });
+
     await db.transaction((txn) async {
-      final txId = 'TX-${DateTime.now().millisecondsSinceEpoch}-${order.id}';
-      
-      // 0. Create Journal Entry (Pending)
-      await txn.insert('transaction_journal', {
-        'id': txId,
-        'storeId': storeId,
-        'status': 'PENDING',
-        'operations': '["ORDER_CREATE", "EVENT_CREATE", "INVENTORY_DEDUCT"]',
-        'createdAt': DateTime.now().toIso8601String(),
-      });
       // 1. Insert Order
       await txn.insert(
         'orders',
@@ -146,6 +155,70 @@ mixin OrderRepositoryMixin {
     });
   }
 
+  Future<void> replayTransaction(String txId, String operationsJson) async {
+    final db = await dbHelper.database;
+    final Map<String, dynamic> data = jsonDecode(operationsJson);
+    
+    final orderMap = data['order'] as Map<String, dynamic>;
+    final itemsList = data['orderItems'] as List<dynamic>;
+    final eventMap = data['event'] as Map<String, dynamic>;
+    final movementsList = data['movements'] as List<dynamic>;
+    final yearMonth = data['yearMonth'] as String;
+
+    await db.transaction((txn) async {
+      // 1. Insert Order
+      await txn.insert('orders', orderMap, conflictAlgorithm: ConflictAlgorithm.replace);
+
+      // 2. Insert Order Items
+      for (var item in itemsList) {
+        await txn.insert('order_items', item as Map<String, dynamic>, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 3. Insert Business Event
+      await txn.insert('business_events', eventMap, conflictAlgorithm: ConflictAlgorithm.replace);
+
+      // 4. Update Token Counter (Logic simplified for replay)
+      final counterResults = await txn.query(
+        'monthly_order_counter',
+        where: 'storeId = ? AND yearMonth = ?',
+        whereArgs: [orderMap['storeId'], yearMonth],
+      );
+
+      if (counterResults.isEmpty) {
+        await txn.insert('monthly_order_counter', {
+          'storeId': orderMap['storeId'],
+          'yearMonth': yearMonth,
+          'count': 1,
+        });
+      } else {
+        int currentCount = counterResults.first['count'] as int;
+        await txn.update(
+          'monthly_order_counter',
+          {'count': currentCount + 1},
+          where: 'storeId = ? AND yearMonth = ?',
+          whereArgs: [orderMap['storeId'], yearMonth],
+        );
+      }
+
+      // 5. Insert Inventory Movements
+      for (var movementMap in movementsList) {
+         final movement = InventoryMovement.fromMap(movementMap as Map<String, dynamic>, movementMap['id']);
+         await movementRepo.insertMovement(movement, txn: txn);
+      }
+
+      // 6. Mark Journal Complete
+      await txn.update(
+        'transaction_journal',
+        {
+          'status': 'COMPLETED',
+          'completedAt': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [txId],
+      );
+    });
+  }
+
   // --- BATCH ORDERS ---
   Future<void> batchInsertOrders(List<OrderModel> orders) async {
     if (orders.isEmpty) return;
@@ -190,12 +263,6 @@ mixin OrderRepositoryMixin {
         if (orderRows.isEmpty) return [];
 
         // 2. Fetch ALL Items for these orders (Optimization: Single Query)
-        // We use a safe approach: Fetch all items for this store creates a large result set, 
-        // but it's faster than 1000 small queries.
-        // Better: Fetch items where orderId IN (ids).. but limits apply. 
-        // For now, fetching all items for the store is safe assuming order_items cleaned up.
-        // Or better: Let's fetch all items for this store.
-        
         String itemSql = 'SELECT * FROM order_items';
         List<dynamic> itemArgs = [];
         if (storeId != null) {
@@ -226,13 +293,10 @@ mixin OrderRepositoryMixin {
         
         return orders;
       } catch (e) {
-
         if (e.toString().contains('locked') && retries > 1) {
-
            await Future.delayed(const Duration(milliseconds: 200));
            retries--;
         } else {
-
            return []; // Return empty only on fatal
         }
       }
@@ -287,7 +351,6 @@ mixin OrderRepositoryMixin {
       }
       return orders;
     } catch (e) {
-
       return [];
     }
   }
@@ -317,7 +380,6 @@ mixin OrderRepositoryMixin {
       if (orderRows.isEmpty) return [];
 
       // EFFICIENT ITEM FETCH: Only fetch items for the IDs we just got
-      // This is much faster than fetching "all items for store"
       final orderIds = orderRows.map((r) => r['id'] as String).toList();
       final placeholders = List.filled(orderIds.length, '?').join(',');
       
@@ -345,7 +407,6 @@ mixin OrderRepositoryMixin {
       return orders;
 
     } catch (e) {
-
       return [];
     }
   }
@@ -370,7 +431,6 @@ mixin OrderRepositoryMixin {
       }
       return orders;
     } catch (e) {
-
       return [];
     }
   }
@@ -443,7 +503,6 @@ mixin OrderRepositoryMixin {
     final start = DateTime.now().subtract(Duration(days: days));
     
     // Group by Day (SQLite strftime)
-    // Adjust format based on requirement, assumng YYYY-MM-DD
     final result = await db.rawQuery('''
       SELECT strftime('%Y-%m-%d', date) as day, SUM(CASE WHEN status = 'Refunded' THEN 0 ELSE total END) as dailyTotal 
       FROM orders 
@@ -459,10 +518,4 @@ mixin OrderRepositoryMixin {
     final db = await dbHelper.database;
     await db.update('orders', {'synced': 1}, where: 'id = ?', whereArgs: [orderId]);
   }
-  
 }
-
-
-
-
-

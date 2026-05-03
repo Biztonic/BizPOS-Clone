@@ -179,7 +179,10 @@ class SyncMaintenanceEngine {
     // 2. Repair orphaned transaction journals
     await repairTransactionJournals();
 
-    // 3. Re-queue unsynced items
+    // 3. Prune old completed/discarded journals
+    await pruneTransactionJournals();
+
+    // 4. Re-queue unsynced items
     for (var module in SyncCollectionRegistry.pullModules) {
       totalRepaired += await repairUnsyncedItems(module);
     }
@@ -224,13 +227,13 @@ class SyncMaintenanceEngine {
     try {
       final db = await DatabaseHelper().database;
       
-      // Transactions older than 5 minutes that are still PENDING are considered orphaned
-      final fiveMinsAgo = DateTime.now().subtract(const Duration(minutes: 5)).toIso8601String();
+      // Transactions older than 1 hour that are still PENDING are considered abandoned
+      final oneHourAgo = DateTime.now().subtract(const Duration(hours: 1)).toIso8601String();
       
       final pendingTxs = await db.query(
         'transaction_journal',
         where: 'status = ? AND createdAt < ?',
-        whereArgs: ['PENDING', fiveMinsAgo],
+        whereArgs: ['PENDING', oneHourAgo],
       );
 
       if (pendingTxs.isEmpty) return;
@@ -255,6 +258,28 @@ class SyncMaintenanceEngine {
       debugPrint('⚠️ [Maintenance] Marked ${pendingTxs.length} orphaned transactions as FAILED');
     } catch (e) {
       debugPrint('⚠️ [Maintenance] Transaction journal repair failed: $e');
+    }
+  }
+
+  /// Prunes COMPLETED or DISCARDED journal entries older than 30 days
+  Future<void> pruneTransactionJournals() async {
+    try {
+      final db = await DatabaseHelper().database;
+      
+      // Entries older than 30 days
+      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30)).toIso8601String();
+      
+      final count = await db.delete(
+        'transaction_journal',
+        where: '(status = ? OR status = ?) AND createdAt < ?',
+        whereArgs: ['COMPLETED', 'DISCARDED', thirtyDaysAgo],
+      );
+
+      if (count > 0) {
+        debugPrint('🧹 [Maintenance] Pruned $count old transaction journal entries');
+      }
+    } catch (e) {
+      debugPrint('⚠️ [Maintenance] Transaction journal pruning failed: $e');
     }
   }
 

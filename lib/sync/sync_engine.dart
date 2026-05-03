@@ -268,6 +268,9 @@ class SyncService with ChangeNotifier {
       _initConnectivity();
       _startSyncTimer();
 
+      // 6. Run Maintenance (Background)
+      unawaited(_maintenanceEngine.repairAllModules());
+
       _isInitialized = true;
       debugPrint("✅ SyncService Decomposed Initialized");
     } catch (e) {

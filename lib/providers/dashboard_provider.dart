@@ -23,6 +23,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:biztonic_pos/services/google_drive_service.dart';
 import 'package:biztonic_pos/providers/order_provider.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
+import 'package:biztonic_pos/services/recovery_service.dart';
 import 'package:biztonic_pos/services/offline_service.dart';
 import 'package:biztonic_pos/providers/customer_provider.dart';
 import 'package:biztonic_pos/main.dart'; 
@@ -93,6 +94,10 @@ class DashboardProvider with ChangeNotifier {
     _isLoading = val;
     notifyListeners();
   }
+
+  final RecoveryService _recoveryService = RecoveryService();
+  List<Map<String, dynamic>> _pendingRecoveries = [];
+  List<Map<String, dynamic>> get pendingRecoveries => _pendingRecoveries;
 
   DashboardProvider() {
      debugPrint('🏗️ DashboardProvider Constructor START');
@@ -197,9 +202,67 @@ class DashboardProvider with ChangeNotifier {
     await _syncService.init();
     await _loadFromCache();
     
+    // Run Recovery Runner on startup
+    await _runRecoveryRunner();
+
     // Initial pull
     if (_activeStoreId != null) {
        await _syncService.processSync();
+    }
+  }
+
+  Future<void> _runRecoveryRunner() async {
+    debugPrint('🔍 DashboardProvider: Running Recovery Service...');
+    try {
+      final recoveries = await _recoveryService.scanAndRecover();
+      _pendingRecoveries = recoveries;
+      if (_pendingRecoveries.isNotEmpty) {
+        debugPrint('⚠️ DashboardProvider: Found ${_pendingRecoveries.length} incomplete transactions!');
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('❌ DashboardProvider: Error running recovery: $e');
+    }
+  }
+
+  Future<void> discardRecovery(String txId) async {
+    await _recoveryService.discardTransaction(txId);
+    _pendingRecoveries.removeWhere((t) => t['txId'] == txId);
+    notifyListeners();
+  }
+
+  Future<void> resolveRecovery(String txId, BuildContext context) async {
+    final tx = _pendingRecoveries.firstWhere((t) => t['txId'] == txId, orElse: () => {});
+    if (tx.isEmpty) return;
+
+    try {
+      final raw = tx['raw'] as String;
+      
+      // Execute Replay via Repository (OrderRepositoryMixin)
+      await _repository.replayTransaction(txId, raw);
+
+      // Clean up local state
+      _pendingRecoveries.removeWhere((t) => t['txId'] == txId);
+      notifyListeners();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Transaction recovered successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ DashboardProvider: Error resolving recovery: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to recover: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

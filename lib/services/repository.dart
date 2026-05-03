@@ -71,6 +71,7 @@ class Repository {
     storeId: storeId, 
     yearMonth: yearMonth
   );
+  Future<void> replayTransaction(String txId, String operationsJson) => _orders.replayTransaction(txId, operationsJson);
   Future<void> batchInsertOrders(List<OrderModel> orders) => _orders.batchInsertOrders(orders);
   Future<List<OrderModel>> getOrders(String? storeId) => _orders.getOrders(storeId);
   Future<OrderModel?> getOrder(String id) => _orders.getOrder(id);

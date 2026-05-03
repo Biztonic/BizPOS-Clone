@@ -74,16 +74,17 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         userProfile: p.userProfile,
         storesCount: p.stores.length,
         isLoading: p.isLoading,
+        pendingRecoveriesCount: p.pendingRecoveries.length,
       ),
       shouldRebuild: (prev, next) => prev != next,
       builder: (context, shellData, child) {
         final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
-        return _buildShellContent(context, authProvider, dashboardProvider);
+        return _buildShellContent(context, authProvider, dashboardProvider, shellData);
       },
     );
   }
 
-  Widget _buildShellContent(BuildContext context, AuthProvider authProvider, DashboardProvider dashboardProvider) {
+  Widget _buildShellContent(BuildContext context, AuthProvider authProvider, DashboardProvider dashboardProvider, _DashboardShellData shellData) {
     final role = dashboardProvider.activeRole;
 
     // Define All Menu Items
@@ -303,9 +304,17 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                           const SizedBox(width: 16),
                         ],
                       ),
-                      body: (dashboardProvider.activeStoreId == null && !dashboardProvider.isLoading) && !(dashboardProvider.userProfile?.role == 'Super Admin' && dashboardProvider.isDeveloperMode)
-                          ? _buildStoreSelectionScreen(context, dashboardProvider)
-                          : widget.child,
+                      body: Column(
+                        children: [
+                          if (shellData.pendingRecoveriesCount > 0)
+                            _buildRecoveryBanner(context, dashboardProvider),
+                          Expanded(
+                            child: (dashboardProvider.activeStoreId == null && !dashboardProvider.isLoading) && !(dashboardProvider.userProfile?.role == 'Super Admin' && dashboardProvider.isDeveloperMode)
+                                ? _buildStoreSelectionScreen(context, dashboardProvider)
+                                : widget.child,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -358,9 +367,17 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             drawer: Drawer(
               child: _buildDrawerContent(context, menuItems, authProvider, dashboardProvider),
             ),
-            body: (dashboardProvider.activeStoreId == null && !dashboardProvider.isLoading) && !(dashboardProvider.userProfile?.role == 'Super Admin' && dashboardProvider.isDeveloperMode)
-                ? _buildStoreSelectionScreen(context, dashboardProvider)
-                : widget.child,
+            body: Column(
+              children: [
+                if (shellData.pendingRecoveriesCount > 0)
+                  _buildRecoveryBanner(context, dashboardProvider),
+                Expanded(
+                  child: (dashboardProvider.activeStoreId == null && !dashboardProvider.isLoading) && !(dashboardProvider.userProfile?.role == 'Super Admin' && dashboardProvider.isDeveloperMode)
+                      ? _buildStoreSelectionScreen(context, dashboardProvider)
+                      : widget.child,
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -588,6 +605,93 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     );
   }
 
+  Widget _buildRecoveryBanner(BuildContext context, DashboardProvider provider) {
+    return MaterialBanner(
+      backgroundColor: Colors.amber.shade100,
+      leading: const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+      content: Text(
+        "Found ${provider.pendingRecoveries.length} incomplete transactions from a previous session.",
+        style: const TextStyle(color: Colors.brown, fontWeight: FontWeight.bold),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => _showRecoveryDialog(context, provider),
+          child: const Text("REVIEW"),
+        ),
+      ],
+    );
+  }
+
+  void _showRecoveryDialog(BuildContext context, DashboardProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.history, color: Colors.blue),
+            SizedBox(width: 10),
+            Text("Transaction Recovery"),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: provider.pendingRecoveries.length,
+            itemBuilder: (context, index) {
+              final recovery = provider.pendingRecoveries[index];
+              final payload = recovery['payload'];
+              final orderId = payload['order']['id'];
+              
+              return ListTile(
+                title: Text("Order #$orderId"),
+                subtitle: Text("Time: ${recovery['createdAt']}"),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.refresh, color: Colors.green),
+                      tooltip: "Recover Transaction",
+                      onPressed: () {
+                        provider.resolveRecovery(recovery['txId'], context);
+                        if (provider.pendingRecoveries.length <= 1) Navigator.pop(context);
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      tooltip: "Discard",
+                      onPressed: () {
+                        provider.discardRecovery(recovery['txId']);
+                        if (provider.pendingRecoveries.length <= 1) Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          if (provider.pendingRecoveries.length > 1)
+            TextButton(
+              onPressed: () async {
+                final ids = provider.pendingRecoveries.map((r) => r['txId'] as String).toList();
+                for (var id in ids) {
+                   await provider.resolveRecovery(id, context);
+                }
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: const Text("RECOVER ALL", style: TextStyle(color: Colors.green)),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CLOSE"),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _checkSubscriptionReminder() {
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     final days = provider.consolidatedStandardDays;
@@ -622,6 +726,7 @@ class _DashboardShellData {
   final dynamic userProfile; // identity check is fine
   final int storesCount;
   final bool isLoading;
+  final int pendingRecoveriesCount;
 
   const _DashboardShellData({
     this.storeName,
@@ -633,6 +738,7 @@ class _DashboardShellData {
     this.userProfile,
     this.storesCount = 0,
     this.isLoading = false,
+    this.pendingRecoveriesCount = 0,
   });
 
   @override
@@ -647,7 +753,8 @@ class _DashboardShellData {
           isDeveloperMode == other.isDeveloperMode &&
           identical(userProfile, other.userProfile) &&
           storesCount == other.storesCount &&
-          isLoading == other.isLoading;
+          isLoading == other.isLoading &&
+          pendingRecoveriesCount == other.pendingRecoveriesCount;
 
   @override
   int get hashCode => Object.hash(
@@ -660,5 +767,6 @@ class _DashboardShellData {
         identityHashCode(userProfile),
         storesCount,
         isLoading,
+        pendingRecoveriesCount,
       );
 }
