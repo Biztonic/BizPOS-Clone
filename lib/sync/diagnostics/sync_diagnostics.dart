@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Persistent sync diagnostics and logging.
 /// Extracted from SyncService._logSyncEvent and inspectCloudData.
@@ -60,5 +62,52 @@ class SyncDiagnostics {
     if (_logBox != null && _logBox!.isOpen) {
       await _logBox!.clear();
     }
+  }
+
+  /// Provides a detailed diagnostic summary of cloud accessibility and data visibility.
+  Future<String> inspectCloudData({
+    required FirebaseFirestore db,
+    required String? activeStoreId,
+  }) async {
+    if (activeStoreId == null) return "No Store Selected";
+    StringBuffer sb = StringBuffer();
+    sb.writeln("=== CLOUD INSPECTOR (${DateTime.now()}) ===");
+    sb.writeln("Active Store ID: $activeStoreId");
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      sb.writeln("Auth UID: ${user.uid}");
+      try {
+        final userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          final uData = userDoc.data()!;
+          sb.writeln("DB User Profile:");
+          sb.writeln(" - Role: ${uData['role']}");
+          sb.writeln(" - Profile storeId: ${uData['storeId']}");
+          sb.writeln(" - accessibleStoreIds: ${uData['accessibleStoreIds']}");
+          sb.writeln(" - storeIds: ${uData['storeIds']}");
+        } else {
+          sb.writeln("!!! USER DOC NOT FOUND !!!");
+        }
+      } catch (e) {
+        sb.writeln("User Doc Fetch Error: $e");
+      }
+    }
+
+    try {
+      final orders = await db
+          .collection('orders')
+          .where('storeId', isEqualTo: activeStoreId)
+          .limit(3)
+          .get();
+      sb.writeln("\n[ORDERS] Visible: ${orders.docs.length}");
+      for (var d in orders.docs) {
+        sb.writeln(" - ${d.id}: ${d.data()['status']}");
+      }
+    } catch (e) {
+      sb.writeln("\nOrders Fetch Error: $e");
+    }
+
+    return sb.toString();
   }
 }

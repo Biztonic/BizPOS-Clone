@@ -319,4 +319,36 @@ class OutboundManager {
       } catch (_) {}
     }
   }
+
+  /// Direct write to Firestore for Web platform (bypasses queue for reliability).
+  Future<void> performWebDirectWrite({
+    required String collection,
+    required String docId,
+    required String action,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      final storeId = getActiveStoreId();
+      if (storeId == null) return;
+
+      data['storeId'] = data['storeId'] ?? storeId;
+      data['deviceId'] = data['deviceId'] ?? getDeviceId();
+
+      final ref = FirestoreHelper.storeDoc(storeId, collection, docId);
+
+      switch (action.toUpperCase()) {
+        case 'CREATE':
+        case 'SET':
+        case 'UPDATE':
+          await ref.set(data, SetOptions(merge: true));
+          break;
+        case 'DELETE':
+          await ref.delete();
+          break;
+      }
+      debugPrint('🌐 [OutboundManager] Web direct write: $collection/$docId');
+    } catch (e) {
+      debugPrint('🌐 [OutboundManager] Web direct write failed: $e');
+    }
+  }
 }

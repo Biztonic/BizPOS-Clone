@@ -517,7 +517,7 @@ class DashboardProvider with ChangeNotifier {
       }
   }
 
-  Future<Map<String, String>> validateDatabase() async {
+  Future<String> validateDatabase() async {
       return await _syncService.checkIntegrity();
   }
 
