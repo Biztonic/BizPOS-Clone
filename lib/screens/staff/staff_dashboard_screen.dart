@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -5,6 +6,12 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/store_provider.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import '../../core/design/density/app_density.dart';
+import '../../core/design/tokens/app_spacing.dart';
+import '../../core/design/tokens/app_typography.dart';
+import '../../core/design/components/atoms/app_button.dart';
+
 
 class StaffDashboardScreen extends StatefulWidget {
   const StaffDashboardScreen({super.key});
@@ -33,7 +40,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         final storeRoles = storeProvider.activeStore?.customRoles ??
             const ['Cashier', 'Manager', 'Kitchen Staff', 'Waiter', 'Inventory Clerk'];
 
-        return Scaffold(
+        final density = AppDensityProvider.configOf(context);
+        
+        return PosScaffold(
           appBar: AppBar(
             title: const Text("Employee Management"),
             actions: [
@@ -44,22 +53,22 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               ),
             ],
           ),
-          body: Column(
+          mainContent: Column(
             children: [
               // Stats Cards
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(density.cardPadding),
                 child: Row(
                   children: [
                     Expanded(
                       child: _buildStatCard(context,
-                          icon: Icons.people, iconColor: Colors.blue,
+                          icon: Icons.people, iconColor: AppColors.primaryLight,
                           title: "TOTAL EMPLOYEES", value: "$totalEmployees"),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: density.cardPadding),
                     Expanded(
                       child: _buildStatCard(context,
-                          icon: Icons.badge, iconColor: Colors.orange,
+                          icon: Icons.badge, iconColor: AppColors.warning,
                           title: "ROLES", value: "$rolesCount"),
                     ),
                   ],
@@ -70,41 +79,42 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 child: provider.isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : provider.employees.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Text("No employees found. Tap + to add staff.",
-                                style: TextStyle(color: Colors.grey)))
+                                style: TextStyle(color: AppColors.textSecondary(context))))
                         : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: EdgeInsets.symmetric(horizontal: density.cardPadding),
                             itemCount: provider.employees.length,
                             itemBuilder: (context, index) {
                               final emp = provider.employees[index];
                               return Card(
-                                elevation: 1,
-                                margin: const EdgeInsets.only(bottom: 8),
+                                elevation: 0,
+                                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
+                                    borderRadius: BorderRadius.circular(density.cardRadius)),
                                 child: ListTile(
                                   leading: CircleAvatar(
                                       child: Text(emp.name.isNotEmpty ? emp.name[0] : '?')),
                                   title: Text(emp.name,
-                                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  subtitle: Text("${emp.role} • ID: ${emp.employeeId ?? 'N/A'}"),
+                                      style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                                  subtitle: Text("${emp.role} • ID: ${emp.employeeId ?? 'N/A'}",
+                                      style: AppTypography.bodySmall),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.share, color: Colors.blue, size: 20),
+                                        icon: const Icon(Icons.share, color: AppColors.primaryLight, size: 20),
                                         tooltip: "Share Login",
                                         onPressed: () => _showShareDialog(context, storeProvider, emp),
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.edit, color: Colors.orange, size: 20),
+                                        icon: const Icon(Icons.edit, color: AppColors.warning, size: 20),
                                         tooltip: "Edit Role",
                                         onPressed: () => _showEmployeeDialog(context,
                                             storeRoles: storeRoles, employee: emp),
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                        icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
                                         tooltip: "Delete",
                                         onPressed: () => _confirmDeleteEmployee(context, provider, emp),
                                       ),
@@ -130,12 +140,14 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   Widget _buildStatCard(BuildContext context,
       {required IconData icon, required Color iconColor,
       required String title, required String value}) {
+    final density = AppDensityProvider.configOf(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(density.cardPadding),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? AppColors.surface(context) : Colors.white,
+        borderRadius: BorderRadius.circular(density.cardRadius),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10,
               offset: const Offset(0, 4)),
@@ -146,13 +158,14 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         children: [
           Row(children: [
             Icon(icon, color: iconColor, size: 20),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.xs),
             Expanded(child: Text(title,
-                style: TextStyle(color: Colors.grey[500], fontSize: 11, fontWeight: FontWeight.bold))),
+                style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context), fontWeight: FontWeight.bold))),
           ]),
-          const SizedBox(height: 12),
-          Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black)),
+          const SizedBox(height: AppSpacing.sm),
+          Text(value, style: AppTypography.headlineMedium.copyWith(
+              color: isDark ? Colors.white : Colors.black,
+              fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -168,7 +181,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("Cancel")),
           TextButton(onPressed: () => Navigator.pop(c, true),
-              child: const Text("Delete", style: TextStyle(color: Colors.red))),
+              child: const Text("Delete", style: TextStyle(color: AppColors.error))),
         ],
       ),
     );
@@ -197,7 +210,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       builder: (ctx) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.link, color: Colors.blue),
+            const Icon(Icons.link, color: AppColors.primaryLight),
             const SizedBox(width: 8),
             Expanded(child: Text("Share Link – ${emp.name}", overflow: TextOverflow.ellipsis)),
           ],
@@ -207,14 +220,14 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Share this link with the employee. They can open it on any device and log in with their 4-digit PIN.",
-                style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.05),
+                color: AppColors.primaryLight.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2)),
               ),
               child: SelectableText(loginUrl,
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
@@ -422,11 +435,11 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           return AlertDialog(
             title: Row(
               children: [
-                const Icon(Icons.shield, color: Colors.deepPurple),
+                const Icon(Icons.shield, color: AppColors.primary),
                 const SizedBox(width: 8),
                 const Expanded(child: Text("Role Permissions")),
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline, color: Colors.deepPurple),
+                  icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
                   tooltip: "Add New Role",
                   onPressed: () async {
                     final newRole = await _showSimpleAddRoleDialog(context);
@@ -449,14 +462,14 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text("Define what each role can access in this store.",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                        style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
                     const SizedBox(height: 16),
                     if (localRoles.isEmpty)
-                      const Center(
+                      Center(
                         child: Padding(
                           padding: EdgeInsets.all(24.0),
                           child: Text("No custom roles defined. Tap + to add one.",
-                              style: TextStyle(color: Colors.grey)),
+                              style: TextStyle(color: AppColors.textSecondary(context))),
                         ),
                       ),
                     ...localRoles.map((role) {
@@ -505,13 +518,13 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.deepPurple.withValues(alpha: 0.1),
+          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
           child: Text(role[0], style: const TextStyle(
-              fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+              fontWeight: FontWeight.bold, color: AppColors.primary)),
         ),
         title: Text(role, style: const TextStyle(fontWeight: FontWeight.bold)),
         trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
+          icon: Icon(Icons.delete_outline, color: AppColors.textSecondary(context), size: 20),
           onPressed: onDelete,
           tooltip: "Delete Role",
         ),
@@ -519,7 +532,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           perms.values.where((v) => v).isEmpty
               ? "No permissions set"
               : "${perms.values.where((v) => v).length} of ${_allPermissions.length} features enabled",
-          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+          style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12),
         ),
         children: _allPermissions.map((perm) {
           final key = perm['key'] as String;
@@ -527,7 +540,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           final icon = perm['icon'] as IconData;
           final enabled = perms[key] ?? false;
           return SwitchListTile(
-            secondary: Icon(icon, size: 20, color: enabled ? Colors.deepPurple : Colors.grey),
+            secondary: Icon(icon, size: 20, color: enabled ? AppColors.primary : AppColors.textSecondary(context)),
             title: Text(label, style: const TextStyle(fontSize: 14)),
             value: enabled,
             onChanged: (val) {

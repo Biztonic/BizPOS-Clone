@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import '../../../core/design/tokens/app_colors.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../models/settings.dart'; // Import Settings
 import '../models/receipt_config.dart';
@@ -33,7 +34,7 @@ class ReceiptPreviewWidget extends StatelessWidget {
             boxShadow: [
                BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4)),
             ],
-            border: Border.all(color: Colors.grey.shade400, width: 1.5),
+            border: Border.all(color: AppColors.textSecondary(context), width: 1.5),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -65,11 +66,11 @@ class ReceiptPreviewWidget extends StatelessWidget {
               // 6. Footer
               if (content.footer != null) ...[
                  const SizedBox(height: 12),
-                 _buildFooter(content.footer!),
+                 _buildFooter(content.footer!, context),
               ],
               
               const SizedBox(height: 20),
-              Center(child: Icon(Icons.cut, color: Colors.grey.withValues(alpha: 0.5), size: 16)),
+              Center(child: Icon(Icons.cut, color: AppColors.textSecondary(context).withValues(alpha: 0.5), size: 16)),
             ],
           ),
         ),
@@ -199,13 +200,13 @@ class ReceiptPreviewWidget extends StatelessWidget {
      );
   }
 
-  Widget _buildFooter(ReceiptFooter footer) {
+  Widget _buildFooter(ReceiptFooter footer, BuildContext context) {
     return Column(
       children: [
         Text(footer.message, textAlign: TextAlign.center, style: _styleFrom(settings.regularStyle)),
         if (footer.poweredBy != null) ...[
            const SizedBox(height: 4),
-           Text(footer.poweredBy!, textAlign: TextAlign.center, style: _styleFrom(settings.regularStyle, sizeOverride: 10).copyWith(color: Colors.grey)),
+           Text(footer.poweredBy!, textAlign: TextAlign.center, style: _styleFrom(settings.regularStyle, sizeOverride: 10).copyWith(color: AppColors.textSecondary(context))),
         ],
         if (footer.qrData != null && footer.qrData!.isNotEmpty) ...[
            const SizedBox(height: 8),

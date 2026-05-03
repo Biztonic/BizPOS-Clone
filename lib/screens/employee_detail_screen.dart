@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:biztonic_pos/providers/dashboard_provider.dart';
-import 'package:biztonic_pos/models/user_profile.dart';
+import '../providers/dashboard_provider.dart';
+import '../models/user_profile.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/components/atoms/app_card.dart';
+import '../core/design/components/atoms/app_button.dart';
+import '../core/design/components/atoms/app_text_field.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
+import '../core/design/tokens/app_colors.dart';
 
 class EmployeeDetailScreen extends StatefulWidget {
   final UserProfile employee;
@@ -46,39 +53,40 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   Widget build(BuildContext context) {
     final provider = Provider.of<DashboardProvider>(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.employee.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () async {
-              await provider.updateEmployeePermissions(
-                widget.employee.uid, 
-                _permissions,
-                accessibleAddons: _accessibleAddons,
-                preferredTheme: _preferredTheme,
-              );
-              await provider.updateEmployeeRates(
-                widget.employee.uid,
-                hourlyRate: double.tryParse(_hourlyCtrl.text),
-                monthlySalary: double.tryParse(_salaryCtrl.text),
-              );
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profile Updated")));
-            },
-          )
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+    return PosScaffold(
+      title: widget.employee.name,
+      actions: [
+        AppButton.primary(
+          icon: Icons.save,
+          label: "Save",
+          onPressed: () async {
+            await provider.updateEmployeePermissions(
+              widget.employee.uid, 
+              _permissions,
+              accessibleAddons: _accessibleAddons,
+              preferredTheme: _preferredTheme,
+            );
+            await provider.updateEmployeeRates(
+              widget.employee.uid,
+              hourlyRate: double.tryParse(_hourlyCtrl.text),
+              monthlySalary: double.tryParse(_salaryCtrl.text),
+            );
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Profile Updated"), behavior: SnackBarBehavior.floating),
+            );
+          },
+        ),
+      ],
+      mainContent: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildProfileHeader(),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
             _buildPayrollSection(),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
             _buildHistoryTabs(),
           ],
         ),
@@ -87,15 +95,33 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   }
 
   Widget _buildProfileHeader() {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          radius: 30,
-          backgroundColor: Colors.blue.shade50,
-          child: Text(widget.employee.name[0].toUpperCase(), style: const TextStyle(fontSize: 24)),
-        ),
-        title: Text(widget.employee.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        subtitle: Text("Role: ${widget.employee.role} • ID: ${widget.employee.employeeId}"),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+            child: Text(
+              widget.employee.name[0].toUpperCase(), 
+              style: AppTypography.headlineSmall.copyWith(color: AppColors.primary),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.employee.name, style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  "Role: ${widget.employee.role} • ID: ${widget.employee.employeeId}",
+                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -104,30 +130,30 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Payroll Configuration", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _hourlyCtrl,
-                    decoration: const InputDecoration(labelText: "Hourly Rate", border: OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
-                  ),
+        Text("Payroll Configuration", style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: AppSpacing.sm),
+        AppCard(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              Expanded(
+                child: AppTextField(
+                  controller: _hourlyCtrl,
+                  label: "Hourly Rate",
+                  keyboardType: TextInputType.number,
+                  prefixIcon: const Icon(Icons.access_time),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextField(
-                    controller: _salaryCtrl,
-                    decoration: const InputDecoration(labelText: "Monthly Salary", border: OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
-                  ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: AppTextField(
+                  controller: _salaryCtrl,
+                  label: "Monthly Salary",
+                  keyboardType: TextInputType.number,
+                  prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
@@ -140,12 +166,12 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const TabBar(
-            tabs: [
+          TabBar(
+            tabs: const [
               Tab(text: "Attendance"),
               Tab(text: "Payroll"),
             ],
-            labelColor: Colors.blue,
+            labelColor: AppColors.primary,
           ),
           SizedBox(
             height: 300,
@@ -165,14 +191,34 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     final provider = Provider.of<DashboardProvider>(context);
     final records = provider.attendanceRecords.where((r) => r['employeeId'] == widget.employee.uid).toList();
 
+    if (records.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.history, size: 48, color: AppColors.border(context)),
+            const SizedBox(height: AppSpacing.sm),
+            Text("No attendance records", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+          ],
+        ),
+      );
+    }
+
     return ListView.builder(
       itemCount: records.length,
       itemBuilder: (context, index) {
         final rec = records[index];
         return ListTile(
-          leading: const Icon(Icons.history),
-          title: Text("In: ${rec['checkIn']}"),
-          subtitle: Text("Out: ${rec['checkOut'] ?? 'Active'}"),
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.history, color: AppColors.primary, size: 20),
+          ),
+          title: Text("In: ${rec['checkIn']}", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+          subtitle: Text("Out: ${rec['checkOut'] ?? 'Active'}", style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
         );
       },
     );
@@ -182,13 +228,26 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     final provider = Provider.of<DashboardProvider>(context);
     final records = provider.payrollRecords.where((r) => r['employeeId'] == widget.employee.uid).toList();
 
+    if (records.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.payments_outlined, size: 48, color: AppColors.border(context)),
+            const SizedBox(height: AppSpacing.sm),
+            Text("No payroll records", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+          ],
+        ),
+      );
+    }
+
     return ListView.builder(
       itemCount: records.length,
       itemBuilder: (context, index) {
         final rec = records[index];
         return ListTile(
-          title: Text("Period: ${rec['periodStart'].split('T')[0]}"),
-          trailing: Text("${rec['totalAmount']}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+          title: Text("Period: ${rec['periodStart'].split('T')[0]}", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+          trailing: Text("${rec['totalAmount']}", style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.success)),
         );
       },
     );

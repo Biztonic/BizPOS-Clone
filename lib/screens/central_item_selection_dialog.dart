@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -183,7 +184,7 @@ class _CentralItemSelectionDialogState extends State<CentralItemSelectionDialog>
                                            const SizedBox(height: 4),
                                            Text(
                                              'SKU: ${item.sku}\nType: ${item.storeType ?? "All"}',
-                                             style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                             style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
                                              maxLines: 2,
                                              overflow: TextOverflow.ellipsis,
                                            ),
@@ -204,7 +205,7 @@ class _CentralItemSelectionDialogState extends State<CentralItemSelectionDialog>
                                          if (exists) {
                                            return const Padding(
                                              padding: EdgeInsets.only(top: 8.0),
-                                             child: Text("Imported", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+                                             child: Text("Imported", style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 12)),
                                            );
                                          }
   

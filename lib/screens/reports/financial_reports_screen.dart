@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -62,7 +63,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
               ? ColorScheme.dark(
                   primary: Theme.of(context).primaryColor,
                   onPrimary: Colors.white,
-                  surface: Colors.grey.shade900,
+                  surface: AppColors.textSecondary(context),
                   onSurface: Colors.white,
                 )
               : ColorScheme.light(
@@ -132,7 +133,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.grey.shade50,
+      backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : AppColors.textSecondary(context),
       body: CustomScrollView(
         slivers: [
           // APP BAR
@@ -161,9 +162,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.grey.shade900 : Colors.white,
+                    color: isDark ? AppColors.textSecondary(context) : Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                    border: Border.all(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                   ),
                   child: Row(
                     children: [
@@ -177,7 +178,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                         ),
                       ),
                       const Spacer(),
-                      Icon(Icons.arrow_drop_down, color: isDark ? Colors.white54 : Colors.grey),
+                      Icon(Icons.arrow_drop_down, color: isDark ? Colors.white54 : AppColors.textSecondary(context)),
                     ],
                   ),
                 ),
@@ -198,7 +199,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                          title: "Net Revenue", 
                          value: "₹${totalRevenue.toStringAsFixed(0)}", 
                          icon: Icons.account_balance_wallet,
-                         baseColor: Colors.green.shade600,
+                         baseColor: AppColors.success,
                        ),
                      ],
                    ),
@@ -208,14 +209,14 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                        ReportStatCard(
                          title: "Cash Collected", 
                          value: "₹${cashPayments.toStringAsFixed(0)}", 
-                         baseColor: Colors.orange.shade600, 
+                         baseColor: AppColors.warning, 
                          icon: Icons.money,
                        ),
                        const SizedBox(width: 16),
                        ReportStatCard(
                          title: "Card / Online", 
                          value: "₹${cardPayments.toStringAsFixed(0)}", 
-                         baseColor: Colors.blue.shade600, 
+                         baseColor: AppColors.primaryLight, 
                          icon: Icons.credit_card,
                        ),
                      ],
@@ -232,7 +233,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.grey.shade900 : Colors.white,
+                  color: isDark ? AppColors.textSecondary(context) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -290,9 +291,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                           gridData: const FlGridData(show: false),
                           borderData: FlBorderData(show: false),
                           barGroups: [
-                            BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: totalRevenue, color: Colors.blue, width: 22, borderRadius: BorderRadius.circular(4))]),
-                            BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: cogs, color: Colors.red, width: 22, borderRadius: BorderRadius.circular(4))]),
-                            BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: grossProfit, color: Colors.green, width: 22, borderRadius: BorderRadius.circular(4))]),
+                            BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: totalRevenue, color: AppColors.primaryLight, width: 22, borderRadius: BorderRadius.circular(4))]),
+                            BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: cogs, color: AppColors.error, width: 22, borderRadius: BorderRadius.circular(4))]),
+                            BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: grossProfit, color: AppColors.success, width: 22, borderRadius: BorderRadius.circular(4))]),
                           ],
                         ),
                       ),
@@ -321,7 +322,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.grey.shade900 : Colors.white,
+                      color: isDark ? AppColors.textSecondary(context) : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -340,7 +341,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.green.shade50,
+                            color: AppColors.success,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: _buildRowItem("Gross Profit", grossProfit, isPositive: true, isBold: true),
@@ -369,7 +370,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
             fontSize: isBold ? 16 : 14,
             color: isBold 
               ? (isDark ? Colors.white : Colors.black87) 
-              : (isDark ? Colors.white70 : Colors.grey.shade700),
+              : (isDark ? Colors.white70 : AppColors.textSecondary(context)),
           )
         ),
         Text(
@@ -377,7 +378,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
           style: TextStyle(
             fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
             fontSize: isBold ? 18 : 16,
-            color: isPositive ? Colors.green.shade600 : Colors.red.shade600,
+            color: isPositive ? AppColors.success : AppColors.error,
           )
         ),
       ],

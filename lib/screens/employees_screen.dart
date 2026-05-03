@@ -1,9 +1,17 @@
-// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../models/user_profile.dart';
-import '../l10n/app_localizations.dart'; 
+import '../l10n/app_localizations.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/components/atoms/app_button.dart';
+import '../core/design/components/atoms/app_card.dart';
+import '../core/design/components/atoms/app_text_field.dart';
+import '../core/design/components/organisms/pos_data_table.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
+import '../core/design/tokens/app_colors.dart';
+import '../core/design/density/app_density.dart';
 
 class EmployeesScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -43,22 +51,32 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
             }
 
             return AlertDialog(
-              title: Text(employee == null ? 'Create Employee' : 'Edit Role'),
+              title: Text(
+                employee == null ? 'Create Employee' : 'Edit Role',
+                style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (employee == null)
-                       TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder())),
-                    if (employee == null) const SizedBox(height: 12),
-                    if (employee == null)
-                      TextField(
-                        controller: pinController, 
-                        decoration: const InputDecoration(labelText: "4-Digit PIN", border: OutlineInputBorder()),
-                        keyboardType: TextInputType.number,
-                        maxLength: 4,
+                    if (employee == null) ...[
+                      AppTextField(
+                        controller: nameController,
+                        label: 'Full Name',
+                        hintText: 'e.g. John Doe',
+                        prefixIcon: const Icon(Icons.person_outline),
                       ),
-                    if (employee == null) const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
+                      AppTextField(
+                        controller: pinController,
+                        label: '4-Digit PIN',
+                        hintText: 'Used for login',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
                     DropdownButtonFormField<String>(
                       value: validSelection,
                       items: validRoles.map((r) => DropdownMenuItem(value: r.name, child: Text(r.name))).toList(),
@@ -67,14 +85,21 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                             roleController.text = v!;
                          });
                       },
-                      decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
+                      decoration: InputDecoration(
+                        labelText: 'Role',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        prefixIcon: const Icon(Icons.badge_outlined),
+                      ),
                     ),
                   ],
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-                ElevatedButton(
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context))),
+                ),
+                AppButton.primary(
                   onPressed: () async {
                     if (employee == null && nameController.text.isEmpty) return;
                     
@@ -86,7 +111,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                     }
                     if (context.mounted) Navigator.pop(ctx);
                   },
-                  child: const Text("Save"),
+                  label: "Save",
                 ),
               ],
             );
@@ -98,81 +123,181 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 800;
-        
-        return Scaffold(
-          appBar: AppBar(title: Text(AppLocalizations.t(context, 'employees'))),
-          body: Consumer<DashboardProvider>(
-            builder: (context, provider, child) {
-              if (provider.isLoading) return const Center(child: CircularProgressIndicator());
-              return _buildStaffList(context, provider, isDesktop);
-            }
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showEmployeeDialog(context),
-            icon: const Icon(Icons.add),
-            label: const Text("Add"),
-          ),
-        );
-      }
+    final provider = Provider.of<DashboardProvider>(context);
+    final isDesktop = MediaQuery.of(context).size.width >= 1100;
+    
+    return PosScaffold(
+      title: AppLocalizations.t(context, 'employees'),
+      actions: [
+        AppButton.primary(
+          label: isDesktop ? "Add Employee" : null,
+          icon: Icons.add,
+          onPressed: () => _showEmployeeDialog(context),
+        ),
+      ],
+      mainContent: provider.isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : isDesktop 
+              ? _buildTableView(context, provider)
+              : _buildListView(context, provider),
     );
   }
 
-
-  // --- 2. ROSTER ---
-  Widget _buildStaffList(BuildContext context, DashboardProvider provider, bool isDesktop) {
+  Widget _buildListView(BuildContext context, DashboardProvider provider) {
     final employees = provider.employees;
-    
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        if (employees.isEmpty)
-          const Center(child: Text("No employees found. Tap + to add staff.", style: TextStyle(color: Colors.grey)))
-        else
-          ...employees.map((emp) => Card(
-            elevation: 1,
-            margin: const EdgeInsets.only(bottom: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: CircleAvatar(child: Text(emp.name.isNotEmpty ? emp.name[0] : '?')),
-              title: Text(emp.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text("${emp.role} • ID: ${emp.employeeId ?? 'N/A'}"),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.orange, size: 20),
-                    tooltip: "Edit Role",
-                    onPressed: () => _showEmployeeDialog(context, employee: emp),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                    tooltip: "Delete",
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (c) => AlertDialog(
-                          title: const Text("Delete Employee"),
-                          content: Text("Are you sure you want to remove ${emp.name}?"),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("Cancel")),
-                            TextButton(onPressed: () => Navigator.pop(c, true), child: const Text("Delete", style: TextStyle(color: Colors.red))),
-                          ],
-                        ),
-                      );
-                      if (confirm == true) {
-                        await provider.removeEmployee(emp.uid);
-                        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${emp.name} removed")));
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-          )),
-      ],
+    if (employees.isEmpty) return _buildEmptyState();
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      itemCount: employees.length,
+      separatorBuilder: (ctx, i) => const SizedBox(height: AppSpacing.md),
+      itemBuilder: (ctx, i) => _buildEmployeeCard(context, employees[i], provider),
     );
+  }
+
+  Widget _buildTableView(BuildContext context, DashboardProvider provider) {
+    final employees = provider.employees;
+    if (employees.isEmpty) return _buildEmptyState();
+
+    return PosDataTable(
+      columns: [
+        const PosDataColumn(label: 'Employee', fixedWidth: 300),
+        const PosDataColumn(label: 'Role', fixedWidth: 150),
+        const PosDataColumn(label: 'ID', fixedWidth: 150),
+        const PosDataColumn(label: 'Actions', fixedWidth: 200),
+      ],
+      rows: employees.map((emp) => PosDataRow(
+        cells: [
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                child: Text(
+                  emp.name.isNotEmpty ? emp.name[0] : '?',
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(emp.name, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(emp.role, style: AppTypography.labelSmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+          ),
+          Text(emp.employeeId ?? 'N/A', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context), fontFamily: 'monospace')),
+          Row(
+            children: [
+              AppButton.secondary(
+                icon: Icons.edit,
+                onPressed: () => _showEmployeeDialog(context, employee: emp),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              AppButton.danger(
+                icon: Icons.delete_outline,
+                onPressed: () => _confirmDelete(context, provider, emp),
+              ),
+            ],
+          ),
+        ],
+      )).toList(),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.people_outline, size: 80, color: AppColors.border(context)),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            "No employees found",
+            style: AppTypography.titleLarge.copyWith(color: AppColors.textSecondary(context)),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            "Tap + to add your first staff member.",
+            style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmployeeCard(BuildContext context, UserProfile emp, DashboardProvider provider) {
+    final density = AppDensityProvider.configOf(context);
+    return AppCard(
+      padding: EdgeInsets.all(density.cardPadding),
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: CircleAvatar(
+          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          child: Text(
+            emp.name.isNotEmpty ? emp.name[0] : '?',
+            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+          ),
+        ),
+        title: Text(emp.name, style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+        subtitle: Text(
+          "${emp.role} • ID: ${emp.employeeId ?? 'N/A'}",
+          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppButton.secondary(
+              icon: Icons.edit,
+              onPressed: () => _showEmployeeDialog(context, employee: emp),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            AppButton.danger(
+              icon: Icons.delete_outline,
+              onPressed: () => _confirmDelete(context, provider, emp),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, DashboardProvider provider, UserProfile emp) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text("Delete Employee", style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+        content: Text(
+          "Are you sure you want to remove ${emp.name}? This action is permanent.",
+          style: AppTypography.bodyMedium,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context))),
+          ),
+          AppButton.danger(
+            onPressed: () => Navigator.pop(c, true),
+            label: "Delete",
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await provider.removeEmployee(emp.uid);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("${emp.name} removed"),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 }

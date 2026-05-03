@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_colors.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -21,14 +22,14 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
   Map<String, dynamic> _globalStats = {};
   late TabController _tabController;
 
-  static final List<Map<String, dynamic>> addonsMetadata = [
+  List<Map<String, dynamic>> get addonsMetadata => [
     // ... items stay same ...
     {
       'key': 'employee_management',
       'title': 'Employee Management',
       'description': 'Manage staff, roles, permissions, and attendance.',
       'icon': Icons.badge,
-      'color': Colors.teal,
+      'color': AppColors.primary,
       'version': '1.2',
       'size': '3.2 MB',
     },
@@ -37,7 +38,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       'title': 'Table Reservation',
       'description': 'Floor plan, table status, and reservation management.',
       'icon': Icons.table_restaurant,
-      'color': Colors.brown,
+      'color': AppColors.textSecondary(context),
       'version': '1.1',
       'size': '2.8 MB',
     },
@@ -46,7 +47,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       'title': 'Supplier Management',
       'description': 'Track suppliers, purchase orders, and incoming stock.',
       'icon': Icons.local_shipping,
-      'color': Colors.deepOrange,
+      'color': AppColors.warning,
       'version': '1.0',
       'size': '2.1 MB',
     },
@@ -55,7 +56,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       'title': 'Display Integration',
       'description': 'Digital kitchen order tickets and status tracking.',
       'icon': Icons.monitor,
-      'color': Colors.indigo,
+      'color': AppColors.primary,
       'version': '1.0',
       'size': '1.8 MB',
     },
@@ -64,7 +65,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       'title': 'Franchise Management',
       'description': 'Manage multiple locations and franchise partners.',
       'icon': Icons.business_center,
-      'color': Colors.purple,
+      'color': AppColors.primaryLight,
       'version': '1.0',
       'size': '4.5 MB',
     },
@@ -73,7 +74,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       'title': 'Central Catalogue',
       'description': 'Access global products and scan menus via the standalone Catalogue app. Enables cloud import in Inventory.',
       'icon': Icons.inventory_2,
-      'color': Colors.amber,
+      'color': AppColors.warning,
       'version': '2.0',
       'size': '2.5 MB',
     },
@@ -82,7 +83,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       'title': 'Customer Management',
       'description': 'Customer profiles, loyalty points, and purchase history.',
       'icon': Icons.people,
-      'color': Colors.blue,
+      'color': AppColors.primaryLight,
       'version': '1.1',
       'size': '3.0 MB',
     },
@@ -91,7 +92,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       'title': 'Data Center',
       'description': 'Advanced analytics, backups, and sync control.',
       'icon': Icons.storage,
-      'color': Colors.blueGrey,
+      'color': AppColors.primaryLightGrey,
       'version': '1.0',
       'size': '1.5 MB',
     },
@@ -100,7 +101,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       'title': 'Integration Hub',
       'description': 'Connect with Swiggy, Zomato, Uber Eats & more.',
       'icon': Icons.hub,
-      'color': Colors.orange,
+      'color': AppColors.warning,
       'version': '1.0',
       'size': '3.8 MB',
     },
@@ -233,7 +234,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
 
       if (done == true) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Upgrade request submitted! Waiting for Admin approval."), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Upgrade request submitted! Waiting for Admin approval."), backgroundColor: AppColors.success));
         _loadData();
       }
     }
@@ -264,7 +265,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text("Enhance your store with these powerful modules.", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  Text("Enhance your store with these powerful modules.", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
                   const SizedBox(height: 16),
                   Flexible(
                     child: ListView.builder(
@@ -308,7 +309,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text("Addons Total:", style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text("₹${addonTotal.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                        Text("₹${addonTotal.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
                       ],
                     ),
                   )
@@ -319,7 +320,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("SKIP / CANCEL")),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx, tempSelected),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
                 child: const Text("CONTINUE TO PAYMENT"),
               ),
             ],
@@ -335,27 +336,27 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: isBestValue ? Colors.orange : Colors.grey.shade300),
+          border: Border.all(color: isBestValue ? AppColors.warning : AppColors.textSecondary(context)),
           borderRadius: BorderRadius.circular(12),
-          color: isBestValue ? Colors.orange.withValues(alpha: 0.05) : null,
+          color: isBestValue ? AppColors.warning.withValues(alpha: 0.05) : null,
         ),
         child: Row(
           children: [
-            Icon(icon, color: isBestValue ? Colors.orange : Colors.indigo),
+            Icon(icon, color: isBestValue ? AppColors.warning : AppColors.primary),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(cycle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text("₹$price / ${cycle.toLowerCase()}", style: const TextStyle(color: Colors.grey)),
+                  Text("₹$price / ${cycle.toLowerCase()}", style: TextStyle(color: AppColors.textSecondary(context))),
                 ],
               ),
             ),
             if (isBestValue)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppColors.warning, borderRadius: BorderRadius.circular(8)),
                 child: const Text("BEST VALUE", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
               ),
           ],
@@ -383,7 +384,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     return Scaffold(
       appBar: AppBar(
         title: const Text("BizStore"),
-        backgroundColor: Colors.indigo,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         bottom: TabBar(
           controller: _tabController,
@@ -419,13 +420,13 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           width: double.infinity,
           decoration: BoxDecoration(
             color: isStandard 
-              ? (isDark ? Colors.green.withValues(alpha: 0.15) : Colors.green.shade50) 
-              : (isDark ? Colors.indigo.withValues(alpha: 0.15) : Colors.indigo.shade50),
+              ? (isDark ? AppColors.success.withValues(alpha: 0.15) : AppColors.success) 
+              : (isDark ? AppColors.primary.withValues(alpha: 0.15) : AppColors.primary),
             border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
           ),
           child: Row(
             children: [
-              Icon(isStandard ? Icons.verified : Icons.stars, color: isStandard ? Colors.green : Colors.indigo, size: 28),
+              Icon(isStandard ? Icons.verified : Icons.stars, color: isStandard ? AppColors.success : AppColors.primary, size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -443,7 +444,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                 ElevatedButton(
                   onPressed: hasPending ? null : _upgradeFlow,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isStandard ? Colors.green : Colors.indigo, 
+                    backgroundColor: isStandard ? AppColors.success : AppColors.primary, 
                     foregroundColor: Colors.white
                   ),
                   child: Text(hasPending ? "PENDING..." : (isStandard ? "BUY COUPON" : "UPGRADE")),
@@ -526,10 +527,10 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text("Active Plan", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                            Text("Active Plan", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
                             Text(
                               activeStore.subscriptionPlan, 
-                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isStandard ? Colors.green : Colors.indigo),
+                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isStandard ? AppColors.success : AppColors.primary),
                             ),
                           ],
                         ),
@@ -544,19 +545,19 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                   if (hasPending)
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                       child: const Row(
                         children: [
-                          Icon(Icons.hourglass_empty, color: Colors.orange, size: 20),
+                          Icon(Icons.hourglass_empty, color: AppColors.warning, size: 20),
                           SizedBox(width: 12),
-                          Expanded(child: Text("Upgrade Request Pending Approval", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 13))),
+                          Expanded(child: Text("Upgrade Request Pending Approval", style: TextStyle(color: AppColors.warning, fontWeight: FontWeight.bold, fontSize: 13))),
                         ],
                       ),
                     )
                   else if (!isStandard)
                     SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _upgradeFlow, child: const Text("UPGRADE NOW")))
                   else ...[
-                    const Text("Enjoy full standard features & cloud sync.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+                    Text("Enjoy full standard features & cloud sync.", style: TextStyle(color: AppColors.textSecondary(context), fontStyle: FontStyle.italic)),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity, 
@@ -577,12 +578,12 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: SwitchListTile(
-              secondary: Icon(Icons.auto_awesome, color: activeStore.autoActivateSubscription ? Colors.orange : Colors.grey),
+              secondary: Icon(Icons.auto_awesome, color: activeStore.autoActivateSubscription ? AppColors.warning : AppColors.textSecondary(context)),
               title: const Text("Auto-activate next subscription", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               subtitle: const Text("Automatically activate queued coupons when the current plan expires.", style: TextStyle(fontSize: 12)),
               value: activeStore.autoActivateSubscription,
               onChanged: (val) => provider.toggleAutoActivateSub(val),
-              activeColor: Colors.orange,
+              activeColor: AppColors.warning,
             ),
           ),
 
@@ -594,7 +595,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           
           if (provider.rejectedSubscriptions.isNotEmpty) ...[
             const SizedBox(height: 32),
-            const Text("Rejected Requests", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+            const Text("Rejected Requests", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.error)),
             const SizedBox(height: 16),
             _buildRejectedRequests(provider, isDark),
           ],
@@ -604,9 +605,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           const SizedBox(height: 16),
           
           if (provider.subscriptionHistory.isEmpty)
-             const Center(child: Padding(
+             Center(child: Padding(
                padding: EdgeInsets.all(32.0),
-               child: Text("No subscription history found", style: TextStyle(color: Colors.grey)),
+               child: Text("No subscription history found", style: TextStyle(color: AppColors.textSecondary(context))),
              ))
           else
             ListView.separated(
@@ -619,17 +620,17 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                 final sub = historyItems[idx];
                 final df = DateFormat('dd MMM yyyy');
                 return ListTile(
-                  tileColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade50,
+                  tileColor: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.textSecondary(context),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: CircleAvatar(
-                    backgroundColor: sub.isActive ? Colors.green.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
-                    child: Icon(Icons.history, color: sub.isActive ? Colors.green : Colors.grey),
+                    backgroundColor: sub.isActive ? AppColors.success.withValues(alpha: 0.1) : AppColors.textSecondary(context).withValues(alpha: 0.1),
+                    child: Icon(Icons.history, color: sub.isActive ? AppColors.success : AppColors.textSecondary(context)),
                   ),
                   title: Text("${sub.planName} - ${sub.billingCycle}", style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text("Valid: ${df.format(sub.startDate)} - ${df.format(sub.endDate)}"),
                   trailing: Text(
                     sub.isActive ? "ACTIVE" : "EXPIRED",
-                    style: TextStyle(color: sub.isActive ? Colors.green : Colors.grey, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(color: sub.isActive ? AppColors.success : AppColors.textSecondary(context), fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 );
               },
@@ -664,7 +665,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: isInstalled
-              ? BorderSide(color: Colors.green.shade400, width: 1.5)
+              ? BorderSide(color: AppColors.success, width: 1.5)
               : BorderSide(color: Theme.of(context).dividerColor, width: 0.5),
           ),
           child: Padding(
@@ -686,7 +687,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                         right: -2, top: -2,
                         child: Container(
                           padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                          decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
                           child: const Icon(Icons.check, color: Colors.white, size: 8),
                         ),
                       ),
@@ -712,12 +713,12 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                               margin: const EdgeInsets.only(left: 4),
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.green.withValues(alpha: 0.1),
+                                color: AppColors.success.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 "$remainingDays Days",
-                                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.green),
+                                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.success),
                               ),
                             ),
                         ],
@@ -735,17 +736,17 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                    Switch(
                      value: isEnabled, 
                      onChanged: onToggle,
-                     activeColor: Colors.green,
+                     activeColor: AppColors.success,
                      // scale: 0.7, // Only available in newer flutter versions or via Transform
                    )
                 else if (isInstalled)
-                  Icon(Icons.check_circle, color: Colors.green.shade500, size: 22)
+                  Icon(Icons.check_circle, color: AppColors.success, size: 22)
                 else if (isLocked)
-                  const Icon(Icons.lock, color: Colors.grey, size: 20)
+                  Icon(Icons.lock, color: AppColors.textSecondary(context), size: 20)
                 else if (isPending)
-                  const Text("PENDING", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold))
+                  const Text("PENDING", style: TextStyle(color: AppColors.warning, fontSize: 10, fontWeight: FontWeight.bold))
                 else
-                  Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey.shade400),
+                  Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary(context)),
               ],
             ),
           ),
@@ -758,12 +759,12 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isStandard ? Colors.green.withValues(alpha: 0.1) : Colors.indigo.withValues(alpha: 0.1),
+        color: isStandard ? AppColors.success.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         isStandard ? "UNLIMITED" : "BASIC", 
-        style: TextStyle(fontWeight: FontWeight.bold, color: isStandard ? Colors.green : Colors.indigo, fontSize: 12),
+        style: TextStyle(fontWeight: FontWeight.bold, color: isStandard ? AppColors.success : AppColors.primary, fontSize: 12),
       ),
     );
   }
@@ -781,17 +782,17 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       if (h.endDate.isAfter(maxEnd)) maxEnd = h.endDate;
     }
     
-    Color textColor = Colors.green;
-    Color bgColor = Colors.green.withValues(alpha: 0.1);
+    Color textColor = AppColors.success;
+    Color bgColor = AppColors.success.withValues(alpha: 0.1);
     IconData icon = Icons.timer;
 
     if (days <= 0) {
-      textColor = Colors.red;
-      bgColor = Colors.red.withValues(alpha: 0.1);
+      textColor = AppColors.error;
+      bgColor = AppColors.error.withValues(alpha: 0.1);
       icon = Icons.error_outline;
     } else if (days < 3) {
-      textColor = Colors.orange;
-      bgColor = Colors.orange.withValues(alpha: 0.1);
+      textColor = AppColors.warning;
+      bgColor = AppColors.warning.withValues(alpha: 0.1);
       icon = Icons.warning_amber;
     }
 
@@ -826,7 +827,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                 ),
               ),
               if (days < 3 && days > 0)
-                const Icon(Icons.priority_high, color: Colors.orange, size: 20),
+                const Icon(Icons.priority_high, color: AppColors.warning, size: 20),
             ],
           ),
         ),
@@ -844,7 +845,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                 if (addonDays <= 0) return const SizedBox.shrink();
                 
                 final metadata = addonsMetadata.firstWhere((a) => a['key'] == key, orElse: () => {'title': key});
-                final addonColor = metadata['color'] as Color? ?? Colors.indigo;
+                final addonColor = metadata['color'] as Color? ?? AppColors.primary;
                 
                 return Container(
                   margin: const EdgeInsets.only(top: 12),
@@ -866,7 +867,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                               metadata['title'] as String? ?? key,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                             ),
-                            const Text("Module active", style: TextStyle(color: Colors.grey, fontSize: 11)),
+                            Text("Module active", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 11)),
                           ],
                         ),
                       ),
@@ -894,8 +895,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       return Container(
         padding: const EdgeInsets.all(24),
         width: double.infinity,
-        decoration: BoxDecoration(color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-        child: const Text("No advance subscriptions in queue.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 13, fontStyle: FontStyle.italic)),
+        decoration: BoxDecoration(color: isDark ? Colors.white.withValues(alpha: 0.03) : AppColors.textSecondary(context), borderRadius: BorderRadius.circular(12)),
+        child: Text("No advance subscriptions in queue.", textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13, fontStyle: FontStyle.italic)),
       );
     }
 
@@ -907,14 +908,14 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       itemBuilder: (ctx, idx) {
         final sub = queued[idx];
         return ListTile(
-          tileColor: isDark ? Colors.orange.withValues(alpha: 0.05) : Colors.orange.shade50,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.orange.withValues(alpha: 0.2))),
-          leading: const CircleAvatar(backgroundColor: Colors.orange, child: Icon(Icons.confirmation_num, color: Colors.white)),
+          tileColor: isDark ? AppColors.warning.withValues(alpha: 0.05) : AppColors.warning,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.warning.withValues(alpha: 0.2))),
+          leading: const CircleAvatar(backgroundColor: AppColors.warning, child: Icon(Icons.confirmation_num, color: Colors.white)),
           title: Text("${sub.planName} Coupon (${sub.billingCycle})", style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: const Text("Status: QUEUED for later use"),
           trailing: ElevatedButton(
             onPressed: () => provider.activateSubscriptionCoupon(sub.id),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning, foregroundColor: Colors.white),
             child: const Text("ACTIVATE NOW"),
           ),
         );
@@ -941,13 +942,13 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           // KPI CARDS
           Row(
             children: [
-              _buildStatCard("Total Stores", totalStores.toString(), Icons.store, Colors.blue, isDark),
+              _buildStatCard("Total Stores", totalStores.toString(), Icons.store, AppColors.primaryLight, isDark),
               const SizedBox(width: 16),
-              _buildStatCard("Active Subs", activeSubs.toString(), Icons.verified, Colors.green, isDark),
+              _buildStatCard("Active Subs", activeSubs.toString(), Icons.verified, AppColors.success, isDark),
             ],
           ),
           const SizedBox(height: 16),
-          _buildStatCard("Total Revenue", "₹${totalValue.toStringAsFixed(2)}", Icons.payments, Colors.orange, isDark, fullWidth: true),
+          _buildStatCard("Total Revenue", "₹${totalValue.toStringAsFixed(2)}", Icons.payments, AppColors.warning, isDark, fullWidth: true),
           
           const SizedBox(height: 32),
           
@@ -990,7 +991,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
         color: isDark ? const Color(0xFF2D2D44) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05), blurRadius: 10)],
-        border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade100),
+        border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
       ),
       child: Row(
         children: [
@@ -1003,7 +1004,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+              Text(title, style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
               Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             ],
           )
@@ -1016,7 +1017,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
 
   Widget _buildPlanDistributionCard(Map<String, dynamic> dist, bool isDark) {
     final List<PieChartSectionData> sections = [];
-    final colors = [Colors.blue, Colors.green, Colors.orange, Colors.purple, Colors.red, Colors.teal];
+    final colors = [AppColors.primaryLight, AppColors.success, AppColors.warning, AppColors.primaryLight, AppColors.error, AppColors.primary];
     int colorIdx = 0;
 
     dist.forEach((plan, count) {
@@ -1036,7 +1037,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2D2D44) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade100),
+        border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
       ),
       child: Column(
         children: [
@@ -1071,7 +1072,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2D2D44) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade100),
+        border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
       ),
       child: Column(
         children: [
@@ -1090,17 +1091,17 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                       FlSpot(4, 5), FlSpot(5, 8), FlSpot(6, 6),
                     ],
                     isCurved: true,
-                    color: Colors.indigo,
+                    color: AppColors.primary,
                     barWidth: 4,
                     dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(show: true, color: Colors.indigo.withValues(alpha: 0.1)),
+                    belowBarData: BarAreaData(show: true, color: AppColors.primary.withValues(alpha: 0.1)),
                   ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
-          const Text("Weekly cumulative growth metrics", style: TextStyle(color: Colors.grey, fontSize: 10)),
+          Text("Weekly cumulative growth metrics", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 10)),
         ],
       ),
     );
@@ -1114,15 +1115,15 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
         padding: const EdgeInsets.all(24),
         width: double.infinity,
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade50,
+          color: isDark ? Colors.white.withValues(alpha: 0.03) : AppColors.textSecondary(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade200),
+          border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
         ),
-        child: const Column(
+        child: Column(
           children: [
-            Icon(Icons.query_stats, color: Colors.grey, size: 32),
+            Icon(Icons.query_stats, color: AppColors.textSecondary(context), size: 32),
             SizedBox(height: 12),
-            Text("No recent subscription activity found.", style: TextStyle(color: Colors.grey, fontSize: 13, fontStyle: FontStyle.italic)),
+            Text("No recent subscription activity found.", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13, fontStyle: FontStyle.italic)),
           ],
         ),
       );
@@ -1144,14 +1145,14 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: CircleAvatar(
-            backgroundColor: Colors.indigo.withValues(alpha: 0.1),
-            child: const Icon(Icons.receipt_long, color: Colors.indigo, size: 20),
+            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+            child: const Icon(Icons.receipt_long, color: AppColors.primary, size: 20),
           ),
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("Store: ${item['storeId'] ?? 'N/A'}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              Text("₹${item['amount'] ?? 0}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+              Text("₹${item['amount'] ?? 0}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success)),
             ],
           ),
           subtitle: Column(
@@ -1162,12 +1163,12 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
               const SizedBox(height: 2),
               Row(
                 children: [
-                  Text(dateStr, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  Text(dateStr, style: TextStyle(fontSize: 11, color: AppColors.textSecondary(context))),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                    child: Text(item['status']?.toString().toUpperCase() ?? 'ACTIVE', style: const TextStyle(fontSize: 9, color: Colors.green, fontWeight: FontWeight.bold)),
+                    decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                    child: Text(item['status']?.toString().toUpperCase() ?? 'ACTIVE', style: const TextStyle(fontSize: 9, color: AppColors.success, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -1181,15 +1182,15 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? Colors.red.withValues(alpha: 0.05) : Colors.red.shade50,
+        color: isDark ? AppColors.error.withValues(alpha: 0.05) : AppColors.error,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? Colors.red.withValues(alpha: 0.1) : Colors.red.shade100),
+        border: Border.all(color: isDark ? AppColors.error.withValues(alpha: 0.1) : AppColors.error),
       ),
       child: const Column(
         children: [
-          Icon(Icons.report_problem, color: Colors.red, size: 32),
+          Icon(Icons.report_problem, color: AppColors.error, size: 32),
           SizedBox(height: 12),
-          Text("No subscription rejection records found.", style: TextStyle(color: Colors.red, fontSize: 13)),
+          Text("No subscription rejection records found.", style: TextStyle(color: AppColors.error, fontSize: 13)),
         ],
       ),
     );

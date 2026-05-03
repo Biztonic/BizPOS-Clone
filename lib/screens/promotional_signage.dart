@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import '../core/design/tokens/app_colors.dart';
+import 'package:flutter/material.dart';
 import 'dart:async';
 
 class PromotionalSignage extends StatefulWidget {
@@ -16,7 +17,7 @@ class _PromotionalSignageState extends State<PromotionalSignage> {
     "Download our App for Rewards",
     "New Arrival: Spicy Chicken Blast"
   ];
-  final List<Color> _colors = [Colors.red, Colors.blue, Colors.purple, Colors.orange];
+  final List<Color> _colors = [AppColors.error, AppColors.primaryLight, AppColors.primaryLight, AppColors.warning];
   Timer? _timer;
 
   @override

@@ -1,7 +1,14 @@
-﻿// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/store_provider.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import '../../core/design/components/atoms/app_card.dart';
+import '../../core/design/components/atoms/app_button.dart';
+import '../../core/design/components/atoms/app_text_field.dart';
+import '../../core/design/tokens/app_spacing.dart';
+import '../../core/design/tokens/app_typography.dart';
+import '../../core/design/tokens/app_colors.dart';
 import '../../models/role_model.dart';
 
 class RoleConfigurationScreen extends StatefulWidget {
@@ -14,12 +21,17 @@ class RoleConfigurationScreen extends StatefulWidget {
 class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Rule & Role Configuration"),
-        centerTitle: true,
-      ),
-      body: Consumer<StoreProvider>(
+    return PosScaffold(
+      title: "Rule & Role Configuration",
+      actions: [
+        AppButton.primary(
+          onPressed: () => _showRoleEditor(context, Provider.of<StoreProvider>(context, listen: false), null),
+          label: "Create Role",
+          icon: Icons.add,
+        ),
+        const SizedBox(width: AppSpacing.md),
+      ],
+      mainContent: Consumer<StoreProvider>(
         builder: (context, provider, _) {
           final roles = provider.roles;
           
@@ -28,54 +40,102 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             itemCount: roles.length,
             itemBuilder: (ctx, index) {
               final role = roles[index];
-              return Card(
-                elevation: 2,
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                   leading: CircleAvatar(
-                      backgroundColor: role.isSystem ? Colors.purple[50] : Colors.blue[50],
-                      child: Icon(
-                         role.isSystem ? Icons.lock : Icons.badge, 
-                         color: role.isSystem ? Colors.purple : Colors.blue
-                      ),
-                   ),
-                   title: Text(role.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                   subtitle: Column(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     children: [
-                       if (role.description != null) Text(role.description!),
-                       const SizedBox(height: 4),
-                       _buildModeBadge(role.storeAccessMode),
-                     ],
-                   ),
-                   trailing: Row(
-                     mainAxisSize: MainAxisSize.min,
-                     children: [
-                       IconButton(
-                         icon: const Icon(Icons.edit, color: Colors.blue),
-                         onPressed: () => _showRoleEditor(context, provider, role),
-                       ),
-                       if (!role.isSystem)
-                         IconButton(
-                           icon: const Icon(Icons.delete, color: Colors.red),
-                           onPressed: () => _confirmDelete(context, provider, role),
-                         ),
-                     ],
-                   ),
-                ),
-              );
+              return _buildRoleCard(context, role, provider);
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showRoleEditor(context, Provider.of<StoreProvider>(context, listen: false), null),
-        label: const Text("Create Role"),
-        icon: const Icon(Icons.add),
+    );
+  }
+
+  Widget _buildRoleCard(BuildContext context, RoleModel role, StoreProvider provider) {
+    final isSystem = role.isSystem;
+    final iconColor = isSystem ? AppColors.primaryLight : AppColors.primary;
+    final permCount = role.permissions.entries.where((e) => e.value == true).length;
+
+    return AppCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppSpacing.sm),
+            ),
+            child: Icon(
+              isSystem ? Icons.lock : Icons.badge_outlined,
+              color: iconColor,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(role.name, style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                    if (isSystem) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text("SYSTEM", style: TextStyle(fontSize: 9, color: AppColors.primaryLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                      ),
+                    ],
+                  ],
+                ),
+                if (role.description != null && role.description!.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(role.description!, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+                ],
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    _buildModeBadge(role.storeAccessMode),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      "$permCount permission${permCount != 1 ? 's' : ''}",
+                      style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Actions
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppButton.secondary(
+                label: "Edit",
+                icon: Icons.edit_outlined,
+                onPressed: () => _showRoleEditor(context, provider, role),
+              ),
+              if (!isSystem) ...[
+                const SizedBox(width: AppSpacing.xs),
+                AppButton.danger(
+                  label: "Delete",
+                  icon: Icons.delete_outline,
+                  onPressed: () => _confirmDelete(context, provider, role),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -85,15 +145,15 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
     String label;
     switch(mode) {
       case 'multi_full': 
-        color = Colors.purple;
+        color = AppColors.primaryLight;
         label = "Multi-Store (Full)";
         break;
       case 'franchise':
-        color = Colors.orange;
-        label = "Franchise (Read-Only Secondary)";
+        color = AppColors.warning;
+        label = "Franchise (Read-Only)";
         break;
        default:
-        color = Colors.green;
+        color = AppColors.success;
         label = "Single Store";
     }
     
@@ -112,24 +172,15 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
      final nameCtrl = TextEditingController(text: role?.name ?? '');
      final descCtrl = TextEditingController(text: role?.description ?? '');
      String accessMode = role?.storeAccessMode ?? 'single';
-     // Copy permissions or default empty
      Map<String, bool> permissions = Map<String, bool>.from(role?.permissions ?? {});
-     
-     // Helper to toggle
-     void togglePerm(String key, bool val) {
-        if (!val) {
-           permissions.remove(key);
-        } else {
-           permissions[key] = true;
-        }
-     }
      
      showDialog(
        context: context,
        builder: (ctx) => StatefulBuilder(
          builder: (context, setState) {
            return AlertDialog(
-             title: Text(role == null ? "Create Role" : "Edit Role"),
+             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+             title: Text(role == null ? "Create Role" : "Edit Role", style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
              content: SizedBox(
                width: 500,
                child: SingleChildScrollView(
@@ -137,19 +188,22 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
                    crossAxisAlignment: CrossAxisAlignment.start,
                    mainAxisSize: MainAxisSize.min,
                    children: [
-                      TextField(
+                      AppTextField(
                         controller: nameCtrl,
-                        decoration: const InputDecoration(labelText: "Role Name", border: OutlineInputBorder()),
-                        enabled: role == null || !role.isSystem, // System names locked? Usually good practice.
+                        label: "Role Name",
+                        hintText: "e.g. Manager",
+                        prefixIcon: const Icon(Icons.badge_outlined),
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
+                      const SizedBox(height: AppSpacing.md),
+                      AppTextField(
                         controller: descCtrl,
-                        decoration: const InputDecoration(labelText: "Description", border: OutlineInputBorder()),
+                        label: "Description",
+                        hintText: "What can this role do?",
+                        prefixIcon: const Icon(Icons.description_outlined),
                       ),
-                      const SizedBox(height: 16),
-                      const Text("Store Access Mode", style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.lg),
+                      Text("Store Access Mode", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: AppSpacing.sm),
                       DropdownButtonFormField<String>(
                         value: accessMode,
                         items: const [
@@ -158,16 +212,27 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
                           DropdownMenuItem(value: 'franchise', child: Text("Franchise (Primary Write / Secondary Read)")),
                         ],
                         onChanged: (v) => setState(() => accessMode = v!),
-                        decoration: const InputDecoration(border: OutlineInputBorder()),
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      const Text("Permissions", style: TextStyle(fontWeight: FontWeight.bold)),
-                      const Divider(),
+                      const SizedBox(height: AppSpacing.lg),
+                      Text("Permissions", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                      const Divider(height: AppSpacing.lg),
                       CheckboxListTile(
-                         title: const Text("Full Admin Access (All)"),
+                         title: Text("Full Admin Access (All)", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
                          value: permissions['all'] == true,
-                         onChanged: (v) => setState(() => togglePerm('all', v!)),
+                         onChanged: (v) => setState(() {
+                           if (v == true) {
+                             permissions['all'] = true;
+                           } else {
+                             permissions.remove('all');
+                           }
+                         }),
                          controlAffinity: ListTileControlAffinity.leading,
+                         contentPadding: EdgeInsets.zero,
+                         activeColor: AppColors.primary,
                       ),
                       if (permissions['all'] != true) ...[
                         _buildPermCheckbox("POS Access", 'pos', permissions, setState),
@@ -182,13 +247,16 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
                ),
              ),
              actions: [
-               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-               ElevatedButton(
+               TextButton(
+                 onPressed: () => Navigator.pop(ctx),
+                 child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context))),
+               ),
+               AppButton.primary(
                  onPressed: () async {
                     if (nameCtrl.text.isEmpty) return;
                     
                     final newRole = RoleModel(
-                       id: role?.id ?? '', // Empty ID triggers create logic in provider
+                       id: role?.id ?? '',
                        name: nameCtrl.text.trim(),
                        description: descCtrl.text.trim(),
                        permissions: permissions,
@@ -204,10 +272,10 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
                        }
                        if (mounted) Navigator.pop(ctx);
                     } catch (e) {
-                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: AppColors.error));
                     }
                  },
-                 child: const Text("Save"),
+                 label: "Save",
                )
              ],
            );
@@ -218,7 +286,7 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
   
   Widget _buildPermCheckbox(String label, String key, Map<String, bool> permissions, StateSetter setState) {
      return CheckboxListTile(
-       title: Text(label),
+       title: Text(label, style: AppTypography.bodyMedium),
        value: permissions[key] == true,
        dense: true,
        onChanged: (v) => setState(() {
@@ -229,6 +297,8 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
           }
        }),
        controlAffinity: ListTileControlAffinity.leading,
+       contentPadding: EdgeInsets.zero,
+       activeColor: AppColors.primary,
      );
   }
 
@@ -236,17 +306,20 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
     showDialog(
        context: context,
        builder: (ctx) => AlertDialog(
-          title: const Text("Delete Role?"),
-          content: Text("Delete '${role.name}'? Users with this role may lose access."),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text("Delete Role?", style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+          content: Text("Delete '${role.name}'? Users with this role may lose access.", style: AppTypography.bodyMedium),
           actions: [
-             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-             ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+             TextButton(
+               onPressed: () => Navigator.pop(ctx),
+               child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context))),
+             ),
+             AppButton.danger(
                 onPressed: () async {
                    await provider.deleteRole(role.id);
                    Navigator.pop(ctx);
                 },
-                child: const Text("Delete", style: TextStyle(color: Colors.white)),
+                label: "Delete",
              )
           ],
        )

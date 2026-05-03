@@ -6,66 +6,80 @@ enum AppButtonVariant { primary, secondary, danger, outline, ghost, text }
 enum AppButtonSize { small, medium, large }
 
 class AppButton extends StatelessWidget {
-  final String label;
+  final String? label;
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
   final AppButtonSize size;
   final bool isLoading;
   final IconData? icon;
+  final double? width;
+  final Color? foregroundColor;
 
   const AppButton({
     super.key,
-    required this.label,
+    this.label,
     this.onPressed,
     this.variant = AppButtonVariant.primary,
     this.size = AppButtonSize.medium,
     this.isLoading = false,
     this.icon,
+    this.width,
+    this.foregroundColor,
   });
 
   const AppButton.primary({
     super.key,
-    required this.label,
+    this.label,
     this.onPressed,
     this.size = AppButtonSize.medium,
     this.isLoading = false,
     this.icon,
+    this.width,
+    this.foregroundColor,
   }) : variant = AppButtonVariant.primary;
 
   const AppButton.secondary({
     super.key,
-    required this.label,
+    this.label,
     this.onPressed,
     this.size = AppButtonSize.medium,
     this.isLoading = false,
     this.icon,
+    this.width,
+    this.foregroundColor,
   }) : variant = AppButtonVariant.secondary;
 
   const AppButton.danger({
     super.key,
-    required this.label,
+    this.label,
     this.onPressed,
     this.size = AppButtonSize.medium,
     this.isLoading = false,
     this.icon,
+    this.width,
+    this.foregroundColor,
   }) : variant = AppButtonVariant.danger;
   
   const AppButton.outline({
     super.key,
-    required this.label,
+    this.label,
     this.onPressed,
     this.size = AppButtonSize.medium,
     this.isLoading = false,
     this.icon,
+    this.width,
+    this.foregroundColor,
   }) : variant = AppButtonVariant.outline;
 
   const AppButton.ghost({
     super.key,
-    required this.label,
+    this.label,
     this.onPressed,
     this.size = AppButtonSize.medium,
     this.isLoading = false,
     this.icon,
+    this.width,
+    this.foregroundColor,
   }) : variant = AppButtonVariant.ghost;
 
   EdgeInsetsGeometry _getPadding() {
@@ -107,33 +121,38 @@ class AppButton extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     
     // Base styles
-    Color backgroundColor;
-    Color foregroundColor;
+    Color bgColor;
+    Color fgColor;
     BorderSide? border;
 
     switch (variant) {
       case AppButtonVariant.primary:
-        backgroundColor = colorScheme.primary;
-        foregroundColor = colorScheme.onPrimary;
+        bgColor = colorScheme.primary;
+        fgColor = colorScheme.onPrimary;
         break;
       case AppButtonVariant.secondary:
-        backgroundColor = colorScheme.secondaryContainer;
-        foregroundColor = colorScheme.onSecondaryContainer;
+        bgColor = colorScheme.secondaryContainer;
+        fgColor = colorScheme.onSecondaryContainer;
         break;
       case AppButtonVariant.danger:
-        backgroundColor = colorScheme.error;
-        foregroundColor = colorScheme.onError;
+        bgColor = colorScheme.error;
+        fgColor = colorScheme.onError;
         break;
       case AppButtonVariant.outline:
-        backgroundColor = Colors.transparent;
-        foregroundColor = colorScheme.primary;
+        bgColor = Colors.transparent;
+        fgColor = colorScheme.primary;
         border = BorderSide(color: colorScheme.primary, width: 1.5);
         break;
       case AppButtonVariant.ghost:
       case AppButtonVariant.text:
-        backgroundColor = Colors.transparent;
-        foregroundColor = colorScheme.primary;
+        bgColor = Colors.transparent;
+        fgColor = colorScheme.primary;
         break;
+    }
+
+    // Apply foregroundColor override if provided
+    if (foregroundColor != null) {
+      fgColor = foregroundColor!;
     }
 
     // Interactive state colors for Ghost/Text
@@ -146,21 +165,21 @@ class AppButton extends StatelessWidget {
           return colorScheme.onSurface.withValues(alpha: 0.12);
         }
         if (isGhost) {
-          if (states.contains(WidgetState.pressed)) return foregroundColor.withValues(alpha: 0.12);
-          if (states.contains(WidgetState.hovered)) return foregroundColor.withValues(alpha: 0.08);
+          if (states.contains(WidgetState.pressed)) return fgColor.withValues(alpha: 0.12);
+          if (states.contains(WidgetState.hovered)) return fgColor.withValues(alpha: 0.08);
           return Colors.transparent;
         }
-        return backgroundColor;
+        return bgColor;
       }),
       foregroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
           return colorScheme.onSurface.withValues(alpha: 0.38);
         }
-        return foregroundColor;
+        return fgColor;
       }),
       overlayColor: WidgetStateProperty.resolveWith((states) {
         if (isGhost) return Colors.transparent; // Handled in backgroundColor
-        return foregroundColor.withValues(alpha: 0.1);
+        return fgColor.withValues(alpha: 0.1);
       }),
       elevation: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled) || isGhost || variant == AppButtonVariant.outline) return 0;
@@ -187,28 +206,35 @@ class AppButton extends StatelessWidget {
             height: _getIconSize(),
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: foregroundColor,
+              color: fgColor,
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
+          if (label != null) const SizedBox(width: AppSpacing.sm),
         ] else if (icon != null) ...[
           Icon(icon, size: _getIconSize()),
-          const SizedBox(width: AppSpacing.sm),
+          if (label != null) const SizedBox(width: AppSpacing.sm),
         ],
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: _getFontSize(theme.textTheme),
-            fontWeight: FontWeight.w600,
+        if (label != null)
+          Text(
+            label!,
+            style: TextStyle(
+              fontSize: _getFontSize(theme.textTheme),
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
       ],
     );
 
-    return ElevatedButton(
+    final button = ElevatedButton(
       onPressed: (isLoading || onPressed == null) ? null : onPressed,
       style: buttonStyle,
       child: content,
     );
+
+    if (width != null) {
+      return SizedBox(width: width, child: button);
+    }
+    return button;
   }
 }
+

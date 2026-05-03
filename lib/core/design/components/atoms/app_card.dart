@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
-import '../tokens/app_radius.dart';
-import '../tokens/app_spacing.dart';
+import '../../tokens/app_radius.dart';
+import '../../tokens/app_spacing.dart';
+import '../../density/app_density.dart';
 
 class AppCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final VoidCallback? onTap;
   final Color? backgroundColor;
+  final Color? borderColor;
   final bool outlined;
+  final bool isSelected;
+  final EdgeInsetsGeometry? margin;
+  final double? height;
+  final double? width;
 
   const AppCard({
     super.key,
@@ -15,12 +21,18 @@ class AppCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(AppSpacing.md),
     this.onTap,
     this.backgroundColor,
+    this.borderColor,
     this.outlined = false,
+    this.isSelected = false,
+    this.margin,
+    this.height,
+    this.width,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final density = AppDensityProvider.configOf(context);
     
     Widget content = Padding(
       padding: padding,
@@ -30,28 +42,54 @@ class AppCard extends StatelessWidget {
     if (onTap != null) {
       content = InkWell(
         onTap: onTap,
-        borderRadius: AppRadius.borderLg,
+        borderRadius: BorderRadius.circular(density.cardRadius),
         child: content,
       );
     }
 
-    if (outlined) {
-      return Card(
-        elevation: 0,
-        color: backgroundColor ?? Colors.transparent,
+    // Determine effective border
+    final effectiveBorderColor = isSelected
+        ? theme.colorScheme.primary
+        : borderColor;
+    final showBorder = outlined || isSelected || borderColor != null;
+
+    Widget card;
+    if (showBorder) {
+      card = Card(
+        elevation: isSelected ? 2 : 0,
+        color: isSelected
+            ? theme.colorScheme.primary.withValues(alpha: 0.05)
+            : (backgroundColor ?? Colors.transparent),
         shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.borderLg,
-          side: BorderSide(color: theme.dividerColor, width: 1),
+          borderRadius: BorderRadius.circular(density.cardRadius),
+          side: BorderSide(
+            color: effectiveBorderColor ?? theme.dividerColor,
+            width: isSelected ? 2 : 1,
+          ),
         ),
-        margin: EdgeInsets.zero,
+        margin: margin ?? EdgeInsets.zero,
+        child: content,
+      );
+    } else {
+      card = Card(
+        color: backgroundColor ?? theme.cardTheme.color,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(density.cardRadius),
+        ),
+        margin: margin ?? EdgeInsets.zero,
         child: content,
       );
     }
 
-    return Card(
-      color: backgroundColor ?? theme.cardTheme.color,
-      margin: EdgeInsets.zero,
-      child: content,
-    );
+    if (height != null || width != null) {
+      return SizedBox(
+        height: height,
+        width: width,
+        child: card,
+      );
+    }
+
+    return card;
   }
 }
+

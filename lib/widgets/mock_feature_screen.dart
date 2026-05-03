@@ -1,4 +1,5 @@
-﻿
+import '../core/design/tokens/app_colors.dart';
+
 import 'package:flutter/material.dart';
 
 // FeatureNode model for hierarchical features
@@ -55,7 +56,7 @@ class _FeatureTreeSelectorState extends State<FeatureTreeSelector> {
                 setState(() => node.enabled = val);
                 widget.onChanged?.call(widget.featureTree);
               },
-        secondary: isLocked ? const Icon(Icons.lock, color: Colors.grey) : null,
+        secondary: isLocked ? Icon(Icons.lock, color: AppColors.textSecondary(context)) : null,
       );
     } else {
       return ExpansionTile(
@@ -77,7 +78,7 @@ class _FeatureTreeSelectorState extends State<FeatureTreeSelector> {
                       widget.onChanged?.call(widget.featureTree);
                     },
             ),
-            if (isLocked) const Icon(Icons.lock, color: Colors.grey, size: 18),
+            if (isLocked) Icon(Icons.lock, color: AppColors.textSecondary(context), size: 18),
           ],
         ),
         children: node.children
@@ -219,14 +220,14 @@ class MockFeatureScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.lock, size: 64, color: Colors.grey),
+                    Icon(Icons.lock, size: 64, color: AppColors.textSecondary(context)),
                     const SizedBox(height: 16),
                     Text(
                       '$title is locked by plan',
                       style: Theme.of(context)
                           .textTheme
                           .titleLarge
-                          ?.copyWith(color: Colors.grey),
+                          ?.copyWith(color: AppColors.textSecondary(context)),
                     ),
                   ],
                 ),
@@ -277,11 +278,11 @@ class MockFeatureScreen extends StatelessWidget {
           // Stats Row
           Row(
             children: [
-              _buildStatCard(context, "Total", "124", Colors.blue),
+              _buildStatCard(context, "Total", "124", AppColors.primaryLight),
               const SizedBox(width: 16),
-              _buildStatCard(context, "Active", "89", Colors.green),
+              _buildStatCard(context, "Active", "89", AppColors.success),
               const SizedBox(width: 16),
-              _buildStatCard(context, "Pending", "35", Colors.orange),
+              _buildStatCard(context, "Pending", "35", AppColors.warning),
             ],
           ),
           const SizedBox(height: 24),
@@ -292,12 +293,12 @@ class MockFeatureScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.blue.shade50, Colors.purple.shade50],
+                colors: [AppColors.primaryLight, AppColors.primaryLight],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.blue.withValues(alpha: 0.1)),
+              border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.1)),
             ),
             child: CustomPaint(painter: _MockChartPainter()),
           ),
@@ -311,14 +312,14 @@ class MockFeatureScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.grey.shade200,
-                  child: Icon(icon, color: Colors.grey),
+                  backgroundColor: AppColors.textSecondary(context),
+                  child: Icon(icon, color: AppColors.textSecondary(context)),
                 ),
                 title: Container(
                   height: 16,
                   width: 150,
                   decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: AppColors.textSecondary(context),
                       borderRadius: BorderRadius.circular(4)),
                 ),
                 subtitle: Container(
@@ -326,14 +327,14 @@ class MockFeatureScreen extends StatelessWidget {
                   height: 12,
                   width: 100,
                   decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
+                      color: AppColors.textSecondary(context),
                       borderRadius: BorderRadius.circular(4)),
                 ),
                 trailing: Container(
                   height: 24,
                   width: 60,
                   decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: AppColors.textSecondary(context),
                       borderRadius: BorderRadius.circular(12)),
                 ),
               );
@@ -360,7 +361,7 @@ class MockFeatureScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: AppColors.textSecondary(context)),
             boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
           ),
           child: Column(
@@ -369,8 +370,8 @@ class MockFeatureScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 color: index % 2 == 0
-                    ? Colors.green.shade100
-                    : Colors.orange.shade100,
+                    ? AppColors.success
+                    : AppColors.warning,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -393,7 +394,7 @@ class MockFeatureScreen extends StatelessWidget {
                         Container(
                             width: 20,
                             height: 20,
-                            color: Colors.grey.shade200,
+                            color: AppColors.textSecondary(context),
                             child: const Center(
                                 child: Text("1x",
                                     style: TextStyle(fontSize: 10)))),
@@ -401,7 +402,7 @@ class MockFeatureScreen extends StatelessWidget {
                         Container(
                             height: 10,
                             width: 100,
-                            color: Colors.grey.shade300),
+                            color: AppColors.textSecondary(context)),
                       ],
                     ),
                   ),
@@ -415,7 +416,7 @@ class MockFeatureScreen extends StatelessWidget {
                   child: ElevatedButton(
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue),
+                          backgroundColor: AppColors.primaryLight),
                       child: const Text("Done",
                           style: TextStyle(color: Colors.white))),
                 ),
@@ -442,10 +443,10 @@ class MockFeatureScreen extends StatelessWidget {
         final isOccupied = index % 3 == 0;
         return Container(
           decoration: BoxDecoration(
-            color: isOccupied ? Colors.red.shade50 : Colors.green.shade50,
+            color: isOccupied ? AppColors.error : AppColors.success,
             shape: BoxShape.circle,
             border: Border.all(
-                color: isOccupied ? Colors.red.shade200 : Colors.green.shade200,
+                color: isOccupied ? AppColors.error : AppColors.success,
                 width: 2),
             boxShadow: const [
               BoxShadow(
@@ -456,15 +457,15 @@ class MockFeatureScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.table_restaurant,
-                  size: 32, color: isOccupied ? Colors.red : Colors.green),
+                  size: 32, color: isOccupied ? AppColors.error : AppColors.success),
               const SizedBox(height: 8),
               Text("T-${index + 1}",
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: isOccupied ? Colors.red : Colors.green)),
+                      color: isOccupied ? AppColors.error : AppColors.success)),
               if (isOccupied)
-                const Text("24:00",
-                    style: TextStyle(fontSize: 10, color: Colors.grey)),
+                Text("24:00",
+                    style: TextStyle(fontSize: 10, color: AppColors.textSecondary(context))),
             ],
           ),
         );
@@ -479,13 +480,13 @@ class MockFeatureScreen extends StatelessWidget {
         // Preparing
         Expanded(
           child: Container(
-            color: Colors.orange.shade50,
+            color: AppColors.warning,
             child: Column(
               children: [
                 Container(
                     padding: const EdgeInsets.all(16),
                     width: double.infinity,
-                    color: Colors.orange,
+                    color: AppColors.warning,
                     child: const Text("PREPARING",
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -514,13 +515,13 @@ class MockFeatureScreen extends StatelessWidget {
         // Ready
         Expanded(
           child: Container(
-            color: Colors.green.shade50,
+            color: AppColors.success,
             child: Column(
               children: [
                 Container(
                     padding: const EdgeInsets.all(16),
                     width: double.infinity,
-                    color: Colors.green,
+                    color: AppColors.success,
                     child: const Text("READY",
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -538,7 +539,7 @@ class MockFeatureScreen extends StatelessWidget {
                           style: const TextStyle(
                               fontSize: 48,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green)),
+                              color: AppColors.success)),
                     ),
                   ),
                 )
@@ -558,16 +559,16 @@ class MockFeatureScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: AppColors.textSecondary(context)),
           boxShadow: [
-            BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 5)
+            BoxShadow(color: AppColors.textSecondary(context).withValues(alpha: 0.1), blurRadius: 5)
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12)),
             const SizedBox(height: 4),
             Text(value,
                 style: TextStyle(
@@ -583,7 +584,7 @@ class _MockChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.blue.shade300
+      ..color = AppColors.primaryLight
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
 
@@ -599,7 +600,7 @@ class _MockChartPainter extends CustomPainter {
     // Fill
     final fillPaint = Paint()
       ..shader = LinearGradient(
-              colors: [Colors.blue.withValues(alpha: 0.3), Colors.transparent],
+              colors: [AppColors.primaryLight.withValues(alpha: 0.3), Colors.transparent],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter)
           .createShader(Rect.fromLTWH(0, 0, size.width, size.height))

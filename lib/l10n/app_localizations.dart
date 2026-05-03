@@ -98,6 +98,9 @@ class AppLocalizations {
       'receipt': 'Receipt',
       'order': 'Order',
       'orders': 'Orders',
+      'refund': 'Refund',
+      'confirm_refund': 'Confirm Refund',
+      'refund_confirmation_msg': 'Are you sure you want to refund this order?',
       
       // Inventory Screen
       'add_item': 'Add Item',
@@ -162,6 +165,18 @@ class AppLocalizations {
       'inactive': 'Inactive',
       'enabled': 'Enabled',
       'disabled': 'Disabled',
+      
+      // Dashboard Specific
+      'overview': 'Overview',
+      'weekly_performance': 'Weekly Performance',
+      'top_selling_products': 'Top Selling Products',
+      'today_sales': 'Today Sales',
+      'gross_profit': 'Gross Profit',
+      'cash_in_hand': 'Cash in Hand',
+      'credit_due': 'Credit Due',
+      'growth': 'Growth',
+      'avg_order': 'Avg Order',
+      'alert': 'ALERT',
     },
     'hi': {
       // Dashboard Menu
@@ -250,6 +265,9 @@ class AppLocalizations {
       'receipt': 'रसीद',
       'order': 'ऑर्डर',
       'orders': 'ऑर्डर',
+      'refund': 'रिफंड',
+      'confirm_refund': 'रिफंड की पुष्टि करें',
+      'refund_confirmation_msg': 'क्या आप वाकई इस ऑर्डर को रिफंड करना चाहते हैं?',
       
       // Inventory Screen
       'add_item': 'वस्तु जोड़ें',
@@ -314,6 +332,18 @@ class AppLocalizations {
       'inactive': 'निष्क्रिय',
       'enabled': 'सक्षम',
       'disabled': 'अक्षम',
+      
+      // Dashboard Specific
+      'overview': 'अवलोकन',
+      'weekly_performance': 'साप्ताहिक प्रदर्शन',
+      'top_selling_products': 'सबसे अधिक बिकने वाले उत्पाद',
+      'today_sales': 'आज की बिक्री',
+      'gross_profit': 'सकल लाभ',
+      'cash_in_hand': 'नकद हाथ में',
+      'credit_due': 'क्रेडिट बकाया',
+      'growth': 'वृद्धि',
+      'avg_order': 'औसत ऑर्डर',
+      'alert': 'चेतावनी',
     },
     'mr': {
       'dashboard': 'डॅशबोर्ड',

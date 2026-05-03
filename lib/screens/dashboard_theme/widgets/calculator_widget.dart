@@ -1,3 +1,4 @@
+import '../../../core/design/tokens/app_colors.dart';
 // ignore_for_file: curly_braces_in_flow_control_structures, deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -245,7 +246,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                             width: 36, 
                             height: 36,
                             decoration: BoxDecoration(
-                               color: Colors.redAccent,
+                               color: AppColors.error,
                                borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(Icons.close, color: Colors.white, size: 20),
@@ -274,9 +275,9 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                      child: Container(
                                         padding: const EdgeInsets.all(16),
                                         decoration: BoxDecoration(
-                                           color: isDark ? Colors.black38 : Colors.grey.shade100,
+                                           color: isDark ? Colors.black38 : AppColors.textSecondary(context),
                                            borderRadius: BorderRadius.circular(24),
-                                           border: Border.all(color: Colors.grey.withValues(alpha: 0.1))
+                                           border: Border.all(color: AppColors.textSecondary(context).withValues(alpha: 0.1))
                                         ),
                                         child: Column(
                                            mainAxisAlignment: MainAxisAlignment.end,
@@ -302,11 +303,11 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                      height: 70, // Fixed height
                                      child: Row(
                                         children: [
-                                           _buildSmartKey("Last Sale", lastSaleAmount, Colors.green),
+                                           _buildSmartKey("Last Sale", lastSaleAmount, AppColors.success),
                                            const SizedBox(width: 8),
-                                           _buildSmartKey("Orders", ordersCount, Colors.orange),
+                                           _buildSmartKey("Orders", ordersCount, AppColors.warning),
                                            const SizedBox(width: 8),
-                                           _buildSmartKey("Cash", cashDisplay, Colors.blue),
+                                           _buildSmartKey("Cash", cashDisplay, AppColors.primaryLight),
                                         ],
                                      ),
                                   ),
@@ -348,7 +349,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                           },
                                                           selectedColor: primary,
                                                           labelStyle: TextStyle(color: _selectedCategory == cat ? Colors.white : textColor),
-                                                          backgroundColor: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+                                                          backgroundColor: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context),
                                                           side: BorderSide.none,
                                                           visualDensity: VisualDensity.compact,
                                                        ),
@@ -378,7 +379,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                                 _buildWheelPicker(
                                                                   _units[_selectedCategory] ?? [], 
                                                                   _fromUnit, 
-                                                                  Colors.redAccent, 
+                                                                  AppColors.error, 
                                                                   (val) {
                                                                     setState(() { _fromUnit = val; _convert(); });
                                                                   }
@@ -453,7 +454,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                                 _buildWheelPicker(
                                                                   _units[_selectedCategory] ?? [], 
                                                                   _toUnit,
-                                                                  Colors.blueAccent, // Right is Blue (Wait prompt said "blue color to right wheel")
+                                                                  AppColors.primaryLightAccent, // Right is Blue (Wait prompt said "blue color to right wheel")
                                                                   (val) {
                                                                     setState(() { _toUnit = val; _convert(); });
                                                                   }
@@ -507,21 +508,21 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                    flex: 3,
                                    child: Column(
                                      children: [
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('C', Colors.redAccent.shade100, Colors.red.shade900)), const SizedBox(width: 8), Expanded(child: _buildBtn('⌫', Colors.orangeAccent.shade100, Colors.orange.shade900)), const SizedBox(width: 8), Expanded(child: _buildBtn('%', isDark ? Colors.grey.shade800 : Colors.grey.shade200, textColor)) ])),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('C', AppColors.error, AppColors.error)), SizedBox(width: 8), Expanded(child: _buildBtn('⌫', AppColors.warning, AppColors.warning)), SizedBox(width: 8), Expanded(child: _buildBtn('%', isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), textColor)) ])),
                                        const SizedBox(height: 12),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('7', isDark ? Colors.grey.shade800 : Colors.white, textColor)), const SizedBox(width: 8), Expanded(child: _buildBtn('8', isDark ? Colors.grey.shade800 : Colors.white, textColor)), const SizedBox(width: 8), Expanded(child: _buildBtn('9', isDark ? Colors.grey.shade800 : Colors.white, textColor)) ])),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('7', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('8', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('9', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
                                        const SizedBox(height: 12),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('4', isDark ? Colors.grey.shade800 : Colors.white, textColor)), const SizedBox(width: 8), Expanded(child: _buildBtn('5', isDark ? Colors.grey.shade800 : Colors.white, textColor)), const SizedBox(width: 8), Expanded(child: _buildBtn('6', isDark ? Colors.grey.shade800 : Colors.white, textColor)) ])),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('4', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('5', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('6', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
                                        const SizedBox(height: 12),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('1', isDark ? Colors.grey.shade800 : Colors.white, textColor)), const SizedBox(width: 8), Expanded(child: _buildBtn('2', isDark ? Colors.grey.shade800 : Colors.white, textColor)), const SizedBox(width: 8), Expanded(child: _buildBtn('3', isDark ? Colors.grey.shade800 : Colors.white, textColor)) ])),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('1', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('2', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('3', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
                                        const SizedBox(height: 12),
                                        // ROW 5: 0, ., = (Moved = here)
                                        Expanded(child: Row(children: [ 
-                                          Expanded(child: _buildBtn('0', isDark ? Colors.grey.shade800 : Colors.white, textColor)), 
+                                          Expanded(child: _buildBtn('0', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), 
                                           const SizedBox(width: 8), 
-                                          Expanded(child: _buildBtn('.', isDark ? Colors.grey.shade800 : Colors.white, textColor)), 
+                                          Expanded(child: _buildBtn('.', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), 
                                           const SizedBox(width: 8), 
-                                          Expanded(child: _buildBtn('=', Colors.green, Colors.white)),
+                                          Expanded(child: _buildBtn('=', AppColors.success, Colors.white)),
                                        ])),
                                      ],
                                    ),
@@ -602,7 +603,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
         childDelegate: ListWheelChildBuilderDelegate(
           builder: (context, index) {
              final isSelected = items[index] == selected;
-             final color = isSelected ? selectedColor : Colors.grey;
+             final color = isSelected ? selectedColor : AppColors.textSecondary(context);
              return Center(
                child: Text(
                  items[index],

@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/customer.dart';
 import '../providers/dashboard_provider.dart';
-
 import 'package:uuid/uuid.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/components/atoms/app_button.dart';
+import '../core/design/components/atoms/app_card.dart';
+import '../core/design/components/atoms/app_text_field.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
 
 class AddEditCustomerScreen extends StatefulWidget {
   final Customer? customer;
@@ -77,13 +82,13 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Customer saved successfully')),
+          const SnackBar(content: Text('Customer saved successfully'), behavior: SnackBarBehavior.floating),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {
@@ -93,50 +98,75 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.customer == null ? 'Add Customer' : 'Edit Customer')),
-      body: _isLoading 
+    return PosScaffold(
+      title: widget.customer == null ? 'Add Customer' : 'Edit Customer',
+      mainContent: _isLoading 
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Form(
                 key: _formKey,
-                child: ListView(
+                child: Column(
                   children: [
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder()),
-                      validator: (v) => v!.isEmpty ? 'Name required' : null,
+                    AppCard(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Profile Information", style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: AppSpacing.lg),
+                          AppTextField(
+                            controller: _nameController,
+                            label: 'Full Name',
+                            prefixIcon: const Icon(Icons.person_outline),
+                            validator: (v) => v!.isEmpty ? 'Name required' : null,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          AppTextField(
+                            controller: _phoneController,
+                            label: 'Phone / Mobile',
+                            prefixIcon: const Icon(Icons.phone_outlined),
+                            keyboardType: TextInputType.phone,
+                            validator: (v) => v!.isEmpty ? 'Phone required' : null,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          AppTextField(
+                            controller: _emailController,
+                            label: 'Email Address',
+                            prefixIcon: const Icon(Icons.email_outlined),
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _phoneController,
-                      decoration: const InputDecoration(labelText: 'Phone / Mobile', border: OutlineInputBorder()),
-                      keyboardType: TextInputType.phone,
-                      validator: (v) => v!.isEmpty ? 'Phone required' : null,
+                    const SizedBox(height: AppSpacing.md),
+                    AppCard(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                           Text("Business Details", style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: AppSpacing.lg),
+                          AppTextField(
+                            controller: _addressController,
+                            label: 'Billing Address',
+                            prefixIcon: const Icon(Icons.location_on_outlined),
+                            maxLines: 2,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          AppTextField(
+                            controller: _taxController,
+                            label: 'Tax / GST Number',
+                            prefixIcon: const Icon(Icons.receipt_outlined),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _addressController,
-                      decoration: const InputDecoration(labelText: 'Address', border: OutlineInputBorder()),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _taxController,
-                      decoration: const InputDecoration(labelText: 'Tax / GST Number', border: OutlineInputBorder()),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
+                    const SizedBox(height: AppSpacing.xl),
+                    AppButton.primary(
                       onPressed: _save,
-                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                      child: Text(widget.customer == null ? 'Create Customer' : 'Update Customer'),
+                      label: widget.customer == null ? 'Create Customer' : 'Update Customer',
+                      width: double.infinity,
                     ),
                   ],
                 ),
@@ -145,3 +175,4 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
     );
   }
 }
+

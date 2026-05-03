@@ -16,6 +16,21 @@ class AppTypography {
   static const TextStyle headlineMedium = TextStyle(fontSize: 28, fontWeight: FontWeight.w600);
   static const TextStyle headlineSmall = TextStyle(fontSize: 24, fontWeight: FontWeight.w600);
 
+  // Aliases for easier migration
+  static const TextStyle h2 = headlineMedium;
+  static const TextStyle h3 = headlineSmall;
+  static const TextStyle h4 = titleLarge;
+
+  // Helper Methods for direct Widget creation
+  static Text h2Text(String data, {Color? color, TextAlign? textAlign}) => 
+      Text(data, style: h2.copyWith(color: color), textAlign: textAlign);
+  
+  static Text h3Text(String data, {Color? color, TextAlign? textAlign}) => 
+      Text(data, style: h3.copyWith(color: color), textAlign: textAlign);
+
+  static Text h4Text(String data, {Color? color, TextAlign? textAlign}) => 
+      Text(data, style: h4.copyWith(color: color), textAlign: textAlign);
+
   // Titles
   static const TextStyle titleLarge = TextStyle(fontSize: 22, fontWeight: FontWeight.w600);
   static const TextStyle titleMedium = TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.15);

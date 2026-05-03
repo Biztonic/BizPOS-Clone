@@ -1,13 +1,19 @@
-// ignore_for_file: unused_field
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dashboard_provider.dart';
-import '../providers/order_provider.dart'; // NEW
+import '../providers/order_provider.dart';
 import '../models/order_model.dart';
 import '../services/printer_manager_service.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../l10n/app_localizations.dart'; // LOCALIZATION
+import '../l10n/app_localizations.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/components/atoms/app_button.dart';
+import '../core/design/components/atoms/app_card.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
+import '../core/design/tokens/app_colors.dart';
+import '../core/design/density/app_density.dart';
 
 class SalesScreen extends StatefulWidget {
   const SalesScreen({super.key});
@@ -208,90 +214,75 @@ class _SalesScreenState extends State<SalesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF14141F) : Colors.grey[100];
-    final surfaceColor = isDark ? const Color(0xFF1E1E2C) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final dividerColor = isDark ? Colors.white10 : Colors.grey.shade300;
-
-    // Check Mobile
+    final density = AppDensityProvider.configOf(context);
     final isMobile = MediaQuery.of(context).size.width < 700;
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        title: Text(AppLocalizations.t(context, 'sales'), style: const TextStyle(fontWeight: FontWeight.bold)),
-        elevation: 0,
-        backgroundColor: surfaceColor,
-        foregroundColor: textColor,
-        actions: [
-          IconButton(
-            icon: Icon(_descending ? Icons.arrow_downward : Icons.arrow_upward, color: textColor.withValues(alpha: 0.7)), 
-            onPressed: () {
-               setState(() {
-                 if (_sortBy == 'date') {
-                   _sortBy = 'total';
-                   _descending = true;
-                 } else if (_sortBy == 'total' && _descending) {
-                    _descending = false;
-                 } else {
-                   _sortBy = 'date';
-                   _descending = true;
-                 }
-                 _fetchOrders(isRefresh: true);
-               });
-            },
-            tooltip: 'Sort: $_sortBy',
-          ),
-          if (isMobile)
-             IconButton(
-               icon: const Icon(Icons.date_range),
-             tooltip: AppLocalizations.t(context, 'filter'),
-             onPressed: () => _showMobileDateSelector(surfaceColor, dividerColor),
-             ),
-        ],
-      ),
-      body: isMobile 
-        ? _buildRightPanel(surfaceColor, dividerColor, isDark)
+    return PosScaffold(
+      title: AppLocalizations.t(context, 'sales'),
+      actions: [
+        AppButton.secondary(
+          icon: _descending ? Icons.arrow_downward : Icons.arrow_upward,
+          onPressed: () {
+             setState(() {
+               if (_sortBy == 'date') {
+                 _sortBy = 'total';
+                 _descending = true;
+               } else if (_sortBy == 'total' && _descending) {
+                  _descending = false;
+               } else {
+                 _sortBy = 'date';
+                 _descending = true;
+               }
+               _fetchOrders(isRefresh: true);
+             });
+          },
+        ),
+        if (isMobile)
+           AppButton.secondary(
+             icon: Icons.date_range,
+             onPressed: () => _showMobileDateSelector(),
+           ),
+      ],
+      mainContent: isMobile 
+        ? _buildRightPanel()
         : Row(
             children: [
               // LEFT PANEL: Date Selectors
-              _buildLeftPanel(surfaceColor, dividerColor),
+              _buildLeftPanel(),
               // RIGHT PANEL
               Expanded(
-                child: _buildRightPanel(surfaceColor, dividerColor, isDark),
+                child: _buildRightPanel(),
               )
             ],
-          )
+          ),
     );
   }
 
-  void _showMobileDateSelector(Color surfaceColor, Color dividerColor) {
+  void _showMobileDateSelector() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: surfaceColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => SizedBox(
          height: 400,
          child: Column(
            children: [
-             const SizedBox(height: 16),
-             Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
-             const SizedBox(height: 16),
-             Expanded(child: _buildLeftPanel(Colors.transparent, dividerColor, isMobile: true)),
+             const SizedBox(height: AppSpacing.md),
+             Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.textSecondary(context), borderRadius: BorderRadius.circular(2))),
+             const SizedBox(height: AppSpacing.md),
+             Expanded(child: _buildLeftPanel(isMobile: true)),
            ],
          ),
       ),
     );
   }
 
-  Widget _buildLeftPanel(Color surfaceColor, Color dividerColor, {bool isMobile = false}) {
+  Widget _buildLeftPanel({bool isMobile = false}) {
+    final theme = Theme.of(context);
     return Container(
             width: isMobile ? double.infinity : 320,
             decoration: BoxDecoration(
-              color: surfaceColor,
-              border: isMobile ? null : Border(right: BorderSide(color: dividerColor)),
-              boxShadow: isMobile ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)]
+              color: theme.cardColor,
+              border: isMobile ? null : Border(right: BorderSide(color: theme.dividerColor)),
             ),
             child: Row(
               children: [
@@ -412,65 +403,67 @@ class _SalesScreenState extends State<SalesScreen> {
     );
   }
 
-  Widget _buildRightPanel(Color surfaceColor, Color dividerColor, bool isDark) {
+  Widget _buildRightPanel() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final density = AppDensityProvider.configOf(context);
+
     return RefreshIndicator(
-              onRefresh: () => _fetchOrders(isRefresh: true),
-              child: Column(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    color: surfaceColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getDateSummaryLabel(),
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.blueAccent : Colors.blue.shade900)
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                           "Showing $_totalCount transaction${_totalCount == 1 ? '' : 's'} • Total: ₹${_totalSales.toStringAsFixed(2)}",
-                           style: TextStyle(color: isDark ? Colors.white54 : Colors.grey[600], fontSize: 14)
+      onRefresh: () => _fetchOrders(isRefresh: true),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(density.cardPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getDateSummaryLabel(),
+                  style: AppTypography.displaySmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary)
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                   "Showing $_totalCount transaction${_totalCount == 1 ? '' : 's'} • Total: ₹${_totalSales.toStringAsFixed(2)}",
+                   style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))
+                )
+              ],
+            )
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _orders.isEmpty && !_isLoading 
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.history_toggle_off, size: 64, color: AppColors.textSecondary(context)),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(_errorMessage ?? AppLocalizations.t(context, 'no_data'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 16)),
+                      if (_errorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.sm),
+                          child: AppButton.primary(onPressed: () => _fetchOrders(isRefresh: true), label: AppLocalizations.t(context, 'refresh')),
                         )
-                      ],
-                    )
-                  ),
-                  Divider(height: 1, color: dividerColor),
-                  Expanded(
-                    child: _orders.isEmpty && !_isLoading 
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.history_toggle_off, size: 64, color: Colors.grey[300]),
-                              const SizedBox(height: 16),
-                              Text(_errorMessage ?? AppLocalizations.t(context, 'no_data'), style: TextStyle(color: Colors.grey[500], fontSize: 16)),
-                              if (_errorMessage != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: ElevatedButton(onPressed: () => _fetchOrders(isRefresh: true), child: Text(AppLocalizations.t(context, 'refresh'))),
-                                )
-                            ],
-                          )
-                        )
-                      : ListView.builder(
-                          controller: _listScrollController,
-                          padding: const EdgeInsets.all(24),
-                          itemCount: _orders.length + 1,
-                          itemBuilder: (context, index) {
-                            if (index == _orders.length) {
-                              return _hasMore 
-                                  ? const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())) 
-                                  : const SizedBox(height: 50);
-                            }
-                            return _buildOrderCard(_orders[index]);
-                          },
-                        ),
-                  ),
-                ],
-              ),
-            );
+                    ],
+                  )
+                )
+              : ListView.builder(
+                  controller: _listScrollController,
+                  padding: EdgeInsets.all(density.cardPadding),
+                  itemCount: _orders.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == _orders.length) {
+                      return _hasMore 
+                          ? const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.md), child: CircularProgressIndicator())) 
+                          : const SizedBox(height: 50);
+                    }
+                    return _buildOrderCard(_orders[index]);
+                  },
+                ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _getDateSummaryLabel() {
@@ -493,7 +486,7 @@ class _SalesScreenState extends State<SalesScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
+            child: Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textSecondary(context))),
           ),
           Expanded(
             child: ListWheelScrollView.useDelegate(
@@ -526,7 +519,7 @@ class _SalesScreenState extends State<SalesScreen> {
           width: isSelected ? 80 : 60,
           decoration: BoxDecoration(
              color: isSelected 
-                ? (isDark ? Colors.blueAccent.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.1)) 
+                ? (isDark ? AppColors.primaryLight.withValues(alpha: 0.2) : AppColors.primaryLight.withValues(alpha: 0.1)) 
                 : Colors.transparent, 
              borderRadius: BorderRadius.circular(8)
           ),
@@ -539,8 +532,8 @@ class _SalesScreenState extends State<SalesScreen> {
               fontSize: 20, 
               fontWeight: isSelected ? FontWeight.w900 : FontWeight.normal,
               color: isSelected 
-                  ? (isDark ? Colors.blueAccent : Colors.blue.shade800)
-                  : (isDark ? Colors.white24 : Colors.grey.shade400),
+                  ? AppColors.primaryLight
+                  : (isDark ? Colors.white24 : AppColors.textSecondary(context)),
             ),
           ),
         ),
@@ -551,27 +544,10 @@ class _SalesScreenState extends State<SalesScreen> {
   // --- EXISTING METHODS ---
   Widget _buildOrderCard(OrderModel order) {
     final bool isRefunded = order.status == 'Refunded';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E2C) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final subTextColor = isDark ? Colors.grey[400] : Colors.grey[600];
-
-    return Container(
+    
+    return AppCard(
       key: Key('order_card_${order.id}'),
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          )
-        ],
-        border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade200),
-      ),
-      padding: const EdgeInsets.all(20),
+      backgroundColor: isRefunded ? AppColors.error.withValues(alpha: 0.05) : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -581,35 +557,31 @@ class _SalesScreenState extends State<SalesScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
                       color: isRefunded 
-                          ? Colors.red.withValues(alpha: 0.1) 
-                          : Colors.blueAccent.withValues(alpha: 0.1),
+                          ? AppColors.error.withValues(alpha: 0.1) 
+                          : AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       isRefunded ? Icons.undo : Icons.receipt_long_rounded, 
-                      color: isRefunded ? Colors.redAccent : Colors.blueAccent, 
+                      color: isRefunded ? AppColors.error : AppColors.primary, 
                       size: 24
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.md),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '#${order.id.substring(0, 5).toUpperCase()}', 
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700, 
-                          fontSize: 18,
-                          color: textColor
-                        )
+                        style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         DateFormat('MMM dd, yyyy • hh:mm a').format(order.date),
-                        style: TextStyle(color: subTextColor, fontSize: 13)
+                        style: AppTypography.labelMedium.copyWith(color: AppColors.textSecondary(context))
                       ),
                     ],
                   ),
@@ -620,103 +592,75 @@ class _SalesScreenState extends State<SalesScreen> {
                 children: [
                   Text(
                     '₹${order.total.toStringAsFixed(2)}', 
-                    style: TextStyle(
+                    style: AppTypography.titleLarge.copyWith(
                       fontWeight: FontWeight.w800, 
-                      fontSize: 20, 
-                      color: isRefunded ? Colors.grey : (isDark ? Colors.white : Colors.black)
+                      color: isRefunded ? AppColors.textSecondary(context) : null
                     )
                   ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isRefunded ? Colors.red.withValues(alpha: 0.2) : Colors.green.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8)
-                    ),
-                    child: Text(
-                      order.status.toUpperCase(), 
-                      style: TextStyle(
-                        color: isRefunded ? Colors.redAccent : Colors.greenAccent,
-                        fontSize: 11, 
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5
-                      )
-                    ),
+                  const SizedBox(height: AppSpacing.xs),
+                  _buildStatusBadge(
+                    order.status,
+                    isRefunded ? AppColors.error : AppColors.success,
                   ),
                 ],
               )
             ],
           ),
           
-          const SizedBox(height: 20),
-          Divider(color: isDark ? Colors.white10 : Colors.grey.shade200),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.lg),
+          const Divider(),
+          const SizedBox(height: AppSpacing.lg),
 
           // Action Buttons
           Row(
             children: [
-              // Print Button
               Expanded(
-                child: SizedBox(
-                   height: 50,
-                   child: ElevatedButton.icon(
-                      key: Key('order_print_button_${order.id}'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark ? const Color(0xFF3D3D5C) : Colors.grey.shade100,
-                        foregroundColor: isDark ? Colors.white : Colors.black87,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                      ),
-                      icon: const Icon(Icons.print_rounded, size: 22),
-                      label: Text(AppLocalizations.t(context, 'print'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                       onPressed: () {
-                           final provider = Provider.of<DashboardProvider>(context, listen: false);
-                           PrinterManagerService().printOrderReceipt(order, provider.activeStore, cashierName: provider.userProfile?.name ?? "Cashier");
-                      },
-                   ),
+                child: AppButton.secondary(
+                  key: Key('order_print_button_${order.id}'),
+                  icon: Icons.print_rounded,
+                  label: AppLocalizations.t(context, 'print'),
+                   onPressed: () {
+                       final provider = Provider.of<DashboardProvider>(context, listen: false);
+                       PrinterManagerService().printOrderReceipt(order, provider.activeStore, cashierName: provider.userProfile?.name ?? "Cashier");
+                  },
                 ),
               ),
-              const SizedBox(width: 12),
-              
-              // View Button (Secondary)
-              SizedBox(
-                height: 50,
-                width: 50,
-                child: IconButton.filledTonal(
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
-                  ),
-                  icon: const Icon(Icons.visibility_rounded, color: Colors.blueAccent),
-                  tooltip: AppLocalizations.t(context, 'view'),
-                  onPressed: () => _showReceiptDialog(order),
-                ),
+              const SizedBox(width: AppSpacing.sm),
+              AppButton.secondary(
+                icon: Icons.visibility_rounded,
+                onPressed: () => _showReceiptDialog(order),
               ),
-
               if (!isRefunded) ...[
-                const SizedBox(width: 12),
-                // Refund Button
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: SizedBox(
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
-                        foregroundColor: Colors.redAccent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                        side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.3))
-                      ),
-                      icon: const Icon(Icons.undo_rounded, size: 22),
-                      label: Text(AppLocalizations.t(context, 'delete'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                      onPressed: () => _confirmRefund(context, order.id)
-                    ),
+                  child: AppButton.danger(
+                    icon: Icons.undo_rounded,
+                    label: AppLocalizations.t(context, 'delete'),
+                    onPressed: () => _confirmRefund(context, order.id)
                   ),
                 ),
               ]
             ],
           )
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String status, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        status,
+        style: AppTypography.labelSmall.copyWith(
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -902,8 +846,8 @@ class _SalesScreenState extends State<SalesScreen> {
                   ),
                   const SizedBox(width: 16),
                   TextButton.icon(
-                    icon: const Icon(Icons.close, size: 16, color: Colors.red),
-                    label: const Text("CLOSE", style: TextStyle(color: Colors.red)),
+                    icon: const Icon(Icons.close, size: 16, color: AppColors.error),
+                    label: const Text("CLOSE", style: TextStyle(color: AppColors.error)),
                     onPressed: () => Navigator.pop(ctx),
                   ),
                ],
@@ -925,21 +869,23 @@ class _SalesScreenState extends State<SalesScreen> {
 
   void _confirmRefund(BuildContext context, String orderId) {
     final provider = Provider.of<DashboardProvider>(context, listen: false);
-     showDialog(
+    showDialog(
       context: context, 
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Refund'),
-        content: const Text('Are you sure you want to refund this order?'),
+        title: Text(AppLocalizations.t(context, 'confirm_refund')),
+        content: Text(AppLocalizations.t(context, 'refund_confirmation_msg')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          AppButton.secondary(
+            label: AppLocalizations.t(context, 'cancel'),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          AppButton.danger(
+            label: AppLocalizations.t(context, 'refund'),
             onPressed: () async {
               Navigator.pop(ctx);
               await provider.refundOrder(orderId);
               _fetchOrders(isRefresh: true); 
             }, 
-            child: const Text('Refund', style: TextStyle(color: Colors.white))
           )
         ],
       ),

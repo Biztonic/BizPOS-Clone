@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../models/subscription_request.dart';
-import 'package:intl/intl.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import '../../core/design/components/atoms/app_button.dart';
+import '../../core/design/components/atoms/app_card.dart';
+import '../../core/design/tokens/app_typography.dart';
+import '../../core/design/tokens/app_spacing.dart';
+import '../../core/design/tokens/app_colors.dart';
 
 class SubscriptionApprovalScreen extends StatefulWidget {
   const SubscriptionApprovalScreen({super.key});
@@ -23,7 +29,9 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
   Future<void> _refresh() async {
     setState(() => _isLoading = true);
     await Provider.of<DashboardProvider>(context, listen: false).fetchPendingSubscriptions();
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -31,21 +39,32 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
     final provider = Provider.of<DashboardProvider>(context);
     final requests = provider.pendingSubscriptions;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Pending Subscriptions"),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh)),
-        ],
-      ),
-      body: _isLoading 
+    return PosScaffold(
+      title: "Pending Subscriptions",
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _refresh,
+          tooltip: "Refresh",
+        ),
+      ],
+      mainContent: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : requests.isEmpty 
-              ? const Center(child: Text("No pending subscription requests"))
+          : requests.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.mark_email_read_outlined, size: 64, color: AppColors.textSecondary(context).withValues(alpha: 0.3)),
+                      const SizedBox(height: AppSpacing.lg),
+                      Text("All caught up!", style: AppTypography.titleLarge.copyWith(color: AppColors.textSecondary(context))),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text("No pending subscription requests at the moment.", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+                    ],
+                  ),
+                )
               : ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   itemCount: requests.length,
                   itemBuilder: (context, index) {
                     final req = requests[index];
@@ -57,75 +76,86 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
 
   Widget _buildRequestCard(BuildContext context, SubscriptionRequest req) {
     final df = DateFormat('dd MMM yyyy, hh:mm a');
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(req.storeName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(req.ownerEmail, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                      Text(req.storeName, style: AppTypography.titleLarge),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(req.ownerEmail, style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(color: Colors.indigo.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-                  child: Text(req.planType, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo, fontSize: 12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    req.planType.toUpperCase(),
+                    style: AppTypography.labelSmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             const Divider(),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
+            
             _buildInfoRow(Icons.calendar_month, "Billing Policy", req.billingCycle),
             _buildInfoRow(Icons.payments, "Amount Paid", "₹${req.amount}"),
             _buildInfoRow(Icons.access_time, "Requested On", df.format(req.createdAt)),
-            const SizedBox(height: 12),
-            const Text("Requested Add-ons:", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-            const SizedBox(height: 6),
+            
+            const SizedBox(height: AppSpacing.md),
+            Text("REQUESTED ADD-ONS", style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context), fontWeight: FontWeight.bold)),
+            const SizedBox(height: AppSpacing.xs),
             if (req.selectedAddons.isEmpty)
-              const Text("None (Base Plan Only)", style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic))
+              Text("None (Base Plan Only)", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context), fontStyle: FontStyle.italic))
             else
               Wrap(
-                spacing: 6,
-                runSpacing: 6,
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
                 children: req.selectedAddons.map((addonKey) => Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.teal.withValues(alpha: 0.2))),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.secondary.withValues(alpha: 0.2)),
+                  ),
                   child: Text(
-                    addonKey.replaceAll('_', ' ').toUpperCase(), 
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal),
+                    addonKey.replaceAll('_', ' ').toUpperCase(),
+                    style: AppTypography.labelSmall.copyWith(color: AppColors.secondary, fontWeight: FontWeight.bold),
                   ),
                 )).toList(),
               ),
-            const SizedBox(height: 20),
+              
+            const SizedBox(height: AppSpacing.lg),
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
+                  child: AppButton(
+                    label: "REJECT",
                     onPressed: () => _handleAction(req, false),
-                    style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-                    child: const Text("REJECT"),
+                    variant: AppButtonVariant.outline,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: ElevatedButton(
+                  child: AppButton(
+                    label: "APPROVE & ACTIVATE",
                     onPressed: () => _handleAction(req, true),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                    child: const Text("APPROVE & ACTIVATE"),
                   ),
                 ),
               ],
@@ -138,13 +168,13 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.grey.shade400),
-          const SizedBox(width: 8),
-          Text("$label: ", style: const TextStyle(color: Colors.grey, fontSize: 13)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+          Icon(icon, size: 16, color: AppColors.textSecondary(context).withValues(alpha: 0.5)),
+          const SizedBox(width: AppSpacing.sm),
+          Text("$label: ", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+          Text(value, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -157,16 +187,20 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(approve ? "Approve Subscription?" : "Reject Subscription?"),
+        title: Text(approve ? "Approve Subscription?" : "Reject Subscription?", style: AppTypography.titleLarge),
         content: Text(approve 
-          ? "This will activate the Standard plan for ${req.storeName}. Please ensure payment is verified in your bank/UPI account." 
-          : "Are you sure you want to reject this request?"),
+          ? "This will activate the Standard plan for ${req.storeName}. Please ensure payment is verified." 
+          : "Are you sure you want to reject this request?",
+          style: AppTypography.bodyMedium),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCEL")),
-          ElevatedButton(
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text("CANCEL", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+          ),
+          AppButton(
+            label: approve ? "CONFIRM" : "REJECT",
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: approve ? Colors.green : Colors.red, foregroundColor: Colors.white),
-            child: Text(approve ? "CONFIRM" : "REJECT"),
+            variant: approve ? AppButtonVariant.primary : AppButtonVariant.outline,
           ),
         ],
       ),
@@ -184,15 +218,15 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
         
         if (!mounted) return;
         messenger.showSnackBar(SnackBar(
-          content: Text(approve ? "Subscription Approved!" : "Subscription Rejected"), 
-          backgroundColor: approve ? Colors.green : Colors.black
+          content: Text(approve ? "Subscription Approved!" : "Subscription Rejected", style: const TextStyle(color: Colors.white)), 
+          backgroundColor: approve ? AppColors.success : AppColors.error,
         ));
-        
-        // No need for _refresh() here as DashboardProvider.approveSubscriptionRequest 
-        // already updates its internal state and notifies listeners.
       } catch (e) {
         if (mounted) {
-          messenger.showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+          messenger.showSnackBar(SnackBar(
+            content: Text("Error: $e", style: const TextStyle(color: Colors.white)),
+            backgroundColor: AppColors.error,
+          ));
         }
       } finally {
         if (mounted) {

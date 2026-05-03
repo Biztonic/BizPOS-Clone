@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../utils/responsive.dart';
 
@@ -36,9 +37,9 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               "Connect your POS to external platforms for seamless order synchronization.",
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             const SizedBox(height: 24),
             Expanded(
@@ -52,28 +53,28 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
                     id: 'swiggy',
                     name: 'Swiggy',
                     icon: Icons.delivery_dining,
-                    color: Colors.orange,
+                    color: AppColors.warning,
                     description: "Receive orders directly from Swiggy.",
                   ),
                   _buildIntegrationCard(
                     id: 'zomato',
                     name: 'Zomato',
                     icon: Icons.restaurant,
-                    color: Colors.red,
+                    color: AppColors.error,
                     description: "Sync menu and orders with Zomato.",
                   ),
                   _buildIntegrationCard(
                     id: 'ubereats',
                     name: 'Uber Eats',
                     icon: Icons.directions_bike,
-                    color: Colors.green,
+                    color: AppColors.success,
                     description: "Global delivery platform integration.",
                   ),
                    _buildIntegrationCard(
                     id: 'talabat',
                     name: 'Talabat',
                     icon: Icons.fastfood,
-                    color: Colors.orangeAccent,
+                    color: AppColors.warning,
                     description: "Middle-east delivery aggregator.",
                   ),
                 ],
@@ -133,7 +134,7 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(val ? "Connected to $name" : "Disconnected from $name"),
-                        backgroundColor: val ? Colors.green : Colors.grey,
+                        backgroundColor: val ? AppColors.success : AppColors.textSecondary(context),
                         behavior: SnackBarBehavior.floating,
                         width: 400,
                       ),
@@ -145,7 +146,7 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
             const SizedBox(height: 12),
             Text(
               description,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -153,9 +154,9 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
             if (isConnected)
                Row(
                  children: [
-                   const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                   const Icon(Icons.check_circle, size: 14, color: AppColors.success),
                    const SizedBox(width: 4),
-                   const Text("Online", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                   const Text("Online", style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold)),
                    const Spacer(),
                    TextButton(
                      onPressed: () {}, 
@@ -165,11 +166,11 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
                  ],
                )
             else
-               const Row(
+               Row(
                  children: [
-                   Icon(Icons.circle, size: 14, color: Colors.grey),
+                   Icon(Icons.circle, size: 14, color: AppColors.textSecondary(context)),
                    SizedBox(width: 4),
-                   Text("Offline", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                   Text("Offline", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12)),
                  ],
                )
           ],

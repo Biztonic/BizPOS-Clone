@@ -1,10 +1,17 @@
-﻿// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image/image.dart' as img; // Import image package
+import 'package:image/image.dart' as img;
 import '../../providers/dashboard_provider.dart';
+import '../../core/design/tokens/app_typography.dart';
+import '../../core/design/tokens/app_spacing.dart';
+import '../../core/design/density/app_density.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import '../../core/design/components/atoms/app_button.dart';
+import '../../core/design/components/atoms/app_text_field.dart';
+import '../../core/design/components/atoms/app_card.dart';
 
 class UserSettingsSection extends StatefulWidget {
   const UserSettingsSection({super.key});
@@ -39,25 +46,18 @@ class _UserSettingsSectionState extends State<UserSettingsSection> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, maxWidth: 500); // MaxWidth helps init resize
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, maxWidth: 500);
 
     if (pickedFile != null) {
       setState(() => _isProcessingImage = true);
       try {
         final bytes = await pickedFile.readAsBytes();
         
-        // Resize & Compress (Pure Dart)
-        // 1. Decode
         img.Image? image = img.decodeImage(bytes);
         if (image == null) throw Exception("Could not decode image");
 
-        // 2. Resize (Thumbnail) - Maintain aspect ratio
         img.Image thumbnail = img.copyResize(image, width: 200);
-
-        // 3. Encode to JPG with compression
         List<int> compressedBytes = img.encodeJpg(thumbnail, quality: 70);
-
-        // 4. Base64
         final base64String = base64Encode(compressedBytes);
 
         if (mounted) {
@@ -75,12 +75,19 @@ class _UserSettingsSectionState extends State<UserSettingsSection> {
 
   @override
   Widget build(BuildContext context) {
+    final density = AppDensityProvider.configOf(context);
     final provider = Provider.of<DashboardProvider>(context);
     final user = provider.userProfile;
 
-    if (user == null) return const Center(child: Text("No User Logged In"));
+    if (user == null) {
+      return PosScaffold(
+        title: "User Settings",
+        mainContent: const Center(
+          child: Text("No User Logged In", style: AppTypography.bodyMedium),
+        ),
+      );
+    }
 
-    // Determine Image Provider
     ImageProvider? imageProvider;
     if (_newPhotoBase64 != null) {
        imageProvider = MemoryImage(base64Decode(_newPhotoBase64!));
@@ -88,90 +95,147 @@ class _UserSettingsSectionState extends State<UserSettingsSection> {
        imageProvider = MemoryImage(base64Decode(user.photoBase64!));
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("User Settings")),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+    return PosScaffold(
+      title: "User Settings",
+      mainContent: ListView(
+        padding: EdgeInsets.all(AppSpacing.lg),
         children: [
-           Center(
-             child: Stack(
-               children: [
-                 CircleAvatar(
-                   radius: 60,
-                   backgroundColor: Colors.grey.shade200,
-                   backgroundImage: imageProvider,
-                   child: (imageProvider == null && !_isProcessingImage) 
-                       ? const Icon(Icons.person, size: 60, color: Colors.grey)
-                       : _isProcessingImage ? const CircularProgressIndicator() : null,
-                 ),
-                 Positioned(
-                   bottom: 0,
-                   right: 0,
-                   child: InkWell(
-                     onTap: _pickImage,
-                     child: Container(
-                       padding: const EdgeInsets.all(8),
-                       decoration: const BoxDecoration(
-                         color: Colors.blue,
-                         shape: BoxShape.circle,
-                       ),
-                       child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                     ),
-                   ),
-                 )
-               ],
-             ),
-           ),
-           const SizedBox(height: 24),
-           TextField(
-             controller: _nameController,
-             decoration: const InputDecoration(
-               labelText: 'Full Name',
-               border: OutlineInputBorder(),
-               prefixIcon: Icon(Icons.person),
-             ),
-           ),
-           const SizedBox(height: 20),
-           ListTile(
-             title: const Text("Email"),
-             subtitle: Text(user.email),
-             leading: const Icon(Icons.email),
-             enabled: false, // Email usually immutable without re-auth
-           ),
-           ListTile(
-             title: const Text("Role"),
-             subtitle: Text(user.role),
-             leading: const Icon(Icons.security),
-             enabled: false,
-           ),
-           const SizedBox(height: 30),
-           ElevatedButton(
-             onPressed: _isProcessingImage ? null : () async {
-                final newName = _nameController.text.trim();
-                await provider.updateUserProfile(
-                  name: newName,
-                  photoBase64: _newPhotoBase64
-                );
-                if (mounted) {
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profile Updated Successfully")));
-                   // Do not pop, let them see the change
-                }
-             },
-             style: ElevatedButton.styleFrom(
-               padding: const EdgeInsets.symmetric(vertical: 16),
-               textStyle: const TextStyle(fontSize: 18),
-             ),
-             child: const Text("Save Profile"),
-           ),
-           
-           const Divider(height: 40),
-           
+          AppCard(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                children: [
+                  Center(
+                    child: Stack(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                              width: 4,
+                            ),
+                          ),
+                          child: CircleAvatar(
+                            radius: 60,
+                            backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                            backgroundImage: imageProvider,
+                            child: (imageProvider == null && !_isProcessingImage) 
+                                ? Icon(Icons.person, size: 60, color: Theme.of(context).colorScheme.onSurfaceVariant)
+                                : _isProcessingImage ? const CircularProgressIndicator() : null,
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Material(
+                            color: Theme.of(context).colorScheme.primary,
+                            shape: const CircleBorder(),
+                            elevation: 4,
+                            child: InkWell(
+                              onTap: _pickImage,
+                              customBorder: const CircleBorder(),
+                              child: Padding(
+                                padding: EdgeInsets.all(AppSpacing.sm),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: AppSpacing.xl),
+                  AppTextField(
+                    controller: _nameController,
+                    labelText: 'Full Name',
+                    hintText: 'Enter your full name',
+                    prefixIcon: const Icon(Icons.person_outline),
+                  ),
+                  SizedBox(height: AppSpacing.lg),
+                  _buildReadOnlyField(
+                    context,
+                    label: "Email",
+                    value: user.email,
+                    icon: Icons.email_outlined,
+                  ),
+                  SizedBox(height: AppSpacing.md),
+                  _buildReadOnlyField(
+                    context,
+                    label: "Role",
+                    value: user.role,
+                    icon: Icons.security_outlined,
+                  ),
+                  SizedBox(height: AppSpacing.xl),
+                  AppButton(
+                    label: "Save Profile",
+                    onPressed: _isProcessingImage ? null : () async {
+                      final newName = _nameController.text.trim();
+                      await provider.updateUserProfile(
+                        name: newName,
+                        photoBase64: _newPhotoBase64
+                      );
+                      if (mounted) {
+                         ScaffoldMessenger.of(context).showSnackBar(
+                           const SnackBar(content: Text("Profile Updated Successfully"), behavior: SnackBarBehavior.floating)
+                         );
+                      }
+                    },
+                    variant: AppButtonVariant.primary,
+                    width: double.infinity,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-
-
+  Widget _buildReadOnlyField(BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: AppTypography.labelSmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: AppTypography.bodyMedium,
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 }
+
+
 

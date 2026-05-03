@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import '../core/design/tokens/app_colors.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
 
 class SyncStatusWidget extends StatelessWidget {
@@ -14,20 +15,20 @@ class SyncStatusWidget extends StatelessWidget {
         final pending = service.pendingUploadCount;
         final isSyncing = service.syncStatus == "Syncing...";
         
-        Color statusColor = Colors.green;
+        Color statusColor = AppColors.success;
         IconData statusIcon = Icons.cloud_done;
         String tooltip = "Synced";
 
         if (!isOnline) {
-          statusColor = Colors.grey;
+          statusColor = AppColors.textSecondary(context);
           statusIcon = Icons.cloud_off;
           tooltip = "Offline";
           if (pending > 0) {
              tooltip = "Offline ($pending pending)";
-             statusColor = Colors.orange;
+             statusColor = AppColors.warning;
           }
         } else if (isSyncing || pending > 0) {
-          statusColor = Colors.blue;
+          statusColor = AppColors.primaryLight;
           statusIcon = Icons.sync;
           tooltip = "Syncing ($pending pending)...";
         }

@@ -1,3 +1,4 @@
+import '../../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../providers/dashboard_provider.dart';
@@ -182,7 +183,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
         Expanded(
           flex: 6,
           child: Container(
-            color: Colors.grey.shade100,
+            color: AppColors.textSecondary(context),
             alignment: Alignment.center,
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: 40),
@@ -214,7 +215,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
               children: [
                 ListView(padding: const EdgeInsets.all(16), children: _buildControlList()),
                 Container(
-                   color: Colors.grey.shade100,
+                   color: AppColors.textSecondary(context),
                    alignment: Alignment.topCenter,
                    child: SingleChildScrollView(
                      padding: const EdgeInsets.all(20),
@@ -235,7 +236,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
 
   List<Widget> _buildControlList() {
     return [
-      const Text('Layout & Dimensions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+      const Text('Layout & Dimensions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
       const SizedBox(height: 10),
       ListTile(
         title: const Text("Printer Width"),
@@ -252,7 +253,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       ),
       
       const Divider(height: 30),
-      const Text('Print Configuration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+      const Text('Print Configuration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
       const SizedBox(height: 10),
       ListTile(
         title: const Text("Print Action"),
@@ -273,7 +274,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
 
 
       const Divider(height: 30),
-      const Text('Header & Branding', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+      const Text('Header & Branding', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
       const SizedBox(height: 10),
       SwitchListTile(
         title: const Text("Show Store Name"),
@@ -302,7 +303,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       ),
 
       const Divider(height: 30),
-      const Text('Order Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+      const Text('Order Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
       const SizedBox(height: 10),
       SwitchListTile(
         title: const Text("Show Bill/Order Number"),
@@ -317,7 +318,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       ),
       
       const Divider(height: 30),
-      const Text('Financials', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+      const Text('Financials', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
       const SizedBox(height: 10),
       SwitchListTile(
         title: const Text("Show Tax Breakdown"),
@@ -331,7 +332,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       ),
 
       const Divider(height: 30),
-      const Text('Footer & Marketing', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+      const Text('Footer & Marketing', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
       const SizedBox(height: 10),
       SwitchListTile(
         title: const Text("Show Footer Message"),

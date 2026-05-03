@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import '../core/design/tokens/app_colors.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/auth_provider.dart';
@@ -72,7 +73,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.perm_contact_calendar, size: 64, color: Colors.blue),
+                const Icon(Icons.perm_contact_calendar, size: 64, color: AppColors.primaryLight),
                 const SizedBox(height: 24),
                 const Text(
                   "One Last Step!", 
@@ -80,10 +81,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   "Please provide your mobile number to complete your registration.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey)
+                  style: TextStyle(color: AppColors.textSecondary(context))
                 ),
                 const SizedBox(height: 32),
                 

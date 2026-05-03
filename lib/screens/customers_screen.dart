@@ -1,15 +1,23 @@
-// ignore_for_file: use_build_context_synchronously
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:uuid/uuid.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart'; // Added for kIsWeb
 import '../providers/dashboard_provider.dart';
 import '../models/customer.dart';
 import 'add_edit_customer_screen.dart';
 import 'customer_detail_screen.dart';
 import '../l10n/app_localizations.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/components/atoms/app_button.dart';
+import '../core/design/components/atoms/app_card.dart';
+import '../core/design/components/atoms/app_text_field.dart';
+import '../core/design/components/organisms/pos_data_table.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
+import '../core/design/density/app_density.dart';
+import '../core/design/tokens/app_colors.dart';
 
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
@@ -51,7 +59,6 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Use Selector to only rebuild when customers or activeStoreId changes
     return Selector<DashboardProvider, _CustomerScreenData>(
       selector: (_, p) => _CustomerScreenData(
         customersLength: p.customers.length,
@@ -60,148 +67,267 @@ class _CustomersScreenState extends State<CustomersScreen> {
       ),
       builder: (context, data, _) {
         final provider = Provider.of<DashboardProvider>(context, listen: false);
-        return _buildCustomersBody(context, provider);
+        final isDesktop = MediaQuery.of(context).size.width >= 1100;
+
+        List<Customer> displayedCustomers = provider.customers.where((c) => 
+           c.name.toLowerCase().contains(_searchQuery) || 
+           (c.mobile?.contains(_searchQuery) ?? false) ||
+           (c.email.toLowerCase().contains(_searchQuery))
+        ).toList();
+
+        displayedCustomers.sort((a, b) {
+          if (_sortBy == 'Points') return b.loyaltyPoints.compareTo(a.loyaltyPoints);
+          if (_sortBy == 'Spent') return b.totalSpent.compareTo(a.totalSpent);
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+
+        return PosScaffold(
+          title: _isSelectionMode ? '${_selectedIds.length} Selected' : 'Customers',
+          actions: _buildScaffoldActions(context, provider),
+          mainContent: Column(
+            children: [
+              if (isDesktop) _buildStatsRow(provider),
+              _buildFilterBar(context),
+              Expanded(
+                child: provider.isLoading 
+                    ? const Center(child: CircularProgressIndicator())
+                    : isDesktop 
+                        ? _buildTableView(context, provider, displayedCustomers)
+                        : _buildListView(context, provider, displayedCustomers),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
 
-  Widget _buildCustomersBody(BuildContext context, DashboardProvider provider) {
-    // Check for errors from CustomerProvider
-    final error = provider.customerProvider?.error;
-    if (error != null) {
-       WidgetsBinding.instance.addPostFrameCallback((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(
-                content: Text("Error loading customers: $error"), 
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 5),
-                action: SnackBarAction(label: "Retry", onPressed: () => provider.customerProvider?.fetchCustomers(provider.activeStoreId, refresh: true))
-             )
-          );
-       });
+  List<Widget> _buildScaffoldActions(BuildContext context, DashboardProvider provider) {
+    if (_isSelectionMode) {
+      return [
+        AppButton.danger(
+          icon: Icons.delete_sweep,
+          onPressed: () => _confirmBulkDelete(context),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        AppButton.secondary(
+          icon: Icons.select_all,
+          onPressed: () {
+            setState(() {
+              if (_selectedIds.length == provider.customers.length) {
+                _selectedIds.clear();
+              } else {
+                _selectedIds.addAll(provider.customers.map((c) => c.id));
+              }
+            });
+          },
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        AppButton.secondary(
+          icon: Icons.close,
+          onPressed: () => setState(() {
+            _isSelectionMode = false;
+            _selectedIds.clear();
+          }),
+        ),
+      ];
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    // Filter & Sort
-    List<Customer> displayedCustomers = provider.customers.where((c) => 
-       c.name.toLowerCase().contains(_searchQuery) || 
-       (c.mobile?.contains(_searchQuery) ?? false) ||
-       (c.email.toLowerCase().contains(_searchQuery))
-    ).toList();
-
-    displayedCustomers.sort((a, b) {
-      if (_sortBy == 'Points') return b.loyaltyPoints.compareTo(a.loyaltyPoints);
-      if (_sortBy == 'Spent') return b.totalSpent.compareTo(a.totalSpent);
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
-
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF1E1E2C) : const Color(0xFFF4F6F9),
-      floatingActionButton: FloatingActionButton.extended(
-        key: const Key('customer_add_button'),
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditCustomerScreen())),
-        label: Text(AppLocalizations.t(context, 'add_customer')),
-        icon: const Icon(Icons.add),
-        backgroundColor: const Color(0xFF2563EB),
-        foregroundColor: Colors.white,
+    return [
+      AppButton.secondary(
+        icon: Icons.refresh,
+        onPressed: () => provider.customerProvider?.fetchCustomers(provider.activeStoreId, refresh: true),
       ),
-      body: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-            sliver: SliverToBoxAdapter(child: _buildModernHeader(context)),
-          ),
-          if (MediaQuery.of(context).size.width > 600)
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              sliver: SliverToBoxAdapter(child: _buildStatsRow(provider)),
+      const SizedBox(width: AppSpacing.xs),
+      AppButton.secondary(
+        icon: Icons.checklist,
+        onPressed: () => setState(() => _isSelectionMode = true),
+      ),
+      const SizedBox(width: AppSpacing.xs),
+      AppButton.primary(
+        label: MediaQuery.of(context).size.width > 600 ? "Add Customer" : null,
+        icon: Icons.add,
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditCustomerScreen())),
+      ),
+    ];
+  }
+
+  Widget _buildFilterBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          Expanded(
+            child: AppTextField(
+              controller: _searchController,
+              hintText: "Search customers...",
+              prefixIcon: const Icon(Icons.search),
+              onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
             ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-            sliver: _buildMainContentSliver(context, provider, displayedCustomers),
           ),
+          const SizedBox(width: AppSpacing.md),
+          Container(
+             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+             decoration: BoxDecoration(
+               border: Border.all(color: AppColors.border(context)),
+               borderRadius: BorderRadius.circular(12),
+             ),
+             child: DropdownButtonHideUnderline(
+               child: DropdownButton<String>(
+                 value: _sortBy,
+                 items: const [
+                   DropdownMenuItem(value: 'Name', child: Text('Sort by Name')),
+                   DropdownMenuItem(value: 'Points', child: Text('Sort by Points')),
+                   DropdownMenuItem(value: 'Spent', child: Text('Sort by Spent')),
+                 ],
+                 onChanged: (v) => setState(() => _sortBy = v!),
+               )
+             ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          AppButton.secondary(
+             icon: Icons.import_contacts,
+             onPressed: _importContacts,
+          )
         ],
       ),
     );
   }
 
-  Widget _buildModernHeader(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () {
-             if (context.canPop()) {
-                context.pop(); 
-             } else {
-                context.go('/dashboard');
-             }
-          },
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back',
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildListView(BuildContext context, DashboardProvider provider, List<Customer> customers) {
+    if (customers.isEmpty) return _buildEmptyState();
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      itemCount: customers.length,
+      separatorBuilder: (ctx, i) => const SizedBox(height: AppSpacing.md),
+      itemBuilder: (ctx, i) => _buildCustomerCard(context, customers[i], provider),
+    );
+  }
+
+  Widget _buildTableView(BuildContext context, DashboardProvider provider, List<Customer> customers) {
+    if (customers.isEmpty) return _buildEmptyState();
+
+    return PosDataTable(
+      columns: [
+        const PosDataColumn(label: 'Customer', fixedWidth: 300),
+        const PosDataColumn(label: 'Contact', fixedWidth: 250),
+        const PosDataColumn(label: 'Points', fixedWidth: 120),
+        const PosDataColumn(label: 'Spent', fixedWidth: 120),
+        const PosDataColumn(label: 'Actions', fixedWidth: 200),
+      ],
+      rows: customers.map((c) => PosDataRow(
+        cells: [
+          Row(
             children: [
-              Text(
-                _isSelectionMode ? '${_selectedIds.length} Selected' : 'Customer Management', 
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -0.5)
+              if (_isSelectionMode)
+                Checkbox(
+                  value: _selectedIds.contains(c.id),
+                  onChanged: (val) => _toggleSelection(c.id),
+                ),
+              CircleAvatar(
+                backgroundColor: [AppColors.primary, AppColors.success, AppColors.warning, AppColors.error, AppColors.primaryLight][c.name.length % 5].withValues(alpha: 0.2),
+                child: Text(c.name.isNotEmpty ? c.name[0].toUpperCase() : '?', style: TextStyle(color: [AppColors.primary, AppColors.success, AppColors.warning, AppColors.error, AppColors.primaryLight][c.name.length % 5])),
               ),
-              const SizedBox(height: 8),
-              Text(
-                _isSelectionMode ? 'Perform bulk actions on selected customers.' : 'Manage loyalty, visits, and customer data.', 
-                style: const TextStyle(color: Colors.grey, fontSize: 15)
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(c.name, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                    if (c.tier == 'VIP')
+                      const Text('VIP', style: TextStyle(color: AppColors.primaryLight, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
             ],
           ),
-        ),
-        if (_isSelectionMode) ...[
-          IconButton(
-            icon: const Icon(Icons.delete_sweep, color: Colors.red),
-            tooltip: 'Delete Selected',
-            onPressed: () => _confirmBulkDelete(context),
+          Text(c.email.isNotEmpty ? c.email : (c.mobile ?? 'N/A')),
+          Text("${c.loyaltyPoints} pts", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w500, color: AppColors.warning)),
+          Text("\$${c.totalSpent.toStringAsFixed(2)}", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.success)),
+          Row(
+            children: [
+              AppButton.secondary(
+                icon: Icons.edit_outlined,
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditCustomerScreen(customer: c))),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              AppButton.secondary(
+                icon: Icons.star_outline,
+                onPressed: () => _showAdjustPointsDialog(c, provider),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              AppButton.danger(
+                icon: Icons.delete_outline,
+                onPressed: () => _confirmDelete(c, provider),
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.select_all),
-            tooltip: 'Select All',
-            onPressed: () {
-              final provider = Provider.of<DashboardProvider>(context, listen: false);
-              setState(() {
-                if (_selectedIds.length == provider.customers.length) {
-                   _selectedIds.clear();
-                } else {
-                   _selectedIds.addAll(provider.customers.map((c) => c.id));
-                }
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            tooltip: 'Exit Selection',
-            onPressed: () => setState(() {
-              _isSelectionMode = false;
-              _selectedIds.clear();
-            }),
-          ),
-        ] else ...[
-          IconButton(
-             icon: const Icon(Icons.refresh),
-             tooltip: 'Refresh',
-             onPressed: () {
-                final provider = Provider.of<DashboardProvider>(context, listen: false);
-                provider.customerProvider?.fetchCustomers(provider.activeStoreId, refresh: true);
-             },
-          ),
-          IconButton(
-             icon: const Icon(Icons.checklist),
-             tooltip: 'Selection Mode',
-             onPressed: () => setState(() => _isSelectionMode = true),
-          ),
-        ]
-      ],
+        ],
+        onTap: () => _handleCustomerTap(c),
+      )).toList(),
     );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.person_search, size: 80, color: AppColors.border(context)),
+          const SizedBox(height: AppSpacing.md),
+          Text(AppLocalizations.t(context, 'no_data'), style: AppTypography.titleMedium.copyWith(color: AppColors.textSecondary(context))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomerCard(BuildContext context, Customer c, DashboardProvider provider) {
+    final isSelected = _selectedIds.contains(c.id);
+    final density = AppDensityProvider.configOf(context);
+    return AppCard(
+      isSelected: isSelected,
+      padding: EdgeInsets.all(density.cardPadding),
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: _isSelectionMode 
+          ? Checkbox(value: isSelected, onChanged: (_) => _toggleSelection(c.id))
+          : CircleAvatar(
+              backgroundColor: [AppColors.primary, AppColors.success, AppColors.warning, AppColors.error, AppColors.primaryLight][c.name.length % 5].withValues(alpha: 0.2),
+              child: Text(c.name.isNotEmpty ? c.name[0].toUpperCase() : '?', style: TextStyle(color: [AppColors.primary, AppColors.success, AppColors.warning, AppColors.error, AppColors.primaryLight][c.name.length % 5])),
+            ),
+        title: Text(c.name, style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+        subtitle: Text(c.email.isNotEmpty ? c.email : (c.mobile ?? 'No Contact')),
+        trailing: _isSelectionMode ? null : const Icon(Icons.chevron_right, size: 16),
+        onTap: () => _handleCustomerTap(c),
+        onLongPress: () {
+          if (!_isSelectionMode) {
+            setState(() {
+              _isSelectionMode = true;
+              _selectedIds.add(c.id);
+            });
+          }
+        },
+      ),
+    );
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _handleCustomerTap(Customer c) {
+    if (_isSelectionMode) {
+      _toggleSelection(c.id);
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => CustomerDetailScreen(customer: c)));
+    }
   }
 
   Widget _buildStatsRow(DashboardProvider provider) {
@@ -209,245 +335,41 @@ class _CustomersScreenState extends State<CustomersScreen> {
     final loyalty = provider.customers.where((c) => c.loyaltyPoints > 0).length;
     final vips = provider.customers.where((c) => c.tier == 'VIP' || c.totalSpent > 1000).length;
 
-    return Row(
-      children: [
-        Expanded(child: _buildStatCard("Total Customers", "$total", Icons.people, Colors.blue)),
-        const SizedBox(width: 24),
-        Expanded(child: _buildStatCard("Loyalty Active", "$loyalty", Icons.stars, Colors.orange)),
-        const SizedBox(width: 24),
-        Expanded(child: _buildStatCard("VIP Members", "$vips", Icons.diamond, Colors.purple)),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      child: Row(
+        children: [
+          Expanded(child: _buildStatCard("Total Customers", "$total", Icons.people, AppColors.primary)),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(child: _buildStatCard("Loyalty Active", "$loyalty", Icons.stars, AppColors.warning)),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(child: _buildStatCard("VIP Members", "$vips", Icons.diamond, AppColors.primaryLight)),
+        ],
+      ),
     );
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Builder(builder: (context) {
-       final isDark = Theme.of(context).brightness == Brightness.dark;
-       return Container(
-         padding: const EdgeInsets.all(24),
-         decoration: BoxDecoration(
-           color: isDark ? const Color(0xFF2D2D44) : Colors.white,
-           borderRadius: BorderRadius.circular(16),
-           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03), blurRadius: 10, offset: const Offset(0, 4))],
-           border: isDark ? Border.all(color: Colors.white10) : null,
-         ),
-         child: Row(
-           children: [
-             Container(
-               padding: const EdgeInsets.all(12),
-               decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-               child: Icon(icon, color: color, size: 28),
-             ),
-             const SizedBox(width: 16),
-             Column(
-               crossAxisAlignment: CrossAxisAlignment.start,
-               children: [
-                 Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600)),
-                 const SizedBox(height: 4),
-                 Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-               ],
-             )
-           ],
-         ),
-       );
-    });
-  }
-
-  Widget _buildMainContentSliver(BuildContext context, DashboardProvider provider, List<Customer> customers) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return SliverMainAxisGroup(
-        slivers: [
-           SliverToBoxAdapter(
-             child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2D2D44) : Colors.white,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03), blurRadius: 15, offset: const Offset(0, 5))],
-                  border: isDark ? Border.all(color: Colors.white10) : null,
-                ),
-                child: Column(
-                  children: [
-                    // Toolbar
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              key: const Key('customer_search_field'),
-                              controller: _searchController,
-                              decoration: InputDecoration(
-                                hintText: "Search customers...",
-                                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3))),
-                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3))),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Container(
-                             padding: const EdgeInsets.symmetric(horizontal: 12),
-                             decoration: BoxDecoration(
-                               border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-                               borderRadius: BorderRadius.circular(10),
-                             ),
-                             child: DropdownButtonHideUnderline(
-                               child: DropdownButton<String>(
-                                 value: _sortBy,
-                                 items: const [
-                                   DropdownMenuItem(value: 'Name', child: Text('Sort by Name')),
-                                   DropdownMenuItem(value: 'Points', child: Text('Sort by Points')),
-                                   DropdownMenuItem(value: 'Spent', child: Text('Sort by Spent')),
-                                 ],
-                                 onChanged: (v) => setState(() => _sortBy = v!),
-                               )
-                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          IconButton(
-                             icon: const Icon(Icons.import_contacts),
-                             tooltip: "Import from Contacts",
-                             onPressed: _importContacts,
-                          )
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    if (customers.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(40),
-                        child: Column(
-                          children: [
-                            Icon(Icons.person_search, size: 48, color: Colors.grey.withValues(alpha: 0.5)),
-                            const SizedBox(height: 16),
-                            Text(AppLocalizations.t(context, 'no_data'), style: const TextStyle(color: Colors.grey)),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-             ),
-           ),
-           if (customers.isNotEmpty)
-             SliverList(
-               delegate: SliverChildBuilderDelegate(
-                 (ctx, i) {
-                   final isLast = i == customers.length - 1;
-                   return Container(
-                     decoration: BoxDecoration(
-                       color: isDark ? const Color(0xFF2D2D44) : Colors.white,
-                       borderRadius: isLast ? const BorderRadius.vertical(bottom: Radius.circular(16)) : null,
-                       border: isDark ? Border.all(color: Colors.white10) : null,
-                     ),
-                     child: _buildCustomerTile(customers[i], isDark, provider),
-                   );
-                 },
-                 childCount: customers.length,
-               ),
-             ),
-        ],
-    );
-  }
-
-  Widget _buildCustomerTile(Customer c, bool isDark, DashboardProvider provider) {
-    final isSelected = _selectedIds.contains(c.id);
-    
-    return ListTile(
-      key: Key('customer_tile_${c.id}'),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      selected: isSelected,
-      selectedTileColor: Colors.blue.withValues(alpha: 0.05),
-      leading: _isSelectionMode 
-        ? Checkbox(
-            value: isSelected, 
-            onChanged: (val) {
-              setState(() {
-                if (val == true) {
-                  _selectedIds.add(c.id);
-                } else {
-                  _selectedIds.remove(c.id);
-                }
-              });
-            },
-          )
-        : CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.primaries[c.name.length % Colors.primaries.length].withValues(alpha: 0.2),
-            child: Text(
-              c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
-              style: TextStyle(color: Colors.primaries[c.name.length % Colors.primaries.length], fontWeight: FontWeight.bold),
-            ),
-          ),
-      title: Row(
-         children: [
-           Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-           const SizedBox(width: 8),
-           if (c.tier == 'VIP')
-             Container(
-               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-               decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-               child: const Text('VIP', style: TextStyle(fontSize: 10, color: Colors.purple, fontWeight: FontWeight.bold)),
-             ),
-         ],
-      ),
-      subtitle: Text(c.email.isNotEmpty ? c.email : (c.mobile ?? 'No Contact'), style: const TextStyle(color: Colors.grey)),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
         children: [
-           if (c.loyaltyPoints > 0)
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: Row(
-                  children: [
-                    const Icon(Icons.stars, size: 14, color: Colors.orange),
-                    const SizedBox(width: 4),
-                    Text("${c.loyaltyPoints} pts", style: const TextStyle(fontSize: 12, color: Colors.deepOrange, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-              
-           IconButton(
-             icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.grey),
-             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditCustomerScreen(customer: c))),
-             tooltip: "Edit",
-           ),
-           IconButton(
-             icon: const Icon(Icons.star_outline, size: 20, color: Colors.amber),
-             onPressed: () => _showAdjustPointsDialog(c, provider),
-             tooltip: "Adjust Points",
-           ),
-           IconButton(
-             icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-             onPressed: () => _confirmDelete(c, provider),
-             tooltip: "Delete",
-           ),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppTypography.labelMedium.copyWith(color: AppColors.textSecondary(context), fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(value, style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          )
         ],
       ),
-      onTap: () {
-         if (_isSelectionMode) {
-            setState(() {
-               if (isSelected) {
-                 _selectedIds.remove(c.id);
-               } else {
-                 _selectedIds.add(c.id);
-               }
-            });
-         } else {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => CustomerDetailScreen(customer: c)));
-         }
-      },
-      onLongPress: () {
-         if (!_isSelectionMode) {
-            setState(() {
-               _isSelectionMode = true;
-               _selectedIds.add(c.id);
-            });
-         }
-      },
     );
   }
 
@@ -457,20 +379,22 @@ class _CustomersScreenState extends State<CustomersScreen> {
         context: context, 
         builder: (ctx) => AlertDialog(
            title: Text("Adjust Points for ${c.name}"),
-           content: TextField(
+           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+           content: AppTextField(
               controller: controller,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Points (+/-)"),
+              label: "Points (+/-)",
+              prefixIcon: const Icon(Icons.stars_outlined),
            ),
            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
-              TextButton(
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context)))),
+              AppButton.primary(
                  onPressed: () {
                     final points = int.tryParse(controller.text) ?? 0;
                     if (points != 0) provider.updateCustomerLoyalty(c.id, points);
                     Navigator.pop(ctx);
                  }, 
-                 child: const Text("SAVE")
+                 label: "Save"
               ),
            ],
         )
@@ -482,16 +406,16 @@ class _CustomersScreenState extends State<CustomersScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
            title: const Text("Delete Customer?"),
-           content: Text("Are you sure you want to delete ${c.name}?"),
+           content: Text("Are you sure you want to delete ${c.name}? This will remove all transaction history linked to this customer profile."),
+           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
-              ElevatedButton(
-                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context)))),
+              AppButton.danger(
                  onPressed: () {
                     provider.customerProvider?.deleteCustomer(c.id);
                     Navigator.pop(ctx);
                  }, 
-                 child: const Text("DELETE")
+                 label: "Delete"
               ),
            ],
         )
@@ -503,11 +427,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text("Delete ${_selectedIds.length} Customers?"),
-        content: const Text("This action cannot be undone."),
+        content: const Text("This action cannot be undone. All selected customer profiles will be permanently removed."),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context)))),
+          AppButton.danger(
             onPressed: () async {
               final provider = Provider.of<DashboardProvider>(context, listen: false);
               final List<String> idsToDelete = _selectedIds.toList();
@@ -523,11 +447,14 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 });
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Deleted ${idsToDelete.length} customers"))
+                  SnackBar(
+                    content: Text("Deleted ${idsToDelete.length} customers"),
+                    behavior: SnackBarBehavior.floating,
+                  )
                 );
               }
             },
-            child: const Text("DELETE ALL")
+            label: "Delete All"
           ),
         ],
       ),
@@ -551,7 +478,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
           context: context, 
           builder: (ctx) => AlertDialog(
             title: const Text("Feature Not Available"),
-            content: const Text("Importing contacts is only available on Android devices."),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            content: const Text("Importing contacts is only available on Android devices. Please use a physical device to use this feature."),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
             ],
@@ -589,16 +517,15 @@ class _CustomersScreenState extends State<CustomersScreen> {
           
           return AlertDialog(
              title: const Text("Import Contacts"),
+             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
              content: SizedBox(
                width: double.maxFinite,
                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                     TextField(
-                        decoration: const InputDecoration(
-                           hintText: "Search...",
-                           prefixIcon: Icon(Icons.search),
-                        ),
+                     AppTextField(
+                        hintText: "Search contacts...",
+                        prefixIcon: const Icon(Icons.search),
                         onChanged: (val) {
                            setDialogState(() => query = val);
                         },
@@ -608,54 +535,57 @@ class _CustomersScreenState extends State<CustomersScreen> {
                         child: ListView.builder(
                            itemCount: filtered.length,
                            itemBuilder: (c, i) {
-                              final contact = filtered[i];
-                              final isSelected = selected.contains(contact);
-                              return CheckboxListTile(
-                                 value: isSelected,
-                                 onChanged: (val) {
-                                    setDialogState(() {
-                                       if (val == true) {
-                                         selected.add(contact);
-                                       } else {
-                                         selected.remove(contact);
-                                       }
-                                    });
-                                 },
-                                 title: Text(contact.displayName),
-                                 subtitle: Text(contact.phones.isNotEmpty ? contact.phones.first.number : (contact.emails.isNotEmpty ? contact.emails.first.address : "")),
-                              );
+                               final contact = filtered[i];
+                               final isSelected = selected.contains(contact);
+                               return CheckboxListTile(
+                                  value: isSelected,
+                                  onChanged: (val) {
+                                     setDialogState(() {
+                                        if (val == true) {
+                                          selected.add(contact);
+                                        } else {
+                                          selected.remove(contact);
+                                        }
+                                     });
+                                  },
+                                  title: Text(contact.displayName),
+                                  subtitle: Text(contact.phones.isNotEmpty ? contact.phones.first.number : (contact.emails.isNotEmpty ? contact.emails.first.address : "")),
+                               );
                            },
                         ),
                      ),
-                     Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                           Text("${selected.length} selected"),
-                           TextButton(
-                              onPressed: () {
-                                 setDialogState(() {
-                                    if (selected.length == validContacts.length) {
-                                       selected.clear();
-                                    } else {
-                                       selected = List.from(validContacts);
-                                    }
-                                 });
-                              }, 
-                              child: Text(selected.length == validContacts.length ? "Deselect All" : "Select All")
-                           )
-                        ],
+                     Padding(
+                       padding: const EdgeInsets.symmetric(vertical: 8.0),
+                       child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                             Text("${selected.length} selected", style: const TextStyle(fontWeight: FontWeight.bold)),
+                             TextButton(
+                                onPressed: () {
+                                   setDialogState(() {
+                                      if (selected.length == validContacts.length) {
+                                         selected.clear();
+                                      } else {
+                                         selected = List.from(validContacts);
+                                      }
+                                   });
+                                }, 
+                                child: Text(selected.length == validContacts.length ? "Deselect All" : "Select All")
+                             )
+                          ],
+                       ),
                      )
                   ],
                ),
              ),
              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-                ElevatedButton(
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context)))),
+                AppButton.primary(
                    onPressed: () {
                       _batchAddContacts(selected);
                       Navigator.pop(ctx);
                    }, 
-                   child: const Text("Import")
+                   label: "Import"
                 )
              ],
           );
@@ -705,9 +635,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
            added = newCustomers.length;
         }
      }
-     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Imported $added contacts ($skipped skipped)")));
+     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Imported $added contacts ($skipped skipped)"), behavior: SnackBarBehavior.floating));
   }
 }
+
 
 class _CustomerScreenData {
   final int customersLength;

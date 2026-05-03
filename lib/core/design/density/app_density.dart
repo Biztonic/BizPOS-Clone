@@ -12,6 +12,8 @@ class DensityConfig {
   final double gridSpacing;
   final double inputHeight;
   final double rowHeight;
+  final double cardRadius;
+  final double buttonRadius;
   final EdgeInsetsGeometry contentPadding;
 
   const DensityConfig({
@@ -20,6 +22,8 @@ class DensityConfig {
     required this.gridSpacing,
     required this.inputHeight,
     required this.rowHeight,
+    required this.cardRadius,
+    required this.buttonRadius,
     required this.contentPadding,
   });
 
@@ -32,6 +36,8 @@ class DensityConfig {
           gridSpacing: 8,
           inputHeight: 32,
           rowHeight: 36,
+          cardRadius: 4,
+          buttonRadius: 4,
           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         );
       case AppDensity.comfortable:
@@ -41,6 +47,8 @@ class DensityConfig {
           gridSpacing: 16,
           inputHeight: 40,
           rowHeight: 48,
+          cardRadius: 8,
+          buttonRadius: 8,
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         );
       case AppDensity.touch:
@@ -50,6 +58,8 @@ class DensityConfig {
           gridSpacing: 24,
           inputHeight: 56,
           rowHeight: 64,
+          cardRadius: 12,
+          buttonRadius: 12,
           contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         );
     }

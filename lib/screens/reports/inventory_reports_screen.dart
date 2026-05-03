@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -72,7 +73,7 @@ class _InventoryReportsScreenState extends State<InventoryReportsScreen> with Si
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.grey.shade50,
+      backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : AppColors.textSecondary(context),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -98,7 +99,7 @@ class _InventoryReportsScreenState extends State<InventoryReportsScreen> with Si
             bottom: TabBar(
               controller: _tabController,
               labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-              unselectedLabelColor: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              unselectedLabelColor: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context),
               indicatorColor: Theme.of(context).primaryColor,
               labelColor: isDark ? Colors.white : Colors.black87,
               tabs: const [
@@ -136,9 +137,9 @@ class _StockList extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(isAlert ? Icons.check_circle : Icons.inventory_2_outlined, size: 64, color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade300),
+            Icon(isAlert ? Icons.check_circle : Icons.inventory_2_outlined, size: 64, color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
             const SizedBox(height: 16),
-            Text(isAlert ? "No Low Stock Alerts" : "No Inventory Found", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade600 : Colors.grey, fontSize: 16)),
+            Text(isAlert ? "No Low Stock Alerts" : "No Inventory Found", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 16)),
           ],
         ),
       );
@@ -158,7 +159,7 @@ class _StockList extends StatelessWidget {
     var sortedCategories = categoryValues.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
       
-    final colors = [Colors.blue, Colors.orange, Colors.purple, Colors.teal, Colors.red];
+    final colors = [AppColors.primaryLight, AppColors.warning, AppColors.primaryLight, AppColors.primary, AppColors.error];
 
     return CustomScrollView(
       slivers: [
@@ -171,14 +172,14 @@ class _StockList extends StatelessWidget {
                   title: isAlert ? "Low Stock Items" : "Total Items",
                   value: "${items.length}",
                   icon: isAlert ? Icons.warning_amber_rounded : Icons.inventory_2,
-                  baseColor: isAlert ? Colors.orange.shade600 : Colors.blue.shade600,
+                  baseColor: isAlert ? AppColors.warning : AppColors.primaryLight,
                 ),
                 const SizedBox(width: 16),
                 ReportStatCard(
                   title: "Total Value",
                   value: "₹${totalValue.toStringAsFixed(0)}",
                   icon: Icons.account_balance_wallet,
-                  baseColor: Colors.green.shade600,
+                  baseColor: AppColors.success,
                 ),
               ],
             ),
@@ -192,7 +193,7 @@ class _StockList extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade900 : Colors.white,
+                color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -272,10 +273,10 @@ class _StockList extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 child: Card(
                   elevation: 0,
-                  color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade900 : Colors.white,
+                  color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade200),
+                    side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -285,15 +286,15 @@ class _StockList extends StatelessWidget {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: inventoryProvider.getItemStock(item.id) <= 10 
-                              ? (Theme.of(context).brightness == Brightness.dark ? Colors.orange.withValues(alpha: 0.1) : Colors.orange.shade50) 
-                              : (Theme.of(context).brightness == Brightness.dark ? Colors.blue.withValues(alpha: 0.1) : Colors.blue.shade50),
+                              ? (Theme.of(context).brightness == Brightness.dark ? AppColors.warning.withValues(alpha: 0.1) : AppColors.warning) 
+                              : (Theme.of(context).brightness == Brightness.dark ? AppColors.primaryLight.withValues(alpha: 0.1) : AppColors.primaryLight),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
                             inventoryProvider.getItemStock(item.id) <= 10 ? Icons.warning_rounded : Icons.category, 
                             color: inventoryProvider.getItemStock(item.id) <= 10 
-                              ? (Theme.of(context).brightness == Brightness.dark ? Colors.orange.shade400 : Colors.orange.shade400) 
-                              : (Theme.of(context).brightness == Brightness.dark ? Colors.blue.shade400 : Colors.blue.shade400)
+                              ? (Theme.of(context).brightness == Brightness.dark ? AppColors.warning : AppColors.warning) 
+                              : (Theme.of(context).brightness == Brightness.dark ? AppColors.primaryLight : AppColors.primaryLight)
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -312,7 +313,7 @@ class _StockList extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 "Category: ${item.category}",
-                                style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 13),
+                                style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 13),
                               ),
                             ],
                           ),
@@ -324,8 +325,8 @@ class _StockList extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: inventoryProvider.getItemStock(item.id) <= 10 
-                                  ? (Theme.of(context).brightness == Brightness.dark ? Colors.red.withValues(alpha: 0.1) : Colors.red.shade50) 
-                                  : (Theme.of(context).brightness == Brightness.dark ? Colors.green.withValues(alpha: 0.1) : Colors.green.shade50),
+                                  ? (Theme.of(context).brightness == Brightness.dark ? AppColors.error.withValues(alpha: 0.1) : AppColors.error) 
+                                  : (Theme.of(context).brightness == Brightness.dark ? AppColors.success.withValues(alpha: 0.1) : AppColors.success),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
@@ -336,8 +337,8 @@ class _StockList extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 13, 
                                       color: inventoryProvider.getItemStock(item.id) <= 10 
-                                        ? (Theme.of(context).brightness == Brightness.dark ? Colors.red.shade400 : Colors.red.shade700) 
-                                        : (Theme.of(context).brightness == Brightness.dark ? Colors.green.shade400 : Colors.green.shade700), 
+                                        ? (Theme.of(context).brightness == Brightness.dark ? AppColors.error : AppColors.error) 
+                                        : (Theme.of(context).brightness == Brightness.dark ? AppColors.success : AppColors.success), 
                                       fontWeight: FontWeight.bold
                                     )
                                   ),
@@ -347,7 +348,7 @@ class _StockList extends StatelessWidget {
                             const SizedBox(height: 8),
                             Text(
                               "₹${item.price.toStringAsFixed(0)} / unit",
-                              style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade700, fontSize: 13, fontWeight: FontWeight.w600),
+                              style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 13, fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),

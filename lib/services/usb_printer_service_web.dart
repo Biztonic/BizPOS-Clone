@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import '../models/printer_device.dart';
 
 class UsbPrinterService {

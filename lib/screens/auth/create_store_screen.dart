@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_typography.dart';
 
 class CreateStoreScreen extends StatefulWidget {
   const CreateStoreScreen({super.key});
@@ -81,7 +83,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Error creating store: ${e.toString()}"),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -105,7 +107,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
     final isDesktop = MediaQuery.of(context).size.width > 600;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
         title: const Text("Setup Your Store"),
         backgroundColor: Colors.transparent,
@@ -127,7 +129,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
             width: isDesktop ? 500 : double.infinity,
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -143,7 +145,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                   const Icon(Icons.store_rounded, size: 64, color: Colors.blue),
+                   Icon(Icons.store_rounded, size: 64, color: AppColors.primary),
                    const SizedBox(height: 24),
                    const Text(
                      "Welcome to BizPOS!",
@@ -154,7 +156,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                    Text(
                      "To get started, please create your first store.",
                      textAlign: TextAlign.center,
-                     style: TextStyle(color: Colors.grey[600]),
+                     style: TextStyle(color: AppColors.textSecondary(context)),
                    ),
                    const SizedBox(height: 32),
 
@@ -202,7 +204,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                      child: ElevatedButton(
                        onPressed: _isSubmitting ? null : _submit,
                        style: ElevatedButton.styleFrom(
-                         backgroundColor: Colors.blue[600],
+                         backgroundColor: AppColors.primary,
                          foregroundColor: Colors.white,
                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                        ),

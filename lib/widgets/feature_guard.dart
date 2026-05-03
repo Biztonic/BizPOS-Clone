@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dashboard_provider.dart';
@@ -34,13 +35,13 @@ class FeatureGuard extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.lock_person, size: 64, color: Colors.amber),
+                const Icon(Icons.lock_person, size: 64, color: AppColors.warning),
                 const SizedBox(height: 16),
                 const Text("Access Restricted", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Text("You do not have permission to access: ${featureKey.toUpperCase()}"),
                 const SizedBox(height: 8),
-                const Text("Please contact your Store Owner for access.", style: TextStyle(color: Colors.grey)),
+                Text("Please contact your Store Owner for access.", style: TextStyle(color: AppColors.textSecondary(context))),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),

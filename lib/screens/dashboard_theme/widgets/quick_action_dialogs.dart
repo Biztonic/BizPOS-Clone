@@ -1,4 +1,5 @@
-﻿// ignore_for_file: dead_null_aware_expression
+import '../../../core/design/tokens/app_colors.dart';
+// ignore_for_file: dead_null_aware_expression
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -78,7 +79,7 @@ class LastFiveBillsDialog extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text("₹${order.total.toStringAsFixed(2)}", style: const TextStyle(color: CarDashboardTheme.electricGreen, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text("?${order.total.toStringAsFixed(2)}", style: const TextStyle(color: CarDashboardTheme.electricGreen, fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 4),
               Text("${order.items.length} Items", style: const TextStyle(color: Colors.white54, fontSize: 12)),
             ],
@@ -154,12 +155,12 @@ class RefundDialog extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Order #${order.id.substring(0, 8).toUpperCase()}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                Text("${order.items.length} Items • ${DateFormat('hh:mm a').format(order.date)}", style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                Text("${order.items.length} Items � ${DateFormat('hh:mm a').format(order.date)}", style: const TextStyle(color: Colors.white54, fontSize: 12)),
               ],
             ),
           ),
           
-          Text("₹${order.total.toStringAsFixed(2)}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+          Text("?${order.total.toStringAsFixed(2)}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
           
           const SizedBox(width: 24),
           
@@ -245,11 +246,11 @@ class QuickDayReportDialog extends StatelessWidget {
                      child: Column(
                        mainAxisAlignment: MainAxisAlignment.center,
                        children: [
-                         _buildStatBox("TOTAL SALES", "₹${totalSales.toStringAsFixed(0)}", CarDashboardTheme.electricGreen),
+                         _buildStatBox("TOTAL SALES", "?${totalSales.toStringAsFixed(0)}", CarDashboardTheme.electricGreen),
                          const SizedBox(height: 24),
                          _buildStatBox("TOTAL ORDERS", "$totalCount", CarDashboardTheme.neonBlue),
                          const SizedBox(height: 24),
-                         _buildStatBox("AVG BILL", "₹${totalCount > 0 ? (totalSales/totalCount).toStringAsFixed(0) : '0'}", Colors.amber),
+                         _buildStatBox("AVG BILL", "?${totalCount > 0 ? (totalSales/totalCount).toStringAsFixed(0) : '0'}", AppColors.warning),
                        ],
                      ),
                    ),
@@ -264,7 +265,7 @@ class QuickDayReportDialog extends StatelessWidget {
                                centerSpaceRadius: 50,
                                sections: pieData.entries.map((e) {
                                  final color = e.key.toLowerCase().contains('cash') ? CarDashboardTheme.electricGreen : 
-                                               e.key.toLowerCase().contains('upi') ? CarDashboardTheme.neonBlue : Colors.orange;
+                                               e.key.toLowerCase().contains('upi') ? CarDashboardTheme.neonBlue : AppColors.warning;
                                  return PieChartSectionData(
                                    color: color,
                                    value: e.value,

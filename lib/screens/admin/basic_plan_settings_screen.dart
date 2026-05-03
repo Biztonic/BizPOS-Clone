@@ -1,6 +1,13 @@
+import '../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import '../../core/design/components/atoms/app_card.dart';
+import '../../core/design/components/atoms/app_button.dart';
+import '../../core/design/components/atoms/app_text_field.dart';
+import '../../core/design/tokens/app_spacing.dart';
+import '../../core/design/tokens/app_typography.dart';
 
 class BasicPlanSettingsScreen extends StatefulWidget {
   const BasicPlanSettingsScreen({super.key});
@@ -115,7 +122,7 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
       if (isValid) {
         setState(() => _isConfigLocked = false);
       } else {
-        messenger.showSnackBar(const SnackBar(content: Text("Incorrect Security Password"), backgroundColor: Colors.red));
+        messenger.showSnackBar(const SnackBar(content: Text("Incorrect Security Password"), backgroundColor: AppColors.error));
       }
     }
   }
@@ -193,7 +200,7 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
       final upiId = _adminUpiCtrl.text.trim();
       if (upiId.isEmpty) {
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Super Admin UPI ID cannot be empty"), backgroundColor: Colors.red));
+           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Super Admin UPI ID cannot be empty"), backgroundColor: AppColors.error));
            setState(() => _isLoading = false);
         }
         return;
@@ -221,253 +228,213 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
   Widget build(BuildContext context) {
     return Consumer<DashboardProvider>(
       builder: (context, provider, child) {
-        return Scaffold(
-          appBar: AppBar(title: const Text("Subscription & Limits")),
-          body: _isLoading ? const Center(child: CircularProgressIndicator()) : SingleChildScrollView(
-            child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                 // --- STANDARD PLAN CONFIG ---
-                 Container(
-                   padding: const EdgeInsets.all(16),
-                   decoration: BoxDecoration(
-                     color: _isConfigLocked ? Colors.grey.withValues(alpha: 0.1) : Colors.green.withValues(alpha: 0.05),
-                     borderRadius: BorderRadius.circular(12),
-                     border: Border.all(color: _isConfigLocked ? Colors.grey.shade300 : Colors.green.shade200),
-                   ),
-                   child: Column(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     children: [
-                       Row(
-                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                         children: [
-                           const Text("Standard Plan & Payments", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
-                           if (_isConfigLocked)
-                             Tooltip(
-                               message: "Click to unlock settings",
-                               child: IconButton(onPressed: _unlockConfig, icon: const Icon(Icons.lock_outline, color: Colors.orange)),
-                             )
-                           else
-                             const Icon(Icons.lock_open, color: Colors.green),
-                         ],
-                       ),
-                       const SizedBox(height: 16),
-                       AbsorbPointer(
-                         absorbing: _isConfigLocked,
-                         child: Opacity(
-                           opacity: _isConfigLocked ? 0.6 : 1.0,
-                           child: Column(
-                             children: [
-                               TextField(
-                                 controller: _adminUpiCtrl,
-                                 decoration: const InputDecoration(labelText: "Super Admin UPI ID", border: OutlineInputBorder(), prefixIcon: Icon(Icons.qr_code), helperText: "UPI ID for receiving payments"),
-                               ),
-                               const SizedBox(height: 16),
-                               Row(
-                                 children: [
-                                   Expanded(child: _buildRateField("Monthly Price", _monthlyStandardCtrl, "/ month")),
-                                   const SizedBox(width: 16),
-                                   Expanded(child: _buildRateField("Yearly Price", _yearlyStandardCtrl, "/ year")),
-                                 ],
-                               ),
-                             ],
-                           ),
-                         ),
-                       ),
-                     ],
-                   ),
-                 ),
-                 const SizedBox(height: 32),
-                 const Divider(),
-                 const SizedBox(height: 16),
-    
-                 const Text("Basic Plan Limits", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                 const SizedBox(height: 8),
-                 const Text("Set default limits for all stores on the Basic Plan.", style: TextStyle(color: Colors.grey)),
-                 const SizedBox(height: 20),
-                 TextField(
-                   controller: _dailyCtrl,
-                   decoration: const InputDecoration(labelText: "Max Orders Per Day", border: OutlineInputBorder(), helperText: "e.g. 50"),
-                   keyboardType: TextInputType.number,
-                 ),
-                 const SizedBox(height: 16),
-                  TextField(
-                   controller: _monthlyCtrl,
-                   decoration: const InputDecoration(labelText: "Max Orders Per Month", border: OutlineInputBorder(), helperText: "e.g. 1000"),
-                   keyboardType: TextInputType.number,
-                 ),
-                 const SizedBox(height: 24),
-                 
-                 // SYNC FREQUENCY
-                 DropdownButtonFormField<String>(
-                    value: _syncFrequency,
-                    decoration: const InputDecoration(labelText: "Cloud Sync Frequency (Basic Plan)", border: OutlineInputBorder(), helperText: "How often Basic stores sync with cloud"),
-                    items: const [
-                       DropdownMenuItem(value: '1_DAY', child: Text("1 Day")),
-                       DropdownMenuItem(value: '1_WEEK', child: Text("1 Week")),
-                       DropdownMenuItem(value: '1_MONTH', child: Text("1 Month")),
-                    ],
-                    onChanged: (val) {
-                       if (val != null) setState(() => _syncFrequency = val);
-                    },
-                 ),
-                 const SizedBox(height: 16),
-                 
-                 // CLOUD RETENTION
-                 DropdownButtonFormField<int>(
-                    value: _retentionDays,
-                    decoration: const InputDecoration(labelText: "Cloud Data Retention (Basic Plan)", border: OutlineInputBorder(), helperText: "Data older than this will be removed from Cloud"),
-                    items: const [
-                       DropdownMenuItem(value: 30, child: Text("30 Days")),
-                       DropdownMenuItem(value: 90, child: Text("3 Months")),
-                       DropdownMenuItem(value: 180, child: Text("6 Months")),
-                       DropdownMenuItem(value: 365, child: Text("1 Year")),
-                    ],
-                    onChanged: (val) {
-                       if (val != null) setState(() => _retentionDays = val);
-                    },
-                 ),
-                 
-                 const Text("Add-on Monthly Rates (INR)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                 const SizedBox(height: 8),
-                 const Text("Set the monthly cost for each add-on module.", style: TextStyle(color: Colors.grey)),
-                 const SizedBox(height: 20),
-    
-                 const Divider(),
-                 const SizedBox(height: 24),
-    
-                 Row(
-                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   children: [
-                     const Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         Text("Global Module Availability", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-                         Text("Disable modules platform-wide.", style: TextStyle(color: Colors.grey, fontSize: 13)),
-                       ],
-                     ),
-                     if (_isConfigLocked)
-                       GestureDetector(
-                         onTap: _unlockConfig,
-                         child: Container(
-                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                           decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.orange.withValues(alpha: 0.3))),
-                           child: const Row(
-                             children: [
-                               Icon(Icons.lock_outline, size: 14, color: Colors.orange),
-                               SizedBox(width: 4),
-                               Text("Unlock to Change", style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
-                             ],
-                           ),
-                         ),
-                       ),
-                   ],
-                 ),
-                 const SizedBox(height: 16),
-                 
-                 AbsorbPointer(
-                   absorbing: _isConfigLocked,
-                   child: Opacity(
-                     opacity: _isConfigLocked ? 0.6 : 1.0,
-                     child: Column(
-                       children: _addonVisibility.keys.map((key) {
-                         final bool isEnabled = !provider.globalDisabledAddons.contains(key);
-                         TextEditingController ctrl;
-                         switch(key) {
-                            case 'employee_management': ctrl = _employeeRateCtrl; break;
-                            case 'table_reservation': ctrl = _tableRateCtrl; break;
-                            case 'supplier_management': ctrl = _supplierRateCtrl; break;
-                            case 'kds_management': ctrl = _kdsRateCtrl; break;
-                            case 'franchise_management': ctrl = _franchiseRateCtrl; break;
-                            case 'central_catalog': ctrl = _catalogRateCtrl; break;
-                            case 'customer_management': ctrl = _customerRateCtrl; break;
-                            case 'data_center': ctrl = _dataCenterRateCtrl; break;
-                            case 'integration_hub': ctrl = _integrationHubRateCtrl; break;
-                            default: ctrl = TextEditingController();
-                         }
-                         
-                         return Container(
-                           margin: const EdgeInsets.only(bottom: 16),
-                           decoration: BoxDecoration(
-                             color: isEnabled ? Colors.green.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.05),
-                             border: Border.all(color: isEnabled ? Colors.green.withValues(alpha: 0.2) : Colors.grey.shade300),
-                             borderRadius: BorderRadius.circular(12),
-                           ),
-                           child: Column(
-                             children: [
-                               SwitchListTile(
-                                 title: Text(_getAddonName(key), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                 subtitle: Text("ID: $key", style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                                 value: isEnabled,
-                                 activeColor: Colors.green,
-                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                 onChanged: (val) async {
-                                   try {
-                                     await provider.toggleGlobalAddon(key, val);
-                                     if (context.mounted) {
-                                       ScaffoldMessenger.of(context).showSnackBar(
-                                         SnackBar(content: Text("${_getAddonName(key)} has been ${val ? 'Enabled' : 'Disabled'} globally."), duration: const Duration(seconds: 1)),
-                                       );
-                                     }
-                                   } catch (e) {
-                                     if (context.mounted) {
-                                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
-                                     }
-                                   }
-                                 },
-                               ),
-                               if (isEnabled)
-                                 Padding(
-                                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                                   child: Row(
-                                     children: [
-                                       const Expanded(
-                                          flex: 2,
-                                          child: Text("Monthly Rate", style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.w500)),
-                                       ),
-                                       Expanded(
-                                          flex: 3,
-                                          child: TextField(
-                                            controller: ctrl,
-                                            decoration: const InputDecoration(
-                                              prefixText: "₹ ",
-                                              suffixText: " / month",
-                                              isDense: true,
-                                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                              border: OutlineInputBorder(),
-                                            ),
-                                            keyboardType: TextInputType.number,
-                                          ),
-                                       )
-                                     ],
-                                   ),
-                                 ),
-                             ],
-                           ),
-                         );
-                       }).toList(),
-                     ),
-                   ),
-                 ),
-    
-                 const SizedBox(height: 24),
-                 SizedBox(
-                   width: double.infinity,
-                   child: ElevatedButton(
-                     style: ElevatedButton.styleFrom(
-                       padding: const EdgeInsets.symmetric(vertical: 16),
-                       backgroundColor: Theme.of(context).primaryColor,
-                       foregroundColor: Colors.white,
-                     ),
-                     onPressed: _save, 
-                     child: const Text("SAVE ALL SETTINGS", style: TextStyle(fontWeight: FontWeight.bold))
-                   ),
-                 ),
-              ],
+        return PosScaffold(
+          title: "Subscription & Limits",
+          actions: [
+            AppButton.primary(
+              onPressed: _isLoading ? null : _save,
+              label: "Save All",
+              icon: Icons.save,
+              isLoading: _isLoading,
             ),
-          ),
-          ),
+            const SizedBox(width: AppSpacing.md),
+          ],
+          mainContent: _isLoading 
+            ? const Center(child: CircularProgressIndicator()) 
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // --- STANDARD PLAN CONFIG ---
+                    AppCard(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      borderColor: _isConfigLocked ? null : AppColors.success.withValues(alpha: 0.3),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("Standard Plan & Payments", style: AppTypography.h4.copyWith(color: AppColors.primary)),
+                              if (_isConfigLocked)
+                                AppButton.ghost(
+                                  onPressed: _unlockConfig,
+                                  icon: Icons.lock_outline,
+                                  label: "Unlock",
+                                  foregroundColor: AppColors.warning,
+                                )
+                              else
+                                const Icon(Icons.lock_open, color: AppColors.success),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          AbsorbPointer(
+                            absorbing: _isConfigLocked,
+                            child: Opacity(
+                              opacity: _isConfigLocked ? 0.6 : 1.0,
+                              child: Column(
+                                children: [
+                                  AppTextField(
+                                    controller: _adminUpiCtrl,
+                                    label: "Super Admin UPI ID",
+                                    hint: "e.g. upi@bank",
+                                    prefixIcon: const Icon(Icons.qr_code),
+                                    helperText: "UPI ID for receiving payments",
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  Row(
+                                    children: [
+                                      Expanded(child: _buildRateField("Monthly Price", _monthlyStandardCtrl, "/ month")),
+                                      const SizedBox(width: AppSpacing.md),
+                                      Expanded(child: _buildRateField("Yearly Price", _yearlyStandardCtrl, "/ year")),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    const Divider(),
+                    const SizedBox(height: AppSpacing.lg),
+                    
+                    Text("Basic Plan Limits", style: AppTypography.h3),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text("Set default limits for all stores on the Basic Plan.", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+                    const SizedBox(height: AppSpacing.lg),
+                    
+                    AppTextField(
+                      controller: _dailyCtrl,
+                      label: "Max Orders Per Day",
+                      hint: "50",
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
+                      controller: _monthlyCtrl,
+                      label: "Max Orders Per Month",
+                      hint: "1000",
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    
+                    DropdownButtonFormField<String>(
+                      value: _syncFrequency,
+                      decoration: InputDecoration(
+                        labelText: "Cloud Sync Frequency (Basic Plan)",
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        helperText: "How often Basic stores sync with cloud"
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: '1_DAY', child: Text("1 Day")),
+                        DropdownMenuItem(value: '1_WEEK', child: Text("1 Week")),
+                        DropdownMenuItem(value: '1_MONTH', child: Text("1 Month")),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setState(() => _syncFrequency = val);
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    
+                    DropdownButtonFormField<int>(
+                      value: _retentionDays,
+                      decoration: InputDecoration(
+                        labelText: "Cloud Data Retention (Basic Plan)",
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        helperText: "Data older than this will be removed from Cloud"
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 30, child: Text("30 Days")),
+                        DropdownMenuItem(value: 90, child: Text("3 Months")),
+                        DropdownMenuItem(value: 180, child: Text("6 Months")),
+                        DropdownMenuItem(value: 365, child: Text("1 Year")),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setState(() => _retentionDays = val);
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    
+                    Text("Global Module Availability", style: AppTypography.h3),
+                    Text("Disable modules platform-wide.", style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+                    const SizedBox(height: AppSpacing.lg),
+                    
+                    AbsorbPointer(
+                      absorbing: _isConfigLocked,
+                      child: Opacity(
+                        opacity: _isConfigLocked ? 0.6 : 1.0,
+                        child: Column(
+                          children: _addonVisibility.keys.map((key) {
+                            final bool isEnabled = !provider.globalDisabledAddons.contains(key);
+                            TextEditingController ctrl;
+                            switch(key) {
+                               case 'employee_management': ctrl = _employeeRateCtrl; break;
+                               case 'table_reservation': ctrl = _tableRateCtrl; break;
+                               case 'supplier_management': ctrl = _supplierRateCtrl; break;
+                               case 'kds_management': ctrl = _kdsRateCtrl; break;
+                               case 'franchise_management': ctrl = _franchiseRateCtrl; break;
+                               case 'central_catalog': ctrl = _catalogRateCtrl; break;
+                               case 'customer_management': ctrl = _customerRateCtrl; break;
+                               case 'data_center': ctrl = _dataCenterRateCtrl; break;
+                               case 'integration_hub': ctrl = _integrationHubRateCtrl; break;
+                               default: ctrl = TextEditingController();
+                            }
+                            
+                            return AppCard(
+                              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                              borderColor: isEnabled ? AppColors.success.withValues(alpha: 0.2) : null,
+                              child: Column(
+                                children: [
+                                  SwitchListTile(
+                                    title: Text(_getAddonName(key), style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+                                    subtitle: Text("ID: $key", style: AppTypography.labelSmall),
+                                    value: isEnabled,
+                                    activeColor: AppColors.success,
+                                    onChanged: (val) async {
+                                      try {
+                                        await provider.toggleGlobalAddon(key, val);
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: AppColors.error));
+                                        }
+                                      }
+                                    },
+                                  ),
+                                  if (isEnabled)
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            flex: 2,
+                                            child: Text("Monthly Rate", style: AppTypography.bodyMedium),
+                                          ),
+                                          Expanded(
+                                            flex: 3,
+                                            child: AppTextField(
+                                              controller: ctrl,
+                                              prefixText: "₹ ",
+                                              suffixText: " / mo",
+                                              keyboardType: TextInputType.number,
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                  ],
+                ),
+              ),
         );
       }
     );
@@ -475,15 +442,12 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
   
   Widget _buildRateField(String label, TextEditingController ctrl, String suffix) {
      return Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: TextField(
+        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+        child: AppTextField(
            controller: ctrl,
-           decoration: InputDecoration(
-              labelText: label,
-              prefixText: "₹ ",
-              border: const OutlineInputBorder(),
-              suffixText: suffix
-           ),
+           label: label,
+           prefixText: "₹ ",
+           suffixText: suffix,
            keyboardType: TextInputType.number,
         ),
      );

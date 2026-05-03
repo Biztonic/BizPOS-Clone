@@ -37,4 +37,74 @@ class AppColors {
   // Borders
   static const Color borderLight = Color(0xFFE0E0E0);
   static const Color borderDark = Color(0xFF393939);
+
+  // Utility
+  static const Color primaryLightGrey = Color(0xFFF4F4F4);
+  static const Color primaryLightAccent = Color(0xFFD0E2FF); // Light accent for highlights
+
+  /// Adaptive background based on current theme brightness
+  static Color background(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? backgroundLight
+        : backgroundDark;
+  }
+
+  /// Adaptive surface based on current theme brightness
+  static Color surface(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? surfaceLight
+        : surfaceDark;
+  }
+
+  static Color surfaceVariant(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? const Color(0xFFF1F1F1)
+        : const Color(0xFF323232);
+  }
+
+  static Color textPrimary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? textPrimaryLight
+        : textPrimaryDark;
+  }
+
+  static Color textSecondary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? textSecondaryLight
+        : textSecondaryDark;
+  }
+
+  static Color textHint(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? textHintLight
+        : textHintDark;
+  }
+
+  static Color border(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? borderLight
+        : borderDark;
+  }
+
+  static Color adaptivePrimary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? primary
+        : primaryLight;
+  }
+
+  static Color adaptiveSuccess(BuildContext context) {
+    return success;
+  }
+
+  static Color adaptiveWarning(BuildContext context) {
+    return warning;
+  }
+
+  static Color adaptiveError(BuildContext context) {
+    return error;
+  }
+
+  static Color adaptiveInfo(BuildContext context) {
+    return info;
+  }
 }

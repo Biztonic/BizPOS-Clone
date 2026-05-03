@@ -1,3 +1,7 @@
+import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_typography.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/components/atoms/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/inventory_item.dart';
@@ -40,9 +44,9 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         constraints: const BoxConstraints(maxWidth: 500),
         child: Form(
           key: _formKey,
@@ -53,7 +57,7 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Add Item to Store', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text('Add Item to Store', style: AppTypography.titleLarge),
                   IconButton(
                     icon: const Icon(Icons.close), 
                     onPressed: () => Navigator.pop(context),
@@ -65,7 +69,7 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
               const SizedBox(height: 8),
               Text(
                 'Set the price and quantity for "${widget.item.name}" in your store.',
-                style: TextStyle(color: Colors.grey[600]),
+                style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
               ),
               const SizedBox(height: 24),
               
@@ -153,7 +157,7 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
                          if (counters.isEmpty) {
                            return const Padding(
                              padding: EdgeInsets.only(top: 12),
-                             child: Text("No counters found. Add in Settings.", style: TextStyle(color: Colors.red, fontSize: 13)),
+                             child: Text("No counters found. Add in Settings.", style: TextStyle(color: AppColors.error, fontSize: 13)),
                            );
                          }
 
@@ -180,24 +184,14 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  OutlinedButton(
+                  AppButton.outline(
+                    label: 'Back to Search',
                     onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: const Text('Back to Search', style: TextStyle(color: Colors.black)),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton(
+                  AppButton.primary(
+                    label: 'Add to Store',
                     onPressed: _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[600],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: const Text('Add to Store'),
                   ),
                 ],
               )

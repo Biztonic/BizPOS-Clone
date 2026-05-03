@@ -1,7 +1,15 @@
-﻿// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import '../../core/design/tokens/app_typography.dart';
+import '../../core/design/tokens/app_spacing.dart';
+import '../../core/design/density/app_density.dart';
+import '../../core/design/components/atoms/app_button.dart';
+import '../../core/design/components/atoms/app_card.dart';
+import '../../core/design/components/atoms/app_text_field.dart';
+import '../../core/design/tokens/app_colors.dart';
 
 class ManageStringListScreen extends StatefulWidget {
   final String title;
@@ -78,51 +86,63 @@ class _ManageStringListScreenState extends State<ManageStringListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+    final density = AppDensityProvider.configOf(context);
+
+    return PosScaffold(
+      title: widget.title,
+      mainContent: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
-             Row(
-               children: [
-                 Expanded(
-                   child: TextField(
-                     controller: _controller,
-                     decoration: InputDecoration(
-                       labelText: widget.hintText,
-                       border: const OutlineInputBorder(),
+             AppCard(
+               child: Padding(
+                 padding: const EdgeInsets.all(AppSpacing.md),
+                 child: Row(
+                   crossAxisAlignment: CrossAxisAlignment.end,
+                   children: [
+                     Expanded(
+                       child: AppTextField(
+                         controller: _controller,
+                         labelText: widget.hintText,
+                       ),
                      ),
-                   ),
+                     const SizedBox(width: AppSpacing.md),
+                     AppButton(
+                       label: "ADD",
+                       onPressed: _isLoading ? null : _addItem,
+                       variant: AppButtonVariant.primary,
+                       isLoading: _isLoading && _controller.text.isNotEmpty,
+                     )
+                   ],
                  ),
-                 const SizedBox(width: 12),
-                 ElevatedButton(
-                   onPressed: _isLoading ? null : _addItem,
-                   style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)
-                   ),
-                   child: const Text("ADD"),
-                 )
-               ],
+               ),
              ),
-             const SizedBox(height: 24),
+             const SizedBox(height: AppSpacing.lg),
              Expanded(
                child: _isLoading 
                    ? const Center(child: CircularProgressIndicator())
                    : _items.isEmpty 
-                       ? Center(child: Text("No items found. Add one above.", style: TextStyle(color: Colors.grey.shade600)))
+                       ? Center(
+                           child: Text(
+                             "No items found. Add one above.", 
+                             style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))
+                           )
+                         )
                        : ListView.separated(
                            itemCount: _items.length,
-                           separatorBuilder: (_, __) => const Divider(),
+                           separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                            itemBuilder: (ctx, i) {
-                              final item = _items[i];
-                              return ListTile(
-                                title: Text(item),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _deleteItem(item),
-                                ),
-                              );
+                               final item = _items[i];
+                               return AppCard(
+                                 child: ListTile(
+                                   contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                                   title: Text(item, style: AppTypography.bodyLarge),
+                                   trailing: IconButton(
+                                     icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                                     onPressed: () => _deleteItem(item),
+                                   ),
+                                 ),
+                               );
                            },
                          ),
              )

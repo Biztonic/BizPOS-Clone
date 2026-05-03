@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 // ignore_for_file: unused_field, deprecated_member_use_from_same_package, dead_code, curly_braces_in_flow_control_structures, unused_element, avoid_types_as_parameter_names, dead_null_aware_expression, body_might_complete_normally_catch_error, deprecated_member_use, unused_local_variable
 import 'package:biztonic_pos/models/role_model.dart';
 import 'package:biztonic_pos/models/franchise.dart';
@@ -249,7 +250,7 @@ class DashboardProvider with ChangeNotifier {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Transaction recovered successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -259,7 +260,7 @@ class DashboardProvider with ChangeNotifier {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to recover: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }

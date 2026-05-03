@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 // ignore_for_file: deprecated_member_use_from_same_package
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +24,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
     final inventory = provider.storeInventory.where((i) => i.status == 'In Stock' && (!i.trackStock || provider.getItemStock(i.id) > 0)).toList();
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: AppColors.textSecondary(context),
       appBar: AppBar(
         title: const Text("Self-Ordering Kiosk"),
         backgroundColor: Colors.white,
@@ -34,7 +35,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
              Container(
                margin: const EdgeInsets.only(right: 16),
                child: ElevatedButton.icon(
-                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white),
                  icon: const Icon(Icons.shopping_cart),
                  label: Text("Checkout (${_kioskCart.length})"),
                  onPressed: () => _showCheckoutDialog(context, provider, inventory),
@@ -52,7 +53,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
               child: ListView(
                 children: [
                    const SizedBox(height: 20),
-                   const Icon(Icons.fastfood, size: 60, color: Colors.orange),
+                   const Icon(Icons.fastfood, size: 60, color: AppColors.warning),
                    const SizedBox(height: 10),
                    const Text("Yummy Burger", textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                    const Divider(),
@@ -92,8 +93,8 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 5)],
-                      border: qty > 0 ? Border.all(color: Colors.green, width: 2) : null
+                      boxShadow: [BoxShadow(color: AppColors.textSecondary(context), blurRadius: 5)],
+                      border: qty > 0 ? Border.all(color: AppColors.success, width: 2) : null
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -101,7 +102,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
+                              color: AppColors.textSecondary(context),
                               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                             ),
                             child: item.image != null
@@ -114,7 +115,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
                                       height: double.infinity,
                                     ),
                                   )
-                                : const Icon(Icons.image, size: 50, color: Colors.grey),
+                                : Icon(Icons.image, size: 50, color: AppColors.textSecondary(context)),
                           ),
                         ),
                         Padding(
@@ -127,15 +128,15 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text("₹${item.price}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
+                                  Text("₹${item.price}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success, fontSize: 16)),
                                   if (qty > 0)
                                     CircleAvatar(
                                       radius: 12, 
-                                      backgroundColor: Colors.green, 
+                                      backgroundColor: AppColors.success, 
                                       child: Text("$qty", style: const TextStyle(fontSize: 12, color: Colors.white))
                                     )
                                   else 
-                                    const Icon(Icons.add_circle_outline, color: Colors.orange)
+                                    const Icon(Icons.add_circle_outline, color: AppColors.warning)
                                 ],
                               )
                             ],
@@ -155,8 +156,8 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
 
   Widget _buildCategoryItem(String title, bool isSelected) {
     return ListTile(
-      title: Text(title, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Colors.orange : Colors.black)),
-      leading: isSelected ? const Icon(Icons.arrow_right, color: Colors.orange) : null,
+      title: Text(title, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppColors.warning : Colors.black)),
+      leading: isSelected ? const Icon(Icons.arrow_right, color: AppColors.warning) : null,
       onTap: () {},
     );
   }
@@ -185,7 +186,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                    children: [
                       const Text("Total", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-                      Text("₹${_calculateTotal(inventory).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.green)),
+                      Text("₹${_calculateTotal(inventory).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.success)),
                    ],
                  ),
                )
@@ -195,7 +196,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white),
             onPressed: () => _placeOrder(context, provider, inventory), 
             child: const Text("Place Order")
           ),
@@ -245,7 +246,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
        showDialog(
          context: context, 
          builder: (_) => AlertDialog(
-           title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
+           title: const Icon(Icons.check_circle, color: AppColors.success, size: 60),
            content: const Text("Order Placed Successfully!\nPlease pay at the counter.", textAlign: TextAlign.center, style: TextStyle(fontSize: 18)),
            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("Close"))],
          )

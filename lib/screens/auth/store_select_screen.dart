@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_typography.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -35,7 +37,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dashboard = Provider.of<DashboardProvider>(context, listen: false);
       if (dashboard.stores.isEmpty && !dashboard.isLoading) {
-        debugPrint('🛡️ StoreSelectScreen: No stores on mount. Triggering safety-net fetch...');
+        debugPrint('??? StoreSelectScreen: No stores on mount. Triggering safety-net fetch...');
         _triggerStoreFetch(dashboard);
       }
       
@@ -163,11 +165,11 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
               Container(
                 margin: const EdgeInsets.only(right: 16),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
+                  color: AppColors.error.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.logout, color: Colors.red, size: 20),
+                  icon: const Icon(Icons.logout, color: AppColors.error, size: 20),
                   onPressed: () => auth.signOut(),
                   tooltip: 'Logout',
                 ),
@@ -176,14 +178,14 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
           ),
           
           if (dashboard.isLoading || (_isInitSyncing && dashboard.stores.isEmpty))
-            const SliverFillRemaining(
+            SliverFillRemaining(
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 24),
-                    Text("Syncing your stores...", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+                    Text("Syncing your stores...", style: TextStyle(color: AppColors.textSecondary(context), fontWeight: FontWeight.w500)),
                   ],
                 )
               )
@@ -278,10 +280,10 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                 mainAxisSpacing: 16,
                 childAspectRatio: 1.6,
                 children: [
-                  _buildInsightCard("Total Stores", totalStores.toString(), Icons.store_rounded, Colors.blue),
-                  _buildInsightCard("Active Subs", activeSubs.toString(), Icons.verified_user_rounded, Colors.teal),
-                  _buildInsightCard("Standard Plans", (planDistribution['Standard'] ?? 0).toString(), Icons.star_rounded, Colors.amber),
-                  _buildInsightCard("Total Add-ons", totalAddons.toString(), Icons.extension_rounded, Colors.deepPurple),
+                  _buildInsightCard("Total Stores", totalStores.toString(), Icons.store_rounded, AppColors.primary),
+                  _buildInsightCard("Active Subs", activeSubs.toString(), Icons.verified_user_rounded, AppColors.success),
+                  _buildInsightCard("Standard Plans", (planDistribution['Standard'] ?? 0).toString(), Icons.star_rounded, AppColors.warning),
+                  _buildInsightCard("Total Add-ons", totalAddons.toString(), Icons.extension_rounded, AppColors.primary),
                 ],
               ),
               if (constraints.maxWidth > 700) ...[
@@ -330,7 +332,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   Widget _buildPlanDistributionCard(Map<String, int> distribution, int total, bool isDark) {
     List<PieChartSectionData> pieSections = [];
     int colorIndex = 0;
-    final colors = [Colors.indigo, Colors.amber, Colors.teal, Colors.pink, Colors.cyan];
+    final colors = [AppColors.primary, AppColors.warning, AppColors.success, AppColors.error, AppColors.primaryLight];
     
     distribution.forEach((plan, count) {
       if (count > 0) {
@@ -431,10 +433,10 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.indigo : (isDark ? const Color(0xFF1E293B) : Colors.white),
+                      color: isSelected ? AppColors.primary : (isDark ? const Color(0xFF1E293B) : Colors.white),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isSelected ? Colors.indigo : (isDark ? ColorSlate.slate(800) : ColorSlate.slate(200))),
-                      boxShadow: isSelected ? [BoxShadow(color: Colors.indigo.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))] : null,
+                      border: Border.all(color: isSelected ? AppColors.primary : (isDark ? ColorSlate.slate(800) : ColorSlate.slate(200))),
+                      boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))] : null,
                     ),
                     child: Text(
                       opt.replaceAll('_', ' ').toUpperCase(),
@@ -468,7 +470,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
             ElevatedButton(
               onPressed: () => context.go('/create-store'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
+                backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -524,7 +526,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                   offset: isExpanded ? const Offset(0, 12) : const Offset(0, 6)
                 )
               ],
-              border: isExpanded ? Border.all(color: Colors.indigo.withValues(alpha: 0.3), width: 2) : null,
+              border: isExpanded ? Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2) : null,
             ),
             child: Column(
               children: [
@@ -533,15 +535,15 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                   leading: Container(
                     width: 60, height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.indigo.withValues(alpha: 0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: store.image != null 
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: CachedNetworkImage(imageUrl: store.image!, fit: BoxFit.cover, placeholder: (_, __) => const Icon(Icons.store, color: Colors.indigo)),
+                          child: CachedNetworkImage(imageUrl: store.image!, fit: BoxFit.cover, placeholder: (_, __) => const Icon(Icons.store, color: AppColors.primary)),
                         )
-                      : const Icon(Icons.store, color: Colors.indigo, size: 30),
+                      : const Icon(Icons.store, color: AppColors.primary, size: 30),
                   ),
                   title: Row(
                     children: [
@@ -554,7 +556,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      "Owner ID: ${store.owner.substring(0, 8)}... • ${store.storeType}",
+                      "Owner ID: ${store.owner.substring(0, 8)}... � ${store.storeType}",
                       style: GoogleFonts.outfit(fontSize: 13, color: ColorSlate.slate(500)),
                     ),
                   ),
@@ -562,7 +564,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (dashboard.activeRole == 'Super Admin')
-                        _buildActionButton(Icons.login_rounded, "ENTER", () => _enterStoreDirectly(store, dashboard), Colors.indigo),
+                        _buildActionButton(Icons.login_rounded, "ENTER", () => _enterStoreDirectly(store, dashboard), AppColors.primary),
                       const SizedBox(width: 8),
                       Icon(isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: ColorSlate.slate(400)),
                     ],
@@ -580,7 +582,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   }
 
   Widget _buildPlanBadge(String plan) {
-     final color = plan == 'Standard' ? Colors.amber : Colors.teal;
+     final color = plan == 'Standard' ? AppColors.warning : AppColors.success;
      return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
@@ -667,8 +669,8 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                       children: [
                         CircleAvatar(
                           radius: 28,
-                          backgroundColor: Colors.indigo.withValues(alpha: 0.1),
-                          child: Text(name[0].toUpperCase(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.indigo, fontSize: 20)),
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                          child: Text(name[0].toUpperCase(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 20)),
                         ),
                         const SizedBox(height: 12),
                         Text(name, style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
@@ -699,6 +701,7 @@ extension ColorSlate on Colors {
        800: const Color(0xFF1E293B),
        900: const Color(0xFF0F172A),
      };
-     return map[weight] ?? Colors.grey;
+     return map[weight] ?? AppColors.textSecondaryLight;
   }
 }
+

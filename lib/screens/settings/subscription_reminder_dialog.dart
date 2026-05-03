@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_typography.dart';
 
 class SubscriptionReminderDialog extends StatelessWidget {
   final int daysRemaining;
@@ -16,7 +18,7 @@ class SubscriptionReminderDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+          Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 28),
           SizedBox(width: 12),
           Text("Subscription Expiring"),
         ],
@@ -29,12 +31,12 @@ class SubscriptionReminderDialog extends StatelessWidget {
             daysRemaining <= 0 
               ? "Your Standard subscription has expired."
               : "Your Standard subscription is expiring in $daysRemaining days.",
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             "Renew now to continue enjoying unlimited features, cloud sync, and priority support without any interruption.",
-            style: TextStyle(color: Colors.grey, fontSize: 14),
+            style: TextStyle(color: AppColors.textSecondary(context), fontSize: 14),
           ),
         ],
       ),
@@ -49,7 +51,7 @@ class SubscriptionReminderDialog extends StatelessWidget {
             onUpgrade();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.warning,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),

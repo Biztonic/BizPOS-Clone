@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/dashboard_provider.dart';
+import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_typography.dart';
 
 class PaymentQrDialog extends StatefulWidget {
   final String planType;
@@ -45,29 +47,29 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.payment, size: 48, color: Colors.indigo),
+              const Icon(Icons.payment, size: 48, color: AppColors.primary),
               const SizedBox(height: 16),
               const Text(
                 "Complete Payment",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: AppTypography.headlineSmall,
               ),
               const SizedBox(height: 8),
               Text(
                 "Scan the QR code below to pay ₹${widget.amount} for the ${widget.billingCycle} Standard Plan.",
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
+                style: TextStyle(color: AppColors.textSecondary(context)),
               ),
               if (widget.selectedAddons.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blueGrey.withValues(alpha: 0.05),
+                    color: AppColors.primaryLightGrey.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
                     children: [
-                      const Row(children: [Icon(Icons.list, size: 16, color: Colors.indigo), SizedBox(width: 8), Text("Breakdown", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))]),
+                      const Row(children: [Icon(Icons.list, size: 16, color: AppColors.primary), SizedBox(width: 8), Text("Breakdown", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))]),
                       const Divider(),
                       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text("${widget.billingCycle} Plan"), Text("₹${(widget.amount - _calculateAddonsTotal(context)).toStringAsFixed(2)}")]),
                       ...widget.selectedAddons.map((key) => Padding(
@@ -84,7 +86,7 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: AppColors.border(context)),
                 ),
                 child: QrImageView(
                   data: upiUrl,
@@ -95,7 +97,7 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
               const SizedBox(height: 16),
               Text(
                 "Total Amount: ₹${widget.amount}",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.success),
               ),
               const SizedBox(height: 4),
               Text(
@@ -108,7 +110,7 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
               const Text(
                 "Once you've made the payment, click 'I HAVE PAID' to submit your request for approval.",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 12, color: AppColors.warning, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               Row(
@@ -123,7 +125,7 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppColors.success,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -145,7 +147,7 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
                         } catch (e) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+                              SnackBar(content: Text("Error: $e"), backgroundColor: AppColors.error),
                             );
                             setState(() {
                               _isSubmitting = false;

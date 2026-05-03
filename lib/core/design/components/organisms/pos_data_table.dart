@@ -159,7 +159,7 @@ class _PosDataTableState extends State<PosDataTable> {
             child: widget.isLoading 
               ? const Center(child: CircularProgressIndicator())
               : widget.rows.isEmpty 
-                ? Center(child: Text('No data available', style: AppTypography.bodyMedium(context).copyWith(color: theme.colorScheme.onSurfaceVariant)))
+                ? Center(child: Text('No data available', style: AppTypography.bodyMedium.copyWith(color: theme.colorScheme.onSurfaceVariant)))
                 : Scrollbar(
                   controller: _verticalController,
                   child: SingleChildScrollView(
@@ -198,7 +198,7 @@ class _PosDataTableState extends State<PosDataTable> {
         if (col.icon != null) ...[col.icon!, const SizedBox(width: AppSpacing.xs)],
         Text(
           col.label,
-          style: AppTypography.labelLarge(context).copyWith(
+          style: AppTypography.labelLarge.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -210,7 +210,7 @@ class _PosDataTableState extends State<PosDataTable> {
               ? (widget.sortAscending ? Icons.arrow_upward : Icons.arrow_downward)
               : Icons.sort,
             size: 16,
-            color: widget.sortColumnIndex == index ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+            color: widget.sortColumnIndex == index ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
           ),
         ]
       ],
@@ -255,9 +255,9 @@ class _PosDataTableState extends State<PosDataTable> {
         height: densityConfig.rowHeight,
         decoration: BoxDecoration(
           color: isFocused 
-              ? theme.colorScheme.primaryContainer.withOpacity(0.5) 
-              : (row.selected ? theme.colorScheme.primaryContainer.withOpacity(0.2) : null),
-          border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5))),
+              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.5) 
+              : (row.selected ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2) : null),
+          border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5))),
         ),
         child: Row(
           children: List.generate(row.cells.length, (cellIndex) {

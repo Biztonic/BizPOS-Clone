@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -81,7 +82,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red.shade400),
+          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
         );
       }
     }
@@ -176,7 +177,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 8))],
             ),
             child: ClipOval(
-              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.storefront, size: 40, color: Colors.indigo.shade400)),
+              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.storefront, size: 40, color: AppColors.primary)),
             ),
           ),
           const SizedBox(height: 32),
@@ -242,7 +243,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 8))],
             ),
             child: ClipOval(
-              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.storefront, size: 40, color: Colors.indigo.shade400)),
+              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.storefront, size: 40, color: AppColors.primary)),
             ),
           ),
           const SizedBox(height: 16),
@@ -272,12 +273,12 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               children: [
                 Text(
                   _isLogin ? "Welcome Back" : "Create Account",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.grey.shade900),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: isDark ? Colors.white : AppColors.textSecondary(context)),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _isLogin ? "Sign in to manage your store" : "Get started with BizTonic",
-                  style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade500),
+                  style: TextStyle(fontSize: 14, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                 ),
                 const SizedBox(height: 32),
 
@@ -307,7 +308,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   obscure: _obscurePassword,
                   isDark: isDark,
                   suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey.shade500, size: 20),
+                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary(context), size: 20),
                     onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                   validator: (value) {
@@ -366,7 +367,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         onPressed: () => setState(() => _isLogin = !_isLogin),
                         child: Text(
                           _isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In",
-                          style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ),
                       if (_isLogin) ...[
@@ -385,7 +386,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                           child: Text(
                             "Converted from Sales App? Activate Account",
                             style: TextStyle(
-                              color: isDark ? Colors.blue.shade300 : const Color(0xFF667eea),
+                              color: isDark ? AppColors.primaryLight : const Color(0xFF667eea),
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               decoration: TextDecoration.underline,
@@ -467,20 +468,20 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       style: TextStyle(color: isDark ? Colors.white : Colors.black87),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-        prefixIcon: Icon(icon, color: isDark ? Colors.grey.shade400 : Colors.grey.shade500, size: 20),
+        labelStyle: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
+        prefixIcon: Icon(icon, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), size: 20),
         prefixText: prefix,
         prefixStyle: TextStyle(color: isDark ? Colors.white : Colors.black87),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.grey.shade50,
+        fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.textSecondary(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+          borderSide: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+          borderSide: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),

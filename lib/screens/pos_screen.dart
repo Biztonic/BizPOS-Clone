@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 // ignore_for_file: deprecated_member_use_from_same_package, use_build_context_synchronously
 import 'package:flutter/material.dart';
 
@@ -76,7 +77,7 @@ class _POSScreenState extends State<POSScreen> {
         builder: (ctx) => AlertDialog(
           title: const Row(
             children: [
-              Icon(Icons.print, color: Colors.blue),
+              Icon(Icons.print, color: AppColors.primaryLight),
               SizedBox(width: 10),
               Text("Connect Printer"),
             ],
@@ -98,7 +99,7 @@ class _POSScreenState extends State<POSScreen> {
                 // Navigate to Printer Management
                 Navigator.pushNamed(context, '/printer-management');
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryLight, foregroundColor: Colors.white),
               child: const Text("Connect Now"),
             ),
           ],
@@ -118,7 +119,7 @@ class _POSScreenState extends State<POSScreen> {
       provider.addToCart(item); // Use provider
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Added ${item.name}"), duration: const Duration(milliseconds: 500)));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Item not found: $barcode"), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Item not found: $barcode"), backgroundColor: AppColors.error));
     }
   }
 
@@ -229,7 +230,7 @@ class _POSScreenState extends State<POSScreen> {
               key: const Key('pos_search_field'),
               decoration: InputDecoration(
                 hintText: "Search for burgers, fries...",
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                prefixIcon: Icon(Icons.search, color: AppColors.textSecondary(context)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
@@ -255,7 +256,7 @@ class _POSScreenState extends State<POSScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.monitor_weight, color: Colors.greenAccent, size: 20),
+                const Icon(Icons.monitor_weight, color: AppColors.success, size: 20),
                 const SizedBox(width: 8),
                 Container(
                   constraints: const BoxConstraints(maxWidth: 100),
@@ -265,7 +266,7 @@ class _POSScreenState extends State<POSScreen> {
                     child: Text(
                       "$_currentWeight kg",
                       style: const TextStyle(
-                        color: Colors.greenAccent,
+                        color: AppColors.success,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'monospace',
@@ -428,7 +429,7 @@ class _POSScreenState extends State<POSScreen> {
             children: [
               const Text("Current Order", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                icon: const Icon(Icons.delete_outline, color: AppColors.error),
                 onPressed: () => provider.clearCart(),
               ),
             ],
@@ -441,9 +442,9 @@ class _POSScreenState extends State<POSScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey.shade300),
+                      Icon(Icons.shopping_cart_outlined, size: 64, color: AppColors.textSecondary(context)),
                       const SizedBox(height: 16),
-                      Text("Your cart is empty", style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+                      Text("Your cart is empty", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 16)),
                     ],
                   ),
                 )
@@ -483,7 +484,7 @@ class _POSScreenState extends State<POSScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                      Text("₹${item.price.toStringAsFixed(2)}", style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                                      Text("₹${item.price.toStringAsFixed(2)}", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
                                     ],
                                   ),
                                 ),
@@ -494,7 +495,7 @@ class _POSScreenState extends State<POSScreen> {
                                       onTap: () => provider.removeFromCart(itemId),
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
+                                        decoration: BoxDecoration(border: Border.all(color: AppColors.textSecondary(context)), borderRadius: BorderRadius.circular(8)),
                                         child: const Icon(Icons.remove, size: 16),
                                       ),
                                     ),
@@ -538,7 +539,7 @@ class _POSScreenState extends State<POSScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text("Subtotal", style: TextStyle(color: Colors.grey)),
+                  Text("Subtotal", style: TextStyle(color: AppColors.textSecondary(context))),
                   Text("₹${provider.calculateCartTotal(inventory).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -549,7 +550,7 @@ class _POSScreenState extends State<POSScreen> {
                  Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Tax (${provider.activeStore?.taxRate ?? 0}%)", style: const TextStyle(color: Colors.grey)),
+                    Text("Tax (${provider.activeStore?.taxRate ?? 0}%)", style: TextStyle(color: AppColors.textSecondary(context))),
                     Text("₹${(provider.calculateCartTotal(inventory) * ((provider.activeStore?.taxRate ?? 0) / 100)).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
@@ -599,15 +600,15 @@ class _POSScreenState extends State<POSScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Plan Limit Reached", style: TextStyle(color: Colors.red)),
+        title: const Text("Plan Limit Reached", style: TextStyle(color: AppColors.error)),
         content: Column(
            mainAxisSize: MainAxisSize.min,
            children: [
-              const Icon(Icons.lock, size: 48, color: Colors.orange),
+              const Icon(Icons.lock, size: 48, color: AppColors.warning),
               const SizedBox(height: 16),
               Text(message, textAlign: TextAlign.center),
               const SizedBox(height: 16),
-              const Text("Contact our sales representative to upgrade your plan.", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text("Contact our sales representative to upgrade your plan.", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12)),
            ],
         ),
         actions: [
@@ -667,7 +668,7 @@ class _POSScreenState extends State<POSScreen> {
               children: [
                 const Text("The following items have insufficient stock:"),
                 const SizedBox(height: 10),
-                ...outOfStockItems.map((s) => Text("• $s", style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+                ...outOfStockItems.map((s) => Text("• $s", style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold))),
               ],
             ),
             actions: [
@@ -794,7 +795,7 @@ class _POSScreenState extends State<POSScreen> {
          
          setState(() => _isProcessing = false);
 
-         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: AppColors.error));
       }
     }
   }
@@ -829,7 +830,7 @@ class _POSScreenState extends State<POSScreen> {
       if (context.mounted) {
          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
            content: Text("Printing Failed: $e"), 
-           backgroundColor: Colors.red,
+           backgroundColor: AppColors.error,
            duration: const Duration(seconds: 5),
          ));
       }
@@ -854,7 +855,7 @@ class _POSScreenState extends State<POSScreen> {
               width: 40,
               height: 4,
               margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: AppColors.textSecondary(context), borderRadius: BorderRadius.circular(2)),
             ),
             Expanded(child: _buildCartSection(provider)),
           ],

@@ -1,11 +1,14 @@
-// ignore_for_file: unused_local_variable
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dashboard_provider.dart';
 import 'settings/devices_settings_section.dart';
-// import 'admin/manage_roles_screen.dart';
-import '../widgets/feature_guard.dart'; // Import Upgrade Dialog // Moved to Admin
-import '../l10n/app_localizations.dart'; // LOCALIZATION
+import '../widgets/feature_guard.dart';
+import '../l10n/app_localizations.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/components/atoms/app_card.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
+import '../core/design/tokens/app_colors.dart';
 
 // Sections
 import 'settings/store_settings_section.dart';
@@ -46,7 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'icon': Icons.store, 
         'label': AppLocalizations.t(context, 'store'), 
         'widgetBuilder': () => const StoreSettingsSection(), 
-        'color': Colors.blue,
+        'color': AppColors.primary,
         'roles': ['Super Admin', 'Franchise Owner', 'Store Owner', 'Admin'],
         'key': 'settings.store'
       },
@@ -54,7 +57,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'icon': Icons.person, 
         'label': AppLocalizations.t(context, 'user'), 
         'widgetBuilder': () => const UserSettingsSection(), 
-        'color': Colors.orange,
+        'color': AppColors.warning,
         'roles': null, // All
         'key': 'settings.users'
       },
@@ -62,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'icon': Icons.inventory_2, 
         'label': AppLocalizations.t(context, 'products'), 
         'widgetBuilder': () => const ProductSettingsSection(), 
-        'color': Colors.green,
+        'color': AppColors.success,
         'roles': ['Super Admin', 'Franchise Owner', 'Store Owner', 'Admin', 'Manager'],
         'key': 'settings.products'
       },
@@ -70,7 +73,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'icon': Icons.percent, 
         'label': AppLocalizations.t(context, 'tax'), 
         'widgetBuilder': () => const TaxSettingsSection(), 
-        'color': Colors.red,
+        'color': AppColors.error,
         'roles': ['Super Admin', 'Franchise Owner', 'Store Owner'],
         'key': 'settings.tax'
       },
@@ -81,7 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'icon': Icons.payment,
         'label': 'Payment', // TODO: Add to localization
         'widgetBuilder': () => const PaymentSettingsSection(),
-        'color': Colors.indigo,
+        'color': AppColors.primary,
         'roles': ['Super Admin', 'Franchise Owner', 'Store Owner'],
         'key': 'settings.payment'
       },
@@ -89,7 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'icon': Icons.palette, 
         'label': AppLocalizations.t(context, 'display_settings'), 
         'widgetBuilder': () => const DisplaySettingsSection(), 
-        'color': Colors.teal,
+        'color': AppColors.primary,
         'roles': null, // All
         'key': 'settings.display'
       },
@@ -98,7 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'icon': Icons.devices_other, 
         'label': AppLocalizations.t(context, 'devices'), 
         'widgetBuilder': () => const DevicesSettingsSection(), 
-        'color': Colors.grey,
+        'color': AppColors.secondary,
         'roles': null, // All
         'key': 'settings.devices'
       },
@@ -127,36 +130,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     
 
-    // Explicitly non-const Scaffold
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings'), elevation: 1), // No const
-      body: ListView.separated( // Removed Responsive
-           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-           itemCount: menuItems.length,
-           separatorBuilder: (_, __) => const SizedBox(height: 10),
-           itemBuilder: (context, index) {
-             final item = menuItems[index];
-             final color = item['color'] as Color;
-             final isRestricted = item.containsKey('key') && !provider.isFeatureEnabled(item['key'] as String);
+    return PosScaffold(
+      appBar: AppBar(
+        title: Text(AppLocalizations.t(context, 'settings')),
+      ),
+      mainContent: ListView.separated(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        itemCount: menuItems.length,
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+        itemBuilder: (context, index) {
+          final item = menuItems[index];
+          final color = item['color'] as Color;
+          final isRestricted = item.containsKey('key') && !provider.isFeatureEnabled(item['key'] as String);
 
-             return Card( // No const
-               elevation: 2,
-               child: ListTile(
-                 key: Key(item['key'] as String),
-                 leading: Icon(item['icon'] as IconData, color: isRestricted ? Colors.grey : color), // No const
-                 title: Text(item['label'], style: const TextStyle(fontWeight: FontWeight.bold)), // No const
-                 onTap: () {
-                   final widget = item.containsKey('key') 
-                       ? FeatureGuard(featureKey: item['key'] as String, child: (item['widgetBuilder'] as Widget Function())())
-                       : (item['widgetBuilder'] as Widget Function())();
+          return AppCard(
+            child: ListTile(
+              key: Key(item['key'] as String),
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: (isRestricted ? AppColors.secondary : color).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(item['icon'] as IconData, color: isRestricted ? AppColors.secondary : color),
+              ),
+              title: Text(item['label'], style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+              trailing: const Icon(Icons.chevron_right, size: 20),
+              onTap: () {
+                final widget = item.containsKey('key') 
+                    ? FeatureGuard(featureKey: item['key'] as String, child: (item['widgetBuilder'] as Widget Function())())
+                    : (item['widgetBuilder'] as Widget Function())();
 
-                   Navigator.push(context, MaterialPageRoute(
-                     builder: (context) => widget,
-                   ));
-                 },
-               ),
-             );
-           },
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (context) => widget,
+                ));
+              },
+            ),
+          );
+        },
       ),
     );
   }

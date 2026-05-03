@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -154,7 +155,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.grey.shade50,
+      backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : AppColors.textSecondary(context),
       body: CustomScrollView(
         slivers: [
           // APP BAR
@@ -184,7 +185,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
               duration: const Duration(milliseconds: 300),
               height: _showFilters ? 160 : 0,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              color: isDark ? Colors.grey.shade900 : Colors.white,
+              color: isDark ? AppColors.textSecondary(context) : Colors.white,
               child: SingleChildScrollView(
                 physics: const NeverScrollableScrollPhysics(),
                 child: Column(
@@ -193,7 +194,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                     const SizedBox(height: 16),
                     
                     // Date Range Picker
-                    const Text("Date Range", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                    Text("Date Range", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textSecondary(context))),
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: () async {
@@ -211,13 +212,13 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.black26 : Colors.white,
-                          border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                          border: Border.all(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.calendar_today, size: 18, color: Colors.blue),
+                            const Icon(Icons.calendar_today, size: 18, color: AppColors.primaryLight),
                             const SizedBox(width: 12),
                             Text(_dateRange == null 
                               ? "Select Date Range" 
@@ -248,7 +249,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), 
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             ),
-                            dropdownColor: isDark ? Colors.grey.shade900 : Colors.white,
+                            dropdownColor: isDark ? AppColors.textSecondary(context) : Colors.white,
                             items: const [
                                DropdownMenuItem(value: null, child: Text("All Statuses")),
                                DropdownMenuItem(value: 'Completed', child: Text("Completed")),
@@ -273,7 +274,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), 
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             ),
-                            dropdownColor: isDark ? Colors.grey.shade900 : Colors.white,
+                            dropdownColor: isDark ? AppColors.textSecondary(context) : Colors.white,
                             items: const [
                                DropdownMenuItem(value: null, child: Text("All Methods")),
                                DropdownMenuItem(value: 'Cash', child: Text("Cash")),
@@ -295,7 +296,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
           ),
           
           if (_showFilters)
-            SliverToBoxAdapter(child: Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200)),
+            SliverToBoxAdapter(child: Divider(height: 1, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context))),
 
           // SUMMARY CARDS
           SliverToBoxAdapter(
@@ -307,21 +308,21 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                      title: "Total Sales", 
                      value: "₹${totalSales.toStringAsFixed(0)}", 
                      icon: Icons.currency_rupee, 
-                     baseColor: Colors.green.shade600
+                     baseColor: AppColors.success
                    ),
                    const SizedBox(width: 16),
                    ReportStatCard(
                      title: "Total Orders", 
                      value: "$totalCount", 
                      icon: Icons.receipt_long, 
-                     baseColor: Colors.blue.shade600
+                     baseColor: AppColors.primaryLight
                    ),
                    const SizedBox(width: 16),
                    ReportStatCard(
                      title: "Avg Order", 
                      value: "₹${avgOrder.toStringAsFixed(0)}", 
                      icon: Icons.analytics, 
-                     baseColor: Colors.orange.shade600
+                     baseColor: AppColors.warning
                    ),
                  ],
                ),
@@ -335,7 +336,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.grey.shade900 : Colors.white,
+                  color: isDark ? AppColors.textSecondary(context) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -368,21 +369,21 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                 centerSpaceRadius: 40,
                                 sections: [
                                   if (cashSales > 0) PieChartSectionData(
-                                    color: Colors.orange,
+                                    color: AppColors.warning,
                                     value: cashSales,
                                     title: '${(cashSales / totalSales * 100).toStringAsFixed(0)}%',
                                     radius: 50,
                                     titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                                   ),
                                   if (cardSales > 0) PieChartSectionData(
-                                    color: Colors.blue,
+                                    color: AppColors.primaryLight,
                                     value: cardSales,
                                     title: '${(cardSales / totalSales * 100).toStringAsFixed(0)}%',
                                     radius: 50,
                                     titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                                   ),
                                   if (upiSales > 0) PieChartSectionData(
-                                    color: Colors.purple,
+                                    color: AppColors.primaryLight,
                                     value: upiSales,
                                     title: '${(upiSales / totalSales * 100).toStringAsFixed(0)}%',
                                     radius: 50,
@@ -396,11 +397,11 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _Indicator(color: Colors.orange, text: 'Cash', isSquare: false),
+                              _Indicator(color: AppColors.warning, text: 'Cash', isSquare: false),
                               const SizedBox(height: 8),
-                              _Indicator(color: Colors.blue, text: 'Card', isSquare: false),
+                              _Indicator(color: AppColors.primaryLight, text: 'Card', isSquare: false),
                               const SizedBox(height: 8),
-                              _Indicator(color: Colors.purple, text: 'UPI', isSquare: false),
+                              _Indicator(color: AppColors.primaryLight, text: 'UPI', isSquare: false),
                             ],
                           )
                         ],
@@ -418,7 +419,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.grey.shade900 : Colors.white,
+                  color: isDark ? AppColors.textSecondary(context) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -451,21 +452,21 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                 centerSpaceRadius: 40,
                                 sections: [
                                   if (completedSales > 0) PieChartSectionData(
-                                    color: Colors.green,
+                                    color: AppColors.success,
                                     value: completedSales,
                                     title: '${(completedSales / (completedSales + refundedSales + cancelledSales) * 100).toStringAsFixed(0)}%',
                                     radius: 50,
                                     titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                                   ),
                                   if (refundedSales > 0) PieChartSectionData(
-                                    color: Colors.orange,
+                                    color: AppColors.warning,
                                     value: refundedSales,
                                     title: '${(refundedSales / (completedSales + refundedSales + cancelledSales) * 100).toStringAsFixed(0)}%',
                                     radius: 50,
                                     titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                                   ),
                                   if (cancelledSales > 0) PieChartSectionData(
-                                    color: Colors.red,
+                                    color: AppColors.error,
                                     value: cancelledSales,
                                     title: '${(cancelledSales / (completedSales + refundedSales + cancelledSales) * 100).toStringAsFixed(0)}%',
                                     radius: 50,
@@ -479,11 +480,11 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                               const _Indicator(color: Colors.green, text: 'Completed', isSquare: false),
+                               const _Indicator(color: AppColors.success, text: 'Completed', isSquare: false),
                                const SizedBox(height: 8),
-                               const _Indicator(color: Colors.orange, text: 'Refunded', isSquare: false),
+                               const _Indicator(color: AppColors.warning, text: 'Refunded', isSquare: false),
                                const SizedBox(height: 8),
-                               const _Indicator(color: Colors.red, text: 'Cancelled', isSquare: false),
+                               const _Indicator(color: AppColors.error, text: 'Cancelled', isSquare: false),
                             ],
                           )
                         ],
@@ -502,7 +503,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold, 
                   fontSize: 16, 
-                  color: isDark ? Colors.white70 : Colors.grey.shade800
+                  color: isDark ? Colors.white70 : AppColors.textSecondary(context)
                 )
               ),
             ),
@@ -516,12 +517,12 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.search_off, size: 64, color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                    Icon(Icons.search_off, size: 64, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                     const SizedBox(height: 16),
                     Text(
                       "No orders found matching criteria.", 
                       style: TextStyle(
-                        color: isDark ? Colors.grey.shade600 : Colors.grey, 
+                        color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), 
                         fontSize: 16
                       )
                     ),
@@ -538,11 +539,11 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                     final order = filteredOrders[index];
                     return Card(
                       elevation: 0,
-                      color: isDark ? Colors.grey.shade900 : Colors.white,
+                      color: isDark ? AppColors.textSecondary(context) : Colors.white,
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+                        side: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -551,10 +552,10 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: isDark ? Colors.blue.withValues(alpha: 0.1) : Colors.blue.shade50,
+                                color: isDark ? AppColors.primaryLight.withValues(alpha: 0.1) : AppColors.primaryLight,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Icon(Icons.receipt, color: isDark ? Colors.blue.shade400 : Colors.blue.shade300),
+                              child: Icon(Icons.receipt, color: isDark ? AppColors.primaryLight : AppColors.primaryLight),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -572,7 +573,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     DateFormat('MMM dd, yyyy • HH:mm').format(order.date),
-                                    style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade600, fontSize: 13),
+                                    style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 13),
                                   ),
                                 ],
                               ),
@@ -583,14 +584,14 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: order.status == 'Cancelled' ? Colors.red.shade50 : (order.status == 'Refunded' ? Colors.orange.shade50 : Colors.green.shade50),
+                                    color: order.status == 'Cancelled' ? AppColors.error : (order.status == 'Refunded' ? AppColors.warning : AppColors.success),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
                                     order.status, 
                                     style: TextStyle(
                                       fontSize: 12, 
-                                      color: order.status == 'Cancelled' ? Colors.red.shade700 : (order.status == 'Refunded' ? Colors.orange.shade800 : Colors.green.shade700), 
+                                      color: order.status == 'Cancelled' ? AppColors.error : (order.status == 'Refunded' ? AppColors.warning : AppColors.success), 
                                       fontWeight: FontWeight.bold
                                     )
                                   ),
@@ -602,13 +603,13 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                       order.paymentMethod == 'Cash' ? Icons.money : 
                                       (order.paymentMethod == 'UPI' ? Icons.qr_code : Icons.credit_card),
                                       size: 14,
-                                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                      color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
                                       order.paymentMethod,
                                       style: TextStyle(
-                                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, 
+                                        color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), 
                                         fontSize: 12, 
                                         fontWeight: FontWeight.w600
                                       ),

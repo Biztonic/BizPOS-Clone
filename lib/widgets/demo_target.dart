@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import '../core/design/tokens/app_colors.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dashboard_provider.dart';
 
@@ -95,7 +96,7 @@ class SpotlightPainter extends CustomPainter {
     
     // Draw Red Spotlight Circle (Stroke)
     final paintStroke = Paint()
-      ..color = Colors.redAccent
+      ..color = AppColors.error
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
       ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 2);
@@ -104,7 +105,7 @@ class SpotlightPainter extends CustomPainter {
     
     // Optional: Inner Glow
     final paintGlow = Paint()
-      ..color = Colors.red.withValues(alpha: 0.2)
+      ..color = AppColors.error.withValues(alpha: 0.2)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, paintGlow);
   }

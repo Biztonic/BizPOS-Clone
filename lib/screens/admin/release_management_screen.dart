@@ -1,7 +1,13 @@
-﻿// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import '../../core/design/components/atoms/app_card.dart';
+import '../../core/design/components/atoms/app_text_field.dart';
+import '../../core/design/components/atoms/app_button.dart';
+import '../../core/design/tokens/app_spacing.dart';
+import '../../core/design/tokens/app_typography.dart';
+import '../../core/design/tokens/app_colors.dart';
 
 class ReleaseManagementScreen extends StatefulWidget {
   const ReleaseManagementScreen({super.key});
@@ -39,7 +45,6 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
           _forceUpdate = data['force'] ?? false;
         });
       } else {
-        // Pre-fill with current app info
         try {
           final info = await PackageInfo.fromPlatform();
           _versionController.text = info.version.isEmpty ? "1.0.0" : info.version;
@@ -83,133 +88,91 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Release Management")),
-      body: _isLoading 
+    return PosScaffold(
+      title: "Release Management",
+      actions: [
+        AppButton.primary(
+          label: "Publish Release",
+          icon: Icons.cloud_upload_outlined,
+          onPressed: _isLoading ? null : _saveConfig,
+          isLoading: _isLoading,
+        ),
+        const SizedBox(width: AppSpacing.md),
+      ],
+      mainContent: _isLoading 
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Publish New Version",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: AppTypography.h3,
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                const SizedBox(height: AppSpacing.xs),
+                Text(
                   "Updates published here will immediately prompt users to update if their version is lower.",
-                  style: TextStyle(color: Colors.grey),
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xl),
                 
-                // Version & Build
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    if (constraints.maxWidth < 450) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                AppCard(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    children: [
+                      Row(
                         children: [
-                          TextFormField(
-                            controller: _versionController,
-                            decoration: const InputDecoration(
-                              labelText: 'Version Name (e.g. 1.0.5)',
-                              border: OutlineInputBorder(),
+                          Expanded(
+                            child: AppTextField(
+                              controller: _versionController,
+                              labelText: 'Version Name',
+                              hintText: 'e.g. 1.0.5',
+                              prefixIcon: const Icon(Icons.tag),
+                              validator: (v) => v!.isEmpty ? 'Required' : null,
                             ),
-                            validator: (v) => v!.isEmpty ? 'Required' : null,
                           ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _buildController,
-                            decoration: const InputDecoration(
-                              labelText: 'Build Number (e.g. 15)',
-                              border: OutlineInputBorder(),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: AppTextField(
+                              controller: _buildController,
+                              labelText: 'Build Number',
+                              hintText: 'e.g. 15',
+                              prefixIcon: const Icon(Icons.numbers),
+                              keyboardType: TextInputType.number,
+                              validator: (v) => v!.isEmpty ? 'Required' : null,
                             ),
-                            keyboardType: TextInputType.number,
-                            validator: (v) => v!.isEmpty ? 'Required' : null,
                           ),
                         ],
-                      );
-                    }
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _versionController,
-                            decoration: const InputDecoration(
-                              labelText: 'Version Name (e.g. 1.0.5)',
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (v) => v!.isEmpty ? 'Required' : null,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _buildController,
-                            decoration: const InputDecoration(
-                              labelText: 'Build Number (e.g. 15)',
-                              border: OutlineInputBorder(),
-                            ),
-                            keyboardType: TextInputType.number,
-                            validator: (v) => v!.isEmpty ? 'Required' : null,
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-                ),
-                const SizedBox(height: 24),
-
-                // URL
-                TextFormField(
-                  controller: _urlController,
-                  decoration: const InputDecoration(
-                    labelText: 'APK / App Store URL',
-                    hintText: 'https://...',
-                    border: OutlineInputBorder(),
-                    helperText: 'Direct link to APK or Play Store link'
-                  ),
-                  validator: (v) => v!.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 24),
-
-                // Notes
-                TextFormField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Release Notes',
-                    hintText: 'What\'s new in this version?',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 4,
-                ),
-                const SizedBox(height: 24),
-
-                // Force Update
-                SwitchListTile(
-                  title: const Text("Force Update"),
-                  subtitle: const Text("Users cannot skip this update"),
-                  value: _forceUpdate,
-                  onChanged: (val) => setState(() => _forceUpdate = val),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                
-                const SizedBox(height: 32),
-                
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton.icon(
-                    onPressed: _saveConfig,
-                    icon: const Icon(Icons.cloud_upload),
-                    label: const Text("PUBLISH RELEASE"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                    ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      AppTextField(
+                        controller: _urlController,
+                        labelText: 'APK / App Store URL',
+                        hintText: 'https://...',
+                        prefixIcon: const Icon(Icons.link),
+                        validator: (v) => v!.isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      AppTextField(
+                        controller: _notesController,
+                        labelText: 'Release Notes',
+                        hintText: 'What\'s new in this version?',
+                        prefixIcon: const Icon(Icons.note_alt_outlined),
+                        maxLines: 4,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      SwitchListTile(
+                        title: Text("Force Update", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                        subtitle: const Text("Users cannot skip this update"),
+                        value: _forceUpdate,
+                        onChanged: (val) => setState(() => _forceUpdate = val),
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: AppColors.primary,
+                      ),
+                    ],
                   ),
                 ),
               ],

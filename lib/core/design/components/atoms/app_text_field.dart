@@ -1,3 +1,4 @@
+import '../../../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../tokens/app_spacing.dart';
 
@@ -8,35 +9,59 @@ enum AppTextFieldVariant { outlined, filled, underlined }
 class AppTextField extends StatelessWidget {
   final TextEditingController? controller;
   final String? labelText;
+  final String? label; // Alias for labelText
   final String? hintText;
+  final String? hint; // Alias for hintText
   final String? errorText;
+  final String? helperText;
+  final String? prefixText;
+  final String? suffixText;
+  final String? initialValue;
   final bool obscureText;
+  final bool readOnly;
+  final bool isFullWidth;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
+  final Widget? icon;
   final AppTextFieldSize size;
   final AppTextFieldVariant variant;
   final bool enabled;
   final ValueChanged<String>? onChanged;
   final VoidCallback? onEditingComplete;
+  final VoidCallback? onTap;
   final TextInputType? keyboardType;
   final int maxLines;
+  final String? Function(String?)? validator;
+  final double? width;
 
   const AppTextField({
     super.key,
     this.controller,
     this.labelText,
+    this.label,
     this.hintText,
+    this.hint,
     this.errorText,
+    this.helperText,
+    this.prefixText,
+    this.suffixText,
+    this.initialValue,
     this.obscureText = false,
+    this.readOnly = false,
+    this.isFullWidth = false,
     this.prefixIcon,
     this.suffixIcon,
+    this.icon,
     this.size = AppTextFieldSize.medium,
     this.variant = AppTextFieldVariant.outlined,
     this.enabled = true,
     this.onChanged,
     this.onEditingComplete,
+    this.onTap,
     this.keyboardType,
     this.maxLines = 1,
+    this.validator,
+    this.width,
   });
 
   @override
@@ -79,25 +104,32 @@ class AppTextField extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return TextField(
+    final field = TextFormField(
       controller: controller,
+      initialValue: initialValue,
       obscureText: obscureText,
+      readOnly: readOnly,
       enabled: enabled,
       onChanged: onChanged,
       onEditingComplete: onEditingComplete,
+      onTap: onTap,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      validator: validator,
       style: TextStyle(fontSize: fontSize),
       decoration: InputDecoration(
-        labelText: labelText,
-        hintText: hintText,
+        labelText: labelText ?? label,
+        hintText: hintText ?? hint,
+        helperText: helperText,
         errorText: errorText,
-        prefixIcon: prefixIcon,
+        prefixText: prefixText,
+        suffixText: suffixText,
+        prefixIcon: prefixIcon ?? (icon != null ? icon : null),
         suffixIcon: suffixIcon,
         filled: variant == AppTextFieldVariant.filled,
         fillColor: enabled 
-            ? (isDark ? Colors.grey.shade800 : Colors.grey.shade100) 
-            : (isDark ? Colors.grey.shade900 : Colors.grey.shade200),
+            ? (isDark ? AppColors.textSecondary(context).withValues(alpha: 0.1) : Colors.grey[100]) 
+            : (isDark ? Colors.transparent : Colors.grey[50]),
         contentPadding: contentPadding,
         border: buildBorder(theme.dividerColor),
         enabledBorder: buildBorder(theme.dividerColor),
@@ -107,5 +139,10 @@ class AppTextField extends StatelessWidget {
         disabledBorder: buildBorder(theme.dividerColor.withValues(alpha: 0.5)),
       ),
     );
+
+    if (isFullWidth || width != null) {
+      return SizedBox(width: isFullWidth ? double.infinity : width, child: field);
+    }
+    return field;
   }
 }

@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -47,7 +48,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: isDark ? Colors.grey[850] : Colors.grey[200],
+                fillColor: AppColors.surfaceVariant(context),
               ),
             ),
           ),
@@ -74,12 +75,12 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     decoration: BoxDecoration(
                       color: isSelected 
                         ? Theme.of(context).primaryColor
-                        : (isDark ? Colors.grey[850] : Colors.white),
+                        : AppColors.surface(context),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected 
                           ? Theme.of(context).primaryColor
-                          : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+                          : (isDark ? AppColors.border(context) : AppColors.border(context)),
                         width: 2,
                       ),
                       boxShadow: isSelected ? [

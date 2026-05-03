@@ -1,4 +1,5 @@
-﻿// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+import '../core/design/tokens/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -89,7 +90,7 @@ class UpdateService {
           child: AlertDialog(
             title: const Row(
                children: [
-                 Icon(Icons.system_update, color: Colors.blue),
+                 Icon(Icons.system_update, color: AppColors.primaryLight),
                  SizedBox(width: 10),
                  Text("Critical Update"),
                ]
@@ -100,7 +101,7 @@ class UpdateService {
               children: [
                 Text("Version $version is required."),
                 const SizedBox(height: 8),
-                const Text("This update is mandatory. It is now downloading in the background. Please wait...", style: TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500)),
+                const Text("This update is mandatory. It is now downloading in the background. Please wait...", style: TextStyle(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w500)),
               ],
             ),
             // No actions, it will sit there while the background downloader does its thing and installs.
@@ -127,7 +128,7 @@ class UpdateService {
       builder: (context) => AlertDialog(
         title: const Row(
            children: [
-             Icon(Icons.system_update, color: Colors.blue),
+             Icon(Icons.system_update, color: AppColors.primaryLight),
              SizedBox(width: 10),
              Text("Update Available"),
            ]
@@ -200,7 +201,7 @@ class _GlobalDownloadManager {
             ),
             child: Row(
               children: [
-                const Icon(Icons.downloading, color: Colors.blue, size: 28),
+                const Icon(Icons.downloading, color: AppColors.primaryLight, size: 28),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -224,8 +225,8 @@ class _GlobalDownloadManager {
                           child: LinearProgressIndicator(
                             value: prog,
                             minHeight: 4,
-                            backgroundColor: Colors.grey.withValues(alpha: 0.2),
-                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+                            backgroundColor: AppColors.textSecondary(context).withValues(alpha: 0.2),
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
                           ),
                         ),
                       ),
@@ -238,9 +239,9 @@ class _GlobalDownloadManager {
                     _cancelToken.cancel();
                     _removeOverlay();
                   },
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.all(4.0),
-                    child: Icon(Icons.close, color: Colors.grey, size: 20),
+                    child: Icon(Icons.close, color: AppColors.textSecondary(context), size: 20),
                   ),
                 ),
               ],

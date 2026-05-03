@@ -7,6 +7,15 @@ import 'add_edit_inventory_screen.dart';
 import 'central_item_selection_dialog.dart';
 import '../l10n/app_localizations.dart'; // LOCALIZATION
 import '../widgets/inventory_image_widget.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/components/atoms/app_text_field.dart';
+import '../core/design/components/atoms/app_button.dart';
+import '../core/design/components/atoms/app_card.dart';
+import '../core/design/components/organisms/pos_data_table.dart';
+import '../core/design/density/app_density.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
+import '../core/design/tokens/app_colors.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -39,8 +48,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
   Widget build(BuildContext context) {
     final provider = Provider.of<DashboardProvider>(context);
     final allItems = provider.storeInventory;
+    final isDesktop = MediaQuery.of(context).size.width >= 1100;
+    final density = AppDensityProvider.configOf(context);
     
-    // Client-Side Search (Instant, Case-Insensitive, Substring)
+    // Client-Side Search
     final filteredItems = allItems.where((item) {
        if (_searchQuery.isEmpty) return true;
        return item.name.toLowerCase().contains(_searchQuery.toLowerCase()) || 
@@ -48,109 +59,115 @@ class _InventoryScreenState extends State<InventoryScreen> {
               item.id.contains(_searchQuery);
     }).toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.t(context, 'inventory')),
-        elevation: 1,
-        actions: [
-          // Responsive Actions
-          if (MediaQuery.of(context).size.width < 600) ...[
-             if (provider.activeStore?.addons.contains('central_catalog') == true)
-               IconButton(
-                 onPressed: () => _showImportDialog(context, provider),
-                 icon: const Icon(Icons.cloud_download),
-                 tooltip: AppLocalizations.t(context, 'import'),
-               ),
-             IconButton(
-               key: const Key('add_new_item_mobile'),
-               onPressed: () {
-                 Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditInventoryScreen()));
-               },
-               icon: const Icon(Icons.add),
-               tooltip: 'add_item', // Simplified tooltip for match
-               style: IconButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white),
-             ),
-          ] else ...[
-            if (provider.activeStore?.addons.contains('central_catalog') == true) ...[
-              TextButton.icon(
-                onPressed: () => _showImportDialog(context, provider),
-                icon: const Icon(Icons.cloud_download, size: 18),
-                label: Text(AppLocalizations.t(context, 'import')),
-              ),
-              const SizedBox(width: 8),
-            ],
-            ElevatedButton.icon(
-              key: const Key('add_new_item'),
-              onPressed: () {
-                 Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditInventoryScreen()));
-               },
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(AppLocalizations.t(context, 'add_item')),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor, 
-                foregroundColor: Colors.white,
-                elevation: 0,
-              ),
-            ),
-          ],
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: Column(
+    return PosScaffold(
+      title: AppLocalizations.t(context, 'inventory'),
+      actions: [
+        if (provider.activeStore?.addons.contains('central_catalog') == true)
+          AppButton.secondary(
+            label: isDesktop ? AppLocalizations.t(context, 'import') : null,
+            icon: Icons.cloud_download,
+            onPressed: () => _showImportDialog(context, provider),
+          ),
+        const SizedBox(width: AppSpacing.sm),
+        AppButton.primary(
+          key: const Key('add_new_item'),
+          label: isDesktop ? AppLocalizations.t(context, 'add_item') : null,
+          icon: Icons.add,
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditInventoryScreen()));
+          },
+        ),
+      ],
+      mainContent: Column(
         children: [
           // Toolbar & Search
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Theme.of(context).cardColor,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    key: const Key('inventory_search_field'),
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: '${AppLocalizations.t(context, 'search')} ${AppLocalizations.t(context, 'items')}...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? Colors.grey[100],
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                      suffixIcon: _searchController.text.isNotEmpty 
-                          ? IconButton(icon: const Icon(Icons.clear), onPressed: () {
-                              _searchController.clear();
-                            }) 
-                          : null
-                    ),
-                  ),
-                ),
-              ],
+          Padding(
+            padding: EdgeInsets.all(density.cardPadding),
+            child: AppTextField(
+              key: const Key('inventory_search_field'),
+              controller: _searchController,
+              hintText: '${AppLocalizations.t(context, 'search')} ${AppLocalizations.t(context, 'items')}...',
+              prefixIcon: const Icon(Icons.search),
+              onChanged: (val) => setState(() => _searchQuery = val),
             ),
           ),
           
-          const Divider(height: 1),
-
-          // List
           Expanded(
             child: filteredItems.isEmpty
-                ? Center(child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                       Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[300]),
-                       const SizedBox(height: 16),
-                       Text(_searchQuery.isEmpty ? 'No items in inventory' : 'No matching items found', style: const TextStyle(color: Colors.grey)),
-                    ],
-                  ))
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredItems.length,
-                    separatorBuilder: (ctx, i) => const SizedBox(height: 12),
-                    itemBuilder: (ctx, i) {
-                      return _buildInventoryCard(context, filteredItems[i]);
-                    },
-                  ),
+                ? _buildEmptyState()
+                : isDesktop 
+                    ? _buildTableView(context, filteredItems, provider)
+                    : _buildListView(context, filteredItems),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.border(context)),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            _searchQuery.isEmpty ? 'No items in inventory' : 'No matching items found', 
+            style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListView(BuildContext context, List<InventoryItem> items) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      itemCount: items.length,
+      separatorBuilder: (ctx, i) => const SizedBox(height: AppSpacing.md),
+      itemBuilder: (ctx, i) {
+        return _buildInventoryCard(context, items[i]);
+      },
+    );
+  }
+
+  Widget _buildTableView(BuildContext context, List<InventoryItem> items, DashboardProvider provider) {
+    return PosDataTable(
+      columns: [
+        const PosDataColumn(label: 'Item', fixedWidth: 300),
+        const PosDataColumn(label: 'Category', fixedWidth: 150),
+        const PosDataColumn(label: 'Price', numeric: true, fixedWidth: 120),
+        const PosDataColumn(label: 'Stock', numeric: true, fixedWidth: 150),
+        const PosDataColumn(label: 'Status', fixedWidth: 150),
+      ],
+      rows: items.map((item) {
+        final currentStock = provider.getItemStock(item.id);
+        final threshold = item.lowStockThreshold ?? 10;
+        final isLow = currentStock < threshold && currentStock > 0;
+        final isOut = currentStock <= 0;
+
+        return PosDataRow(
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditInventoryScreen(item: item)));
+          },
+          cells: [
+            Row(
+              children: [
+                InventoryImageWidget(item: item, width: 40, height: 40),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: Text(item.name, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold))),
+              ],
+            ),
+            Text(item.category),
+            Text('₹${item.price.toStringAsFixed(2)}', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.success)),
+            Text(currentStock.toString()),
+            _buildStatusBadge(
+              isOut ? 'Out of Stock' : (isLow ? 'Low Stock' : 'In Stock'),
+              isOut ? AppColors.error : (isLow ? AppColors.warning : AppColors.primary),
+            ),
+          ],
+        );
+      }).toList(),
     );
   }
 
@@ -168,77 +185,63 @@ class _InventoryScreenState extends State<InventoryScreen> {
     final isLow = currentStock < threshold && currentStock > 0;
     final isOut = currentStock <= 0;
     
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: Key('inventory_item_${item.id}'),
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-             Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditInventoryScreen(item: item)));
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
+    return AppCard(
+      key: Key('inventory_item_${item.id}'),
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditInventoryScreen(item: item)));
+      },
+      child: Row(
+        children: [
+          // Image
+          InventoryImageWidget(item: item),
+          const SizedBox(width: AppSpacing.md),
+          
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image
-                 InventoryImageWidget(item: item),
-                const SizedBox(width: 16),
-                
-                // Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 4),
-                      Text('Category: ${item.category}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text('₹${item.price.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 15)),
-                          const Spacer(),
-                          Builder(builder: (context) {
-                            final provider = Provider.of<DashboardProvider>(context);
-                            final trackInventory = provider.activeStore?.trackInventory ?? true;
+                Text(item.name, style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.xs),
+                Text('Category: ${item.category}', style: AppTypography.labelMedium.copyWith(color: AppColors.textSecondary(context))),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Text('₹${item.price.toStringAsFixed(2)}', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.success)),
+                    const Spacer(),
+                    Builder(builder: (context) {
+                      final trackInventory = provider.activeStore?.trackInventory ?? true;
 
-                            if (!trackInventory) {
-                               return _buildStatusBadge('Available', Colors.green);
-                            }
+                      if (!trackInventory) {
+                        return _buildStatusBadge('Available', AppColors.success);
+                      }
 
-                            if (isOut) {
-                               return _buildStatusBadge('Out of Stock', Colors.red);
-                            } else if (isLow) {
-                               return _buildStatusBadge('Low Stock: ${provider.getItemStock(item.id)}', Colors.orange);
-                            } else {
-                               return _buildStatusBadge('In Stock: ${provider.getItemStock(item.id)}', Colors.blue);
-                            }
-                          }),
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                      if (isOut) {
+                        return _buildStatusBadge('Out of Stock', AppColors.error);
+                      } else if (isLow) {
+                        return _buildStatusBadge('Low Stock: ${provider.getItemStock(item.id)}', AppColors.warning);
+                      } else {
+                        return _buildStatusBadge('In Stock: ${provider.getItemStock(item.id)}', AppColors.primary);
+                      }
+                    }),
+                  ],
+                )
               ],
             ),
           ),
-        ),
+          const SizedBox(width: AppSpacing.sm),
+          Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondary(context)),
+        ],
       ),
     );
   }
+
 
   Widget _buildStatusBadge(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-      child: Text(text, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+      child: Text(text, style: AppTypography.labelSmall.copyWith(color: color, fontWeight: FontWeight.bold)),
     );
   }
 }

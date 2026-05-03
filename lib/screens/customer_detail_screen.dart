@@ -1,10 +1,17 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/dashboard_provider.dart';
 import '../models/customer.dart';
 import '../models/order_model.dart';
 import 'add_edit_customer_screen.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/components/atoms/app_button.dart';
+import '../core/design/components/atoms/app_card.dart';
+import '../core/design/components/atoms/app_text_field.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
+import '../core/design/tokens/app_colors.dart';
 
 class CustomerDetailScreen extends StatefulWidget {
   final Customer customer;
@@ -32,133 +39,144 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> with Single
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DashboardProvider>(context);
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
     // Find latest customer data from provider to keep stats in sync
     final customer = provider.customers.firstWhere((c) => c.id == widget.customer.id, orElse: () => widget.customer);
     
-    return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
-      appBar: AppBar(
-        title: Text(customer.name),
-        backgroundColor: isDarkMode ? const Color(0xFF2C2C2C) : Colors.white,
-        iconTheme: IconThemeData(color: isDarkMode ? Colors.white : Colors.black87),
-        titleTextStyle: TextStyle(color: isDarkMode ? Colors.white : Colors.black87, fontSize: 20, fontWeight: FontWeight.bold),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditCustomerScreen(customer: customer))),
-          )
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.blue,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Colors.blue,
-          tabs: const [
-            Tab(text: "Overview"),
-            Tab(text: "Bill History"),
-          ],
+    return PosScaffold(
+      title: customer.name,
+      actions: [
+        AppButton.secondary(
+          icon: Icons.edit_outlined,
+          label: "Edit",
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditCustomerScreen(customer: customer))),
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
+      ],
+      mainContent: Column(
         children: [
-           _buildOverviewTab(customer, provider, isDarkMode),
-           _buildHistoryTab(customer, provider, isDarkMode),
+          TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: "Overview"),
+              Tab(text: "Bill History"),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildOverviewTab(customer, provider),
+                _buildHistoryTab(customer, provider),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildOverviewTab(Customer c, DashboardProvider provider, bool isDark) {
-    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-
+  Widget _buildOverviewTab(Customer c, DashboardProvider provider) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [
           // Profile Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+          AppCard(
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               children: [
                  CircleAvatar(
                    radius: 40,
-                   backgroundColor: Colors.blue.shade100,
-                   child: Text(c.name.isNotEmpty ? c.name[0].toUpperCase() : '?', style: TextStyle(fontSize: 32, color: Colors.blue.shade800)),
+                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                   child: Text(
+                     c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
+                     style: AppTypography.headlineMedium.copyWith(color: AppColors.primary),
+                   ),
                  ),
-                 const SizedBox(height: 16),
-                 Text(c.name, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor)),
-                 Text(c.tier.toUpperCase(), style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                 const SizedBox(height: AppSpacing.md),
+                 Text(c.name, style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.bold)),
+                 const SizedBox(height: 4),
+                 Container(
+                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                   decoration: BoxDecoration(
+                     color: AppColors.warning.withValues(alpha: 0.1),
+                     borderRadius: BorderRadius.circular(20),
+                   ),
+                   child: Text(
+                     c.tier.toUpperCase(),
+                     style: AppTypography.labelSmall.copyWith(color: AppColors.warning, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                   ),
+                 ),
                  
-                 const SizedBox(height: 24),
+                 const SizedBox(height: AppSpacing.xl),
                  Row(
                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                    children: [
-                      _buildStatItem("Visits", "${c.visitCount}", textColor),
-                      Container(height: 30, width: 1, color: Colors.grey.shade300),
-                      _buildStatItem("Spent", "₹${c.totalSpent.toStringAsFixed(0)}", textColor),
-                      Container(height: 30, width: 1, color: Colors.grey.shade300),
-                      _buildStatItem("Points", "${c.loyaltyPoints}", Colors.green),
+                      _buildStatItem("Visits", "${c.visitCount}", AppColors.primary),
+                      Container(height: 30, width: 1, color: AppColors.border(context)),
+                      _buildStatItem("Spent", "\$${c.totalSpent.toStringAsFixed(0)}", AppColors.success),
+                      Container(height: 30, width: 1, color: AppColors.border(context)),
+                      _buildStatItem("Points", "${c.loyaltyPoints}", AppColors.warning),
                    ],
                  )
               ],
             ),
           ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           
           // Loyalty & Coupons
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+          AppCard(
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                 Text("Loyalty & Rewards", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
-                 const SizedBox(height: 16),
+                 Text("Loyalty & Rewards", style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                 const SizedBox(height: AppSpacing.md),
                  ListTile(
                    contentPadding: EdgeInsets.zero,
-                   leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.stars, color: Colors.orange)),
-                   title: Text("${c.loyaltyPoints} Coins Available", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
-                   subtitle: const Text("Redeemable against next bill"),
-                   trailing: ElevatedButton(
+                   leading: Container(
+                     padding: const EdgeInsets.all(8),
+                     decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                     child: const Icon(Icons.stars, color: AppColors.warning),
+                   ),
+                   title: Text("${c.loyaltyPoints} Coins Available", style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+                   subtitle: Text("Redeemable against next bill", style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+                   trailing: AppButton.secondary(
                      onPressed: () => _showTopUpDialog(c, provider),
-                     style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-                     child: const Text("Manage"),
+                     label: "Manage",
                    ),
                  ),
-                 const Divider(),
+                 const Divider(height: AppSpacing.lg),
                  ListTile(
                    contentPadding: EdgeInsets.zero,
-                   leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.pink.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.local_offer, color: Colors.pink)),
-                   title: Text("Active Coupons", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
-                   subtitle: const Text("No active coupons found"), // Placeholder
-                   trailing: TextButton(onPressed: (){}, child: const Text("View All")),
+                   leading: Container(
+                     padding: const EdgeInsets.all(8),
+                     decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                     child: const Icon(Icons.local_offer, color: AppColors.error),
+                   ),
+                   title: Text("Active Coupons", style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+                   subtitle: Text("No active coupons found", style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+                   trailing: TextButton(onPressed: (){}, child: Text("View All", style: TextStyle(color: AppColors.primary))),
                  )
               ],
             ),
           ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           
           // Contact Info
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+          AppCard(
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                 Text("Contact Information", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
-                 const SizedBox(height: 16),
-                 _buildInfoRow(Icons.phone, c.mobile ?? c.phone ?? 'Not set', textColor),
-                 _buildInfoRow(Icons.email, c.email.isNotEmpty ? c.email : 'Not set', textColor),
-                 _buildInfoRow(Icons.location_on, c.billingAddress ?? 'Not set', textColor),
-                 _buildInfoRow(Icons.calendar_today, "Joined ${DateFormat('dd MMM yyyy').format(c.joinDate)}", textColor),
+                 Text("Contact Information", style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                 const SizedBox(height: AppSpacing.md),
+                 _buildInfoRow(Icons.phone_outlined, c.mobile ?? c.phone ?? 'Not set'),
+                 _buildInfoRow(Icons.email_outlined, c.email.isNotEmpty ? c.email : 'Not set'),
+                 _buildInfoRow(Icons.location_on_outlined, c.billingAddress ?? 'Not set'),
+                 _buildInfoRow(Icons.calendar_today_outlined, "Joined ${DateFormat('dd MMM yyyy').format(c.joinDate)}"),
               ],
             ),
           ),
@@ -167,69 +185,91 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> with Single
     );
   }
 
-  Widget _buildHistoryTab(Customer c, DashboardProvider provider, bool isDark) {
+  Widget _buildHistoryTab(Customer c, DashboardProvider provider) {
      return FutureBuilder<List<OrderModel>>(
        future: provider.fetchCustomerOrders(c.id), 
        builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
           
           final orders = snapshot.data ?? [];
-          
-          // Sort handled by SQL, but safe to ensure fallback
-          // orders.sort((a,b) => b.date.compareTo(a.date));
 
           if (orders.isEmpty) {
              return Center(
                child: Column(
                  mainAxisAlignment: MainAxisAlignment.center,
                  children: [
-                    Icon(Icons.receipt_long, size: 64, color: isDark ? Colors.white24 : Colors.grey.shade300),
-                    const SizedBox(height: 16),
-                    Text("No purchase history found", style: TextStyle(color: isDark ? Colors.white60 : Colors.grey)),
+                    Icon(Icons.receipt_long, size: 80, color: AppColors.border(context)),
+                    const SizedBox(height: AppSpacing.md),
+                    Text("No purchase history found", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
                  ],
                ),
              );
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             itemCount: orders.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
             itemBuilder: (ctx, i) {
                final order = orders[i];
-               return Container(
-                 padding: const EdgeInsets.all(16),
-                 decoration: BoxDecoration(
-                   color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                   borderRadius: BorderRadius.circular(12),
-                   boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0,2))]
-                 ),
+               return AppCard(
+                 padding: const EdgeInsets.all(AppSpacing.md),
                  child: Column(
                    children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                           Text(DateFormat('dd MMM yyyy, hh:mm a').format(order.date), style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                           Chip(
-                             label: Text(order.status, style: const TextStyle(fontSize: 10, color: Colors.white)),
-                             backgroundColor: _getStatusColor(order.status),
-                             padding: EdgeInsets.zero,
-                             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                           Text(
+                             DateFormat('dd MMM yyyy, hh:mm a').format(order.date),
+                             style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)),
+                           ),
+                           Container(
+                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                             decoration: BoxDecoration(
+                               color: _getStatusColor(order.status).withValues(alpha: 0.1),
+                               borderRadius: BorderRadius.circular(4),
+                             ),
+                             child: Text(
+                               order.status.toUpperCase(),
+                               style: AppTypography.labelSmall.copyWith(
+                                 color: _getStatusColor(order.status),
+                                 fontWeight: FontWeight.bold,
+                                 fontSize: 9,
+                               ),
+                             ),
                            )
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                           Text("#${order.id.substring(0, 8).toUpperCase()}", style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
-                           Text("₹${order.total.toStringAsFixed(2)}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.greenAccent : Colors.green)),
+                           Text(
+                             "#${order.id.substring(0, 8).toUpperCase()}",
+                             style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                           ),
+                           Text(
+                             "\$${order.total.toStringAsFixed(2)}",
+                             style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold, color: AppColors.success),
+                           ),
                         ],
                       ),
-                      const Divider(),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text("${order.items.length} Items • ${order.type}", style: const TextStyle(fontSize: 12, color: Colors.grey))
+                      const Divider(height: AppSpacing.lg),
+                      Row(
+                        children: [
+                          Icon(Icons.shopping_bag_outlined, size: 14, color: AppColors.textSecondary(context)),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${order.items.length} Items • ${order.type}",
+                            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () {}, // Link to order detail
+                            style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                            child: Text("View Bill", style: AppTypography.labelMedium.copyWith(color: AppColors.primary)),
+                          )
+                        ],
                       )
                    ],
                  ),
@@ -242,33 +282,40 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> with Single
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'Completed': return Colors.green;
-      case 'Refunded': return Colors.red;
-      case 'Cancelled': return Colors.red;
-      case 'Prepare': return Colors.orange;
-      case 'Ready': return Colors.blue;
-      default: return Colors.grey;
+      case 'Completed': return AppColors.success;
+      case 'Refunded': return AppColors.error;
+      case 'Cancelled': return AppColors.error;
+      case 'Prepare': return AppColors.warning;
+      case 'Ready': return AppColors.primary;
+      default: return AppColors.secondary;
     }
   }
 
   Widget _buildStatItem(String label, String val, Color? color) {
     return Column(
       children: [
-        Text(val, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+        Text(val, style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(label, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
       ],
     );
   }
   
-  Widget _buildInfoRow(IconData icon, String text, Color textColor) {
+  Widget _buildInfoRow(IconData icon, String text) {
      return Padding(
-       padding: const EdgeInsets.only(bottom: 12),
+       padding: const EdgeInsets.only(bottom: AppSpacing.md),
        child: Row(
          children: [
-           Icon(icon, size: 18, color: Colors.grey),
-           const SizedBox(width: 12),
-           Expanded(child: Text(text, style: TextStyle(fontSize: 16, color: textColor)))
+           Container(
+             padding: const EdgeInsets.all(8),
+             decoration: BoxDecoration(
+               color: AppColors.background(context),
+               borderRadius: BorderRadius.circular(8),
+             ),
+             child: Icon(icon, size: 18, color: AppColors.textSecondary(context)),
+           ),
+           const SizedBox(width: AppSpacing.md),
+           Expanded(child: Text(text, style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w500)))
          ],
        ),
      );
@@ -279,15 +326,20 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> with Single
      showDialog(
         context: context, 
         builder: (ctx) => AlertDialog(
-           title: const Text("Adjust Loyalty Coins"),
-           content: TextField(
+           title: Text("Adjust Loyalty Coins", style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+           content: AppTextField(
               controller: controller,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Coins to Add (or - to remove)"),
+              label: "Coins to Add (or - to remove)",
+              prefixIcon: const Icon(Icons.stars_outlined),
            ),
            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
               TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context))),
+              ),
+              AppButton.primary(
                  onPressed: () {
                     final points = int.tryParse(controller.text) ?? 0;
                     if (points != 0) {
@@ -295,7 +347,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> with Single
                     }
                     Navigator.pop(ctx);
                  }, 
-                 child: const Text("UPDATE")
+                 label: "Update"
               ),
            ],
         )

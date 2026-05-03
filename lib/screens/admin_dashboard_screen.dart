@@ -1,5 +1,10 @@
-// ignore_for_file: unused_local_variable
+import '../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/density/app_density.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
+
 
 import 'admin/manage_roles_screen.dart';
 import 'admin/store_management_screen.dart';
@@ -23,14 +28,14 @@ class AdminDashboardScreen extends StatelessWidget {
         'label': 'Store Management',
         'description': 'Manage all client stores and subscriptions',
         'widgetBuilder': () => const StoreManagementScreen(),
-        'color': Colors.orange,
+        'color': AppColors.warning,
       },
       {
         'icon': Icons.people,
         'label': 'User Management',
         'description': 'Manage system users and access',
         'widgetBuilder': () => const UserManagementScreen(),
-        'color': Colors.teal,
+        'color': AppColors.primary,
       },
 
       {
@@ -38,21 +43,21 @@ class AdminDashboardScreen extends StatelessWidget {
         'label': 'Roles & Permissions',
         'description': 'Define user roles and access control',
         'widgetBuilder': () => const ManageRolesScreen(),
-        'color': Colors.blue,
+        'color': AppColors.primaryLight,
       },
       {
         'icon': Icons.tune,
         'label': 'Other Settings',
         'description': 'Configure store types and misc settings',
         'widgetBuilder': () => const OtherSettingsScreen(),
-        'color': Colors.blueGrey,
+        'color': AppColors.primaryLightGrey,
       },
       {
         'icon': Icons.system_update,
         'label': 'App Releases',
         'description': 'Manage versions and force updates',
         'widgetBuilder': () => const ReleaseManagementScreen(),
-        'color': Colors.redAccent,
+        'color': AppColors.error,
       },
       // HANDOVER
       {
@@ -60,43 +65,42 @@ class AdminDashboardScreen extends StatelessWidget {
         'label': 'Handover System',
         'description': 'Lock station for employee use',
         'widgetBuilder': () => const StationLockScreen(),
-        'color': Colors.deepOrange,
+        'color': AppColors.warning,
       },
       {
         'icon': Icons.lock_clock, 
         'label': 'Basic Plan Limits',
         'description': 'Set daily/monthly order quotas',
         'widgetBuilder': () => const BasicPlanSettingsScreen(),
-        'color': Colors.purpleAccent,
+        'color': AppColors.primaryLight,
       },
       {
         'icon': Icons.account_balance_wallet,
         'label': 'Subscriptions',
         'description': 'View revenue, active plans and history',
         'widgetBuilder': () => const SubscriptionsOverviewScreen(),
-        'color': Colors.indigo,
+        'color': AppColors.primary,
       },
       {
         'icon': Icons.approval,
         'label': 'Subscription Approvals',
         'description': 'Verify and approve plan upgrade requests',
         'widgetBuilder': () => const SubscriptionApprovalScreen(),
-        'color': Colors.green,
+        'color': AppColors.success,
       }
     ];
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final density = AppDensityProvider.configOf(context);
 
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF1E1E2C) : const Color(0xFFF4F6F9),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+    return PosScaffold(
+      mainContent: SingleChildScrollView(
+        padding: EdgeInsets.all(density.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // HEADER SECTION
             _buildModernHeader(context),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.lg),
 
             // ADMIN TOOLS GRID
             _buildAdminToolsGrid(context, adminMenuItems),
@@ -108,18 +112,20 @@ class AdminDashboardScreen extends StatelessWidget {
 
   // --- TOP HEADER ---
   Widget _buildModernHeader(BuildContext context) {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Admin Dashboard', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-        SizedBox(height: 8),
-        Text('Super Admin tools and system configuration.', style: TextStyle(color: Colors.grey, fontSize: 15)),
+        Text('Admin Dashboard', style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+        const SizedBox(height: AppSpacing.xs),
+        Text('Super Admin tools and system configuration.', style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
       ],
     );
   }
 
   // --- ADMIN TOOLS GRID ---
   Widget _buildAdminToolsGrid(BuildContext context, List<Map<String, dynamic>> items) {
+    final density = AppDensityProvider.configOf(context);
+    
     return LayoutBuilder(
       builder: (context, constraints) {
         // Responsive grid
@@ -148,8 +154,8 @@ class AdminDashboardScreen extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
+            crossAxisSpacing: AppSpacing.md,
+            mainAxisSpacing: AppSpacing.md,
             childAspectRatio: aspectRatio,
           ),
           itemCount: items.length,
@@ -186,16 +192,17 @@ class AdminDashboardScreen extends StatelessWidget {
     required VoidCallback onTap,
     bool horizontal = false,
   }) {
+    final density = AppDensityProvider.configOf(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(density.cardRadius),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(density.cardPadding),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF2D2D44) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(density.cardRadius),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03),
@@ -203,21 +210,21 @@ class AdminDashboardScreen extends StatelessWidget {
               offset: const Offset(0, 4),
             )
           ],
-          border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade100),
+          border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
         ),
         child: horizontal 
           ? Row(
               children: [
                 // Icon
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(density.buttonRadius),
                   ),
                   child: Icon(icon, color: color, size: 28),
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(width: AppSpacing.md),
                 // Text
                 Expanded(
                   child: Column(
@@ -226,8 +233,7 @@ class AdminDashboardScreen extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: AppTypography.titleMedium.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
@@ -236,9 +242,8 @@ class AdminDashboardScreen extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         description,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary(context),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -246,7 +251,7 @@ class AdminDashboardScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey.withValues(alpha: 0.5)),
+                Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary(context).withValues(alpha: 0.5)),
               ],
             )
           : Column(
@@ -255,10 +260,10 @@ class AdminDashboardScreen extends StatelessWidget {
           children: [
             // Icon
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(density.buttonRadius),
               ),
               child: Icon(icon, color: color, size: 32),
             ),
@@ -271,19 +276,17 @@ class AdminDashboardScreen extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: AppTypography.titleMedium.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         description,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary(context),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,

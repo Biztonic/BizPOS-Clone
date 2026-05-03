@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_colors.dart';
 import 'dart:math' as math;
 // ignore_for_file: unused_local_variable, unused_element
 import 'dart:async';
@@ -160,15 +161,15 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                         Container(
                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                            decoration: BoxDecoration(
-                              color: (provider.isOnline ? Colors.green : Colors.red).withValues(alpha: 0.1),
+                              color: (provider.isOnline ? AppColors.success : AppColors.error).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(24),
-                              border: Border.all(color: provider.isOnline ? Colors.green : Colors.red),
+                              border: Border.all(color: provider.isOnline ? AppColors.success : AppColors.error),
                            ),
                            child: Row(
                               children: [
-                                 Icon(provider.isOnline ? Icons.wifi : Icons.wifi_off, color: provider.isOnline ? Colors.green : Colors.red, size: 24),
+                                 Icon(provider.isOnline ? Icons.wifi : Icons.wifi_off, color: provider.isOnline ? AppColors.success : AppColors.error, size: 24),
                                  const SizedBox(width: 8),
-                                 Text(provider.isOnline ? "ONLINE" : "OFFLINE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: provider.isOnline ? Colors.green : Colors.red)),
+                                 Text(provider.isOnline ? "ONLINE" : "OFFLINE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: provider.isOnline ? AppColors.success : AppColors.error)),
                               ],
                            ),
                         ),
@@ -193,7 +194,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                  quarterTurns: 3, 
                                  child: Icon(
                                     _batteryState == BatteryState.charging ? Icons.battery_charging_full : Icons.battery_full, 
-                                    color: _batteryLevel < 20 ? Colors.red : CarDashboardTheme.successColor(isDarkMode),
+                                    color: _batteryLevel < 20 ? AppColors.error : CarDashboardTheme.successColor(isDarkMode),
                                     size: 44 // Increased from 32
                                  ),
                               ),
@@ -231,12 +232,12 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                         // Logout (Now on Right)
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.1),
+                            color: AppColors.error.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                            border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                           ),
                           child: IconButton(
-                             icon: const Icon(Icons.logout, color: Colors.redAccent, size: 28), 
+                             icon: const Icon(Icons.logout, color: AppColors.error, size: 28), 
                              onPressed: () {
                                 provider.clearSession();
                                 FirebaseAuth.instance.signOut();
@@ -560,7 +561,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
            children: [
               Icon(
                   type == 'reminder' ? Icons.alarm : Icons.note, 
-                  color: type == 'reminder' ? Colors.purpleAccent : Colors.amber, 
+                  color: type == 'reminder' ? AppColors.primaryLight : AppColors.warning, 
                   size: 20
               ),
               const SizedBox(width: 12),
@@ -721,7 +722,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                children: [
                   header(title),
                   const Spacer(),
-                  const Text("No recent orders.", style: TextStyle(color: Colors.grey)),
+                  Text("No recent orders.", style: TextStyle(color: AppColors.textSecondary(context))),
                   const Spacer(),
                ],
              );
@@ -754,11 +755,11 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                       return Container(
                                          decoration: BoxDecoration(
                                             boxShadow: isRefunded ? [] : [
-                                               BoxShadow(color: Colors.redAccent.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 4))
+                                               BoxShadow(color: AppColors.error.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 4))
                                             ],
                                             borderRadius: BorderRadius.circular(25),
                                             gradient: isRefunded 
-                                               ? const LinearGradient(colors: [Colors.grey, Colors.grey])
+                                               ? LinearGradient(colors: [AppColors.textSecondary(context), AppColors.textSecondary(context)])
                                                : const LinearGradient(colors: [Color(0xFFFF5252), Color(0xFFFF1744)])
                                          ),
                                          child: ElevatedButton(
@@ -780,7 +781,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                                     actions: [
                                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
                                                        ElevatedButton(
-                                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
                                                           onPressed: () => Navigator.pop(ctx, true), 
                                                           child: const Text("Refund")
                                                        )
@@ -814,9 +815,9 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
              children: [
                 header("Held Orders"),
                 const Spacer(),
-                const Icon(Icons.pause_circle_outline, size: 48, color: Colors.grey),
+                Icon(Icons.pause_circle_outline, size: 48, color: AppColors.textSecondary(context)),
                 const SizedBox(height: 16),
-                const Text("No active held orders.", style: TextStyle(color: Colors.grey)),
+                Text("No active held orders.", style: TextStyle(color: AppColors.textSecondary(context))),
                 const Spacer(),
              ],
           );
@@ -855,7 +856,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
           final isConnected = snapshot.data ?? false;
           final isAssigned = PrinterManagerService().assignments.isNotEmpty;
           
-          final Color statusColor = !isAssigned ? Colors.orange : (isConnected ? Colors.green : Colors.red);
+          final Color statusColor = !isAssigned ? AppColors.warning : (isConnected ? AppColors.success : AppColors.error);
           final String statusText = !isAssigned ? "NO ASSIGNMENT" : (isConnected ? "PRINTER" : "DISCONNECTED");
           final IconData statusIcon = !isAssigned ? Icons.print_disabled : (isConnected ? Icons.print : Icons.print_disabled);
           return Container(
@@ -898,7 +899,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
-            Icon(Icons.print, color: Colors.blueAccent),
+            Icon(Icons.print, color: AppColors.primaryLightAccent),
             SizedBox(width: 12),
             Text("Printer Setup", style: TextStyle(color: Colors.white)),
           ],
@@ -913,7 +914,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
               provider.dismissPrinterSetup();
               Navigator.pop(ctx);
             },
-            child: const Text("Later", style: TextStyle(color: Colors.grey)),
+            child: Text("Later", style: TextStyle(color: AppColors.textSecondary(context))),
           ),
           ElevatedButton(
             onPressed: () {
@@ -922,7 +923,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
               context.push('/printer-management');
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
+              backgroundColor: AppColors.primaryLightAccent,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -1119,7 +1120,7 @@ class _AnimatedBillingButtonState extends State<_AnimatedBillingButton> with Sin
                                  child: Column(
                                    mainAxisAlignment: MainAxisAlignment.center,
                                    children: [
-                                      const Icon(Icons.auto_awesome, color: Colors.yellowAccent, size: 40),
+                                      const Icon(Icons.auto_awesome, color: AppColors.warning, size: 40),
                                       const SizedBox(height: 8),
                                       Text("Welcome ${widget.userName}", 
                                           textAlign: TextAlign.center,
@@ -1190,8 +1191,8 @@ class _PerformanceIndexCard extends StatelessWidget {
     
     // Dynamic Colors based on raw performance (allows "Excellent" color even if capped at 100%)
     Color performanceColor = rawIndex >= 90 
-      ? Colors.greenAccent
-      : (rawIndex >= 60 ? Colors.orangeAccent : Colors.redAccent);
+      ? AppColors.success
+      : (rawIndex >= 60 ? AppColors.warning : AppColors.error);
     
     return Container(
       decoration: BoxDecoration(
@@ -1349,7 +1350,7 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
           decoration: BoxDecoration(
             color: CarDashboardTheme.cardColor(widget.isDarkMode),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: _showFreeHours ? Colors.blueAccent.withValues(alpha: 0.3) : Colors.orangeAccent.withValues(alpha: 0.3)),
+            border: Border.all(color: _showFreeHours ? AppColors.primaryLightAccent.withValues(alpha: 0.3) : AppColors.warning.withValues(alpha: 0.3)),
             boxShadow: CarDashboardTheme.cardShadow(widget.isDarkMode),
           ),
           child: Column(
@@ -1363,10 +1364,10 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
                       fontSize: 10, 
                       fontWeight: FontWeight.w900, 
                       letterSpacing: 1.2,
-                      color: _showFreeHours ? Colors.blueAccent : Colors.orangeAccent
+                      color: _showFreeHours ? AppColors.primaryLightAccent : AppColors.warning
                     )
                   ),
-                  Icon(_showFreeHours ? Icons.eco : Icons.speed, color: _showFreeHours ? Colors.blueAccent : Colors.orangeAccent, size: 18),
+                  Icon(_showFreeHours ? Icons.eco : Icons.speed, color: _showFreeHours ? AppColors.primaryLightAccent : AppColors.warning, size: 18),
                 ],
               ),
               const Spacer(),
@@ -1428,12 +1429,12 @@ class _TopSellingProductsCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("TOP SELLING", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode), fontWeight: FontWeight.bold)),
-              Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 20),
+              Icon(Icons.auto_awesome, color: AppColors.warning, size: 20),
             ],
           ),
           const SizedBox(height: 16),
           if (topDisplay.isEmpty)
-            const Expanded(child: Center(child: Text("Waiting for sales...", style: TextStyle(fontSize: 14, color: Colors.grey))))
+            Expanded(child: Center(child: Text("Waiting for sales...", style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context)))))
           else
             Expanded(
               child: ListView.builder(

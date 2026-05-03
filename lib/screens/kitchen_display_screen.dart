@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -61,7 +62,7 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
 
           final docs = snapshot.data?.docs ?? [];
           if (docs.isEmpty) {
-            return const Center(child: Text('No active orders', style: TextStyle(fontSize: 24, color: Colors.grey)));
+            return Center(child: Text('No active orders', style: TextStyle(fontSize: 24, color: AppColors.textSecondary(context))));
           }
 
           final orders = docs.map((d) => OrderModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
@@ -154,7 +155,7 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
-          color: isLate ? Colors.red : (order.status == 'New' ? Colors.blue : Colors.orange), 
+          color: isLate ? AppColors.error : (order.status == 'New' ? AppColors.primaryLight : AppColors.warning), 
           width: 2
         )
       ),
@@ -163,7 +164,7 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
           // Header
           Container(
             padding: const EdgeInsets.all(12),
-            color: isLate ? Colors.red.shade100 : (order.status == 'New' ? Colors.blue.shade50 : Colors.orange.shade50),
+            color: isLate ? AppColors.error : (order.status == 'New' ? AppColors.primaryLight : AppColors.warning),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -172,10 +173,10 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
                   children: [
                     Text('#${order.id.substring(0, 5)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                     if (order.tableName != null || order.tableId != null)
-                      Text(order.tableName ?? order.tableId!, style: TextStyle(fontSize: 14, color: Colors.blueGrey.shade700, fontWeight: FontWeight.w500)),
+                      Text(order.tableName ?? order.tableId!, style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context), fontWeight: FontWeight.w500)),
                   ],
                 ),
-                Text("${duration.inMinutes}m ago", style: TextStyle(color: isLate ? Colors.red : Colors.black, fontWeight: FontWeight.bold)),
+                Text("${duration.inMinutes}m ago", style: TextStyle(color: isLate ? AppColors.error : Colors.black, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -212,7 +213,7 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
               height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: order.status == 'New' ? Colors.orange : Colors.green,
+                  backgroundColor: order.status == 'New' ? AppColors.warning : AppColors.success,
                 ),
                 onPressed: _isLoading ? null : _advanceOrderStatus,
                 child: _isLoading 

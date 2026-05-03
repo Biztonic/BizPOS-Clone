@@ -1,5 +1,10 @@
-﻿// ignore_for_file: unused_field
 import 'package:flutter/material.dart';
+import '../../core/design/tokens/app_typography.dart';
+import '../../core/design/tokens/app_spacing.dart';
+import '../../core/design/density/app_density.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import '../../core/design/components/atoms/app_text_field.dart';
+import '../../core/design/components/atoms/app_card.dart';
 
 class BarcodeScannerSettingsScreen extends StatefulWidget {
   const BarcodeScannerSettingsScreen({super.key});
@@ -15,46 +20,87 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Barcode Scanners")),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+    final density = AppDensityProvider.configOf(context);
+
+    return PosScaffold(
+      title: "Barcode Scanners",
+      mainContent: ListView(
+        padding: EdgeInsets.all(AppSpacing.lg),
         children: [
-          SwitchListTile(
-            title: const Text("Auto Enter"),
-            subtitle: const Text("Automatically submit after scan"),
-            value: _autoEnter,
-            onChanged: (val) => setState(() => _autoEnter = val),
+          Text("Scanner Behavior", style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.md),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: SwitchListTile(
+              title: const Text("Auto Enter", style: AppTypography.bodyLarge),
+              subtitle: const Text("Automatically submit after scan", style: AppTypography.bodySmall),
+              activeColor: Theme.of(context).colorScheme.primary,
+              value: _autoEnter,
+              onChanged: (val) => setState(() => _autoEnter = val),
+            ),
           ),
-          const Divider(),
-          const ListTile(
-            title: Text("Prefix & Suffix"),
-            subtitle: Text("Configure scanner characters"),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
+          
+          const SizedBox(height: AppSpacing.xl),
+          Text("Prefix & Suffix", style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.md),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(labelText: "Prefix", border: OutlineInputBorder()),
-                    onChanged: (val) => _prefix = val,
+                Text(
+                  "Configure special scanner characters",
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(labelText: "Suffix", border: OutlineInputBorder()),
-                    onChanged: (val) => _suffix = val,
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppTextField(
+                        labelText: "Prefix",
+                        hintText: "Enter prefix",
+                        onChanged: (val) => _prefix = val,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: AppTextField(
+                        labelText: "Suffix",
+                        hintText: "Enter suffix",
+                        onChanged: (val) => _suffix = val,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: AppSpacing.xl),
+          AppCard(
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.3),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 24,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  "Connect your scanner via USB or Bluetooth. It will work as a keyboard input.",
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-          const Center(child: Text("Connect your scanner via USB or Bluetooth.\nIt will work as a keyboard input.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey))),
         ],
       ),
     );
   }
 }
+

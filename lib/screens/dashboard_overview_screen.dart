@@ -4,6 +4,14 @@ import 'package:fl_chart/fl_chart.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/smart_insights_provider.dart';
 import '../widgets/sync_status_widget.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/components/atoms/app_card.dart';
+import '../core/design/components/atoms/app_button.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
+import '../core/design/tokens/app_colors.dart';
+import '../core/design/density/app_density.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/theme.dart';
 
 class DashboardOverviewScreen extends StatelessWidget {
@@ -15,29 +23,26 @@ class DashboardOverviewScreen extends StatelessWidget {
     final insights = Provider.of<SmartInsightsProvider>(context);
     final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Overview', style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
-          const SyncStatusWidget(),
-          IconButton(
-            icon: const Icon(Icons.speed),
-            tooltip: "Switch to Smart Dashboard",
-            onPressed: () {
-              dashboardProvider.setUIStyle(UIStyle.car_dashboard);
-            },
-          )
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+    return PosScaffold(
+      title: AppLocalizations.t(context, 'overview'),
+      actions: [
+        const SyncStatusWidget(),
+        AppButton.secondary(
+          icon: Icons.speed,
+          onPressed: () {
+            dashboardProvider.setUIStyle(UIStyle.car_dashboard);
+          },
+        ),
+      ],
+      mainContent: SingleChildScrollView(
+        padding: EdgeInsets.all(AppDensityProvider.configOf(context).cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. KPI Grid (Responsive & Premium)
             _buildKpiGrid(context, insights),
             
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xl),
             
             // 2. Enhanced Trend Chart
             Row(
@@ -46,18 +51,21 @@ class DashboardOverviewScreen extends StatelessWidget {
                   width: 4,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: Colors.blueAccent,
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Text("Weekly Performance", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+                const SizedBox(width: AppSpacing.md),
+                Text(
+                  AppLocalizations.t(context, 'weekly_performance'), 
+                  style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)
+                ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             _EnhancedTrendChart(data: insights.weeklyTrend),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xl),
             
             // 3. Top Items Leaderboard
             Row(
@@ -66,18 +74,21 @@ class DashboardOverviewScreen extends StatelessWidget {
                   width: 4,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: Colors.orangeAccent,
+                    color: AppColors.warning,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Text("Top Selling Products", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+                const SizedBox(width: AppSpacing.md),
+                Text(
+                  AppLocalizations.t(context, 'top_selling_products'), 
+                  style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)
+                ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             _buildTopItemsLeaderboard(context, insights.topItems),
 
-             const SizedBox(height: 32),
+             const SizedBox(height: AppSpacing.xl),
           ],
         ),
       ),
@@ -86,14 +97,14 @@ class DashboardOverviewScreen extends StatelessWidget {
 
   Widget _buildKpiGrid(BuildContext context, SmartInsightsProvider insights) {
     final cards = [
-      _KpiData(title: "Today Sales", value: "₹${insights.todaySales.toStringAsFixed(0)}", icon: Icons.payments_rounded, color: Colors.blue, gradient: const [Color(0xFF2563EB), Color(0xFF3B82F6)]),
-      _KpiData(title: "Orders", value: "${insights.todayOrders}", icon: Icons.shopping_basket_rounded, color: Colors.indigo, gradient: const [Color(0xFF4F46E5), Color(0xFF6366F1)]),
-      _KpiData(title: "Gross Profit", value: "₹${insights.grossProfit.toStringAsFixed(0)}", icon: Icons.auto_graph_rounded, color: Colors.teal, gradient: const [Color(0xFF059669), Color(0xFF10B981)]),
-      _KpiData(title: "Cash in Hand", value: "₹${insights.cashInHand.toStringAsFixed(0)}", icon: Icons.account_balance_wallet_rounded, color: Colors.amber, gradient: const [Color(0xFFD97706), Color(0xFFF59E0B)]),
-      _KpiData(title: "Low Stock", value: "${insights.lowStockCount}", icon: Icons.inventory_2_rounded, color: Colors.orange, gradient: const [Color(0xFFEA580C), Color(0xFFFB923C)], isAlert: insights.lowStockCount > 0),
-      _KpiData(title: "Credit Due", value: "₹${insights.creditOutstanding.toStringAsFixed(0)}", icon: Icons.credit_score_rounded, color: Colors.pink, gradient: const [Color(0xFFE11D48), Color(0xFFF43F5E)]),
-      _KpiData(title: "Growth", value: "${insights.salesVsYesterdayPercent.toStringAsFixed(1)}%", icon: Icons.analytics_rounded, color: Colors.cyan, gradient: const [Color(0xFF0891B2), Color(0xFF06B6D4)]),
-      _KpiData(title: "Avg Order", value: "₹${insights.todayOrders > 0 ? (insights.todaySales / insights.todayOrders).toStringAsFixed(0) : '0'}", icon: Icons.pie_chart_rounded, color: Colors.deepPurple, gradient: const [Color(0xFF7C3AED), Color(0xFF8B5CF6)]),
+      _KpiData(title: AppLocalizations.t(context, 'today_sales'), value: "₹${insights.todaySales.toStringAsFixed(0)}", icon: Icons.payments_rounded, color: AppColors.primary, gradient: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)]),
+      _KpiData(title: AppLocalizations.t(context, 'orders'), value: "${insights.todayOrders}", icon: Icons.shopping_basket_rounded, color: AppColors.primary, gradient: const [Color(0xFF4F46E5), Color(0xFF6366F1)]),
+      _KpiData(title: AppLocalizations.t(context, 'gross_profit'), value: "₹${insights.grossProfit.toStringAsFixed(0)}", icon: Icons.auto_graph_rounded, color: AppColors.success, gradient: [AppColors.success, AppColors.success.withValues(alpha: 0.7)]),
+      _KpiData(title: AppLocalizations.t(context, 'cash_in_hand'), value: "₹${insights.cashInHand.toStringAsFixed(0)}", icon: Icons.account_balance_wallet_rounded, color: AppColors.warning, gradient: [AppColors.warning, AppColors.warning.withValues(alpha: 0.7)]),
+      _KpiData(title: AppLocalizations.t(context, 'low_stock'), value: "${insights.lowStockCount}", icon: Icons.inventory_2_rounded, color: AppColors.warning, gradient: const [Color(0xFFEA580C), Color(0xFFFB923C)], isAlert: insights.lowStockCount > 0),
+      _KpiData(title: AppLocalizations.t(context, 'credit_due'), value: "₹${insights.creditOutstanding.toStringAsFixed(0)}", icon: Icons.credit_score_rounded, color: AppColors.error, gradient: [AppColors.error, AppColors.error.withValues(alpha: 0.7)]),
+      _KpiData(title: AppLocalizations.t(context, 'growth'), value: "${insights.salesVsYesterdayPercent.toStringAsFixed(1)}%", icon: Icons.analytics_rounded, color: AppColors.primaryLight, gradient: const [Color(0xFF0891B2), Color(0xFF06B6D4)]),
+      _KpiData(title: AppLocalizations.t(context, 'avg_order'), value: "₹${insights.todayOrders > 0 ? (insights.todaySales / insights.todayOrders).toStringAsFixed(0) : '0'}", icon: Icons.pie_chart_rounded, color: AppColors.primary, gradient: const [Color(0xFF7C3AED), Color(0xFF8B5CF6)]),
     ];
 
     return LayoutBuilder(
@@ -113,9 +124,9 @@ class DashboardOverviewScreen extends StatelessWidget {
           itemCount: cards.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 2.0,
+            crossAxisSpacing: AppSpacing.md,
+            mainAxisSpacing: AppSpacing.md,
+            childAspectRatio: crossAxisCount == 1 ? 2.5 : 2.0,
           ),
           itemBuilder: (context, index) {
             return _PremiumKpiCard(data: cards[index], index: index);
@@ -127,127 +138,127 @@ class DashboardOverviewScreen extends StatelessWidget {
 
   Widget _buildTopItemsLeaderboard(BuildContext context, List<Map<String, dynamic>> items) {
     if (items.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
+      return AppCard(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Text(
+              AppLocalizations.t(context, 'no_data'), 
+              style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary(context))
+            ),
+          )
         ),
-        child: const Center(child: Text("No product sales recorded for today.", style: TextStyle(color: Colors.grey))),
       );
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final maxVal = items.isNotEmpty ? (items[0]['value'] as double) : 1.0;
 
-    return Column(
-      children: items.asMap().entries.map((entry) {
-        final index = entry.key;
-        final item = entry.value;
-        final double percent = (item['value'] as double) / maxVal;
+    return AppCard(
+      child: Column(
+        children: items.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          final double percent = (item['value'] as double) / maxVal;
 
-        return TweenAnimationBuilder<double>(
-          duration: Duration(milliseconds: 600 + (index * 150)),
-          tween: Tween(begin: 0, end: 1),
-          builder: (context, animValue, child) {
-            return Opacity(
-              opacity: animValue,
-              child: Transform.translate(
-                offset: Offset(30 * (1 - animValue), 0),
-                child: child,
-              ),
-            );
-          },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[900] : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.0 : 0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+          return TweenAnimationBuilder<double>(
+            duration: Duration(milliseconds: 600 + (index * 150)),
+            tween: Tween(begin: 0, end: 1),
+            builder: (context, animValue, child) {
+              return Opacity(
+                opacity: animValue,
+                child: Transform.translate(
+                  offset: Offset(30 * (1 - animValue), 0),
+                  child: child,
                 ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // Rank Circle
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: index == 0 ? Colors.orange.withValues(alpha: 0.1) : (isDark ? Colors.grey[800] : Colors.grey[100]),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      "${index + 1}",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: index == 0 ? Colors.orange : (isDark ? Colors.grey[400] : Colors.grey[600]),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.md),
+              decoration: BoxDecoration(
+                border: index != items.length - 1 
+                    ? Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.5))) 
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  // Rank Badge
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: index == 0 ? AppColors.warning.withValues(alpha: 0.1) : AppColors.surfaceVariant(context),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        "${index + 1}",
+                        style: AppTypography.labelMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: index == 0 ? AppColors.warning : AppColors.textSecondary(context),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                
-                // Info & Progress
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            item['name'],
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                          ),
-                          Text(
-                            "₹${(item['value'] as double).toStringAsFixed(0)}",
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Stack(
-                        children: [
-                          Container(
-                            height: 6,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.grey[800] : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(3),
+                  const SizedBox(width: AppSpacing.md),
+                  
+                  // Info & Progress
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              item['name'],
+                              style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600),
                             ),
-                          ),
-                          FractionallySizedBox(
-                            widthFactor: percent,
-                            child: Container(
+                            Text(
+                              "₹${(item['value'] as double).toStringAsFixed(0)}",
+                              style: AppTypography.bodyLarge.copyWith(
+                                fontWeight: FontWeight.bold, 
+                                color: AppColors.primary
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Stack(
+                          children: [
+                            Container(
                               height: 6,
+                              width: double.infinity,
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    index == 0 ? Colors.orange : Colors.blueAccent,
-                                    index == 0 ? Colors.orangeAccent : Colors.lightBlueAccent,
-                                  ],
-                                ),
+                                color: AppColors.surfaceVariant(context),
                                 borderRadius: BorderRadius.circular(3),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            FractionallySizedBox(
+                              widthFactor: percent,
+                              child: Container(
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      index == 0 ? AppColors.warning : AppColors.primary,
+                                      index == 0 ? AppColors.warning.withValues(alpha: 0.6) : AppColors.primary.withValues(alpha: 0.6),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -279,7 +290,7 @@ class _PremiumKpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final density = AppDensityProvider.configOf(context);
     
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 400 + (index * 100)),
@@ -293,25 +304,9 @@ class _PremiumKpiCard extends StatelessWidget {
           ),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.grey[900] : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: data.color.withValues(alpha: isDark ? 0.2 : 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-          border: Border.all(
-            color: data.isAlert 
-                ? Colors.red.withValues(alpha: 0.5) 
-                : (isDark ? Colors.grey[800]! : Colors.grey[100]!),
-            width: data.isAlert ? 2 : 1,
-          ),
-        ),
+      child: AppCard(
+        padding: EdgeInsets.all(density.cardPadding),
+        borderColor: data.isAlert ? AppColors.error : null,
         child: Stack(
           children: [
             // Background Decorative Gradient Icon
@@ -332,27 +327,27 @@ class _PremiumKpiCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: data.gradient,
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppSpacing.sm),
                       ),
                       child: Icon(data.icon, color: Colors.white, size: 20),
                     ),
                     if (data.isAlert)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.red,
+                          color: AppColors.error,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text(
-                          "ALERT",
-                          style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                        child: Text(
+                          AppLocalizations.t(context, 'alert'),
+                          style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
                         ),
                       ),
                   ],
@@ -360,19 +355,16 @@ class _PremiumKpiCard extends StatelessWidget {
                 const Spacer(),
                 Text(
                   data.value,
-                  style: TextStyle(
-                    fontSize: 24,
+                  style: AppTypography.displaySmall.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.5,
                   ),
                 ),
                 Text(
                   data.title.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
+                  style: AppTypography.labelSmall.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: Colors.grey.shade500,
+                    color: AppColors.textSecondary(context),
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -393,32 +385,22 @@ class _EnhancedTrendChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) {
-      return Container(
+      return AppCard(
         height: 250,
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
+        child: Center(
+          child: Text(
+            AppLocalizations.t(context, 'no_data'), 
+            style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary(context))
+          )
         ),
-        child: const Center(child: Text("No Sales Data Available", style: TextStyle(color: Colors.grey))),
       );
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
+    return AppCard(
       height: 300,
-      padding: const EdgeInsets.fromLTRB(16, 32, 24, 16),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.0 : 0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xl, AppSpacing.lg, AppSpacing.md),
       child: LineChart(
         LineChartData(
           gridData: FlGridData(
@@ -426,7 +408,7 @@ class _EnhancedTrendChart extends StatelessWidget {
             drawVerticalLine: false,
             horizontalInterval: 1,
             getDrawingHorizontalLine: (value) => FlLine(
-              color: isDark ? Colors.grey[800] : Colors.grey[100],
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
               strokeWidth: 1,
             ),
           ),
@@ -446,10 +428,9 @@ class _EnhancedTrendChart extends StatelessWidget {
                       space: 8,
                       child: Text(
                         data[value.toInt()]['day'].toString().substring(0, 3),
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.textSecondary(context),
                           fontWeight: FontWeight.bold,
-                          fontSize: 10,
                         ),
                       ),
                     );
@@ -469,9 +450,8 @@ class _EnhancedTrendChart extends StatelessWidget {
                     space: 8,
                     child: Text(
                       '₹${value.toInt()}',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 9,
+                      style: AppTypography.labelSmall.copyWith(
+                        color: AppColors.textSecondary(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -486,17 +466,17 @@ class _EnhancedTrendChart extends StatelessWidget {
           lineTouchData: LineTouchData(
             handleBuiltInTouches: true,
             touchTooltipData: LineTouchTooltipData(
-              tooltipBgColor: isDark ? Colors.grey[800]! : Colors.white,
+              tooltipBgColor: isDark ? AppColors.textSecondary(context) : Colors.white,
               getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                 return touchedBarSpots.map((barSpot) {
                   final flSpot = barSpot;
                   return LineTooltipItem(
                     '${data[flSpot.x.toInt()]['day']}\n',
-                    const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 10),
+                    TextStyle(color: AppColors.textSecondary(context), fontWeight: FontWeight.bold, fontSize: 10),
                     children: [
                       TextSpan(
                         text: '₹${flSpot.y.toStringAsFixed(0)}',
-                        style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 14),
                       ),
                     ],
                   );
@@ -508,7 +488,7 @@ class _EnhancedTrendChart extends StatelessWidget {
             LineChartBarData(
               spots: data.asMap().entries.map((e) => FlSpot(e.key.toDouble(), (e.value['sales'] as double))).toList(),
               isCurved: true,
-              gradient: const LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF6366F1)]),
+              gradient: LinearGradient(colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.6)]),
               barWidth: 4,
               isStrokeCapRound: true,
               dotData: FlDotData(
@@ -517,15 +497,15 @@ class _EnhancedTrendChart extends StatelessWidget {
                   radius: 4,
                   color: Colors.white,
                   strokeWidth: 3,
-                  strokeColor: const Color(0xFF2563EB),
+                  strokeColor: AppColors.primary,
                 ),
               ),
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF2563EB).withValues(alpha: 0.3),
-                    const Color(0xFF2563EB).withValues(alpha: 0.0),
+                    AppColors.primary.withValues(alpha: 0.3),
+                    AppColors.primary.withValues(alpha: 0.0),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,

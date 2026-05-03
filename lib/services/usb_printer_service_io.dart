@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:usb_serial/usb_serial.dart';
 import '../models/printer_device.dart';

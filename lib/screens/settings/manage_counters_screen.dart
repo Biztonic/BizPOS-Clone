@@ -1,10 +1,18 @@
-﻿// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/store_provider.dart';
 import '../../models/counter_model.dart';
 import '../../models/printer_device.dart';
 import '../../services/printer_manager_service.dart';
+import '../../core/design/tokens/app_typography.dart';
+import '../../core/design/tokens/app_spacing.dart';
+import '../../core/design/density/app_density.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import '../../core/design/components/atoms/app_button.dart';
+import '../../core/design/components/atoms/app_card.dart';
+import '../../core/design/components/atoms/app_text_field.dart';
+import '../../core/design/tokens/app_colors.dart';
 
 class ManageCountersScreen extends StatefulWidget {
   const ManageCountersScreen({super.key});
@@ -30,14 +38,17 @@ class _ManageCountersScreenState extends State<ManageCountersScreen> {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("New Counter"),
-        content: TextField(
+        title: const Text("New Counter", style: AppTypography.titleMedium),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: AppTextField(
           controller: nameController,
-          decoration: const InputDecoration(labelText: "Counter Name", hintText: "e.g. Bar, Kitchen"),
+          labelText: "Counter Name",
+          hintText: "e.g. Bar, Kitchen",
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-          ElevatedButton(
+          AppButton(
+            label: "Create",
             onPressed: () async {
               if (nameController.text.isNotEmpty) {
                  final newCounter = CounterModel(
@@ -48,8 +59,9 @@ class _ManageCountersScreenState extends State<ManageCountersScreen> {
                  await Provider.of<StoreProvider>(context, listen: false).addStoreCounter(newCounter);
                  if (mounted) Navigator.pop(ctx);
               }
-            }, 
-            child: const Text("Create")
+            },
+            variant: AppButtonVariant.primary,
+            size: AppButtonSize.small,
           )
         ],
       )
@@ -71,11 +83,15 @@ class _ManageCountersScreenState extends State<ManageCountersScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Delete "${counter.name}"?'),
-        content: const Text('Are you sure you want to remove this counter? This cannot be undone.'),
+        title: Text('Delete "${counter.name}"?', style: AppTypography.titleMedium),
+        content: const Text('Are you sure you want to remove this counter? This cannot be undone.', style: AppTypography.bodyMedium),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text('Delete', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold))
+          ),
         ],
       )
     );
@@ -85,7 +101,7 @@ class _ManageCountersScreenState extends State<ManageCountersScreen> {
         await Provider.of<StoreProvider>(context, listen: false).removeStoreCounter(counter.id);
       } catch (e) {
          if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating));
         }
       }
     }
@@ -93,18 +109,19 @@ class _ManageCountersScreenState extends State<ManageCountersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Counters'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _addCounter,
-            tooltip: "Add Counter",
-          )
-        ],
-      ),
-      body: Consumer<StoreProvider>(
+    final density = AppDensityProvider.configOf(context);
+
+    return PosScaffold(
+      title: 'Manage Counters',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: _addCounter,
+          tooltip: "Add Counter",
+        ),
+        SizedBox(width: AppSpacing.md),
+      ],
+      mainContent: Consumer<StoreProvider>(
         builder: (context, provider, child) {
           final counters = provider.counters;
           
@@ -113,66 +130,71 @@ class _ManageCountersScreenState extends State<ManageCountersScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.store, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text("No counters yet.", style: TextStyle(fontSize: 18, color: Colors.grey)),
-                  const SizedBox(height: 8),
-                  ElevatedButton(onPressed: _addCounter, child: const Text("Create First Counter"))
+                  Icon(Icons.store_outlined, size: 64, color: Theme.of(context).disabledColor),
+                  SizedBox(height: AppSpacing.md),
+                  const Text("No counters yet.", style: AppTypography.bodyLarge),
+                  SizedBox(height: AppSpacing.lg),
+                  AppButton(
+                    onPressed: _addCounter, 
+                    label: "Create First Counter",
+                    variant: AppButtonVariant.primary,
+                  )
                 ],
               ),
             );
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(AppSpacing.lg),
             itemCount: counters.length,
-            separatorBuilder: (c, i) => const SizedBox(height: 16),
+            separatorBuilder: (c, i) => SizedBox(height: AppSpacing.md),
             itemBuilder: (ctx, i) {
               final counter = counters[i];
               final hasPrinter = counter.printerDevice != null;
               
-              return Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: InkWell(
-                  onTap: () => _editCounter(counter),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(counter.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                            Icon(Icons.edit, color: Theme.of(context).primaryColor),
-                          ],
-                        ),
-                        const Divider(),
-                        Row(
-                          children: [
-                            Icon(hasPrinter ? Icons.print : Icons.print_disabled, size: 16, color: hasPrinter ? Colors.green : Colors.grey),
-                            const SizedBox(width: 8),
-                            Text(hasPrinter 
+              return AppCard(
+                onTap: () => _editCounter(counter),
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(counter.name, style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+                          Icon(Icons.edit_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+                        ],
+                      ),
+                      Divider(height: AppSpacing.xl),
+                      Row(
+                        children: [
+                          Icon(hasPrinter ? Icons.print : Icons.print_disabled, size: 16, color: hasPrinter ? AppColors.success : AppColors.secondary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(hasPrinter 
                                ? "Printer: ${(counter.printerDevice!['name'] ?? 'Unknown')} (${counter.printerDevice!['type']})" 
                                : "No Printer Assigned",
-                               style: TextStyle(color: hasPrinter ? Colors.black87 : Colors.grey)
+                               style: AppTypography.bodySmall.copyWith(
+                                 color: hasPrinter ? Theme.of(context).colorScheme.onSurface : Theme.of(context).disabledColor,
+                               )
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(counter.isCfdEnabled ? Icons.monitor : Icons.monitor_outlined, size: 16, color: counter.isCfdEnabled ? Colors.blue : Colors.grey),
-                            const SizedBox(width: 8),
-                            Text(counter.isCfdEnabled ? "Customer Display Active" : "No Customer Display",
-                                style: TextStyle(color: counter.isCfdEnabled ? Colors.black87 : Colors.grey)
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          Icon(counter.isCfdEnabled ? Icons.monitor : Icons.monitor_outlined, size: 16, color: counter.isCfdEnabled ? AppColors.primary : AppColors.secondary),
+                          const SizedBox(width: 8),
+                          Text(counter.isCfdEnabled ? "Customer Display Active" : "No Customer Display",
+                              style: AppTypography.bodySmall.copyWith(
+                                color: counter.isCfdEnabled ? Theme.of(context).colorScheme.onSurface : Theme.of(context).disabledColor,
+                              )
+                          ),
+                        ],
+                      )
+                    ],
                   ),
                 ),
               );
@@ -236,7 +258,7 @@ class _EditCounterDialogState extends State<_EditCounterDialog> {
       await Provider.of<StoreProvider>(context, listen: false).updateCounter(updatedCounter);
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), behavior: SnackBarBehavior.floating));
     }
   }
 
@@ -249,9 +271,9 @@ class _EditCounterDialogState extends State<_EditCounterDialog> {
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(child: Text("Edit ${widget.counter.name}")),
+          Expanded(child: Text("Edit ${widget.counter.name}", style: AppTypography.titleMedium)),
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
+            icon: const Icon(Icons.delete_outline, color: AppColors.error),
             onPressed: () {
                Navigator.pop(context); // Close dialog first
                widget.onDelete();      // Trigger delete confirmation flow
@@ -260,30 +282,35 @@ class _EditCounterDialogState extends State<_EditCounterDialog> {
           )
         ],
       ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Name
-            TextField(
+            AppTextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: "Counter Name", hintText: "e.g. Bar"),
+              labelText: "Counter Name",
+              hintText: "e.g. Bar",
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             
-            // Printer Selector
             DropdownButtonFormField<PrinterDevice?>(
-              decoration: const InputDecoration(labelText: "Assign Printer"),
+              decoration: InputDecoration(
+                labelText: "Assign Printer",
+                labelStyle: AppTypography.labelMedium,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
               isExpanded: true,
               value: _selectedPrinter != null && savedDevices.any((d) => d.address == _selectedPrinter!.address) 
                      ? savedDevices.firstWhere((d) => d.address == _selectedPrinter!.address) 
                      : null,
               items: [
-                const DropdownMenuItem<PrinterDevice?>(value: null, child: Text("None")),
+                const DropdownMenuItem<PrinterDevice?>(value: null, child: Text("None", style: AppTypography.bodyMedium)),
                 ...savedDevices.map((device) => DropdownMenuItem(
                   value: device, 
-                  child: Text("${device.name} (${device.type.name})", overflow: TextOverflow.ellipsis)
+                  child: Text("${device.name} (${device.type.name})", style: AppTypography.bodyMedium, overflow: TextOverflow.ellipsis)
                 )),
               ],
               onChanged: (val) {
@@ -293,18 +320,19 @@ class _EditCounterDialogState extends State<_EditCounterDialog> {
             if (savedDevices.isEmpty) 
                Padding(
                  padding: const EdgeInsets.only(top: 8.0),
-                 child: Text("No printers configured. Go to 'Printer Settings' to add devices.", style: TextStyle(color: Colors.orange.shade800, fontSize: 12)),
+                 child: Text("No printers configured. Go to 'Printer Settings' to add devices.", 
+                   style: AppTypography.bodySmall.copyWith(color: AppColors.warning)),
                ),
   
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
   
-            // Settings
             SwitchListTile(
-              title: const Text("Enable Customer Display"),
-               subtitle: const Text("Show active order status"),
+               title: const Text("Enable Customer Display", style: AppTypography.titleSmall),
+               subtitle: Text("Show active order status", style: AppTypography.bodySmall.copyWith(color: Theme.of(context).disabledColor)),
                value: _isCfdEnabled,
                onChanged: (val) => setState(() => _isCfdEnabled = val),
                contentPadding: EdgeInsets.zero,
+               activeColor: Theme.of(context).colorScheme.primary,
             ),
           ],
         ),
@@ -314,11 +342,14 @@ class _EditCounterDialogState extends State<_EditCounterDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text("Cancel"),
         ),
-        ElevatedButton(
+        AppButton(
           onPressed: _save,
-          child: const Text("Save"),
+          label: "Save",
+          variant: AppButtonVariant.primary,
+          size: AppButtonSize.small,
         ),
       ],
     );
   }
 }
+

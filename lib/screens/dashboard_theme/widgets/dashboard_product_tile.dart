@@ -1,3 +1,4 @@
+import '../../../core/design/tokens/app_colors.dart';
 // ignore_for_file: deprecated_member_use_from_same_package, curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -47,7 +48,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
     Color stockColor = CarDashboardTheme.electricGreen; 
     if (isOutOfStock) {
       stockColor = CarDashboardTheme.alertRed;
-    } else if (isLowStock) stockColor = Colors.orangeAccent;
+    } else if (isLowStock) stockColor = AppColors.warning;
     if (!trackStock) stockColor = CarDashboardTheme.electricGreen;
 
     final isDarkMode = Provider.of<DashboardProvider>(context, listen: false).isDarkMode;
@@ -91,7 +92,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
       // Apply Grayscale to content if Out of Stock
       if (isOutOfStock && !widget.isEditMode) {
          labelContent = ColorFiltered(
-            colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.saturation),
+            colorFilter: ColorFilter.mode(AppColors.textSecondary(context), BlendMode.saturation),
             child: Opacity(opacity: 0.7, child: labelContent),
          );
       }
@@ -167,7 +168,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
 
        if (isOutOfStock && !widget.isEditMode) {
           rectContent = ColorFiltered(
-            colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.saturation),
+            colorFilter: ColorFilter.mode(AppColors.textSecondary(context), BlendMode.saturation),
             child: Opacity(opacity: 0.7, child: rectContent),
           );
        }
@@ -302,7 +303,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
        // Image style uses Global Filter behavior because it doesn't have a separate stock line at bottom
        if (isOutOfStock && !widget.isEditMode) {
           tileContent = ColorFiltered(
-            colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.saturation),
+            colorFilter: ColorFilter.mode(AppColors.textSecondary(context), BlendMode.saturation),
             child: Opacity(opacity: 0.5, child: tileContent),
           );
        }

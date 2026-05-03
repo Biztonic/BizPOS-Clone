@@ -1,4 +1,4 @@
-﻿// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter, unused_local_variable
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter, unused_local_variable
 import 'dart:html' as html;
 import 'dart:convert';
 

@@ -17,7 +17,7 @@ class AppTheme {
         colorScheme: ColorScheme.fromSeed(
           seedColor: seedColor,
           primary: seedColor,
-          secondary: seedColor.withOpacity(0.8),
+          secondary: seedColor.withValues(alpha: 0.8),
           surface: AppColors.surfaceDark,
           error: AppColors.error,
           brightness: Brightness.dark,
@@ -76,7 +76,7 @@ class AppTheme {
         colorScheme: ColorScheme.fromSeed(
           seedColor: seedColor,
           primary: seedColor,
-          secondary: seedColor.withOpacity(0.8),
+          secondary: seedColor.withValues(alpha: 0.8),
           surface: AppColors.surfaceLight,
           error: AppColors.error,
           brightness: Brightness.light,

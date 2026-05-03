@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -86,7 +87,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.grey.shade50,
+      backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : AppColors.textSecondary(context),
       body: CustomScrollView(
         slivers: [
           // APP BAR
@@ -116,14 +117,14 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                     title: "Total Customers", 
                     value: "${customers.length}", 
                     icon: Icons.people,
-                    baseColor: Colors.blue.shade600
+                    baseColor: AppColors.primaryLight
                   ),
                   const SizedBox(width: 16),
                   ReportStatCard(
                     title: "Active this Month", 
                     value: "$activeThisMonth", 
                     icon: Icons.how_to_reg,
-                    baseColor: Colors.green.shade600
+                    baseColor: AppColors.success
                   ),
                 ],
               ),
@@ -137,7 +138,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.grey.shade900 : Colors.white,
+                  color: isDark ? AppColors.textSecondary(context) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -168,7 +169,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                           barTouchData: BarTouchData(
                             enabled: true,
                             touchTooltipData: BarTouchTooltipData(
-                              tooltipBgColor: Colors.blueGrey,
+                              tooltipBgColor: AppColors.primaryLightGrey,
                               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                                 return BarTooltipItem(
                                   '${rod.toY.toInt()} visits',
@@ -220,7 +221,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                             show: true,
                             drawVerticalLine: false,
                             horizontalInterval: maxVisits > 5 ? (maxVisits/5).ceilToDouble() : 1,
-                            getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+                            getDrawingHorizontalLine: (value) => FlLine(color: AppColors.textSecondary(context), strokeWidth: 1),
                           ),
                           borderData: FlBorderData(show: false),
                           barGroups: List.generate(7, (i) { // i = 0 to 6 (left to right)
@@ -232,7 +233,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                barRods: [
                                  BarChartRodData(
                                    toY: count, 
-                                   color: isToday ? Colors.blue : Colors.blue.shade300, 
+                                   color: isToday ? AppColors.primaryLight : AppColors.primaryLight, 
                                    width: 20, 
                                    borderRadius: BorderRadius.circular(4)
                                  )
@@ -252,14 +253,14 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.history, color: isDark ? Colors.white54 : Colors.grey.shade600, size: 20),
+                  Icon(Icons.history, color: isDark ? Colors.white54 : AppColors.textSecondary(context), size: 20),
                   const SizedBox(width: 8),
                   Text(
                     "Recent Activity", 
                     style: TextStyle(
                       fontWeight: FontWeight.bold, 
                       fontSize: 16, 
-                      color: isDark ? Colors.white70 : Colors.grey.shade800
+                      color: isDark ? Colors.white70 : AppColors.textSecondary(context)
                     )
                   ),
                 ],
@@ -275,12 +276,12 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.person_off, size: 64, color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+                    Icon(Icons.person_off, size: 64, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                     const SizedBox(height: 16),
                     Text(
                       "No customers found.", 
                       style: TextStyle(
-                        color: isDark ? Colors.grey.shade600 : Colors.grey, 
+                        color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), 
                         fontSize: 16
                       )
                     ),
@@ -297,11 +298,11 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                     final customer = activeCustomers[index];
                     return Card(
                       elevation: 0,
-                      color: isDark ? Colors.grey.shade900 : Colors.white,
+                      color: isDark ? AppColors.textSecondary(context) : Colors.white,
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+                        side: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -309,11 +310,11 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                           children: [
                             CircleAvatar(
                               radius: 24,
-                              backgroundColor: isDark ? Colors.teal.withValues(alpha: 0.1) : Colors.teal.shade50,
+                              backgroundColor: isDark ? AppColors.primary.withValues(alpha: 0.1) : AppColors.primary,
                               child: Text(
                                 customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?', 
                                 style: TextStyle(
-                                  color: isDark ? Colors.teal.shade300 : Colors.teal.shade700, 
+                                  color: isDark ? AppColors.primary : AppColors.primary, 
                                   fontWeight: FontWeight.bold, 
                                   fontSize: 20
                                 )
@@ -335,22 +336,22 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      Icon(Icons.phone, size: 14, color: isDark ? Colors.grey.shade500 : Colors.grey.shade500),
+                                      Icon(Icons.phone, size: 14, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                                       const SizedBox(width: 4),
                                       Text(
                                         customer.phone ?? 'N/A',
-                                        style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade700, fontSize: 13),
+                                        style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 13),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                                      Icon(Icons.access_time, size: 14, color: AppColors.textSecondary(context)),
                                       const SizedBox(width: 4),
                                       Text(
                                         customer.lastVisit != null ? DateFormat('MMM dd, yyyy • HH:mm').format(customer.lastVisit!) : 'Never visited',
-                                        style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                                        style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
                                       ),
                                     ],
                                   )
@@ -363,19 +364,19 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: isDark ? Colors.amber.withValues(alpha: 0.1) : Colors.amber.shade50,
+                                    color: isDark ? AppColors.warning.withValues(alpha: 0.1) : AppColors.warning,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.star, size: 14, color: Colors.amber.shade700),
+                                      Icon(Icons.star, size: 14, color: AppColors.warning),
                                       const SizedBox(width: 4),
                                       Text(
                                         "${customer.loyaltyPoints} Pts", 
                                         style: TextStyle(
                                           fontSize: 13, 
-                                          color: Colors.amber.shade800, 
+                                          color: AppColors.warning, 
                                           fontWeight: FontWeight.bold
                                         )
                                       ),

@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 // ignore_for_file: deprecated_member_use_from_same_package, use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,13 @@ import '../providers/store_provider.dart';
 import '../widgets/inventory_image_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../core/design/layouts/pos_scaffold.dart';
+import '../core/design/density/app_density.dart';
+import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_typography.dart';
+import '../core/design/components/atoms/app_button.dart';
+import '../core/design/components/atoms/app_text_field.dart';
+
 
 class AddEditInventoryScreen extends StatefulWidget {
   final InventoryItem? item;
@@ -247,114 +255,113 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  @override
+  }  @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final density = AppDensityProvider.configOf(context);
+
+    return PosScaffold(
       appBar: AppBar(
         title: Text(widget.item == null ? 'Add Item' : 'Edit Item'),
       ),
-      body: _isLoading 
+      mainContent: _isLoading 
         ? const Center(child: CircularProgressIndicator())
-        : Padding(
-            padding: const EdgeInsets.all(16.0),
+        : SingleChildScrollView(
+            padding: EdgeInsets.all(density.cardPadding),
             child: Form(
               key: _formKey,
-              child: ListView(
+              child: Column(
                 children: [
-                   TextFormField(
+                   AppTextField(
                     key: const Key('item_name_input'),
                     controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Item Name', border: OutlineInputBorder()),
+                    labelText: 'Item Name',
                     validator: (v) => v!.trim().isEmpty ? 'Name is required' : null,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   Row(
                     children: [
                       Expanded(
-                        child: TextFormField(
+                        child: AppTextField(
                           key: const Key('item_price_input'),
                           controller: _priceController,
-                          decoration: const InputDecoration(labelText: 'Price', border: OutlineInputBorder(), prefixText: '₹ '),
+                          labelText: 'Price',
+                          prefixText: '₹ ',
                           keyboardType: TextInputType.number,
                           validator: (v) => v!.isEmpty ? 'Price required' : null,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: AppSpacing.md),
                       Expanded(
-                        child: TextFormField(
+                        child: AppTextField(
                           key: const Key('item_qty_input'),
                           controller: _quantityController,
-                          decoration: const InputDecoration(labelText: 'Quantity', border: OutlineInputBorder()),
+                          labelText: 'Quantity',
                           keyboardType: TextInputType.number,
                           validator: (v) => v!.isEmpty ? 'Qty required' : null,
                         ),
                       ),
                     ],
                    ),
-                   const SizedBox(height: 16),
+                   const SizedBox(height: AppSpacing.md),
 
                    Row(
                     children: [
                       Expanded(
-                        child: TextFormField(
+                        child: AppTextField(
                           key: const Key('item_cost_input'),
                           controller: _costController,
-                          decoration: const InputDecoration(labelText: 'Item Cost', border: OutlineInputBorder(), prefixText: '₹ '),
+                          labelText: 'Item Cost',
+                          prefixText: '₹ ',
                           keyboardType: TextInputType.number,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: AppSpacing.md),
                       Expanded(
-                        child: TextFormField(
+                        child: AppTextField(
                           key: const Key('item_threshold_input'),
                           controller: _lowStockController,
-                          decoration: const InputDecoration(
-                            labelText: 'Low Stock Threshold', 
-                            border: OutlineInputBorder(),
-                            helperText: 'Default: 10'
-                          ),
+                          labelText: 'Low Stock Threshold', 
+                          helperText: 'Default: 10',
                           keyboardType: TextInputType.number,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
 
-                   // CHANGED: Category Dropdown (using variant_types metadata) from Text Field
+                   // Category Dropdown
                   Row(
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
-                          // FIX: Ensure value is in items or null. If items is empty, value must be null.
+                          decoration: const InputDecoration(
+                            labelText: 'Category', 
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
                           value: (_selectedCategory != null && _variantOptions.contains(_selectedCategory)) 
                                     ? _selectedCategory 
                                     : null,
                           items: _variantOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                           onChanged: (v) => setState(() => _selectedCategory = v),
-                          // validator: (v) => v == null || v.isEmpty ? 'Category is required' : null, // REMOVED: Category is now optional
                           hint: const Text('Select Category'),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.xs),
                       IconButton(
                         onPressed: _addCategoryDialog,
-                        icon: const Icon(Icons.add_circle_outline, color: Colors.blue, size: 32),
+                        icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryLight, size: 32),
                         tooltip: "Add New Category",
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   
-                  // Link to Settings if list is empty?
                   if (_variantOptions.isEmpty && !_isLoading)
                      Padding(
-                       padding: const EdgeInsets.only(bottom: 16.0),
+                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
                        child: TextButton.icon(
                          onPressed: () {
-                           // Navigate to Settings? Or just show message
                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please add categories in Settings > Products")));
                          },
                          icon: const Icon(Icons.settings, size: 16),
@@ -365,7 +372,11 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                   // Conditional Fields
                   if (_showDietary) ...[
                       DropdownButtonFormField<String?>(
-                        decoration: const InputDecoration(labelText: 'Dietary Type', border: OutlineInputBorder()),
+                        decoration: const InputDecoration(
+                          labelText: 'Dietary Type', 
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
                         value: _selectedDietary != null && _dietaryOptions.contains(_selectedDietary) ? _selectedDietary : null,
                         items: [
                            const DropdownMenuItem(value: null, child: Text("None")),
@@ -373,12 +384,16 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                         ],
                         onChanged: (v) => setState(() => _selectedDietary = v),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.md),
                   ],
 
                    if (_showPackaging) ...[
                       DropdownButtonFormField<String?>(
-                        decoration: const InputDecoration(labelText: 'Packaging Type', border: OutlineInputBorder()),
+                        decoration: const InputDecoration(
+                          labelText: 'Packaging Type', 
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
                         value: _selectedPackaging != null && _packagingOptions.contains(_selectedPackaging) ? _selectedPackaging : null,
                         items: [
                            const DropdownMenuItem(value: null, child: Text("None")),
@@ -386,54 +401,35 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                         ],
                         onChanged: (v) => setState(() => _selectedPackaging = v),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.md),
                   ],
 
-                   // REMOVED VARIANT CATEGORY DROPDOWN (Merged with Main Category) 
-                   /*
-                   if (_showVariants) ...[
-                      DropdownButtonFormField<String?>(
-                        decoration: const InputDecoration(labelText: 'Variant Category', border: OutlineInputBorder()),
-                        initialValue: _selectedVariant != null && _variantOptions.contains(_selectedVariant) ? _selectedVariant : null,
-                        items: [
-                           const DropdownMenuItem(value: null, child: Text("None")),
-                           ..._variantOptions.map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        ],
-                        onChanged: (v) => setState(() => _selectedVariant = v),
-                      ),
-                      const SizedBox(height: 16),
-                  ],
-                  */
-
-                  TextFormField(
+                  AppTextField(
                     key: const Key('item_sku_input'),
                     controller: _skuController,
-                    decoration: const InputDecoration(labelText: 'SKU / Barcode', border: OutlineInputBorder()),
+                    labelText: 'SKU / Barcode',
                   ),
-                  const SizedBox(height: 16),
-                   TextFormField(
+                  const SizedBox(height: AppSpacing.md),
+                  AppTextField(
                     key: const Key('item_image_input'),
                     controller: _imageController,
-                    decoration: InputDecoration(
-                      labelText: 'Image (Local Only)', 
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.image_search),
-                        onPressed: _pickImage,
-                        tooltip: "Pick from Gallery",
-                      ),
-                      helperText: 'Select an image from your device'
+                    labelText: 'Image (Local Only)', 
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.image_search),
+                      onPressed: _pickImage,
+                      tooltip: "Pick from Gallery",
                     ),
-                    readOnly: true, // Force using the picker
+                    helperText: 'Select an image from your device',
+                    readOnly: true,
                     onTap: _pickImage,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   if (_pickedImage != null || _imageController.text.isNotEmpty) ...[
                     Center(
                       child: Column(
                         children: [
-                          const Text('Preview:', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          const SizedBox(height: 8),
+                          Text('Preview:', style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
+                          const SizedBox(height: AppSpacing.xs),
                           if (_pickedImage != null)
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
@@ -465,16 +461,20 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   
                   // Counter Selector
                   Consumer<DashboardProvider>(
                     builder: (context, provider, child) {
-                      final counters = provider.counters; // Works because getter exists
+                      final counters = provider.counters;
                       if (counters.isEmpty) return const SizedBox.shrink();
 
                       return DropdownButtonFormField<String?>(
-                        decoration: const InputDecoration(labelText: 'Assign to Counter (KDS)', border: OutlineInputBorder()),
+                        decoration: const InputDecoration(
+                          labelText: 'Assign to Counter (KDS)', 
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
                         value: _selectedCounterId,
                         items: [
                           const DropdownMenuItem<String?>(value: null, child: Text('Default / Kitchen')),
@@ -484,18 +484,19 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                       );
                     }
                   ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
+                  const SizedBox(height: AppSpacing.lg),
+                  
+                  AppButton.primary(
                     key: const Key('save_item_button'),
                     onPressed: _saveItem,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: Text(widget.item == null ? 'Create Item' : 'Update Item', style: const TextStyle(fontSize: 16)),
+                    label: widget.item == null ? 'Create Item' : 'Update Item',
+                    width: double.infinity,
+                    size: AppButtonSize.large,
                   ),
+                  
                   if (widget.item != null) ...[
-                     const SizedBox(height: 16),
-                     TextButton(
+                     const SizedBox(height: AppSpacing.md),
+                     AppButton.ghost(
                        onPressed: () async {
                          final confirm = await showDialog<bool>(
                            context: context,
@@ -504,7 +505,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                              content: const Text('This action cannot be undone.'),
                              actions: [
                                TextButton(onPressed: ()=>Navigator.pop(ctx, false), child: const Text('Cancel')),
-                               TextButton(onPressed: ()=>Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                               TextButton(onPressed: ()=>Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: AppColors.error))),
                              ],
                            )
                          );
@@ -515,12 +516,13 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                              await Provider.of<DashboardProvider>(context, listen: false).deleteInventoryItem(widget.item!.id);
                              if (mounted) Navigator.pop(context);
                            } catch (e) {
-                               if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+                                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
                            }
                          }
                        },
-                       style: TextButton.styleFrom(foregroundColor: Colors.red),
-                       child: const Text('Delete Item'),
+                       label: 'Delete Item',
+                       foregroundColor: AppColors.error,
+                       width: double.infinity,
                      )
                   ]
                 ],

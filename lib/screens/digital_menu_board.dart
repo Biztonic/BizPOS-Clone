@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 // ignore_for_file: deprecated_member_use_from_same_package
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,11 +26,11 @@ class DigitalMenuBoard extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Container(
-              color: Colors.grey.shade900,
+              color: AppColors.textSecondary(context),
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  const CircleAvatar(radius: 40, backgroundColor: Colors.amber, child: Icon(Icons.restaurant, size: 40, color: Colors.black)),
+                  const CircleAvatar(radius: 40, backgroundColor: AppColors.warning, child: Icon(Icons.restaurant, size: 40, color: Colors.black)),
                   const SizedBox(height: 20),
                   Text(provider.activeStore?.name ?? "Menu", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                   const SizedBox(height: 40),
@@ -57,7 +58,7 @@ class DigitalMenuBoard extends StatelessWidget {
                 final item = inventory[index];
                 return Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade900,
+                    color: AppColors.textSecondary(context),
                     borderRadius: BorderRadius.circular(16),
                     image: DecorationImage(
                       image: InventoryImageWidget.getImageProvider(item),
@@ -90,7 +91,7 @@ class DigitalMenuBoard extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     item.category, 
-                                    style: const TextStyle(color: Colors.grey),
+                                    style: TextStyle(color: AppColors.textSecondary(context)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -98,7 +99,7 @@ class DigitalMenuBoard extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   "₹${item.price}", 
-                                  style: const TextStyle(color: Colors.amber, fontSize: 24, fontWeight: FontWeight.bold)
+                                  style: const TextStyle(color: AppColors.warning, fontSize: 24, fontWeight: FontWeight.bold)
                                 ),
                               ],
                             )
@@ -120,7 +121,7 @@ class DigitalMenuBoard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-      color: isSelected ? Colors.amber : Colors.transparent,
+      color: isSelected ? AppColors.warning : Colors.transparent,
       child: Text(
         title, 
         style: TextStyle(

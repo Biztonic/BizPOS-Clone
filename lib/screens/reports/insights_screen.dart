@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/smart_insights_provider.dart';
@@ -19,10 +20,10 @@ class InsightsScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                   Icon(Icons.lightbulb_outline, size: 64, color: Colors.grey.shade300),
+                   Icon(Icons.lightbulb_outline, size: 64, color: AppColors.textSecondary(context)),
                    const SizedBox(height: 16),
-                   const Text("No insights available yet.", style: TextStyle(color: Colors.grey)),
-                   const Text("Keep selling to generate data!", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                   Text("No insights available yet.", style: TextStyle(color: AppColors.textSecondary(context))),
+                   Text("Keep selling to generate data!", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12)),
                 ],
               ),
             )

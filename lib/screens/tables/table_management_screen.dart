@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_colors.dart';
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
@@ -131,9 +132,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
               padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey.withAlpha((0.05 * 255).toInt()),
+                  color: AppColors.textSecondary(context).withAlpha((0.05 * 255).toInt()),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.withAlpha((0.1 * 255).toInt())),
+                  border: Border.all(color: AppColors.textSecondary(context).withAlpha((0.1 * 255).toInt())),
                 ),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -152,10 +153,10 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                             duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: isSelected ? Colors.blue.shade600 : Colors.transparent,
+                              color: isSelected ? AppColors.primaryLight : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: isSelected 
-                                ? [BoxShadow(color: Colors.blue.withAlpha((0.3 * 255).toInt()), blurRadius: 4, offset: const Offset(0, 2))]
+                                ? [BoxShadow(color: AppColors.primaryLight.withAlpha((0.3 * 255).toInt()), blurRadius: 4, offset: const Offset(0, 2))]
                                 : null,
                             ),
                             child: Row(
@@ -164,7 +165,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                 Icon(
                                   Icons.layers_outlined,
                                   size: 14,
-                                  color: isSelected ? Colors.white : Colors.grey.shade600,
+                                  color: isSelected ? Colors.white : AppColors.textSecondary(context),
                                 ),
                                 if (!isMobileView || floors.length < 3) ...[
                                   const SizedBox(width: 8),
@@ -173,7 +174,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                                      color: isSelected ? Colors.white : AppColors.textSecondary(context),
                                     ),
                                   ),
                                 ],
@@ -251,9 +252,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
          ? Center(child: Column(
              mainAxisAlignment: MainAxisAlignment.center,
              children: [
-                const Icon(Icons.layers_clear, size: 64, color: Colors.grey),
+                Icon(Icons.layers_clear, size: 64, color: AppColors.textSecondary(context)),
                 const SizedBox(height: 16),
-                Text("No Floor Selected", style: TextStyle(color: Colors.grey.shade600, fontSize: 18)),
+                Text("No Floor Selected", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 18)),
                 if (_isEditMode) TextButton(onPressed: _showAddFloorDialog, child: const Text("Create a Floor"))
              ],
          ))
@@ -420,22 +421,22 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
      bool effectiveIsReserved = table.isBooked || table.isImpendingReservation;
      
      if (statusLower == 'occupied') {
-         tableColor = Colors.red.shade100;
-         borderColor = Colors.red.shade700;
-         statusTextColor = Colors.red.shade900;
+         tableColor = AppColors.error;
+         borderColor = AppColors.error;
+         statusTextColor = AppColors.error;
      } else if (effectiveIsReserved) {
-         tableColor = Colors.amber.shade100;
-         borderColor = Colors.amber.shade700;
-         statusTextColor = Colors.amber.shade900;
+         tableColor = AppColors.warning;
+         borderColor = AppColors.warning;
+         statusTextColor = AppColors.warning;
      } else {
-         tableColor = Colors.green.shade50;
-         borderColor = Colors.green.shade600;
-         statusTextColor = Colors.green.shade900;
+         tableColor = AppColors.success;
+         borderColor = AppColors.success;
+         statusTextColor = AppColors.success;
      }
 
      if (isSelected) {
-        borderColor = Colors.blue.shade700;
-        tableColor = Colors.blue.shade50;
+        borderColor = AppColors.primaryLight;
+        tableColor = AppColors.primaryLight;
      }
 
      const double chairSize = 24.0;
@@ -493,7 +494,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   shape: table.shape == 'circle' ? BoxShape.circle : BoxShape.rectangle,
                   borderRadius: table.shape == 'rectangular' || table.shape == 'square' ? BorderRadius.circular(12) : null,
                   border: Border.all(
-                    color: isSelected ? Colors.blue.shade400 : borderColor.withValues(alpha: 0.5), 
+                    color: isSelected ? AppColors.primaryLight : borderColor.withValues(alpha: 0.5), 
                     width: isSelected ? 3 : 1.5
                   ),
                   boxShadow: [
@@ -554,7 +555,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                borderRadius: BorderRadius.circular(20),
                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2)]
                              ),
-                             child: Text("ACTIVE", style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.red.shade800))
+                             child: Text("ACTIVE", style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: AppColors.error))
                            )
                          else if (effectiveIsReserved)
                            Column(
@@ -563,7 +564,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                   margin: const EdgeInsets.only(top: 4),
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: Colors.amber.shade400, 
+                                    color: AppColors.warning, 
                                     borderRadius: BorderRadius.circular(20),
                                     boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 2)]
                                   ),
@@ -669,7 +670,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                ),
                const SizedBox(height: 16),
                
-               const Text("Seats", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+               Text("Seats", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary(context))),
                const SizedBox(height: 8),
                Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -689,7 +690,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                ),
                
                const SizedBox(height: 20),
-                const Text("Billing Mode", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                Text("Billing Mode", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary(context))),
                 const SizedBox(height: 8),
                DropdownButtonFormField<String>(
                   value: table.billingMode,
@@ -721,7 +722,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                         );
                         
                         if (isDuplicate) {
-                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Table name '$newName' already exists on this floor."), backgroundColor: Colors.red));
+                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Table name '$newName' already exists on this floor."), backgroundColor: AppColors.error));
                            return;
                         }
                         
@@ -740,8 +741,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade50, 
-                        foregroundColor: Colors.red,
+                        backgroundColor: AppColors.error, 
+                        foregroundColor: AppColors.error,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         elevation: 0
                      ),
@@ -876,7 +877,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                               icon: const Icon(Icons.merge_type, size: 16),
                                                               label: const Text("MERGE", style: TextStyle(fontSize: 12)),
                                                               style: ElevatedButton.styleFrom(
-                                                                backgroundColor: Colors.orange.shade700,
+                                                                backgroundColor: AppColors.warning,
                                                                 foregroundColor: Colors.white,
                                                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                                                                 minimumSize: const Size(0, 30)
@@ -886,10 +887,10 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                         Container(
                                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                            decoration: BoxDecoration(
-                                                              color: table.status == 'Occupied' ? Colors.red.shade100 : Colors.green.shade100,
+                                                              color: table.status == 'Occupied' ? AppColors.error : AppColors.success,
                                                               borderRadius: BorderRadius.circular(4)
                                                            ),
-                                                           child: Text(table.status, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: table.status == 'Occupied' ? Colors.red.shade800 : Colors.green.shade800))
+                                                           child: Text(table.status, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: table.status == 'Occupied' ? AppColors.error : AppColors.success))
                                                         ),
                                                       ],
                                                     )
@@ -958,7 +959,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                    Text("Seat ${seat.number}", style: TextStyle(color: isSel ? Colors.white : (isBillSelected ? Theme.of(context).primaryColor : Theme.of(context).textTheme.bodyLarge?.color), fontWeight: (isBillSelected || isSel) ? FontWeight.bold : FontWeight.normal)),
                                                                    if (isBillSelected || isSel) ...[
                                                                      const SizedBox(width: 4),
-                                                                     Icon(isSel ? Icons.radio_button_checked : Icons.check_circle, size: 12, color: isSel ? Colors.white : Colors.blue),
+                                                                     Icon(isSel ? Icons.radio_button_checked : Icons.check_circle, size: 12, color: isSel ? Colors.white : AppColors.primaryLight),
                                                                    ]
                                                                  ],
                                                                ),
@@ -970,10 +971,10 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                      ),
                                                    ),
                                                    const SizedBox(height: 8),
-                                                   Text(selectedSeatIndex == -1 ? "Ordering for Whole Table" : "Ordering for Seat ${table.seats[selectedSeatIndex!].number}", style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontStyle: FontStyle.italic)),
+                                                   Text(selectedSeatIndex == -1 ? "Ordering for Whole Table" : "Ordering for Seat ${table.seats[selectedSeatIndex!].number}", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 10, fontStyle: FontStyle.italic)),
                                                 ],
                                               const SizedBox(height: 4),
-                                              Text(existingOrder != null ? "Order #${existingOrder!.id.substring(0,6)}" : "New Order", style: TextStyle(color: Colors.grey.shade600, fontSize: 12))
+                                              Text(existingOrder != null ? "Order #${existingOrder!.id.substring(0,6)}" : "New Order", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12))
 
                                           ],
                                        ),
@@ -987,7 +988,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                              : currentOrderItems.where((i) => i.seatIndex == selectedSeatIndex).toList();
                                              
                                           return filteredItems.isEmpty 
-                                             ? Center(child: Text(selectedSeatIndex == -1 ? "No items added" : "No items for Seat ${table.seats[selectedSeatIndex!].number}", style: TextStyle(color: Colors.grey.shade400))) 
+                                             ? Center(child: Text(selectedSeatIndex == -1 ? "No items added" : "No items for Seat ${table.seats[selectedSeatIndex!].number}", style: TextStyle(color: AppColors.textSecondary(context)))) 
                                              : ListView.builder(
                                                 padding: const EdgeInsets.all(8),
                                                 itemCount: filteredItems.length,
@@ -1009,13 +1010,13 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                   Container(
                                                                      margin: const EdgeInsets.only(top: 4),
                                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                                     decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
-                                                                     child: Text("Seat ${table.seats[orderItem.seatIndex!].number}", style: TextStyle(fontSize: 10, color: Colors.blue.shade800, fontWeight: FontWeight.bold))
+                                                                     decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(4)),
+                                                                     child: Text("Seat ${table.seats[orderItem.seatIndex!].number}", style: TextStyle(fontSize: 10, color: AppColors.primaryLight, fontWeight: FontWeight.bold))
                                                                   )
                                                             ],
                                                          ),
                                                          trailing: IconButton(
-                                                            icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                                                            icon: const Icon(Icons.remove_circle_outline, color: AppColors.error),
                                                             onPressed: () {
                                                                setDialogState(() {
                                                                   if (orderItem.quantity > 1) {
@@ -1142,7 +1143,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                           },
                                                                         icon: const Icon(Icons.money),
                                                                         label: const Text("CASH"),
-                                                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12)),
+                                                                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12)),
                                                                      ),
                                                                   ),
                                                                   const SizedBox(width: 8),
@@ -1231,7 +1232,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                         },
                                                                         icon: const Icon(Icons.qr_code_scanner),
                                                                         label: const Text("UPI"),
-                                                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12)),
+                                                                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryLight, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12)),
                                                                      ),
                                                                   ),
                                                                ],
@@ -1369,12 +1370,12 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                               tableProvider.clearTable(table.id);
                                                                               Navigator.pop(dCtx);
                                                                               Navigator.pop(ctx);
-                                                                           }, child: const Text("Clear", style: TextStyle(color: Colors.red))),
+                                                                           }, child: const Text("Clear", style: TextStyle(color: AppColors.error))),
                                                                         ],
                                                                      ));
                                                                   },
-                                                                  icon: const Icon(Icons.cleaning_services, color: Colors.red, size: 18),
-                                                                  label: const Text("FORCE CLEAR TABLE", style: TextStyle(color: Colors.red, fontSize: 12)),
+                                                                  icon: const Icon(Icons.cleaning_services, color: AppColors.error, size: 18),
+                                                                  label: const Text("FORCE CLEAR TABLE", style: TextStyle(color: AppColors.error, fontSize: 12)),
                                                                )
                                                             ]
                                                          ],
@@ -1473,7 +1474,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                 decoration: BoxDecoration(
                                                    color: Colors.white,
                                                    borderRadius: BorderRadius.circular(12),
-                                                   border: Border.all(color: inCartCount > 0 ? Colors.green : Colors.grey.shade200, width: inCartCount > 0 ? 2 : 1),
+                                                   border: Border.all(color: inCartCount > 0 ? AppColors.success : AppColors.textSecondary(context), width: inCartCount > 0 ? 2 : 1),
                                                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]
                                                 ),
                                                 child: Column(
@@ -1482,10 +1483,10 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                       Expanded(
                                                          child: Container(
                                                             decoration: BoxDecoration(
-                                                               color: Colors.grey.shade100,
+                                                               color: AppColors.textSecondary(context),
                                                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12))
                                                             ),
-                                                            child: const Icon(Icons.fastfood, size: 40, color: Colors.grey),
+                                                            child: Icon(Icons.fastfood, size: 40, color: AppColors.textSecondary(context)),
                                                          ),
                                                       ),
                                                       Padding(
@@ -1498,9 +1499,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                Row(
                                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                                   children: [
-                                                                     Text("₹${item.price.toStringAsFixed(2)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                                                                     Text("₹${item.price.toStringAsFixed(2)}", style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold)),
                                                                      if (inCartCount > 0) 
-                                                                        CircleAvatar(radius: 10, backgroundColor: Colors.green, child: Text("$inCartCount", style: const TextStyle(color: Colors.white, fontSize: 10)))
+                                                                        CircleAvatar(radius: 10, backgroundColor: AppColors.success, child: Text("$inCartCount", style: const TextStyle(color: Colors.white, fontSize: 10)))
                                                                   ],
                                                                )
                                                             ],
@@ -1537,7 +1538,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                     ),
                                     const TabBar(
                                        labelColor: Colors.black,
-                                       indicatorColor: Colors.blue,
+                                       indicatorColor: AppColors.primaryLight,
                                        tabs: [Tab(text: "Menu"), Tab(text: "Current Order")]
                                     ),
                                     Expanded(
@@ -1645,7 +1646,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                        const SizedBox(height: 8),
                        Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(8)),
+                          decoration: BoxDecoration(border: Border.all(color: AppColors.textSecondary(context)), borderRadius: BorderRadius.circular(8)),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -1682,7 +1683,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                           child: Container(
                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey), 
+                                border: Border.all(color: AppColors.textSecondary(context)), 
                                 borderRadius: BorderRadius.circular(8)
                              ),
                              child: Row(
@@ -1706,7 +1707,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                           child: Container(
                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey), 
+                                border: Border.all(color: AppColors.textSecondary(context)), 
                                 borderRadius: BorderRadius.circular(8)
                              ),
                              child: Row(
@@ -1738,7 +1739,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                       if (difference < 120) {
                                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                              content: Text("Table is already booked around this time. Please choose a different time or table."), 
-                                             backgroundColor: Colors.red
+                                             backgroundColor: AppColors.error
                                           ));
                                           return;
                                       }
@@ -1746,7 +1747,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                       // Legacy format or manual override reserving
                                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                          content: Text("Table is already booked. Clear existing booking first."), 
-                                         backgroundColor: Colors.red
+                                         backgroundColor: AppColors.error
                                       ));
                                       return;
                                    }
@@ -1876,7 +1877,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   Navigator.pop(ctx);
                   _deleteFloor(floor.id);
                }, 
-               style: TextButton.styleFrom(foregroundColor: Colors.red),
+               style: TextButton.styleFrom(foregroundColor: AppColors.error),
                child: const Text("Delete Floor")
             ),
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
@@ -1904,7 +1905,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                  if (_selectedFloorId == floorId) _selectedFloorId = null;
               });
               Navigator.pop(ctx);
-           }, style: TextButton.styleFrom(foregroundColor: Colors.red), child: const Text("Delete")),
+           }, style: TextButton.styleFrom(foregroundColor: AppColors.error), child: const Text("Delete")),
         ],
      ));
   }
@@ -1926,7 +1927,7 @@ class _AddTableButton extends StatelessWidget {
         child: Column(
            mainAxisSize: MainAxisSize.min,
            children: [
-              Icon(icon, size: 30, color: Colors.blue),
+              Icon(icon, size: 30, color: AppColors.primaryLight),
               Text(label, style: const TextStyle(fontSize: 12))
            ],
         ),
@@ -1977,13 +1978,13 @@ class _PulsingChairState extends State<_PulsingChair> with SingleTickerProviderS
   void _updateColorTween() {
      if (widget.isTableOccupied) {
         _colorAnimation = ColorTween(
-           begin: Colors.red.shade400, 
-           end: Colors.red.shade700
+           begin: AppColors.error, 
+           end: AppColors.error
         ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
      } else {
         _colorAnimation = ColorTween(
-           begin: Colors.amber.shade400, 
-           end: Colors.orange.shade600
+           begin: AppColors.warning, 
+           end: AppColors.warning
         ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
      }
   }
@@ -2027,7 +2028,7 @@ class _PulsingChairState extends State<_PulsingChair> with SingleTickerProviderS
             height: widget.size,
             decoration: BoxDecoration(
                shape: BoxShape.circle,
-               color: (_colorAnimation.value ?? Colors.orange).withValues(alpha: opacity),
+               color: (_colorAnimation.value ?? AppColors.warning).withValues(alpha: opacity),
             ),
           ),
         );
@@ -2042,7 +2043,7 @@ class _PulsingChairState extends State<_PulsingChair> with SingleTickerProviderS
           width: widget.size,
           height: widget.size,
           decoration: BoxDecoration(
-             color: widget.isOccupied ? Colors.red : Colors.brown.shade400,
+             color: widget.isOccupied ? AppColors.error : AppColors.textSecondary(context),
              shape: BoxShape.circle,
              border: Border.all(color: Colors.white, width: 1.5),
              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 2, offset: const Offset(0,1))]
@@ -2074,7 +2075,7 @@ class _PulsingChairState extends State<_PulsingChair> with SingleTickerProviderS
                      border: Border.all(color: Colors.white, width: 2.0),
                      boxShadow: [
                        BoxShadow(
-                         color: (_colorAnimation.value ?? Colors.red).withValues(alpha: 0.5), 
+                         color: (_colorAnimation.value ?? AppColors.error).withValues(alpha: 0.5), 
                          blurRadius: 4, 
                          spreadRadius: 1
                        )

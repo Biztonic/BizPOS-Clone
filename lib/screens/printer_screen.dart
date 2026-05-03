@@ -1,4 +1,5 @@
-﻿// ignore_for_file: use_build_context_synchronously
+import '../core/design/tokens/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
@@ -117,7 +118,7 @@ class _PrinterScreenState extends State<PrinterScreen>
       } else {
          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("Bluetooth permissions are required to scan."),
-            backgroundColor: Colors.red));
+            backgroundColor: AppColors.error));
       }
       return;
     }
@@ -408,7 +409,7 @@ class _PrinterScreenState extends State<PrinterScreen>
                     icon: const Icon(Icons.print),
                     onPressed: () => _testPrint(purpose)),
                 IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
+                    icon: const Icon(Icons.delete, color: AppColors.error),
                     onPressed: () => _disconnect(purpose)),
               ],
             ),
@@ -429,7 +430,7 @@ class _PrinterScreenState extends State<PrinterScreen>
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ExpansionTile(
             initiallyExpanded: true,
-            leading: const Icon(Icons.bluetooth, color: Colors.blue),
+            leading: const Icon(Icons.bluetooth, color: AppColors.primaryLight),
             title: const Text("Bluetooth Printers"),
             subtitle: Text("${_btDevices.length} devices found"),
             trailing: ElevatedButton(
@@ -444,12 +445,12 @@ class _PrinterScreenState extends State<PrinterScreen>
                     : const Text("Scan")),
             children: [
               if (_btDevices.isEmpty && !_isScanningBt)
-                const Padding(
+                Padding(
                     padding: EdgeInsets.all(16),
                     child: Text("No bluetooth devices found.",
-                        style: TextStyle(color: Colors.grey))),
+                        style: TextStyle(color: AppColors.textSecondary(context)))),
               ..._btDevices.map((device) => ListTile(
-                    leading: const Icon(Icons.print, color: Colors.blueGrey),
+                    leading: const Icon(Icons.print, color: AppColors.primaryLightGrey),
                     title: Text(device.name),
                     subtitle: Text(device.address ?? "Unknown MAC"),
                     trailing: TextButton(
@@ -470,7 +471,7 @@ class _PrinterScreenState extends State<PrinterScreen>
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ExpansionTile(
             initiallyExpanded: true,
-            leading: const Icon(Icons.usb, color: Colors.orange),
+            leading: const Icon(Icons.usb, color: AppColors.warning),
             title: const Text("USB Printers"),
             subtitle: Text("${_usbDevices.length} devices found"),
             trailing: ElevatedButton(
@@ -485,12 +486,12 @@ class _PrinterScreenState extends State<PrinterScreen>
                     : const Text("Scan")),
             children: [
               if (_usbDevices.isEmpty && !_isScanningUsb)
-                const Padding(
+                Padding(
                     padding: EdgeInsets.all(16),
                     child: Text("No USB devices found.",
-                        style: TextStyle(color: Colors.grey))),
+                        style: TextStyle(color: AppColors.textSecondary(context)))),
               ..._usbDevices.map((device) => ListTile(
-                    leading: const Icon(Icons.print, color: Colors.blueGrey),
+                    leading: const Icon(Icons.print, color: AppColors.primaryLightGrey),
                     title: Text(device.name),
                     subtitle:
                         Text("VID:${device.vendorId} PID:${device.productId}"),
@@ -512,7 +513,7 @@ class _PrinterScreenState extends State<PrinterScreen>
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ExpansionTile(
             initiallyExpanded: false,
-            leading: const Icon(Icons.wifi, color: Colors.green),
+            leading: const Icon(Icons.wifi, color: AppColors.success),
             title: const Text("Network Printer"),
             subtitle: const Text("Connect via IP Address"),
             children: [
@@ -556,7 +557,7 @@ class _PrinterScreenState extends State<PrinterScreen>
         controller: _logScrollController,
         itemCount: _logs.length,
         itemBuilder: (context, index) => Text(_logs[index],
-            style: const TextStyle(color: Colors.green, fontFamily: 'Courier')),
+            style: const TextStyle(color: AppColors.success, fontFamily: 'Courier')),
       ),
     );
   }

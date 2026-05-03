@@ -1,3 +1,4 @@
+import 'core/design/tokens/app_colors.dart';
 // ignore_for_file: unused_shown_name
 
 import 'package:flutter/material.dart';
@@ -141,7 +142,7 @@ Future<void> main() async {
             color: Colors.white, // Use solid white for crash view
             child: Center(
               child: Card(
-                color: Colors.red.shade50,
+                color: AppColors.error,
                 margin: const EdgeInsets.all(16),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -150,11 +151,11 @@ Future<void> main() async {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.error_outline,
-                          color: Colors.red, size: 50),
+                          color: AppColors.error, size: 50),
                       const SizedBox(height: 10),
                       const Text("Something went wrong!",
                           style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+                              fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.error)),
                       const SizedBox(height: 5),
                       Text(details.exception.toString(),
                           textAlign: TextAlign.center, maxLines: 3),

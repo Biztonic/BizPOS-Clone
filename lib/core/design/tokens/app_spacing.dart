@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class AppSpacing {
   AppSpacing._();
 
@@ -9,4 +11,10 @@ class AppSpacing {
   static const double xl = 32.0;
   static const double xxl = 48.0;
   static const double xxxl = 64.0;
+
+  // Layout Helpers
+  static const SizedBox hMd = SizedBox(width: md);
+  static const SizedBox vMd = SizedBox(height: md);
+  static const SizedBox vLg = SizedBox(height: lg);
+  static const SizedBox vXl = SizedBox(height: xl);
 }

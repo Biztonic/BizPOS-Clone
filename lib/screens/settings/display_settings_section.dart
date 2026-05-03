@@ -1,10 +1,14 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../utils/theme.dart';
-// Ensure ReceiptSettings available
-
 import '../../features/receipt_printing/screens/receipt_settings_screen.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import '../../core/design/density/app_density.dart';
+import '../../core/design/tokens/app_spacing.dart';
+import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_typography.dart';
+import '../../core/design/components/atoms/app_card.dart';
 
 class DisplaySettingsSection extends StatelessWidget {
   const DisplaySettingsSection({super.key});
@@ -12,71 +16,87 @@ class DisplaySettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DashboardProvider>(context);
+    final density = AppDensityProvider.configOf(context);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("Appearance Settings")),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+    return PosScaffold(
+      title: "Appearance Settings",
+      mainContent: ListView(
+        padding: EdgeInsets.all(AppSpacing.lg),
         children: [
           // Theme Color
-          const Text('Theme Color', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: AppColorTheme.values.map((theme) {
-              final color = themeColors[theme]!;
-              final isSelected = provider.currentTheme == theme;
-              return GestureDetector(
-                onTap: () => provider.setAppTheme(theme),
-                child: Container(
-                  width: 45,
-                  height: 45,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    border: isSelected
-                        ? Border.all(color: provider.isDarkMode ? Colors.white : Colors.black, width: 3)
-                        : null,
-                    boxShadow: [
-                      if (isSelected)
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.4),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        )
-                    ],
+          Text('Theme Color', style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.md),
+          AppCard(
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: AppColorTheme.values.map((theme) {
+                final color = themeColors[theme]!;
+                final isSelected = provider.currentTheme == theme;
+                return GestureDetector(
+                  onTap: () => provider.setAppTheme(theme),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: isSelected
+                          ? Border.all(color: provider.isDarkMode ? Colors.white : Colors.black, width: 3)
+                          : null,
+                      boxShadow: [
+                        if (isSelected)
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          )
+                      ],
+                    ),
+                    child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
                   ),
-                  child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           ),
           
-          const Divider(height: 30),
+          const SizedBox(height: AppSpacing.xl),
           
           // Interface Style
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Interface Style'),
-                leading: const Icon(Icons.view_quilt),
-                subtitle: Text(provider.uiStyle == UIStyle.car_dashboard ? 'Automotive HUD' : 'Standard POS'),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 56.0), // Align with text
-                child: Container(
+          Text('Interface Style', style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.md),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Interface Layout', style: AppTypography.bodyLarge),
+                  leading: Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.view_quilt, color: AppColors.primaryLight, size: 20),
+                  ),
+                  subtitle: Text(
+                    provider.uiStyle == UIStyle.car_dashboard ? 'Automotive HUD' : 'Standard POS',
+                    style: AppTypography.bodySmall,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border(context)),
+                    borderRadius: BorderRadius.circular(density.buttonRadius),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<UIStyle>(
                       isExpanded: true,
                       value: provider.uiStyle,
+                      style: AppTypography.bodyMedium,
                       items: const [
                         DropdownMenuItem(
                           value: UIStyle.standard, 
@@ -92,23 +112,30 @@ class DisplaySettingsSection extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
 
-          const Divider(height: 30),
+          const SizedBox(height: AppSpacing.xl),
           
           // Receipt Configuration
-          const Text('Receipt Configuration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
+          Text('Receipt Configuration', style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.md),
           
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          AppCard(
+            padding: EdgeInsets.zero,
             child: ListTile(
-              leading: const Icon(Icons.receipt_long, color: Colors.blue),
-              title: const Text('Configure Receipt Layout'),
-              subtitle: const Text('Customize header, footer, visibility & live preview'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              leading: Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.receipt_long, color: AppColors.primary, size: 20),
+              ),
+              title: const Text('Configure Receipt Layout', style: AppTypography.bodyLarge),
+              subtitle: const Text('Customize header, footer, visibility & live preview', style: AppTypography.bodySmall),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
               onTap: () {
                 Navigator.push(
                   context, 

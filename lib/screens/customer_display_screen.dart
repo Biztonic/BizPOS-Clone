@@ -1,4 +1,5 @@
-﻿// ignore_for_file: curly_braces_in_flow_control_structures
+import '../core/design/tokens/app_colors.dart';
+// ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -89,7 +90,7 @@ class CustomerDisplayScreen extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.all(16),
-                          color: Colors.orange.shade800,
+                          color: AppColors.warning,
                           width: double.infinity,
                           child: const Text("PREPARING", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                         ),
@@ -121,7 +122,7 @@ class CustomerDisplayScreen extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.all(16),
-                          color: Colors.green.shade700,
+                          color: AppColors.success,
                           width: double.infinity,
                           child: const Text("READY FOR PICKUP", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                         ),
@@ -163,9 +164,9 @@ class CustomerDisplayScreen extends StatelessWidget {
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isReady ? Colors.green.shade100 : Colors.orange.shade100,
+        color: isReady ? AppColors.success : AppColors.warning,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isReady ? Colors.green : Colors.orange, width: 2)
+        border: Border.all(color: isReady ? AppColors.success : AppColors.warning, width: 2)
       ),
       child: FittedBox(
         fit: BoxFit.scaleDown,

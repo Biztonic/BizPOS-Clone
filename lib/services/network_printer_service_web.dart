@@ -1,4 +1,4 @@
-﻿
+
 
 class NetworkPrinterService {
   String? get connectedIp => null;

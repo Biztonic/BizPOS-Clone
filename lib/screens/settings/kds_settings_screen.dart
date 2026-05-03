@@ -1,7 +1,14 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/store_provider.dart';
 import '../../models/settings.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import '../../core/design/density/app_density.dart';
+import '../../core/design/tokens/app_spacing.dart';
+import '../../core/design/tokens/app_typography.dart';
+import '../../core/design/components/atoms/app_button.dart';
+import '../../core/design/components/atoms/app_card.dart';
+import '../../core/design/tokens/app_colors.dart';
 
 class KdsSettingsScreen extends StatefulWidget {
   const KdsSettingsScreen({super.key});
@@ -73,63 +80,69 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("KDS Settings"),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+    final density = AppDensityProvider.configOf(context);
+
+    return PosScaffold(
+      title: "KDS Settings",
+      mainContent: ListView(
+        padding: EdgeInsets.all(AppSpacing.lg),
         children: [
-          SwitchListTile(
-            title: const Text("Sound Notifications"),
-            subtitle: const Text("Play sound when a new order arrives"),
-            value: _soundEnabled,
-            onChanged: (v) => setState(() => _soundEnabled = v),
-          ),
-          const Divider(),
-          ListTile(
-            title: const Text("Font Size"),
-            subtitle: Text("${_fontSize.toInt()} px"),
-            trailing: SizedBox(
-              width: 200,
-              child: Slider(
-                min: 12,
-                max: 32,
-                divisions: 10,
-                value: _fontSize,
-                onChanged: (v) => setState(() => _fontSize = v),
-              ),
+          Text("Interface Options", style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.md),
+          AppCard(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: const Text("Sound Notifications", style: AppTypography.bodyLarge),
+                  subtitle: const Text("Play sound when a new order arrives", style: AppTypography.bodySmall),
+                  value: _soundEnabled,
+                  onChanged: (v) => setState(() => _soundEnabled = v),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                const Divider(),
+                ListTile(
+                  title: const Text("Font Size", style: AppTypography.bodyLarge),
+                  subtitle: Text("${_fontSize.toInt()} px", style: AppTypography.bodySmall),
+                  contentPadding: EdgeInsets.zero,
+                  trailing: SizedBox(
+                    width: 150,
+                    child: Slider(
+                      min: 12,
+                      max: 32,
+                      divisions: 10,
+                      value: _fontSize,
+                      onChanged: (v) => setState(() => _fontSize = v),
+                    ),
+                  ),
+                ),
+                const Divider(),
+                ListTile(
+                  title: const Text("Layout Style", style: AppTypography.bodyLarge),
+                  contentPadding: EdgeInsets.zero,
+                  trailing: DropdownButton<String>(
+                    value: _layout,
+                    style: AppTypography.bodyMedium,
+                    items: ['Grid', 'List'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    onChanged: (v) => setState(() => _layout = v!),
+                  ),
+                ),
+              ],
             ),
           ),
-          const Divider(),
-          ListTile(
-            title: const Text("Layout Style"),
-            trailing: DropdownButton<String>(
-              value: _layout,
-              items: ['Grid', 'List'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-              onChanged: (v) => setState(() => _layout = v!),
-            ),
-          ),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-            child: Text("Filter Categories", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text("Only show orders containing items from these categories:", style: TextStyle(color: Colors.grey)),
-          ),
-          // In a real app, fetch actual categories. Here we use some defaults or empty.
+
+          const SizedBox(height: AppSpacing.xl),
+          Text("Filter Categories", style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.xs),
+          Text("Only show orders containing items from these categories:", style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+          const SizedBox(height: AppSpacing.md),
           _buildCategoryFilters(),
-          const SizedBox(height: 32),
-          ElevatedButton(
+
+          const SizedBox(height: AppSpacing.xxl),
+          AppButton.primary(
+            label: "Save Settings",
             onPressed: _save,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text("Save Settings", style: TextStyle(fontSize: 18)),
+            width: double.infinity,
           ),
         ],
       ),
@@ -137,16 +150,15 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
   }
 
   Widget _buildCategoryFilters() {
-    // Ideally fetch from provider.inventoryCategories
-    // For now, let's just show a few common ones or a text input if empty
     final categories = ['Kitchen', 'Pizza', 'Drinks', 'Dessert']; 
     
     return Wrap(
       spacing: 8,
+      runSpacing: 8,
       children: categories.map((cat) {
         final isSelected = _selectedCategories.contains(cat);
         return FilterChip(
-          label: Text(cat),
+          label: Text(cat, style: AppTypography.bodySmall),
           selected: isSelected,
           onSelected: (selected) {
             setState(() {

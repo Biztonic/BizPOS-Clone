@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -74,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
                 const SizedBox(height: 20),
                 const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green), // Matched with logo green?
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.success), // Matched with logo green?
                   strokeWidth: 2,
                 )
               ],

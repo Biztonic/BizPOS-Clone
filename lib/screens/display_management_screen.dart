@@ -1,3 +1,4 @@
+import '../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'cfd_screen.dart';
 import 'customer_display_screen.dart';
@@ -39,7 +40,7 @@ class DisplayManagementScreen extends StatelessWidget {
               "Customer Order Display",
               "Show cart & totals",
               Icons.monitor,
-              Colors.blue,
+              AppColors.primaryLight,
               () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -49,7 +50,7 @@ class DisplayManagementScreen extends StatelessWidget {
               "Order Ready Screen",
               "Status board (Preparing/Ready)",
               Icons.tv,
-              Colors.green,
+              AppColors.success,
               () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -62,14 +63,14 @@ class DisplayManagementScreen extends StatelessWidget {
               "Digital Menu Board",
               "Live menu on TV screens",
               Icons.restaurant_menu,
-              Colors.purple,
+              AppColors.primaryLight,
               () => _showMenuModeDialog(context)),
             _buildDisplayCard(
               context,
               "Promotional Signage",
               "Ads & Offers slideshow",
               Icons.campaign,
-              Colors.red,
+              AppColors.error,
               () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -79,7 +80,7 @@ class DisplayManagementScreen extends StatelessWidget {
               "Waiter Calling System",
               "Staff alert board",
               Icons.notifications_active,
-              Colors.teal,
+              AppColors.primary,
               () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -144,17 +145,17 @@ class DisplayManagementScreen extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style:
-                            const TextStyle(fontSize: 13, color: Colors.grey)),
+                            TextStyle(fontSize: 13, color: AppColors.textSecondary(context))),
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.settings, color: Colors.grey),
+                icon: Icon(Icons.settings, color: AppColors.textSecondary(context)),
                 onPressed: () => _showDisplaySettingsDialog(context, title),
                 tooltip: 'Configure Physical Display',
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondary(context)),
             ],
           ),
         ),
@@ -177,7 +178,7 @@ class DisplayManagementScreen extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: 8.0),
               child: Row(
                 children: [
-                  Icon(Icons.tv, color: Colors.purple),
+                  Icon(Icons.tv, color: AppColors.primaryLight),
                   SizedBox(width: 12),
                   Text("Digital Display Mode (View Only)", style: TextStyle(fontSize: 16)),
                 ],
@@ -193,7 +194,7 @@ class DisplayManagementScreen extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: 8.0),
               child: Row(
                 children: [
-                  Icon(Icons.touch_app, color: Colors.green),
+                  Icon(Icons.touch_app, color: AppColors.success),
                   SizedBox(width: 12),
                   Text("Self-Ordering Kiosk (Interactive)", style: TextStyle(fontSize: 16)),
                 ],
@@ -239,7 +240,7 @@ class DisplayManagementScreen extends StatelessWidget {
                      }
                    ),
                    const SizedBox(height: 16),
-                   const Text("Note: Connecting to a physical display requires 'desktop_multi_window' package support. This setting is currently saved but will not actively move the window until the package is integrated.", style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic))
+                   Text("Note: Connecting to a physical display requires 'desktop_multi_window' package support. This setting is currently saved but will not actively move the window until the package is integrated.", style: TextStyle(fontSize: 12, color: AppColors.textSecondary(context), fontStyle: FontStyle.italic))
                 ],
               ),
               actions: [

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_typography.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
@@ -83,7 +85,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Account activated successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         context.go('/create-store');
@@ -93,7 +95,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -138,7 +140,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 40,
                         offset: const Offset(0, 20),
                       ),
@@ -157,7 +159,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.grey.shade900,
+                            color: isDark ? Colors.white : AppColors.textSecondary(context),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -166,7 +168,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                           'Please set a password for ${widget.email} to continue.',
                           style: TextStyle(
                             fontSize: 14,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -247,3 +249,4 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     );
   }
 }
+

@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -57,9 +58,9 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.history_toggle_off, size: 64, color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade300),
+                        Icon(Icons.history_toggle_off, size: 64, color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                         const SizedBox(height: 16),
-                        Text("No audit logs found", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade600 : Colors.grey, fontSize: 16)),
+                        Text("No audit logs found", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 16)),
                       ],
                     ),
                   )
@@ -72,18 +73,18 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                       final timeStr = DateFormat('MMM dd, hh:mm a').format(log['createdAt'] ?? DateTime.now());
                       
                       IconData icon = Icons.history;
-                      Color iconColor = Colors.blue;
+                      Color iconColor = AppColors.primaryLight;
                       
                       final eventType = log['eventType'] ?? '';
                       if (eventType == 'CREATE') {
                         icon = Icons.add_circle_outline;
-                        iconColor = Colors.green;
+                        iconColor = AppColors.success;
                       } else if (eventType == 'REFUND') {
                         icon = Icons.undo;
-                        iconColor = Colors.orange;
+                        iconColor = AppColors.warning;
                       } else if (eventType == 'VOID') {
                         icon = Icons.cancel_outlined;
-                        iconColor = Colors.red;
+                        iconColor = AppColors.error;
                       }
 
                       return ListTile(

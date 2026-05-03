@@ -1,5 +1,7 @@
 // ignore_for_file: unused_field, use_build_context_synchronously
 import 'package:flutter/material.dart';
+import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_typography.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/dashboard_provider.dart';
@@ -31,7 +33,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.blueGrey.shade900,
+      backgroundColor: AppColors.background(context),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -47,7 +49,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
               context, 
               name: owner.name.isEmpty ? "Store Owner" : owner.name,
               role: "Owner / Admin",
-              color: Colors.blue,
+              color: AppColors.primary,
               icon: Icons.admin_panel_settings,
               onTap: () => _showOwnerUnlockDialog(context, provider)
             ),
@@ -59,7 +61,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
               context,
               name: "Employee Login",
               role: "Cashier / Staff",
-              color: Colors.orange,
+              color: AppColors.warning,
               icon: Icons.badge,
               onTap: () {
                  // Push Employee Login - but modified to float or dialog?
@@ -111,11 +113,11 @@ class _StationLockScreenState extends State<StationLockScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
-                    Text(role, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                    Text(role, style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context))),
                   ],
                ),
              ),
-             const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey)
+             Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondary(context))
            ],
          ),
        ),
@@ -179,3 +181,4 @@ class _StationLockScreenState extends State<StationLockScreen> {
      );
   }
 }
+
