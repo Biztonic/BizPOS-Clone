@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/dashboard_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme/theme_provider.dart';
 import '../../utils/theme.dart';
 import '../../features/receipt_printing/screens/receipt_settings_screen.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
@@ -10,12 +10,13 @@ import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/components/atoms/app_card.dart';
 
-class DisplaySettingsSection extends StatelessWidget {
+class DisplaySettingsSection extends ConsumerWidget {
   const DisplaySettingsSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final provider = Provider.of<DashboardProvider>(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeState = ref.watch(themeProvider);
+    final themeNotifier = ref.read(themeProvider.notifier);
     final density = AppDensityProvider.configOf(context);
 
     return PosScaffold(
@@ -32,9 +33,9 @@ class DisplaySettingsSection extends StatelessWidget {
               runSpacing: 12,
               children: AppColorTheme.values.map((theme) {
                 final color = themeColors[theme]!;
-                final isSelected = provider.currentTheme == theme;
+                final isSelected = themeState.currentTheme == theme;
                 return GestureDetector(
-                  onTap: () => provider.setAppTheme(theme),
+                  onTap: () => themeNotifier.setAppTheme(theme),
                   child: Container(
                     width: 48,
                     height: 48,
@@ -42,7 +43,7 @@ class DisplaySettingsSection extends StatelessWidget {
                       color: color,
                       shape: BoxShape.circle,
                       border: isSelected
-                          ? Border.all(color: provider.isDarkMode ? Colors.white : Colors.black, width: 3)
+                          ? Border.all(color: themeState.isDarkMode ? Colors.white : Colors.black, width: 3)
                           : null,
                       boxShadow: [
                         if (isSelected)
@@ -81,7 +82,7 @@ class DisplaySettingsSection extends StatelessWidget {
                     child: const Icon(Icons.view_quilt, color: AppColors.primaryLight, size: 20),
                   ),
                   subtitle: Text(
-                    provider.uiStyle == UIStyle.car_dashboard ? 'Automotive HUD' : 'Standard POS',
+                    themeState.uiStyle == UIStyle.car_dashboard ? 'Automotive HUD' : 'Standard POS',
                     style: AppTypography.bodySmall,
                   ),
                 ),
@@ -95,7 +96,7 @@ class DisplaySettingsSection extends StatelessWidget {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<UIStyle>(
                       isExpanded: true,
-                      value: provider.uiStyle,
+                      value: themeState.uiStyle,
                       style: AppTypography.bodyMedium,
                       items: const [
                         DropdownMenuItem(
@@ -106,13 +107,29 @@ class DisplaySettingsSection extends StatelessWidget {
                       ],
                       onChanged: (val) {
                         if (val != null) {
-                           provider.setUIStyle(val);
+                           themeNotifier.setUIStyle(val);
                         }
                       },
                     ),
                   ),
                 ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+          
+          // Theme Mode Toggle (Added this as it was in DashboardProvider but missing in UI?)
+          Text('Theme Mode', style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.md),
+          AppCard(
+            child: SwitchListTile(
+              title: const Text("Dark Mode", style: AppTypography.bodyLarge),
+              subtitle: const Text("Use a dark color scheme", style: AppTypography.bodySmall),
+              value: themeState.isDarkMode,
+              onChanged: (val) => themeNotifier.toggleTheme(),
+              secondary: Icon(themeState.isDarkMode ? Icons.dark_mode : Icons.light_mode, color: AppColors.primary),
+              contentPadding: EdgeInsets.zero,
             ),
           ),
 

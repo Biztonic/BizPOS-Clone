@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/dashboard_provider.dart';
-import '../../providers/store_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/store/providers/store_notifier.dart';
 import 'manage_counters_screen.dart';
 import '../../widgets/feature_guard.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
@@ -12,14 +11,14 @@ import '../../core/design/components/atoms/app_button.dart';
 import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/components/atoms/app_card.dart';
 
-class StoreSettingsSection extends StatefulWidget {
+class StoreSettingsSection extends ConsumerStatefulWidget {
   const StoreSettingsSection({super.key});
 
   @override
-  State<StoreSettingsSection> createState() => _StoreSettingsSectionState();
+  ConsumerState<StoreSettingsSection> createState() => _StoreSettingsSectionState();
 }
 
-class _StoreSettingsSectionState extends State<StoreSettingsSection> {
+class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -32,8 +31,8 @@ class _StoreSettingsSectionState extends State<StoreSettingsSection> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_isInit) {
-      final provider = Provider.of<DashboardProvider>(context);
-      final store = provider.activeStore;
+      final storeState = ref.read(storeNotifierProvider);
+      final store = storeState.activeStore;
       
       if (store != null) {
         _nameController.text = store.name;
@@ -42,10 +41,10 @@ class _StoreSettingsSectionState extends State<StoreSettingsSection> {
         _selectedStoreType = store.storeType;
       }
       
-      final storeProvider = Provider.of<StoreProvider>(context, listen: false);
+      final notifier = ref.read(storeNotifierProvider.notifier);
       
-      storeProvider.fetchStoreTypes().then((types) {
-         storeProvider.fetchStoreTypeConfigs().then((configs) {
+      notifier.fetchStoreTypes().then((types) {
+         notifier.fetchStoreTypeConfigs().then((configs) {
              if (mounted) {
                 setState(() {
                    _availableStoreTypes = types;
@@ -73,8 +72,8 @@ class _StoreSettingsSectionState extends State<StoreSettingsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<DashboardProvider>(context);
-    final store = provider.activeStore;
+    final storeState = ref.watch(storeNotifierProvider);
+    final store = storeState.activeStore;
 
     if (store == null) return const Center(child: Text("No Store Data"));
     final density = AppDensityProvider.configOf(context);
@@ -172,7 +171,7 @@ class _StoreSettingsSectionState extends State<StoreSettingsSection> {
                         phone: _phoneController.text,
                         storeType: _selectedStoreType,
                       );
-                      await provider.updateStoreSettings(updatedStore);
+                      await ref.read(storeNotifierProvider.notifier).updateStoreSettings(updatedStore);
                       if (mounted) {
                          ScaffoldMessenger.of(context).showSnackBar(
                            const SnackBar(content: Text("Store Settings Saved"), behavior: SnackBarBehavior.floating)

@@ -1,8 +1,6 @@
-// ignore_for_file: use_build_context_synchronously
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:biztonic_pos/providers/store_provider.dart';
-import '../../models/counter_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:biztonic_pos/features/store/providers/store_notifier.dart';
+import '../../features/store/domain/entities/counter_model.dart';
 import '../../models/printer_device.dart';
 import '../../services/printer_manager_service.dart';
 import '../../core/design/tokens/app_typography.dart';
@@ -14,14 +12,14 @@ import '../../core/design/components/atoms/app_card.dart';
 import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/tokens/app_colors.dart';
 
-class ManageCountersScreen extends StatefulWidget {
+class ManageCountersScreen extends ConsumerStatefulWidget {
   const ManageCountersScreen({super.key});
 
   @override
-  State<ManageCountersScreen> createState() => _ManageCountersScreenState();
+  ConsumerState<ManageCountersScreen> createState() => _ManageCountersScreenState();
 }
 
-class _ManageCountersScreenState extends State<ManageCountersScreen> {
+class _ManageCountersScreenState extends ConsumerState<ManageCountersScreen> {
   final PrinterManagerService _printerManager = PrinterManagerService();
 
   @override
@@ -56,7 +54,7 @@ class _ManageCountersScreenState extends State<ManageCountersScreen> {
                     name: nameController.text.trim(),
                     isCfdEnabled: false
                  );
-                 await Provider.of<StoreProvider>(context, listen: false).addStoreCounter(newCounter);
+                 await ref.read(storeNotifierProvider.notifier).addCounter(newCounter);
                  if (mounted) Navigator.pop(ctx);
               }
             },
@@ -98,7 +96,7 @@ class _ManageCountersScreenState extends State<ManageCountersScreen> {
 
     if (confirm == true && mounted) {
       try {
-        await Provider.of<StoreProvider>(context, listen: false).removeStoreCounter(counter.id);
+        await ref.read(storeNotifierProvider.notifier).removeCounter(counter.id);
       } catch (e) {
          if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating));
@@ -110,6 +108,8 @@ class _ManageCountersScreenState extends State<ManageCountersScreen> {
   @override
   Widget build(BuildContext context) {
     final density = AppDensityProvider.configOf(context);
+    final storeState = ref.watch(storeNotifierProvider);
+    final counters = storeState.counters;
 
     return PosScaffold(
       title: 'Manage Counters',
@@ -121,10 +121,8 @@ class _ManageCountersScreenState extends State<ManageCountersScreen> {
         ),
         SizedBox(width: AppSpacing.md),
       ],
-      mainContent: Consumer<StoreProvider>(
-        builder: (context, provider, child) {
-          final counters = provider.counters;
-          
+      mainContent: Builder(
+        builder: (context) {
           if (counters.isEmpty) {
             return Center(
               child: Column(
@@ -206,7 +204,7 @@ class _ManageCountersScreenState extends State<ManageCountersScreen> {
   }
 }
 
-class _EditCounterDialog extends StatefulWidget {
+class _EditCounterDialog extends ConsumerStatefulWidget {
   final CounterModel counter;
   final PrinterManagerService printerManager;
   final VoidCallback onDelete;
@@ -218,10 +216,10 @@ class _EditCounterDialog extends StatefulWidget {
   });
 
   @override
-  State<_EditCounterDialog> createState() => _EditCounterDialogState();
+  ConsumerState<_EditCounterDialog> createState() => _EditCounterDialogState();
 }
 
-class _EditCounterDialogState extends State<_EditCounterDialog> {
+class _EditCounterDialogState extends ConsumerState<_EditCounterDialog> {
   late TextEditingController _nameController;
   late bool _isCfdEnabled;
   PrinterDevice? _selectedPrinter;
@@ -255,7 +253,7 @@ class _EditCounterDialogState extends State<_EditCounterDialog> {
     );
 
     try {
-      await Provider.of<StoreProvider>(context, listen: false).updateCounter(updatedCounter);
+      await ref.read(storeNotifierProvider.notifier).updateCounter(updatedCounter);
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), behavior: SnackBarBehavior.floating));

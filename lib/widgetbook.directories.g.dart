@@ -12,6 +12,8 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:biztonic_pos/core/design/components/atoms/app_button.widgetbook.dart'
     as _biztonic_pos_core_design_components_atoms_app_button_widgetbook;
+import 'package:biztonic_pos/widgetbook/atoms/app_text_field.widgetbook.dart'
+    as _biztonic_pos_widgetbook_atoms_app_text_field_widgetbook;
 import 'package:widgetbook/widgetbook.dart' as _widgetbook;
 
 final directories = <_widgetbook.WidgetbookNode>[
@@ -49,7 +51,24 @@ final directories = <_widgetbook.WidgetbookNode>[
                                 .variantsUseCase,
                       ),
                     ],
-                  )
+                  ),
+                  _widgetbook.WidgetbookComponent(
+                    name: 'AppTextField',
+                    useCases: [
+                      _widgetbook.WidgetbookUseCase(
+                        name: 'Sizes',
+                        builder:
+                            _biztonic_pos_widgetbook_atoms_app_text_field_widgetbook
+                                .appTextFieldSizesUseCase,
+                      ),
+                      _widgetbook.WidgetbookUseCase(
+                        name: 'Variants',
+                        builder:
+                            _biztonic_pos_widgetbook_atoms_app_text_field_widgetbook
+                                .appTextFieldVariantsUseCase,
+                      ),
+                    ],
+                  ),
                 ],
               )
             ],

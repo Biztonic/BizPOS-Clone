@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/dashboard_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/store/providers/store_notifier.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import '../../core/design/density/app_density.dart';
 import '../../core/design/tokens/app_spacing.dart';
@@ -10,14 +10,14 @@ import '../../core/design/components/atoms/app_button.dart';
 import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/components/atoms/app_card.dart';
 
-class PaymentSettingsSection extends StatefulWidget {
+class PaymentSettingsSection extends ConsumerStatefulWidget {
   const PaymentSettingsSection({super.key});
 
   @override
-  State<PaymentSettingsSection> createState() => _PaymentSettingsSectionState();
+  ConsumerState<PaymentSettingsSection> createState() => _PaymentSettingsSectionState();
 }
 
-class _PaymentSettingsSectionState extends State<PaymentSettingsSection> {
+class _PaymentSettingsSectionState extends ConsumerState<PaymentSettingsSection> {
   bool _enableCash = true;
   bool _enableUPI = true;
   bool _enableCard = false;
@@ -31,7 +31,7 @@ class _PaymentSettingsSectionState extends State<PaymentSettingsSection> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_isInit) {
-      final store = Provider.of<DashboardProvider>(context, listen: false).activeStore;
+      final store = ref.read(storeNotifierProvider).activeStore;
       if (store != null) {
         _upiIdController.text = store.payment.upiId;
         _upiNameController.text = store.payment.upiName;
@@ -49,8 +49,8 @@ class _PaymentSettingsSectionState extends State<PaymentSettingsSection> {
   }
 
   Future<void> _saveSettings() async {
-     final provider = Provider.of<DashboardProvider>(context, listen: false);
-     final store = provider.activeStore;
+     final storeState = ref.read(storeNotifierProvider);
+     final store = storeState.activeStore;
      if (store != null) {
        final updatedPayment = store.payment.copyWith(
          upiId: _upiIdController.text.trim(),
@@ -58,7 +58,7 @@ class _PaymentSettingsSectionState extends State<PaymentSettingsSection> {
        );
        
        final updatedStore = store.copyWith(payment: updatedPayment);
-       await provider.updateStoreSettings(updatedStore);
+       await ref.read(storeNotifierProvider.notifier).updateStoreSettings(updatedStore);
        
        if (mounted) {
          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Settings Saved")));

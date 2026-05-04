@@ -2,6 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/repository.dart';
 import '../../services/sync_service.dart';
 import '../../services/database_helper.dart';
+import '../../features/store/data/store_repository.dart';
+import '../../features/settings/data/settings_repository.dart';
+import '../../features/subscriptions/data/subscription_repository.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/inventory_provider.dart';
+import '../../providers/customer_provider.dart';
+import '../../providers/store_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
 
 /// Provider for the base DatabaseHelper
 final databaseHelperProvider = Provider<DatabaseHelper>((ref) {
@@ -26,15 +35,22 @@ final storeRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).
 final reportingRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).reporting);
 final syncRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).sync);
 
+// New Feature Repositories
+final storeFeatureRepositoryProvider = Provider<StoreRepository>((ref) {
+  final syncService = ref.watch(syncServiceProvider);
+  return StoreRepository(syncService);
+});
+
+final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
+  return SettingsRepository();
+});
+
+final subscriptionRepositoryProvider = Provider<SubscriptionRepository>((ref) {
+  return SubscriptionRepository();
+});
+
 // --- Legacy Provider Wrappers (Bridge) ---
 // These allow Riverpod providers to watch legacy ChangeNotifier providers
-
-import '../../providers/order_provider.dart';
-import '../../providers/inventory_provider.dart';
-import '../../providers/customer_provider.dart';
-import '../../providers/store_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/dashboard_provider.dart';
 
 final authProvider = ChangeNotifierProvider<AuthProvider>((ref) {
   return AuthProvider();

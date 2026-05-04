@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/dashboard_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/store/providers/store_notifier.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import '../../core/design/density/app_density.dart';
 import '../../core/design/tokens/app_spacing.dart';
@@ -9,13 +9,13 @@ import '../../core/design/components/atoms/app_button.dart';
 import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/components/atoms/app_card.dart';
 
-class TaxSettingsSection extends StatefulWidget {
+class TaxSettingsSection extends ConsumerStatefulWidget {
   const TaxSettingsSection({super.key});
   @override
-  State<TaxSettingsSection> createState() => _TaxSettingsSectionState();
+  ConsumerState<TaxSettingsSection> createState() => _TaxSettingsSectionState();
 }
 
-class _TaxSettingsSectionState extends State<TaxSettingsSection> {
+class _TaxSettingsSectionState extends ConsumerState<TaxSettingsSection> {
   final _taxController = TextEditingController();
   bool _isTaxEnabled = false;
   bool _isInit = true;
@@ -24,7 +24,7 @@ class _TaxSettingsSectionState extends State<TaxSettingsSection> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_isInit) {
-      final store = Provider.of<DashboardProvider>(context).activeStore;
+      final store = ref.read(storeNotifierProvider).activeStore;
       if (store != null) {
         _taxController.text = (store.taxRate ?? 0).toString();
         _isTaxEnabled = store.isTaxEnabled ?? false;
@@ -34,9 +34,15 @@ class _TaxSettingsSectionState extends State<TaxSettingsSection> {
   }
 
   @override
+  void dispose() {
+    _taxController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<DashboardProvider>(context);
-    final store = provider.activeStore;
+    final storeState = ref.watch(storeNotifierProvider);
+    final store = storeState.activeStore;
     if (store == null) return const SizedBox();
     final density = AppDensityProvider.configOf(context);
 
@@ -79,7 +85,7 @@ class _TaxSettingsSectionState extends State<TaxSettingsSection> {
                         taxRate: tax,
                         isTaxEnabled: _isTaxEnabled,
                       );
-                      await provider.updateStoreSettings(updatedStore);
+                      await ref.read(storeNotifierProvider.notifier).updateStoreSettings(updatedStore);
                       if (mounted) {
                          ScaffoldMessenger.of(context).showSnackBar(
                            const SnackBar(content: Text("Tax Settings Saved"), behavior: SnackBarBehavior.floating)

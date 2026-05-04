@@ -1,137 +1,175 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:biztonic_pos/services/database_helper.dart';
-import 'package:biztonic_pos/models/user_profile.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:biztonic_pos/services/firestore_helper.dart';
+import 'package:biztonic_pos/services/offline_service.dart';
+import 'package:biztonic_pos/services/sync_service.dart';
+import '../domain/entities/store.dart';
+import '../domain/entities/counter_model.dart';
 
 class StoreRepository {
-  final DatabaseHelper dbHelper;
+  final FirebaseFirestore _db = getFirestore();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final OfflineService _offlineService = OfflineService();
+  final SyncService _syncService;
 
-  StoreRepository({required this.dbHelper});
+  StoreRepository(this._syncService);
 
-  // --- MIGRATED OFFLINE CONFIG ENTITIES (JSON BLOBS) ---
-  
-  // Settings
-  Future<void> insertStoreSettings(String storeId, Map<String, dynamic> data) async {
-    final db = await dbHelper.database;
-    await db.insert('store_settings', {
-      'storeId': storeId,
-      'data': jsonEncode(data),
-      'syncStatus': 'CONFIRMED',
-      'updatedAt': DateTime.now().toIso8601String(),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  Stream<DocumentSnapshot> storeSnapshots(String storeId) {
+    return _db.collection('stores').doc(storeId).snapshots();
   }
 
-  Future<Map<String, dynamic>?> getStoreSettings(String storeId) async {
-    final db = await dbHelper.database;
-    final rows = await db.query('store_settings', where: 'storeId = ? AND deletedAt IS NULL', whereArgs: [storeId]);
-    if (rows.isEmpty) return null;
-    return jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
+  Future<List<Store>> getCachedStores({String? uid}) async {
+    final cachedData = await _offlineService.getCachedUserStores(uid: uid);
+    return cachedData.map((m) => Store.fromMap(m, m['id'] ?? '')).toList();
   }
 
-  // Floors
-  Future<void> insertFloor(String id, String storeId, Map<String, dynamic> data) async {
-    final db = await dbHelper.database;
-    await db.insert('floors', {
-      'id': id,
-      'storeId': storeId,
-      'data': jsonEncode(data),
-      'syncStatus': 'CONFIRMED',
-      'updatedAt': DateTime.now().toIso8601String(),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  // Tables
-  Future<void> insertTable(String id, String storeId, Map<String, dynamic> data) async {
-    final db = await dbHelper.database;
-    await db.insert('tables', {
-      'id': id,
-      'storeId': storeId,
-      'data': jsonEncode(data),
-      'syncStatus': 'CONFIRMED',
-      'updatedAt': DateTime.now().toIso8601String(),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  // Suppliers
-  Future<void> insertSupplier(String id, String storeId, Map<String, dynamic> data) async {
-    final db = await dbHelper.database;
-    await db.insert('suppliers', {
-      'id': id,
-      'storeId': storeId,
-      'data': jsonEncode(data),
-      'syncStatus': 'CONFIRMED',
-      'updatedAt': DateTime.now().toIso8601String(),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  // Notes
-  Future<void> insertNote(String id, String storeId, Map<String, dynamic> data) async {
-    final db = await dbHelper.database;
-    await db.insert('notes', {
-      'id': id,
-      'storeId': storeId,
-      'data': jsonEncode(data),
-      'syncStatus': 'CONFIRMED',
-      'updatedAt': DateTime.now().toIso8601String(),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  // Employees (Special Case: Not a blob)
-  Future<void> insertEmployee(UserProfile emp) async {
-    final db = await dbHelper.database;
-    await db.insert('employees', {
-      'id': emp.uid,
-      'storeId': emp.storeId,
-      'name': emp.name,
-      'email': emp.email,
-      'role': emp.role,
-      'employeeId': emp.employeeId,
-      'pin': emp.pinHash,
-      'createdAt': emp.createdAt?.toIso8601String(),
-      'syncStatus': 'CONFIRMED',
-      'updatedAt': DateTime.now().toIso8601String(),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  // Generic Deletion for config entities from SQLite
-  Future<void> deleteOfflineEntity(String table, String id) async {
-    final db = await dbHelper.database;
-    final idColumn = table == 'store_settings' ? 'storeId' : 'id';
-    await db.update(table, 
-      {'deletedAt': DateTime.now().toIso8601String(), 'isDeleted': 1, 'syncStatus': 'PENDING', 'updatedAt': DateTime.now().toIso8601String()}, 
-      where: '$idColumn = ?', 
-      whereArgs: [id]
+  Future<void> cacheStores(List<Store> stores, {String? uid}) async {
+    await _offlineService.cacheUserStores(
+      stores.map((s) => s.toMap()).toList(),
+      uid: uid,
     );
   }
 
-  Future<int> deleteOrphans(String table, String storeId, List<String> currentCloudIds) async {
-    final db = await dbHelper.database;
-    final idCol = table == 'store_settings' ? 'storeId' : 'id';
-
-    if (currentCloudIds.isEmpty) {
-       return await db.delete(
-         table,
-         where: 'storeId = ? AND syncStatus = ? AND isDeleted = 1',
-         whereArgs: [storeId, 'CONFIRMED'],
-       );
+  Future<Store?> getStoreOnline(String storeId) async {
+    final doc = await _db.collection('stores').doc(storeId).get();
+    if (doc.exists) {
+      return Store.fromMap(doc.data()!, doc.id);
     }
-    
-    final placeholders = List.filled(currentCloudIds.length, '?').join(',');
-    final deletedCount = await db.delete(
-      table, 
-      where: 'storeId = ? AND $idCol NOT IN ($placeholders) AND syncStatus = ? AND isDeleted = 1', 
-      whereArgs: [storeId, ...currentCloudIds, 'CONFIRMED']
-    );
-    
-    if (deletedCount > 0) {
-      debugPrint('🛡️ Repository: Cleaned up $deletedCount orphan records in $table for store $storeId');
-    }
-    return deletedCount;
+    return null;
   }
 
-  Future<List<Map<String, dynamic>>> getUnsyncedRows(String table) async {
-    final db = await dbHelper.database;
-    return await db.query(table, where: "syncStatus IN ('PENDING', 'PUSHED') OR syncStatus IS NULL");
+  Future<List<Store>> fetchUserStoresOnline(User user) async {
+    final Map<String, Store> uniqueStores = {};
+
+    // 1. Fetch by UID
+    try {
+      final q0 = await _db.collection('stores').where('owner', isEqualTo: user.uid).get();
+      for (var doc in q0.docs) {
+        uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
+      }
+    } catch (e) {}
+
+    // 2. Fetch by Email
+    if (user.email != null) {
+      try {
+        final q1 = await _db.collection('stores').where('ownerEmail', isEqualTo: user.email).get();
+        for (var doc in q1.docs) {
+          uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
+        }
+      } catch (e) {}
+    }
+
+    // 3. Direct access linking
+    try {
+      final userDoc = await _db.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        final data = userDoc.data()!;
+        final List<dynamic> accessIds = data['accessibleStoreIds'] ?? [];
+        final List<dynamic> legacyIds = data['storeIds'] ?? [];
+        final singleStoreId = data['storeId'];
+        final allIds = {...accessIds, ...legacyIds, if (singleStoreId != null) singleStoreId}
+            .where((id) => id != null && id.toString().isNotEmpty)
+            .toList();
+
+        if (allIds.isNotEmpty) {
+          final chunks = _chunkList(allIds, 10);
+          for (var chunk in chunks) {
+            final q2 = await _db.collection('stores').where(FieldPath.documentId, whereIn: chunk).get();
+            for (var doc in q2.docs) {
+              uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
+            }
+          }
+        }
+      }
+    } catch (e) {}
+
+    return uniqueStores.values.toList();
+  }
+
+  Future<void> updateStore(Store store) async {
+    await _syncService.performLocalWrite(
+      collection: 'stores',
+      docId: store.id,
+      data: store.toMap(),
+      action: 'update',
+      localCacheBox: 'cache_stores',
+      refreshCounts: false,
+    );
+  }
+
+  Future<void> deleteStore(String id) async {
+    await _db.collection('stores').doc(id).delete();
+  }
+
+  Future<void> pinStore(Store store, {String? uid}) async {
+    await _offlineService.pinStore(store.toMap(), uid: uid);
+  }
+
+  // --- Counters ---
+  Future<List<CounterModel>> fetchCounters(String storeId) async {
+    final snapshot = await _db.collection('stores').doc(storeId).collection('counters').get();
+    return snapshot.docs.map((doc) => CounterModel.fromMap(doc.data(), doc.id)).toList();
+  }
+
+  Future<CounterModel> addCounter(String storeId, CounterModel counter) async {
+    final docRef = _db.collection('stores').doc(storeId).collection('counters').doc();
+    final newCounter = CounterModel(
+      id: docRef.id,
+      name: counter.name,
+      assignedPrinterId: counter.assignedPrinterId,
+      printerDevice: counter.printerDevice,
+      isCfdEnabled: counter.isCfdEnabled,
+    );
+    await docRef.set(newCounter.toMap());
+    return newCounter;
+  }
+
+  Future<void> updateCounter(String storeId, CounterModel counter) async {
+    await _db.collection('stores').doc(storeId).collection('counters').doc(counter.id).update(counter.toMap());
+  }
+
+  Future<void> deleteCounter(String storeId, String counterId) async {
+    await _db.collection('stores').doc(storeId).collection('counters').doc(counterId).delete();
+  }
+
+  // --- Global Store Types ---
+  Future<List<String>> fetchStoreTypes() async {
+    final doc = await _db.collection('settings').doc('global').get();
+    if (doc.exists && doc.data()?['store_types'] != null) {
+      return List<String>.from(doc.data()!['store_types']);
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> fetchStoreTypeConfigs() async {
+    final doc = await _db.collection('settings').doc('global').get();
+    if (doc.exists && doc.data()?['store_type_configs'] != null) {
+      return Map<String, dynamic>.from(doc.data()!['store_type_configs']);
+    }
+    return {};
+  }
+
+  Future<void> addStoreType(String type, {Map<String, dynamic>? initialConfig}) async {
+    await _db.collection('settings').doc('global').set({
+      'store_types': FieldValue.arrayUnion([type]),
+      'store_type_configs': {
+        type: initialConfig ?? {}
+      }
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> deleteStoreType(String type) async {
+    await _db.collection('settings').doc('global').update({
+      'store_types': FieldValue.arrayRemove([type]),
+      'store_type_configs.$type': FieldValue.delete()
+    });
+  }
+
+  List<List<T>> _chunkList<T>(List<T> list, int size) {
+    List<List<T>> chunks = [];
+    for (var i = 0; i < list.length; i += size) {
+      chunks.add(list.sublist(i, i + size > list.length ? list.length : i + size));
+    }
+    return chunks;
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/dashboard_provider.dart';
-import '../../providers/store_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/store/providers/store_notifier.dart';
 import 'manage_string_list_screen.dart';
 import '../../widgets/feature_guard.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
@@ -11,13 +10,13 @@ import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/components/atoms/app_card.dart';
 import '../../core/design/tokens/app_colors.dart';
 
-class ProductSettingsSection extends StatefulWidget {
+class ProductSettingsSection extends ConsumerStatefulWidget {
   const ProductSettingsSection({super.key});
   @override
-  State<ProductSettingsSection> createState() => _ProductSettingsSectionState();
+  ConsumerState<ProductSettingsSection> createState() => _ProductSettingsSectionState();
 }
 
-class _ProductSettingsSectionState extends State<ProductSettingsSection> {
+class _ProductSettingsSectionState extends ConsumerState<ProductSettingsSection> {
   bool _trackInventory = true;
   bool _isInit = true;
 
@@ -25,7 +24,7 @@ class _ProductSettingsSectionState extends State<ProductSettingsSection> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_isInit) {
-      final store = Provider.of<DashboardProvider>(context).activeStore;
+      final store = ref.read(storeNotifierProvider).activeStore;
       if (store != null) {
         _trackInventory = store.trackInventory;
       }
@@ -35,14 +34,12 @@ class _ProductSettingsSectionState extends State<ProductSettingsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<DashboardProvider>(context);
-    final storeProvider = Provider.of<StoreProvider>(context);
-    final density = AppDensityProvider.configOf(context);
-    final store = provider.activeStore;
+    final storeState = ref.watch(storeNotifierProvider);
+    final store = storeState.activeStore;
     if (store == null) return const SizedBox();
 
     return FutureBuilder<Map<String, dynamic>>(
-      future: storeProvider.fetchStoreTypeConfigs(),
+      future: ref.read(storeNotifierProvider.notifier).fetchStoreTypeConfigs(),
       builder: (context, snapshot) {
         final configs = snapshot.data ?? {};
         final currentType = store.storeType;
@@ -80,7 +77,7 @@ class _ProductSettingsSectionState extends State<ProductSettingsSection> {
                     onChanged: (val) async {
                        setState(() => _trackInventory = val);
                        final updatedStore = store.copyWith(trackInventory: val);
-                       await provider.updateStoreSettings(updatedStore);
+                       await ref.read(storeNotifierProvider.notifier).updateStoreSettings(updatedStore);
                     },
                   ),
                 ),
@@ -99,11 +96,11 @@ class _ProductSettingsSectionState extends State<ProductSettingsSection> {
               if (showUnits) const SizedBox(height: AppSpacing.sm),
 
               if (showDietary)
-               FeatureGuard(
-                  featureKey: 'settings.products.dietary',
-                  lockedChild: const SizedBox.shrink(),
-                  child: _buildConfigTile(context, "Dietary Types", Icons.restaurant_menu, "dietary_types", "e.g. Veg, Non-Veg, Vegan")
-               ),
+                FeatureGuard(
+                   featureKey: 'settings.products.dietary',
+                   lockedChild: const SizedBox.shrink(),
+                   child: _buildConfigTile(context, "Dietary Types", Icons.restaurant_menu, "dietary_types", "e.g. Veg, Non-Veg, Vegan")
+                ),
                if (showDietary) const SizedBox(height: AppSpacing.sm),
                
                if (showPackaging)
