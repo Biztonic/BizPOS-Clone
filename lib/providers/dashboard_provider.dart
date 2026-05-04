@@ -38,9 +38,6 @@ import 'package:biztonic_pos/models/subscription_history.dart';
 import 'package:biztonic_pos/services/printer_manager_service.dart';
 import 'package:biztonic_pos/services/database_helper.dart';
 
-import 'package:biztonic_pos/features/reporting/domain/entities/report_period.dart';
-import 'package:biztonic_pos/features/reporting/domain/entities/dashboard_stats.dart';
-import 'package:biztonic_pos/features/reporting/domain/use_cases/get_dashboard_stats.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'package:biztonic_pos/features/inventory/domain/use_cases/adjust_stock.dart';
@@ -50,7 +47,6 @@ class DashboardProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance; 
   final SyncService _syncService = SyncService();
   final Repository _repository = Repository(); 
-  late final GetDashboardStatsUseCase _getStatsUseCase;
   
   final EmployeeRepository _employeeRepository = EmployeeRepository();
   SyncService get syncService => _syncService;
@@ -123,7 +119,6 @@ class DashboardProvider with ChangeNotifier {
      });
 
      _syncService.addListener(_onSyncUpdate);
-     _getStatsUseCase = GetDashboardStatsUseCase(_repository);
      debugPrint('✅ DashboardProvider Constructor END');
   }
 
@@ -419,35 +414,8 @@ class DashboardProvider with ChangeNotifier {
   }
 
   void _onInventoryChange() {
-      _scheduleStatsCalculation();
       notifyListeners();
   }
-  
-  DashboardStats _stats = DashboardStats.empty();
-  DashboardStats get stats => _stats;
-
-  Map<String, double> getPaymentStats() => _stats.paymentStats;
-  Map<String, dynamic> get salesReport => _stats.salesReport;
-  List<Map<String, dynamic>> get weeklySales => _stats.weeklySales;
-  Map<String, double> get categorySales => _stats.categorySales;
-  List<Map<String, dynamic>> get topProducts => _stats.topProducts;
-  List<Map<String, dynamic>> get actualSalesData => _stats.actualSalesData;
-  Map<String, dynamic> get smartStats => {
-    'totalSales': _stats.totalSales,
-    'totalOrders': _stats.totalOrders,
-    'todaySales': _stats.todaySales,
-    'todayOrders': _stats.todayOrders,
-    'monthSales': _stats.monthSales,
-    'monthOrders': _stats.monthOrders,
-    'avgDailySale': _stats.avgDailySale,
-    'avgOrderValue': _stats.avgOrderValue,
-  };
-
-  int get peakHour => _stats.peakHour;
-  int get leastHour => _stats.leastHour;
-  
-  bool _isComputingStats = false;
-  Timer? _statsDebounceTimer;
   
   bool _needsPrinterSetup = false;
   bool get needsPrinterSetup => _needsPrinterSetup;
@@ -464,39 +432,10 @@ class DashboardProvider with ChangeNotifier {
        _orders = _orderProvider!.orders; 
        _isLoadingOrders = _orderProvider!.isLoading;
        _hasMoreOrders = _orderProvider!.hasMore;
-       _scheduleStatsCalculation();
     }
     notifyListeners();
   }
 
-  void _scheduleStatsCalculation() {
-    _statsDebounceTimer?.cancel();
-    _statsDebounceTimer = Timer(const Duration(milliseconds: 300), () {
-      _computeAllStats();
-    });
-  }
-
-  Future<void> _computeAllStats() async {
-    if (_isComputingStats) return;
-    _isComputingStats = true;
-    
-    try {
-      final params = GetDashboardStatsParams(
-        orders: _orders,
-        activeStoreId: _activeStoreId,
-        period: _selectedPeriod,
-        isNative: kIsWeb ? false : (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS),
-      );
-
-      _stats = await _getStatsUseCase.execute(params);
-      
-      _isComputingStats = false;
-      notifyListeners();
-    } catch (e) {
-      debugPrint("❌ Error computing dashboard stats: $e");
-      _isComputingStats = false;
-    }
-  }
 
 
 
@@ -1059,14 +998,6 @@ class DashboardProvider with ChangeNotifier {
 
 
   
-  ReportPeriod _selectedPeriod = ReportPeriod.last7Days;
-  ReportPeriod get selectedPeriod => _selectedPeriod;
-
-  void setReportPeriod(ReportPeriod period) {
-      _selectedPeriod = period;
-      _scheduleStatsCalculation();
-      notifyListeners();
-  }
   
 
 
@@ -1226,7 +1157,6 @@ class DashboardProvider with ChangeNotifier {
              syncService.setActiveStoreId(_activeStoreId!);
           }
       }
-      _scheduleStatsCalculation();
       if ((_storeInventory.isEmpty || _orders.isEmpty) && _isOnline && _activeStoreId != null && !_hasForcedSync) {
          _hasForcedSync = true;
          Future.delayed(const Duration(seconds: 2), () => _syncService.forceSyncDown());

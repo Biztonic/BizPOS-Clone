@@ -45,6 +45,11 @@ app.*.map.json
 **/android/gradlew.bat
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
+.cxx/
+android/app/.cxx/
+**/.cxx/
+*.iml
+**/*.iml
 
 # iOS/macOS related
 **/ios/**/*.mode1v3

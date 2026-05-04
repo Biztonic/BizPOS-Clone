@@ -14,19 +14,38 @@ import '../core/design/density/app_density.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/theme.dart';
 
-class DashboardOverviewScreen extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/reporting/reporting_provider.dart';
+import '../features/reporting/domain/entities/report_period.dart';
+
+class DashboardOverviewScreen extends ConsumerStatefulWidget {
   const DashboardOverviewScreen({super.key});
 
   @override
+  ConsumerState<DashboardOverviewScreen> createState() => _DashboardOverviewScreenState();
+}
+
+class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Initial compute
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(reportingProvider.notifier).computeStats();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Watch SmartInsightsProvider for data updates
-    final insights = Provider.of<SmartInsightsProvider>(context);
+    final reportingState = ref.watch(reportingProvider);
+    final stats = reportingState.stats;
     final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
 
     return PosScaffold(
       title: AppLocalizations.t(context, 'overview'),
       actions: [
         const SyncStatusWidget(),
+        _buildPeriodSelector(context, reportingState.selectedPeriod),
         AppButton.secondary(
           icon: Icons.speed,
           onPressed: () {
@@ -34,77 +53,122 @@ class DashboardOverviewScreen extends StatelessWidget {
           },
         ),
       ],
-      mainContent: SingleChildScrollView(
-        padding: EdgeInsets.all(AppDensityProvider.configOf(context).cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. KPI Grid (Responsive & Premium)
-            _buildKpiGrid(context, insights),
-            
-            const SizedBox(height: AppSpacing.xl),
-            
-            // 2. Enhanced Trend Chart
-            Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Text(
-                  AppLocalizations.t(context, 'weekly_performance'), 
-                  style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _EnhancedTrendChart(data: insights.weeklyTrend),
+      mainContent: reportingState.isComputing && stats == null
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: () => ref.read(reportingProvider.notifier).computeStats(),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(AppDensityProvider.configOf(context).cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (reportingState.smartInsights.isNotEmpty)
+                      _buildInsightsCarousel(context, reportingState.smartInsights),
+                    
+                    const SizedBox(height: AppSpacing.lg),
 
-            const SizedBox(height: AppSpacing.xl),
-            
-            // 3. Top Items Leaderboard
-            Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: AppColors.warning,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Text(
-                  AppLocalizations.t(context, 'top_selling_products'), 
-                  style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _buildTopItemsLeaderboard(context, insights.topItems),
+                    // 1. KPI Grid
+                    _buildKpiGrid(context, stats),
+                    
+                    const SizedBox(height: AppSpacing.xl),
+                    
+                    // 2. Weekly Trend
+                    Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Text(
+                          AppLocalizations.t(context, 'sales_performance'), 
+                          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _EnhancedTrendChart(data: stats?.weeklySales ?? []),
 
-             const SizedBox(height: AppSpacing.xl),
-          ],
+                    const SizedBox(height: AppSpacing.xl),
+                    
+                    // 3. Top Items Leaderboard
+                    Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: AppColors.warning,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Text(
+                          AppLocalizations.t(context, 'top_selling_products'), 
+                          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _buildTopItemsLeaderboard(context, stats?.topProducts ?? []),
+
+                     const SizedBox(height: AppSpacing.xl),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildPeriodSelector(BuildContext context, ReportPeriod current) {
+    return PopupMenuButton<ReportPeriod>(
+      icon: const Icon(Icons.calendar_today_rounded),
+      initialValue: current,
+      onSelected: (period) => ref.read(reportingProvider.notifier).setPeriod(period),
+      itemBuilder: (context) => ReportPeriod.values.map((p) => PopupMenuItem(
+        value: p,
+        child: Text(p.toString().split('.').last.toUpperCase()),
+      )).toList(),
+    );
+  }
+
+  Widget _buildInsightsCarousel(BuildContext context, List<String> insights) {
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: insights.length,
+        itemBuilder: (context, index) => Container(
+          margin: const EdgeInsets.only(right: AppSpacing.md),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.lightbulb_outline_rounded, color: AppColors.primary, size: 18),
+              const SizedBox(width: AppSpacing.sm),
+              Text(insights[index], style: AppTypography.labelMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildKpiGrid(BuildContext context, SmartInsightsProvider insights) {
+  Widget _buildKpiGrid(BuildContext context, dynamic stats) {
     final cards = [
-      _KpiData(title: AppLocalizations.t(context, 'today_sales'), value: "₹${insights.todaySales.toStringAsFixed(0)}", icon: Icons.payments_rounded, color: AppColors.primary, gradient: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)]),
-      _KpiData(title: AppLocalizations.t(context, 'orders'), value: "${insights.todayOrders}", icon: Icons.shopping_basket_rounded, color: AppColors.primary, gradient: const [Color(0xFF4F46E5), Color(0xFF6366F1)]),
-      _KpiData(title: AppLocalizations.t(context, 'gross_profit'), value: "₹${insights.grossProfit.toStringAsFixed(0)}", icon: Icons.auto_graph_rounded, color: AppColors.success, gradient: [AppColors.success, AppColors.success.withValues(alpha: 0.7)]),
-      _KpiData(title: AppLocalizations.t(context, 'cash_in_hand'), value: "₹${insights.cashInHand.toStringAsFixed(0)}", icon: Icons.account_balance_wallet_rounded, color: AppColors.warning, gradient: [AppColors.warning, AppColors.warning.withValues(alpha: 0.7)]),
-      _KpiData(title: AppLocalizations.t(context, 'low_stock'), value: "${insights.lowStockCount}", icon: Icons.inventory_2_rounded, color: AppColors.warning, gradient: const [Color(0xFFEA580C), Color(0xFFFB923C)], isAlert: insights.lowStockCount > 0),
-      _KpiData(title: AppLocalizations.t(context, 'credit_due'), value: "₹${insights.creditOutstanding.toStringAsFixed(0)}", icon: Icons.credit_score_rounded, color: AppColors.error, gradient: [AppColors.error, AppColors.error.withValues(alpha: 0.7)]),
-      _KpiData(title: AppLocalizations.t(context, 'growth'), value: "${insights.salesVsYesterdayPercent.toStringAsFixed(1)}%", icon: Icons.analytics_rounded, color: AppColors.primaryLight, gradient: const [Color(0xFF0891B2), Color(0xFF06B6D4)]),
-      _KpiData(title: AppLocalizations.t(context, 'avg_order'), value: "₹${insights.todayOrders > 0 ? (insights.todaySales / insights.todayOrders).toStringAsFixed(0) : '0'}", icon: Icons.pie_chart_rounded, color: AppColors.primary, gradient: const [Color(0xFF7C3AED), Color(0xFF8B5CF6)]),
+      _KpiData(title: AppLocalizations.t(context, 'period_sales'), value: "₹${stats?.totalSales.toStringAsFixed(0) ?? '0'}", icon: Icons.payments_rounded, color: AppColors.primary, gradient: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)]),
+      _KpiData(title: AppLocalizations.t(context, 'orders'), value: "${stats?.totalOrders ?? '0'}", icon: Icons.shopping_basket_rounded, color: AppColors.primary, gradient: const [Color(0xFF4F46E5), Color(0xFF6366F1)]),
+      _KpiData(title: AppLocalizations.t(context, 'avg_order'), value: "₹${stats?.avgOrderValue.toStringAsFixed(0) ?? '0'}", icon: Icons.pie_chart_rounded, color: AppColors.primary, gradient: const [Color(0xFF7C3AED), Color(0xFF8B5CF6)]),
+      _KpiData(title: AppLocalizations.t(context, 'today_sales'), value: "₹${stats?.todaySales.toStringAsFixed(0) ?? '0'}", icon: Icons.today_rounded, color: AppColors.success, gradient: [AppColors.success, AppColors.success.withValues(alpha: 0.7)]),
     ];
 
     return LayoutBuilder(
