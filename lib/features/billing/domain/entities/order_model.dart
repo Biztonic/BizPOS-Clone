@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:biztonic_pos/features/inventory/domain/entities/inventory_item.dart';
 import 'package:biztonic_pos/features/crm/domain/entities/customer.dart';
+import 'package:biztonic_pos/features/billing/domain/entities/order_entity.dart';
 
 class OrderItem {
   final InventoryItem item;
@@ -217,6 +218,45 @@ class OrderModel {
     this.cgst = 0.0,
     this.sgst = 0.0,
   });
+
+  factory OrderModel.fromEntity(OrderEntity entity) {
+    return OrderModel(
+      id: entity.id,
+      storeId: entity.storeId,
+      items: entity.items.map((i) => OrderItem(
+        item: InventoryItem(
+          id: i.itemId,
+          name: i.itemName,
+          price: i.price,
+          category: i.category ?? 'Misc',
+          quantity: 0,
+          status: 'Active',
+          trackStock: false,
+        ),
+        quantity: i.quantity,
+        priceSnapshot: i.price,
+        costSnapshot: i.cost,
+        cgst: i.cgst,
+        sgst: i.sgst,
+        category: i.category,
+      )).toList(),
+      total: entity.total,
+      subtotal: entity.subtotal,
+      discount: entity.discount,
+      cgst: entity.cgst,
+      sgst: entity.sgst,
+      date: entity.date,
+      status: entity.status.value,
+      type: entity.type.value,
+      paymentMethod: entity.paymentMethod.value,
+      tableId: entity.tableId,
+      tableName: entity.tableName,
+      customerName: entity.customerName,
+      customerPhone: entity.customerPhone,
+      deviceId: entity.deviceId,
+      taxRateSnapshot: entity.taxRateSnapshot,
+    );
+  }
 
   factory OrderModel.fromMap(Map<String, dynamic> data, String id) {
     int parseInt(dynamic val) {

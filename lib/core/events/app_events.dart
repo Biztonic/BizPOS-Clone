@@ -81,6 +81,20 @@ class InventoryItemDeletedEvent {
   });
 }
 
+/// General inventory change event used by [InventoryOrchestrator].
+/// changeType: 'UPSERT', 'DELETE', 'STOCK_ADJUST'
+class InventoryChangedEvent {
+  final String itemId;
+  final String storeId;
+  final String changeType;
+
+  InventoryChangedEvent({
+    required this.itemId,
+    required this.storeId,
+    required this.changeType,
+  });
+}
+
 // ─── CRM Events ──────────────────────────────────────────────
 class CustomerCreatedEvent {
   final String customerId;

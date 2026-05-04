@@ -52,7 +52,7 @@ class PosSidebar extends StatelessWidget {
        return true;
     }).toList();
 
-    return Container(
+    final sidebarContent = Container(
       width: isDrawer ? null : 280,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -75,6 +75,8 @@ class PosSidebar extends StatelessWidget {
         ],
       ),
     );
+
+    return isDrawer ? Drawer(child: sidebarContent) : sidebarContent;
   }
 
   Widget _buildSidebarHeader(BuildContext context, DashboardProvider dashboardProvider) {
@@ -239,8 +241,13 @@ class PosSidebar extends StatelessWidget {
               selectedTileColor: color.withValues(alpha: 0.05),
               onTap: () {
                 if (item['key'] == 'pos') dashboardProvider.nextDemoStep();
-                context.go(item['route']);
-                if (isDrawer) Navigator.pop(context);
+                if (isDrawer) {
+                  final router = GoRouter.of(context);
+                  Navigator.pop(context);
+                  router.go(item['route']);
+                } else {
+                  context.go(item['route']);
+                }
               },
             ),
           ),

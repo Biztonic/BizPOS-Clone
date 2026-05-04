@@ -890,7 +890,9 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       drawerEnableOpenDragGesture: false, // PREVENT ACCIDENTAL TRIGGERS
       drawer: Drawer(
               backgroundColor: CarDashboardTheme.panelColor(isDarkMode),
-              child: _buildVerticalCategoryBar(categories, isExpanded: true),
+              child: Builder(
+                builder: (drawerContext) => _buildVerticalCategoryBar(categories, isExpanded: true, drawerContext: drawerContext),
+              ),
             ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -1158,9 +1160,10 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
 
   // --- Helper Widgets ---
 
-  Widget _buildVerticalCategoryBar(List<String> categories, {bool isExpanded = false}) {
+  Widget _buildVerticalCategoryBar(List<String> categories, {bool isExpanded = false, BuildContext? drawerContext}) {
     // Simplified Category Bar without Glass/Blur
-    final provider = Provider.of<DashboardProvider>(context);
+    final effectiveContext = drawerContext ?? context;
+    final provider = Provider.of<DashboardProvider>(effectiveContext);
     final isDarkMode = provider.isDarkMode;
     final user = provider.userProfile;
 
@@ -1269,14 +1272,28 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildSidebarActionBtn(Icons.calculate, "Calculator", CarDashboardTheme.neonBlue, _showCalculator, overrideBg: Colors.black),
-              _buildSidebarActionBtn(Icons.power_settings_new, "Exit", CarDashboardTheme.alertRed, () => context.go('/'), isSolid: true),
+              _buildSidebarActionBtn(Icons.power_settings_new, "Exit", CarDashboardTheme.alertRed, () {
+                 final router = GoRouter.of(context);
+                 final scaffold = Scaffold.maybeOf(effectiveContext);
+                 if (scaffold != null && scaffold.isDrawerOpen) {
+                   Navigator.pop(effectiveContext);
+                 }
+                 router.go('/');
+              }, isSolid: true),
             ],
           )
           : Column(
              children: [
               _buildSidebarActionBtn(Icons.calculate, "Calc", CarDashboardTheme.neonBlue, _showCalculator, overrideBg: Colors.black),
               const SizedBox(height: 16),
-              _buildSidebarActionBtn(Icons.power_settings_new, "Exit", CarDashboardTheme.alertRed, () => context.go('/'), isSolid: true),
+              _buildSidebarActionBtn(Icons.power_settings_new, "Exit", CarDashboardTheme.alertRed, () {
+                 final router = GoRouter.of(context);
+                 final scaffold = Scaffold.maybeOf(effectiveContext);
+                 if (scaffold != null && scaffold.isDrawerOpen) {
+                   Navigator.pop(effectiveContext);
+                 }
+                 router.go('/');
+              }, isSolid: true),
              ],
           ),
         ),

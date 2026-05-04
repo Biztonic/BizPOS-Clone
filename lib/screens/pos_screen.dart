@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../core/design/tokens/app_colors.dart';
 // ignore_for_file: deprecated_member_use_from_same_package, use_build_context_synchronously
 import 'package:flutter/material.dart';
@@ -5,7 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/table_provider.dart';
-import '../models/inventory_item.dart';
+import '../features/inventory/presentation/providers/inventory_provider.dart';
+import '../features/inventory/domain/entities/inventory_entity.dart';
+import '../features/billing/presentation/providers/billing_provider.dart';
+import '../features/billing/domain/entities/order_entity.dart';
 import '../models/order_model.dart';
 import '../services/scanner_service.dart';
 import '../utils/responsive.dart';
@@ -40,6 +44,8 @@ class _POSScreenState extends State<POSScreen> {
   String _orderType = 'Takeaway'; // Default
   TableModel? _selectedTable;
 
+  StreamSubscription<String>? _scanSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -55,7 +61,7 @@ class _POSScreenState extends State<POSScreen> {
        _selectedTable = widget.preSelectedTable;
     }
     _scannerService.init();
-    _scannerService.scanStream.listen((barcode) {
+    _scanSubscription = _scannerService.scanStream.listen((barcode) {
       _handleBarcodeScan(barcode);
     });
     // _initScale();
@@ -63,6 +69,7 @@ class _POSScreenState extends State<POSScreen> {
 
   @override
   void dispose() {
+    _scanSubscription?.cancel();
     _scannerService.dispose();
     // _scaleService.disconnect();
     super.dispose();
@@ -109,21 +116,22 @@ class _POSScreenState extends State<POSScreen> {
   }
 
   void _handleBarcodeScan(String barcode) {
-    final provider = Provider.of<DashboardProvider>(context, listen: false);
-    final inventory = provider.storeInventory;
+    final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
+    final billingProvider = Provider.of<BillingProvider>(context, listen: false);
+    final inventory = inventoryProvider.allItems;
     
     try {
       final item = inventory.firstWhere(
         (i) => i.id == barcode || i.name.toLowerCase() == barcode.toLowerCase(),
       );
-      provider.addToCart(item); // Use provider
+      billingProvider.addToCart(item.id); 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Added ${item.name}"), duration: const Duration(milliseconds: 500)));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Item not found: $barcode"), backgroundColor: AppColors.error));
     }
   }
 
-  // Removed local cart methods as we now use DashboardProvider
+  // Cart state is now managed by BillingProvider
 
   @override
   Widget build(BuildContext context) {
@@ -143,20 +151,15 @@ class _POSScreenState extends State<POSScreen> {
         children: [
           _buildHeader(context),
           Expanded(
-            child: Selector<DashboardProvider, List<InventoryItem>>(
-              selector: (_, p) => p.storeInventory,
-              builder: (context, inventory, _) {
-                final categories = ['All', ...inventory.map((e) => e.category.trim().isEmpty ? 'Uncategorized' : e.category.trim()).toSet()];
-                final filteredProducts = inventory.where((item) {
-                  final itemCategory = item.category.trim().isEmpty ? 'Uncategorized' : item.category.trim();
-                  final matchesCategory = _selectedCategory == 'All' || itemCategory == _selectedCategory;
-                  final matchesSearch = item.name.toLowerCase().contains(_searchQuery.toLowerCase());
-                  return matchesCategory && matchesSearch;
-                }).toList();
+            child: Selector<InventoryProvider, List<InventoryEntity>>(
+              selector: (_, p) => p.filteredItems,
+              builder: (context, filteredProducts, _) {
+                final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
+                final categories = inventoryProvider.categories;
 
                 return Column(
                   children: [
-                    _buildCategoryTabs(categories),
+                    _buildCategoryTabs(categories, inventoryProvider),
                     Expanded(
                       child: _buildProductGrid(filteredProducts),
                     ),
@@ -178,36 +181,40 @@ class _POSScreenState extends State<POSScreen> {
             ),
           ],
         ),
-        child: Selector<DashboardProvider, _PosCartData>(
-          selector: (_, p) => _PosCartData(
-            cartItemCount: p.cart.length,
-            cartTotalQuantity: p.cart.values.fold(0, (a, b) => a + (b as int? ?? 0)),
-            activeStoreId: p.activeStore?.id ?? '',
-            inventoryLength: p.storeInventory.length,
+        child: Selector3<BillingProvider, DashboardProvider, InventoryProvider, _PosCartData>(
+          selector: (_, b, d, i) => _PosCartData(
+            cartItemCount: b.cart.length,
+            cartTotalQuantity: b.cart.values.fold(0, (a, b) => a + (b as int? ?? 0)),
+            activeStoreId: d.activeStoreId ?? 'unknown',
+            inventoryLength: i.allItems.length,
           ),
           builder: (context, data, _) {
-            final provider = Provider.of<DashboardProvider>(context, listen: false);
-            return _buildCartSection(provider);
+            final billingProvider = Provider.of<BillingProvider>(context, listen: false);
+            final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+            final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
+            return _buildCartSection(billingProvider, dashboardProvider, inventoryProvider);
           },
         ),
       ),
       bottomBar: isMobile
-          ? Selector<DashboardProvider, _PosCartData>(
-              selector: (_, p) => _PosCartData(
-                cartItemCount: p.cart.length,
-                cartTotalQuantity: p.cart.values.fold(0, (a, b) => a + (b as int? ?? 0)),
-                activeStoreId: p.activeStore?.id ?? '',
-                inventoryLength: p.storeInventory.length,
+          ? Selector3<BillingProvider, DashboardProvider, InventoryProvider, _PosCartData>(
+              selector: (_, b, d, i) => _PosCartData(
+                cartItemCount: b.cart.length,
+                cartTotalQuantity: b.cart.values.fold(0, (a, b) => a + (b as int? ?? 0)),
+                activeStoreId: d.activeStoreId ?? 'unknown',
+                inventoryLength: i.allItems.length,
               ),
               builder: (context, data, _) {
-                final provider = Provider.of<DashboardProvider>(context, listen: false);
+                final billingProvider = Provider.of<BillingProvider>(context, listen: false);
+                final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+                final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
                 return SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: AppButton.primary(
                       label: "Cart - ${data.cartTotalQuantity} Items",
                       icon: Icons.shopping_cart,
-                      onPressed: () => _showMobileCart(context, provider),
+                      onPressed: () => _showMobileCart(context, billingProvider, dashboardProvider, inventoryProvider),
                       size: AppButtonSize.large,
                     ),
                   ),
@@ -239,7 +246,10 @@ class _POSScreenState extends State<POSScreen> {
                 fillColor: Theme.of(context).scaffoldBackgroundColor,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
               ),
-              onChanged: (val) => setState(() => _searchQuery = val),
+              onChanged: (val) {
+                setState(() => _searchQuery = val);
+                Provider.of<InventoryProvider>(context, listen: false).setSearchQuery(val);
+              },
             ),
           ),
           const SizedBox(width: 8),
@@ -282,7 +292,7 @@ class _POSScreenState extends State<POSScreen> {
     );
   }
 
-  Widget _buildCategoryTabs(List<String> categories) {
+  Widget _buildCategoryTabs(List<String> categories, InventoryProvider provider) {
     return Container(
       height: 60,
       color: Theme.of(context).cardColor,
@@ -292,7 +302,7 @@ class _POSScreenState extends State<POSScreen> {
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final category = categories[index];
-          final isSelected = _selectedCategory == category;
+          final isSelected = provider.selectedCategory == category;
           return Padding(
             padding: const EdgeInsets.only(right: 12),
             child: ChoiceChip(
@@ -300,7 +310,7 @@ class _POSScreenState extends State<POSScreen> {
               label: Text(category),
               selected: isSelected,
               onSelected: (selected) {
-                if (selected) setState(() => _selectedCategory = category);
+                if (selected) provider.setCategory(category);
               },
               selectedColor: Theme.of(context).primaryColor,
               labelStyle: TextStyle(
@@ -318,7 +328,7 @@ class _POSScreenState extends State<POSScreen> {
     );
   }
 
-  Widget _buildProductGrid(List<InventoryItem> products) {
+  Widget _buildProductGrid(List<InventoryEntity> products) {
     // Dynamic CrossAxisCount based on Responsive Utils
     int crossAxisCount = 2; // Default Mobile
     if (Responsive.isDesktop(context)) {
@@ -337,7 +347,8 @@ class _POSScreenState extends State<POSScreen> {
       ),
       itemCount: products.length,
       itemBuilder: (context, index) {
-        final provider = Provider.of<DashboardProvider>(context, listen: false);
+        final billingProvider = Provider.of<BillingProvider>(context, listen: false);
+        final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
         final product = products[index];
         return DemoTarget(
            step: index == 0 ? 'pos_item' : 'none', // Highlight first item for demo
@@ -349,8 +360,8 @@ class _POSScreenState extends State<POSScreen> {
             child: InkWell(
               key: Key('pos_product_${product.id}'),
               onTap: () {
-                 if (index == 0 && provider.demoStep == 'pos_item') provider.nextDemoStep();
-                 provider.addToCart(product);
+                 if (index == 0 && dashboardProvider.demoStep == 'pos_item') dashboardProvider.nextDemoStep();
+                 billingProvider.addToCart(product.id);
               },
               borderRadius: BorderRadius.circular(16),
               child: Column(
@@ -418,8 +429,10 @@ class _POSScreenState extends State<POSScreen> {
     );
   }
 
-  Widget _buildCartSection(DashboardProvider provider) {
-    final inventory = provider.storeInventory;
+  Widget _buildCartSection(BillingProvider billingProvider, DashboardProvider dashboardProvider, InventoryProvider inventoryProvider) {
+    final inventory = inventoryProvider.allItems;
+    final activeStore = dashboardProvider.activeStore;
+    
     return Column(
       children: [
         Padding(
@@ -430,14 +443,14 @@ class _POSScreenState extends State<POSScreen> {
               const Text("Current Order", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               IconButton(
                 icon: const Icon(Icons.delete_outline, color: AppColors.error),
-                onPressed: () => provider.clearCart(),
+                onPressed: () => billingProvider.clearCart(),
               ),
             ],
           ),
         ),
         const Divider(),
         Expanded(
-          child: provider.cart.isEmpty
+          child: billingProvider.cart.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -450,7 +463,7 @@ class _POSScreenState extends State<POSScreen> {
                 )
                   : Builder(
                     builder: (context) {
-                      final cartEntries = provider.cart.entries.toList();
+                      final cartEntries = billingProvider.cart.entries.toList();
                       
                       return ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -465,7 +478,7 @@ class _POSScreenState extends State<POSScreen> {
                           
                           final item = inventory.firstWhere(
                             (i) => i.id == itemId,
-                            orElse: () => InventoryItem(id: '?', name: 'Unknown Item', price: 0, quantity: 0, status: 'Unknown', category: 'Misc', trackStock: false)
+                            orElse: () => const InventoryEntity(id: '?', name: 'Unknown Item', price: 0, category: 'Misc', trackStock: false)
                           );
                           
                           return Padding(
@@ -492,7 +505,7 @@ class _POSScreenState extends State<POSScreen> {
                                   children: [
                                     InkWell(
                                       key: Key('pos_cart_remove_$itemId'),
-                                      onTap: () => provider.removeFromCart(itemId),
+                                      onTap: () => billingProvider.removeFromCart(itemId),
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
                                         decoration: BoxDecoration(border: Border.all(color: AppColors.textSecondary(context)), borderRadius: BorderRadius.circular(8)),
@@ -505,7 +518,7 @@ class _POSScreenState extends State<POSScreen> {
                                     ),
                                     InkWell(
                                       key: Key('pos_cart_add_$itemId'),
-                                      onTap: () => provider.addToCart(item),
+                                      onTap: () => billingProvider.addToCart(itemId),
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
                                         decoration: BoxDecoration(color: Theme.of(context).primaryColor, borderRadius: BorderRadius.circular(8)),
@@ -531,8 +544,6 @@ class _POSScreenState extends State<POSScreen> {
           ),
           child: Column(
             children: [
-               // ORDER SETTINGS REMOVED PER REQUEST (Dine-In/Takeaway/Delivery)
-               // Preserving container for spacing
                const SizedBox.shrink(),
 
                
@@ -540,18 +551,18 @@ class _POSScreenState extends State<POSScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text("Subtotal", style: TextStyle(color: AppColors.textSecondary(context))),
-                  Text("₹${provider.calculateCartTotal(inventory).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text("₹${billingProvider.calculateCartTotal(inventory).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),
               
               // Dynamic Tax Display
-              if (provider.activeStore?.isTaxEnabled == true) ...[
+              if (activeStore?.isTaxEnabled == true) ...[
                  Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Tax (${provider.activeStore?.taxRate ?? 0}%)", style: TextStyle(color: AppColors.textSecondary(context))),
-                    Text("₹${(provider.calculateCartTotal(inventory) * ((provider.activeStore?.taxRate ?? 0) / 100)).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text("Tax (${activeStore?.taxRate ?? 0}%)", style: TextStyle(color: AppColors.textSecondary(context))),
+                    Text("₹${(billingProvider.calculateCartTotal(inventory) * ((activeStore?.taxRate ?? 0) / 100)).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
               ],
@@ -562,7 +573,7 @@ class _POSScreenState extends State<POSScreen> {
                 children: [
                   const Text("Total", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   Text(
-                    "₹${(provider.calculateCartTotal(inventory) * (1 + (provider.activeStore?.isTaxEnabled == true ? ((provider.activeStore?.taxRate ?? 0) / 100) : 0))).toStringAsFixed(2)}",
+                    "₹${(billingProvider.calculateCartTotal(inventory) * (1 + (activeStore?.isTaxEnabled == true ? ((activeStore?.taxRate ?? 0) / 100) : 0))).toStringAsFixed(2)}",
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
                   ),
                 ],
@@ -578,12 +589,8 @@ class _POSScreenState extends State<POSScreen> {
                       label: "CHECKOUT",
                       size: AppButtonSize.large,
                       isLoading: _isProcessing,
-                      onPressed: provider.cart.isNotEmpty && !_isProcessing ? () {
-                         // Validation
-                         if (_orderType == 'Dine-In' && _selectedTable == null) {
-                            // User request: Table selection not strictly required for Dine-In (e.g. Generic Dine-In)
-                         }
-                         if (provider.demoStep == 'pos_pay') provider.nextDemoStep();
+                      onPressed: billingProvider.cart.isNotEmpty && !_isProcessing ? () {
+                         if (dashboardProvider.demoStep == 'pos_pay') dashboardProvider.nextDemoStep();
                          _processSale();
                       } : null,
                     ),
@@ -630,11 +637,14 @@ class _POSScreenState extends State<POSScreen> {
     // Set flag immediately to prevent double-taps
     setState(() => _isProcessing = true);
 
-    final provider = Provider.of<DashboardProvider>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    final billingProvider = Provider.of<BillingProvider>(context, listen: false);
+    final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
+    final activeStore = dashboardProvider.activeStore;
 
     // 0. Subscription Check (Basic Plan Limits)
     try {
-       await provider.checkSubscriptionLimits();
+       await dashboardProvider.checkSubscriptionLimits();
     } catch (e) {
        if (mounted) setState(() => _isProcessing = false);
        _showUpgradeDialog(e.toString());
@@ -642,13 +652,13 @@ class _POSScreenState extends State<POSScreen> {
     }
 
     // 1. Inventory Validation
-    if (provider.activeStore?.trackInventory == true) {
+    if (activeStore?.trackInventory == true) {
       List<String> outOfStockItems = [];
-      for (var entry in provider.cart.entries) {
+      for (var entry in billingProvider.cart.entries) {
         try {
-          final item = provider.storeInventory.firstWhere((i) => i.id == entry.key);
+          final item = inventoryProvider.allItems.firstWhere((i) => i.id == entry.key);
           if (item.trackStock) {
-             final int stock = provider.getItemStock(item.id);
+             final int stock = item.quantity.toInt(); // Use InventoryProvider state
              if (stock < entry.value) {
                outOfStockItems.add("${item.name} (Available: $stock)");
              }
@@ -657,7 +667,6 @@ class _POSScreenState extends State<POSScreen> {
       }
 
       if (outOfStockItems.isNotEmpty) {
-        // ... (Dialog logic same) ...
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -681,7 +690,7 @@ class _POSScreenState extends State<POSScreen> {
       }
     }
 
-    // Show Loading using standard Dialog for consistency
+    // Show Loading
     showDialog(
       context: context, 
       barrierDismissible: false,
@@ -696,76 +705,88 @@ class _POSScreenState extends State<POSScreen> {
       ),
     );
 
-    await Future.delayed(const Duration(milliseconds: 100));
-
     try {
-      if (provider.cart.isEmpty) {
+      if (billingProvider.cart.isEmpty) {
           throw Exception("Cart is empty");
       }
 
-      // 1. Create Order Model with Line-Item Tax
+      // 1. Prepare OrderEntity
+      final List<OrderItemEntity> orderItems = [];
+      double subtotal = 0.0;
       double totalCgst = 0.0;
       double totalSgst = 0.0;
-      double calculatedSubtotal = 0.0;
 
-      final items = provider.cart.entries.map((e) {
-        final item = provider.storeInventory.firstWhere((i) => i.id == e.key);
-        final itemSubtotal = item.price * e.value;
-        calculatedSubtotal += itemSubtotal;
+      for (var entry in billingProvider.cart.entries) {
+        final item = inventoryProvider.allItems.firstWhere((i) => i.id == entry.key);
+        final itemSubtotal = item.price * entry.value;
+        subtotal += itemSubtotal;
 
         double itemCgst = 0.0;
         double itemSgst = 0.0;
 
-        if (provider.activeStore?.isTaxEnabled == true) {
-           final taxRate = (provider.activeStore?.taxRate ?? 0) / 100;
-           // Line Item Level Rounding
+        if (activeStore?.isTaxEnabled == true) {
+           final taxRate = (activeStore?.taxRate ?? 0) / 100;
            final totalGst = double.parse((itemSubtotal * taxRate).toStringAsFixed(2));
            itemCgst = double.parse((totalGst / 2).toStringAsFixed(2));
-           itemSgst = double.parse((totalGst - itemCgst).toStringAsFixed(2)); // Avoid split drift
+           itemSgst = double.parse((totalGst - itemCgst).toStringAsFixed(2));
         }
 
         totalCgst += itemCgst;
         totalSgst += itemSgst;
 
-        return OrderItem(
-          item: item, 
-          quantity: e.value,
-          costSnapshot: item.cost,
-          priceSnapshot: item.price,
+        orderItems.add(OrderItemEntity(
+          itemId: item.id,
+          itemName: item.name,
+          price: item.price,
+          cost: item.cost,
+          quantity: entry.value,
+          category: item.category,
           cgst: itemCgst,
           sgst: itemSgst,
-        );
-      }).toList();
-
-      final total = calculatedSubtotal + totalCgst + totalSgst;
-
-      final order = OrderModel(
-        id: provider.syncService.generateUniqueId('ORD'), // Unique Offline ID
-        storeId: provider.activeStoreId ?? 'unknown',
-        items: items,
-        total: total,
-        subtotal: calculatedSubtotal,
-        cgst: totalCgst,
-        sgst: totalSgst,
-        date: DateTime.now(),
-        status: 'New', 
-        type: _orderType,
-        paymentMethod: 'Cash', 
-        tableId: _selectedTable?.id ?? (_orderType == 'Dine-In' ? 'counter' : null),
-        tableName: _selectedTable?.name ?? (_orderType == 'Dine-In' ? 'Counter' : null),
-        taxRateSnapshot: (provider.activeStore?.isTaxEnabled == true) ? (provider.activeStore?.taxRate ?? 0) : 0.0,
-      );
-
-      // Occupy Table Logic (If Dine-In)
-      if (_orderType == 'Dine-In' && _selectedTable != null) {
-         final tableProvider = Provider.of<TableProvider>(context, listen: false);
-         await tableProvider.occupyTable(_selectedTable!.id, order.id);
+        ));
       }
 
-      // 2. Save to Firestore
-      await provider.placeOrder(order); 
-      
-      // SUCCESS: Close loader & Clear Cart
+      final total = subtotal + totalCgst + totalSgst;
+      final orderId = billingProvider.generateOrderId(); // New method helper
+
+      final orderEntity = OrderEntity(
+        id: orderId,
+        storeId: activeStore?.id ?? 'unknown',
+        items: orderItems,
+        total: total,
+        subtotal: subtotal,
+        cgst: totalCgst,
+        sgst: totalSgst,
+        taxRateSnapshot: (activeStore?.isTaxEnabled == true) ? (activeStore?.taxRate ?? 0).toDouble() : 0.0,
+        date: DateTime.now(),
+        status: OrderStatus.newOrder,
+        type: OrderType.fromString(_orderType),
+        paymentMethod: PaymentMethod.cash,
+        tableId: _selectedTable?.id ?? (_orderType == 'Dine-In' ? 'counter' : null),
+        tableName: _selectedTable?.name ?? (_orderType == 'Dine-In' ? 'Counter' : null),
+      );
+
+      // 2. Execute Checkout
+      final result = await billingProvider.checkout(
+        order: orderEntity,
+        activeStoreId: activeStore?.id ?? 'unknown',
+        deviceId: 'device-pos', // Should be fetched from settings/platform
+        idempotencyKey: orderId,
+        taxRate: (activeStore?.taxRate ?? 0).toDouble(),
+        trackInventory: activeStore?.trackInventory ?? false,
+      );
+
+      if (!result.isSuccess) {
+        throw Exception(result.error ?? "Checkout failed");
+      }
+
+      // 3. Occupy Table Logic (If Dine-In)
+      if (_orderType == 'Dine-In' && _selectedTable != null) {
+         final tableProvider = Provider.of<TableProvider>(context, listen: false);
+         await tableProvider.occupyTable(_selectedTable!.id, orderId);
+      }
+
+      // SUCCESS: Close loader & Clear UI State
       if (mounted) {
          Navigator.of(context, rootNavigator: true).pop();
          
@@ -773,28 +794,25 @@ class _POSScreenState extends State<POSScreen> {
          
          if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Order Placed Successfully!")));
-            provider.clearCart(); // Use provider
+            billingProvider.clearCart();
             setState(() {
-              // _cart.clear(); // Handled by provider
               _currentWeight = "0.000";
               _isProcessing = false;
-              _orderType = 'Takeaway'; // Reset
+              _orderType = 'Takeaway';
               _selectedTable = null;
             });
          }
       }
       
-      // 3. BACKGROUND PRINTING
-      _printReceiptInBackground(order);
+      // 4. BACKGROUND PRINTING (Convert to model for legacy service)
+      if (result.order != null) {
+        _printReceiptInBackground(OrderModel.fromEntity(result.order!));
+      }
       
     } catch (e) {
       if (mounted) {
          Navigator.of(context, rootNavigator: true).pop(); // Close loader
-         
-         await Future.delayed(const Duration(milliseconds: 100)); // Safety delay
-         
          setState(() => _isProcessing = false);
-
          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: AppColors.error));
       }
     }
@@ -802,15 +820,12 @@ class _POSScreenState extends State<POSScreen> {
 
   Future<void> _printReceiptInBackground(OrderModel order) async {
     try {
-      final provider = Provider.of<DashboardProvider>(context, listen: false);
-      final store = provider.activeStore;
+      final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+      final store = dashboardProvider.activeStore;
 
-      // Ensure store is available
-      if (store == null) {
-          return;
-      }
+      if (store == null) return;
 
-      final cashierName = provider.userProfile?.name ?? "Cashier";
+      final cashierName = dashboardProvider.userProfile?.name ?? "Cashier";
       final action = store.receipt.printAction;
 
       // 1. Print Main Receipt
@@ -823,22 +838,21 @@ class _POSScreenState extends State<POSScreen> {
          if (action == 'Both') {
             await Future.delayed(const Duration(milliseconds: 500)); 
          }
-         await PrinterManagerService().printOrderKDS(order, store: store, counters: provider.counters, billerName: cashierName);
+         await PrinterManagerService().printOrderKDS(order, store: store, counters: dashboardProvider.counters, billerName: cashierName);
       }
 
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
            content: Text("Printing Failed: $e"), 
            backgroundColor: AppColors.error,
            duration: const Duration(seconds: 5),
          ));
       }
-
     }
   }
 
-  void _showMobileCart(BuildContext context, DashboardProvider provider) {
+  void _showMobileCart(BuildContext context, BillingProvider billingProvider, DashboardProvider dashboardProvider, InventoryProvider inventoryProvider) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -857,7 +871,7 @@ class _POSScreenState extends State<POSScreen> {
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(color: AppColors.textSecondary(context), borderRadius: BorderRadius.circular(2)),
             ),
-            Expanded(child: _buildCartSection(provider)),
+            Expanded(child: _buildCartSection(billingProvider, dashboardProvider, inventoryProvider)),
           ],
         ),
       ),

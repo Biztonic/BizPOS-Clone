@@ -15,14 +15,19 @@ class ScannerService {
   String _buffer = '';
   DateTime _lastKeyTime = DateTime.now();
 
+  bool _isInitialized = false;
+
   void init() {
+    if (_isInitialized) return;
     // Listen to raw keyboard events
     RawKeyboard.instance.addListener(_handleKeyEvent);
+    _isInitialized = true;
   }
 
   void dispose() {
     RawKeyboard.instance.removeListener(_handleKeyEvent);
-    _scanController.close();
+    _isInitialized = false;
+    // DO NOT close _scanController here as it's a singleton and used across screens
   }
 
   void _handleKeyEvent(RawKeyEvent event) {

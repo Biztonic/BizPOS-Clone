@@ -3,9 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/inventory_item.dart';
+import '../features/inventory/domain/entities/inventory_entity.dart';
 
 class InventoryImageWidget extends StatelessWidget {
-  final InventoryItem item;
+  final dynamic item; // Supports InventoryItem or InventoryEntity
   final double width;
   final double height;
   final double borderRadius;
@@ -20,20 +21,23 @@ class InventoryImageWidget extends StatelessWidget {
     this.fit = BoxFit.cover,
   });
 
-  static ImageProvider getImageProvider(InventoryItem item) {
+  static ImageProvider getImageProvider(dynamic item) {
+    final String? localImage = item.localImage;
+    final String? image = item.image;
+
     // 1. Check localImage field
-    if (item.localImage != null && item.localImage!.isNotEmpty) {
-      final file = File(item.localImage!);
+    if (localImage != null && localImage.isNotEmpty) {
+      final file = File(localImage);
       if (file.existsSync()) return FileImage(file);
     }
     
     // 2. Check image field (might be a local path now)
-    if (item.image != null && item.image!.isNotEmpty) {
-      if (item.image!.startsWith('/') || item.image!.contains(':\\')) {
-        final file = File(item.image!);
+    if (image != null && image.isNotEmpty) {
+      if (image.startsWith('/') || image.contains(':\\')) {
+        final file = File(image);
         if (file.existsSync()) return FileImage(file);
       }
-      return CachedNetworkImageProvider(item.image!);
+      return CachedNetworkImageProvider(image);
     }
     
     return const CachedNetworkImageProvider("https://via.placeholder.com/300");
@@ -41,8 +45,10 @@ class InventoryImageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasLocal = item.localImage != null && item.localImage!.isNotEmpty;
-    final hasRemote = item.image != null && item.image!.isNotEmpty;
+    final String? localImage = item.localImage;
+    final String? image = item.image;
+    final hasLocal = localImage != null && localImage.isNotEmpty;
+    final hasRemote = image != null && image.isNotEmpty;
 
     if (!hasLocal && !hasRemote) {
       return _buildPlaceholder(context);
