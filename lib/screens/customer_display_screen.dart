@@ -1,4 +1,8 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 // ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,7 +18,7 @@ class CustomerDisplayScreen extends StatelessWidget {
     final storeId = provider.activeStoreId;
 
     if (storeId == null) {
-      return const Scaffold(body: Center(child: Text("Please select a store first.")));
+      return Scaffold(body: Center(child: Text(AppLocalizations.t(context, 'Please select a store first.'))));
     }
 
     final Stream<QuerySnapshot> statusStream = FirebaseFirestore.instance
@@ -26,7 +30,7 @@ class CustomerDisplayScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black, // High contrast for TV/Display
       appBar: AppBar(
-        title: const Text('Order Status'),
+        title: Text(AppLocalizations.t(context, 'Order Status')),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -89,14 +93,14 @@ class CustomerDisplayScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(AppSpacing.md),
                           color: AppColors.warning,
                           width: double.infinity,
-                          child: const Text("PREPARING", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                          child: Text(AppLocalizations.t(context, 'PREPARING'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                         ),
                         Expanded(
                           child: GridView.builder(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.md),
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: isMobile ? 3 : 2, 
                               childAspectRatio: isMobile ? 1.5 : 3, 
@@ -121,14 +125,14 @@ class CustomerDisplayScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(AppSpacing.md),
                           color: AppColors.success,
                           width: double.infinity,
-                          child: const Text("READY FOR PICKUP", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                          child: Text(AppLocalizations.t(context, 'READY FOR PICKUP'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                         ),
                         Expanded(
                           child: GridView.builder(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.md),
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: isMobile ? 3 : 2, 
                               childAspectRatio: isMobile ? 1.5 : 2.5, 
@@ -165,7 +169,7 @@ class CustomerDisplayScreen extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: isReady ? AppColors.success : AppColors.warning,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: isReady ? AppColors.success : AppColors.warning, width: 2)
       ),
       child: FittedBox(
@@ -182,3 +186,6 @@ class CustomerDisplayScreen extends StatelessWidget {
     );
   }
 }
+
+
+

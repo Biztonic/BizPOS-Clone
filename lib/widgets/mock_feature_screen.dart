@@ -1,4 +1,6 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 
 import 'package:flutter/material.dart';
 
@@ -221,7 +223,7 @@ class MockFeatureScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.lock, size: 64, color: AppColors.textSecondary(context)),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.md),
                     Text(
                       '$title is locked by plan',
                       style: Theme.of(context)
@@ -237,7 +239,7 @@ class MockFeatureScreen extends StatelessWidget {
             Expanded(child: _buildBody(context)),
           const Divider(),
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             child: Text('Feature Configuration',
                 style: Theme.of(context).textTheme.titleMedium),
           ),
@@ -272,37 +274,37 @@ class MockFeatureScreen extends StatelessWidget {
   // 1. Dashboard Layout (Expenses, Reports)
   Widget _buildDashboardLayout(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [
           // Stats Row
           Row(
             children: [
               _buildStatCard(context, "Total", "124", AppColors.primaryLight),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               _buildStatCard(context, "Active", "89", AppColors.success),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               _buildStatCard(context, "Pending", "35", AppColors.warning),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.lg),
           // Gradient Chart
           Container(
             height: 200,
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 colors: [AppColors.primaryLight, AppColors.primaryLight],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.zero,
               border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.1)),
             ),
             child: CustomPaint(painter: _MockChartPainter()),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.lg),
           // List
           ListView.separated(
             shrinkWrap: true,
@@ -320,22 +322,22 @@ class MockFeatureScreen extends StatelessWidget {
                   width: 150,
                   decoration: BoxDecoration(
                       color: AppColors.textSecondary(context),
-                      borderRadius: BorderRadius.circular(4)),
+                      borderRadius: BorderRadius.zero),
                 ),
                 subtitle: Container(
-                  margin: const EdgeInsets.only(top: 8),
+                  margin: const EdgeInsets.only(top: AppSpacing.sm),
                   height: 12,
                   width: 100,
                   decoration: BoxDecoration(
                       color: AppColors.textSecondary(context),
-                      borderRadius: BorderRadius.circular(4)),
+                      borderRadius: BorderRadius.zero),
                 ),
                 trailing: Container(
                   height: 24,
                   width: 60,
                   decoration: BoxDecoration(
                       color: AppColors.textSecondary(context),
-                      borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.zero),
                 ),
               );
             },
@@ -348,7 +350,7 @@ class MockFeatureScreen extends StatelessWidget {
   // 2. KDS Layout (Tickets Grid)
   Widget _buildKDSLayout() {
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 300,
         mainAxisSpacing: 16,
@@ -360,7 +362,7 @@ class MockFeatureScreen extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.zero,
             border: Border.all(color: AppColors.textSecondary(context)),
             boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
           ),
@@ -368,7 +370,7 @@ class MockFeatureScreen extends StatelessWidget {
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 color: index % 2 == 0
                     ? AppColors.success
                     : AppColors.warning,
@@ -384,11 +386,11 @@ class MockFeatureScreen extends StatelessWidget {
               // Items
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(AppSpacing.sm),
                   itemCount: 4,
                   physics: const NeverScrollableScrollPhysics(),
                   itemBuilder: (c, i) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                     child: Row(
                       children: [
                         Container(
@@ -398,7 +400,7 @@ class MockFeatureScreen extends StatelessWidget {
                             child: const Center(
                                 child: Text("1x",
                                     style: TextStyle(fontSize: 10)))),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Container(
                             height: 10,
                             width: 100,
@@ -410,7 +412,7 @@ class MockFeatureScreen extends StatelessWidget {
               ),
               // Footer
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -431,7 +433,7 @@ class MockFeatureScreen extends StatelessWidget {
   // 3. Tables Layout (Floor Plan)
   Widget _buildTablesLayout() {
     return GridView.builder(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 150,
         mainAxisSpacing: 24,
@@ -444,7 +446,7 @@ class MockFeatureScreen extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: isOccupied ? AppColors.error : AppColors.success,
-            shape: BoxShape.circle,
+            shape: BoxShape.rectangle,
             border: Border.all(
                 color: isOccupied ? AppColors.error : AppColors.success,
                 width: 2),
@@ -458,7 +460,7 @@ class MockFeatureScreen extends StatelessWidget {
             children: [
               Icon(Icons.table_restaurant,
                   size: 32, color: isOccupied ? AppColors.error : AppColors.success),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text("T-${index + 1}",
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
@@ -484,7 +486,7 @@ class MockFeatureScreen extends StatelessWidget {
             child: Column(
               children: [
                 Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     width: double.infinity,
                     color: AppColors.warning,
                     child: const Text("PREPARING",
@@ -495,10 +497,10 @@ class MockFeatureScreen extends StatelessWidget {
                             fontSize: 24))),
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     itemCount: 5,
                     itemBuilder: (c, i) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: Text("${100 + i}",
                           textAlign: TextAlign.center,
                           style: const TextStyle(
@@ -519,7 +521,7 @@ class MockFeatureScreen extends StatelessWidget {
             child: Column(
               children: [
                 Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     width: double.infinity,
                     color: AppColors.success,
                     child: const Text("READY",
@@ -530,10 +532,10 @@ class MockFeatureScreen extends StatelessWidget {
                             fontSize: 24))),
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     itemCount: 3,
                     itemBuilder: (c, i) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: Text("${200 + i}",
                           textAlign: TextAlign.center,
                           style: const TextStyle(
@@ -555,10 +557,10 @@ class MockFeatureScreen extends StatelessWidget {
       BuildContext context, String label, String value, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.zero,
           border: Border.all(color: AppColors.textSecondary(context)),
           boxShadow: [
             BoxShadow(color: AppColors.textSecondary(context).withValues(alpha: 0.1), blurRadius: 5)
@@ -569,7 +571,7 @@ class MockFeatureScreen extends StatelessWidget {
           children: [
             Text(label,
                 style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12)),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(value,
                 style: TextStyle(
                     color: color, fontSize: 20, fontWeight: FontWeight.bold)),
@@ -616,3 +618,6 @@ class _MockChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
+
+

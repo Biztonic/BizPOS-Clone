@@ -1,5 +1,7 @@
-
+﻿
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import '../../../utils/car_dashboard_theme.dart';
 
 class NeonButton extends StatefulWidget {
@@ -59,7 +61,7 @@ class _NeonButtonState extends State<NeonButton> {
           ),
           decoration: BoxDecoration(
             color: widget.color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.zero,
             border: Border.all(
               color: widget.color.withValues(alpha: _isPressed ? 1.0 : 0.6),
               width: 2,
@@ -89,7 +91,7 @@ class _NeonButtonState extends State<NeonButton> {
                   color: widget.color,
                   size: widget.isLarge ? 24 : 18,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
               ],
               Text(
                 widget.label.toUpperCase(),
@@ -111,3 +113,6 @@ class _NeonButtonState extends State<NeonButton> {
     );
   }
 }
+
+
+

@@ -8,6 +8,7 @@ import 'package:biztonic_pos/features/store/data/store_repository.dart';
 import 'package:biztonic_pos/features/subscriptions/data/subscription_repository.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
 import '../domain/entities/store.dart';
+import '../domain/entities/settings.dart';
 import '../domain/entities/counter_model.dart';
 import 'store_state.dart';
 
@@ -15,9 +16,9 @@ part 'store_notifier.g.dart';
 
 @riverpod
 class StoreNotifier extends _$StoreNotifier {
-  late final StoreRepository _storeRepo;
-  late final SubscriptionRepository _subRepo;
-  late final SyncService _syncService;
+  late StoreRepository _storeRepo;
+  late SubscriptionRepository _subRepo;
+  late SyncService _syncService;
   StreamSubscription<DocumentSnapshot>? _storeSubscription;
 
   @override
@@ -170,6 +171,9 @@ class StoreNotifier extends _$StoreNotifier {
         subscriptionExpiry: expiry,
         address: address,
         phone: phone,
+        receipt: ReceiptSettings(),
+        payment: PaymentSettings(),
+        kds: KdsSettings(),
       );
 
       await docRef.set(newStore.toMap());

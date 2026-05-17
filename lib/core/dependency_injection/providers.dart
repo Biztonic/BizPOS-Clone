@@ -6,11 +6,17 @@ import '../../features/store/data/store_repository.dart';
 import '../../features/settings/data/settings_repository.dart';
 import '../../features/subscriptions/data/subscription_repository.dart';
 import '../../providers/order_provider.dart';
-import '../../providers/inventory_provider.dart';
+import '../../features/inventory/presentation/providers/inventory_provider.dart';
+import '../../features/inventory/domain/repositories/inventory_repository_interface.dart';
+import '../../features/inventory/data/repositories/inventory_repository_impl.dart';
+import '../../features/inventory/application/inventory_orchestrator.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/store_provider.dart';
+import '../theme/theme_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../routing/router_notifier.dart';
+import '../../features/billing/presentation/providers/billing_provider.dart';
 
 /// Provider for the base DatabaseHelper
 final databaseHelperProvider = Provider<DatabaseHelper>((ref) {
@@ -35,6 +41,17 @@ final storeRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).
 final reportingRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).reporting);
 final syncRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).sync);
 
+// Inventory Feature Providers
+final inventoryRepositoryInterfaceProvider = Provider<InventoryRepositoryInterface>((ref) {
+  final legacyRepo = ref.watch(inventoryRepositoryProvider);
+  return InventoryRepositoryImpl(legacyRepo: legacyRepo);
+});
+
+final inventoryOrchestratorProvider = Provider<InventoryOrchestrator>((ref) {
+  final repository = ref.watch(inventoryRepositoryInterfaceProvider);
+  return InventoryOrchestrator(repository: repository);
+});
+
 // New Feature Repositories
 final storeFeatureRepositoryProvider = Provider<StoreRepository>((ref) {
   final syncService = ref.watch(syncServiceProvider);
@@ -57,7 +74,21 @@ final authProvider = ChangeNotifierProvider<AuthProvider>((ref) {
 });
 
 final inventoryProvider = ChangeNotifierProvider<InventoryProvider>((ref) {
-  return InventoryProvider();
+  final repository = ref.watch(inventoryRepositoryInterfaceProvider);
+  final orchestrator = ref.watch(inventoryOrchestratorProvider);
+  final syncService = ref.watch(syncServiceProvider);
+  // Use ref.read for storeProvider because InventoryProvider already listens
+  // to StoreProvider internally. Using ref.watch here would cause Riverpod to
+  // dispose and recreate InventoryProvider every time the store changes,
+  // leading to "used after disposal" errors in the legacy Provider bridge.
+  final stores = ref.read(storeProvider);
+
+  return InventoryProvider(
+    repository: repository,
+    orchestrator: orchestrator,
+    storeProvider: stores,
+    syncService: syncService,
+  );
 });
 
 final orderProvider = ChangeNotifierProvider<OrderProvider>((ref) {
@@ -75,20 +106,39 @@ final storeProvider = ChangeNotifierProvider<StoreProvider>((ref) {
   return StoreProvider(syncService);
 });
 
+final routerNotifierProvider = ChangeNotifierProvider<RouterNotifier>((ref) {
+  return RouterNotifier();
+});
+
+final billingProvider = ChangeNotifierProvider<BillingProvider>((ref) {
+  final syncService = ref.watch(syncServiceProvider);
+  return BillingProvider(syncService);
+});
+
 final dashboardProvider = ChangeNotifierProvider<DashboardProvider>((ref) {
-  final auth = ref.watch(authProvider);
-  final inventory = ref.watch(inventoryProvider);
-  final orders = ref.watch(orderProvider);
-  final customers = ref.watch(customerProvider);
-  final stores = ref.watch(storeProvider);
+  // Use ref.read instead of ref.watch for dependencies that should not trigger
+  // a full recreation of the DashboardProvider. DashboardProvider handles
+  // its own internal listening to these providers via inject methods.
+  final auth = ref.read(authProvider);
+  final inventory = ref.read(inventoryProvider);
+  final orders = ref.read(orderProvider);
+  final customers = ref.read(customerProvider);
+  final stores = ref.read(storeProvider);
+  final routerNotifier = ref.read(routerNotifierProvider);
+  
+  final themeNotifier = ref.watch(themeProvider.notifier);
   
   final dashboard = DashboardProvider();
   dashboard.updateAuthStatus(auth.isOfflineLoggedIn);
-  dashboard.init();
   dashboard.injectInventory(inventory);
   dashboard.injectOrderProvider(orders);
   dashboard.injectCustomerProvider(customers);
   dashboard.injectStoreProvider(stores);
+  dashboard.injectRouterNotifier(routerNotifier);
+  dashboard.injectThemeNotifier(themeNotifier);
+  
+  // Call init after all dependencies are injected
+  dashboard.init();
   
   return dashboard;
 });

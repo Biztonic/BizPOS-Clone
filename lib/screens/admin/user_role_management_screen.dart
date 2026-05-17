@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../../providers/dashboard_provider.dart';
 import '../../models/user_profile.dart';
-import '../../models/store.dart';
 import 'role_configuration_screen.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import '../../core/design/components/atoms/app_card.dart';
@@ -69,7 +70,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
 
   Future<void> _loadStats() async {
     final stats = await Provider.of<DashboardProvider>(context, listen: false).getUserStats();
-    if (mounted) setState(() => _stats = stats);
+    if (context.mounted) setState(() => _stats = stats);
   }
 
   Future<void> _loadUsers({bool next = false, bool prev = false}) async {
@@ -82,7 +83,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
         if (_selectedRoleFilter != 'All') {
           filtered = results.where((u) => u.role == _selectedRoleFilter).toList();
         }
-        if (mounted) setState(() { _users = filtered; _isLoading = false; _hasMore = false; _currentPage = 1; });
+        if (context.mounted) setState(() { _users = filtered; _isLoading = false; _hasMore = false; _currentPage = 1; });
         return;
       }
       dynamic startAfter;
@@ -98,7 +99,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
         _currentPage = 1;
       }
       final result = await provider.fetchPaginatedUsers(limit: _limit, startAfter: startAfter, filterRole: _selectedRoleFilter);
-      if (mounted) {
+      if (context.mounted) {
          setState(() {
             _users = result['users'] as List<UserProfile>;
             _userStorePlans = result['storePlans'] as Map<String, String>;
@@ -110,7 +111,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
          });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (context.mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -142,9 +143,9 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
             _buildSearchAndFilters(),
             const SizedBox(height: AppSpacing.lg),
             if (_isLoading)
-              const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator()))
+              const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.xs), child: CircularProgressIndicator()))
             else if (_users.isEmpty)
-              Center(child: Padding(padding: EdgeInsets.all(40), child: Text("No users found.", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))))
+              Center(child: Padding(padding: const EdgeInsets.all(AppSpacing.xs), child: Text(AppLocalizations.t(context, 'No users found.'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))))
             else if (_isListView)
               _buildListView(provider)
             else
@@ -177,7 +178,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: color.withValues(alpha: 0.1)),
       ),
       child: Column(
@@ -203,7 +204,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
             prefixIcon: const Icon(Icons.search),
             filled: true,
             fillColor: AppColors.textSecondary(context).withValues(alpha: 0.05),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            border: const OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide.none),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -213,7 +214,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
             children: _filterOptions.map((role) {
               final isSelected = _selectedRoleFilter == role;
               return Padding(
-                padding: const EdgeInsets.only(right: 8.0),
+                padding: const EdgeInsets.only(right: AppSpacing.sm),
                 child: ChoiceChip(
                   label: Text(role, style: AppTypography.labelSmall.copyWith(color: isSelected ? Colors.white : AppColors.textSecondary(context))),
                   selected: isSelected,
@@ -275,7 +276,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
           children: [
             CircleAvatar(
               backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              child: Text(user.name.isNotEmpty ? user.name[0].toUpperCase() : '?', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              child: Text(user.name.isNotEmpty ? user.name[0].toUpperCase() : '?', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -317,7 +318,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
               CircleAvatar(
                 radius: 16,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                child: Text(user.name.isNotEmpty ? user.name[0].toUpperCase() : '?', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                child: Text(user.name.isNotEmpty ? user.name[0].toUpperCase() : '?', style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(child: Text(user.name, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
@@ -369,8 +370,8 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
     if (role == 'Super Admin') color = AppColors.error;
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
       child: Text(role.toUpperCase(), style: AppTypography.labelSmall.copyWith(color: color, fontWeight: FontWeight.bold)),
     );
   }
@@ -404,16 +405,16 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text("Approve Demo Access?", style: AppTypography.titleLarge),
-        content: Text("This enables the user to access the interactive demo dashboard.", style: AppTypography.bodyMedium),
+        title: Text(AppLocalizations.t(context, 'Approve Demo Access?'), style: AppTypography.titleLarge),
+        content: Text(AppLocalizations.t(context, 'This enables the user to access the interactive demo dashboard.'), style: AppTypography.bodyMedium),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text("CANCEL", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'CANCEL'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))),
           AppButton(
             label: "APPROVE",
             onPressed: () async {
-               await provider.approveDemoRequest(user.uid);
-               if (mounted) Navigator.pop(ctx);
-               _loadUsers();
+                await provider.approveDemoRequest(user.uid);
+                if (ctx.mounted) Navigator.pop(ctx);
+                _loadUsers();
             },
           )
         ],
@@ -425,10 +426,10 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text("Delete User?", style: AppTypography.titleLarge),
+        title: Text(AppLocalizations.t(context, 'Delete User?'), style: AppTypography.titleLarge),
         content: Text("Are you sure you want to delete ${user.name}?\nThis action is PERMANENT.", style: AppTypography.bodyMedium),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text("CANCEL", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'CANCEL'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))),
           AppButton(
             label: "DELETE",
             variant: AppButtonVariant.outline,
@@ -468,7 +469,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
                    value: provider.stores.any((s) => s.id == selectedStoreId) ? selectedStoreId : null,
                    decoration: const InputDecoration(labelText: "Store", border: OutlineInputBorder()),
                    items: [
-                      const DropdownMenuItem(value: null, child: Text("Unassigned")),
+                      DropdownMenuItem(value: null, child: Text(AppLocalizations.t(context, 'Unassigned'))),
                       ...provider.stores.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
                    ],
                    onChanged: (val) { setDialogState(() => selectedStoreId = val); },
@@ -476,13 +477,13 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text("CANCEL", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'CANCEL'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))),
               AppButton(
                 label: "SAVE CHANGES",
                 onPressed: () async {
                   if (selectedRole != user.role) await provider.updateUserRole(user.uid, selectedRole);
                   if (selectedStoreId != user.storeId) await provider.updateUserStores(user.uid, selectedStoreId != null ? [selectedStoreId!] : []);
-                  if (mounted) Navigator.pop(ctx);
+                  if (ctx.mounted) Navigator.pop(ctx);
                   _loadUsers();
                   _loadStats();
                 },
@@ -494,3 +495,5 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
     );
   }
 }
+
+

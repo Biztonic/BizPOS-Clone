@@ -82,14 +82,25 @@ class AppButton extends StatelessWidget {
     this.foregroundColor,
   }) : variant = AppButtonVariant.ghost;
 
+  double _getHeight() {
+    switch (size) {
+      case AppButtonSize.small:
+        return 32.0;
+      case AppButtonSize.medium:
+        return 44.0;
+      case AppButtonSize.large:
+        return 56.0;
+    }
+  }
+
   EdgeInsetsGeometry _getPadding() {
     switch (size) {
       case AppButtonSize.small:
-        return const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm);
+        return const EdgeInsets.symmetric(horizontal: AppSpacing.md);
       case AppButtonSize.medium:
-        return const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md);
+        return const EdgeInsets.symmetric(horizontal: AppSpacing.lg);
       case AppButtonSize.large:
-        return const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg);
+        return const EdgeInsets.symmetric(horizontal: AppSpacing.xl);
     }
   }
 
@@ -194,6 +205,8 @@ class AppButton extends StatelessWidget {
         ),
       ),
       padding: WidgetStateProperty.all(_getPadding()),
+      minimumSize: WidgetStateProperty.all(Size(width ?? 0, _getHeight())),
+      fixedSize: width != null ? WidgetStateProperty.all(Size(width!, _getHeight())) : null,
     );
 
     Widget content = Row(
@@ -225,16 +238,11 @@ class AppButton extends StatelessWidget {
       ],
     );
 
-    final button = ElevatedButton(
+    return ElevatedButton(
       onPressed: (isLoading || onPressed == null) ? null : onPressed,
       style: buttonStyle,
       child: content,
     );
-
-    if (width != null) {
-      return SizedBox(width: width, child: button);
-    }
-    return button;
   }
 }
 

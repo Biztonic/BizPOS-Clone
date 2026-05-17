@@ -7,6 +7,7 @@
 ///   - flutter (except foundation for @immutable)
 ///
 /// All serialization logic belongs in [OrderDto].
+library;
 
 class OrderItemEntity {
   final String itemId;

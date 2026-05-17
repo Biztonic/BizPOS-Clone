@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 void main() {
   final priceRegex = RegExp(
       r'(?:Rs\.?|INR|\$|₹)?\s*(\d[\d.,\s]*\d|\d+)\s*(?:Rs\.?|INR|\$|₹|\/-)?\s*$',
@@ -31,12 +32,12 @@ void main() {
           .trim();
 
       if (name.isNotEmpty && name.length > 2 && price > 0) {
-        print("MATCHED: Name: '${name}', Price: ${price}");
+        print("MATCHED: Name: '$name', Price: $price");
       } else {
-        print("REJECTED: Name: '${name}', Price: ${price}, original: '${cleanLine}'");
+        print("REJECTED: Name: '$name', Price: $price, original: '$cleanLine'");
       }
     } else {
-      print("NO MATCH: original: '${cleanLine}'");
+      print("NO MATCH: original: '$cleanLine'");
     }
   }
 }

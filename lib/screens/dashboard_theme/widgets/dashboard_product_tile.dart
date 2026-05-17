@@ -1,4 +1,6 @@
-import '../../../core/design/tokens/app_colors.dart';
+﻿import '../../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 // ignore_for_file: deprecated_member_use_from_same_package, curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -61,7 +63,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
     if (effectiveStyle == 'label') {
       // ---------------- LABEL ONLY STYLE ----------------
       Widget labelContent = Padding(
-         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: AppSpacing.sm),
          child: Row(
            children: [
              Expanded(
@@ -76,7 +78,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
                  overflow: TextOverflow.ellipsis,
                ),
              ),
-             const SizedBox(width: 8),
+             const SizedBox(width: AppSpacing.sm),
              Text(
                 "₹${widget.item.price.toStringAsFixed(0)}",
                 style: TextStyle(
@@ -124,7 +126,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
                  width: double.infinity,
                  decoration: BoxDecoration(
                    color: stockColor, // Remains Red/Green/Orange
-                   borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12))
+                   borderRadius: const BorderRadius.vertical(bottom: Radius.zero)
                  ),
                )
              ],
@@ -140,11 +142,11 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
                      // Left: Stock
                      if (trackStock)
                        Container(
-                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                         margin: const EdgeInsets.only(right: 8),
+                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: AppSpacing.xxs),
+                         margin: const EdgeInsets.only(right: AppSpacing.sm),
                          decoration: BoxDecoration(
                            color: stockColor.withValues(alpha: 0.1),
-                           borderRadius: BorderRadius.circular(4),
+                           borderRadius: BorderRadius.zero,
                            border: Border.all(color: stockColor.withValues(alpha: 0.5))
                          ),
                          child: Text("x$qty", style: TextStyle(color: stockColor, fontSize: 12, fontWeight: FontWeight.bold)),
@@ -177,7 +179,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
         height: 56, // Fixed Height for consistency
         child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.zero,
           color: CarDashboardTheme.panelColor(isDarkMode),
           border: Border.all(
             color: widget.isEditMode ? CarDashboardTheme.primaryColor(isDarkMode) : CarDashboardTheme.borderColor(isDarkMode).withValues(alpha: 0.5),
@@ -197,7 +199,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
                width: double.infinity,
                decoration: BoxDecoration(
                  color: stockColor,
-                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8))
+                 borderRadius: const BorderRadius.vertical(bottom: Radius.zero)
                ),
              )
            ],
@@ -215,7 +217,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
         aspectRatio: 0.85, 
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8), 
+            borderRadius: BorderRadius.zero, 
             color: cardBgColor, 
             border: Border.all(
               color: widget.isEditMode 
@@ -225,7 +227,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
             ),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.zero,
             child: Stack(
               children: [
               // 1. Full Bleed Image
@@ -249,7 +251,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
                   bottom: 0, left: 0, right: 0,
                   child: Container(
                     color: isDarkMode ? Colors.black.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.9),
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final bool hidePrice = constraints.maxWidth < 150; 
@@ -266,7 +268,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
                               ),
                             ),
                             if (!hidePrice) ...[
-                              const SizedBox(width: 4),
+                              const SizedBox(width: AppSpacing.xs),
                               Text(
                                  "₹${widget.item.price.toStringAsFixed(0)}", 
                                  style: CarDashboardTheme.priceStyle.copyWith(color: CarDashboardTheme.primaryColor(isDarkMode), fontSize: 24)
@@ -290,8 +292,8 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
               // 6. Stock Badge
               if (!widget.isEditMode && trackStock) 
                 Positioned(
-                  top: 8,
-                  right: 8,
+                  top: AppSpacing.sm,
+                  right: AppSpacing.sm,
                   child: _buildStockBadge(qty, stockColor, trackStock, isDarkMode)
                 ),
             ],
@@ -322,7 +324,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               child: Text(
                 widget.item.name,
                 textAlign: TextAlign.center,
@@ -331,7 +333,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -387,7 +389,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
           height: 28,
           decoration: BoxDecoration(
             color: color, 
-            shape: BoxShape.circle,
+            shape: BoxShape.rectangle,
             border: Border.all(color: Colors.white, width: 1.0),
           ),
           alignment: Alignment.center,
@@ -410,7 +412,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
         width: 36, height: 36,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.2),
-          shape: BoxShape.circle,
+          shape: BoxShape.rectangle,
           border: Border.all(color: Colors.white54),
         ),
         child: Icon(icon, color: Colors.white, size: 18),
@@ -460,3 +462,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
     }
   }
 }
+
+
+
+

@@ -1,4 +1,8 @@
-import '../../core/design/tokens/app_colors.dart';
+﻿import '../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -196,7 +200,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
 
     final userName = user.name.isNotEmpty ? user.name : user.email;
 
-    // Optimistic UI — update instantly
+    // Optimistic UI â€” update instantly
     setState(() {
       _submittingReview = true;
       _reviews.insert(0, {
@@ -214,8 +218,8 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
     _reviewController.clear();
 
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: const Row(children: [Icon(Icons.check_circle, color: Colors.white, size: 18), SizedBox(width: 8), Text("Review submitted!")]),
-      backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      content: Row(children: [const Icon(Icons.check_circle, color: Colors.white, size: 18), const SizedBox(width: AppSpacing.sm), Text(AppLocalizations.t(context, 'Review submitted!'))]),
+      backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     ));
 
     try {
@@ -241,13 +245,13 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     final user = provider.userProfile;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please sign in to rate."), backgroundColor: AppColors.warning));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Please sign in to rate.')), backgroundColor: AppColors.warning));
       return;
     }
 
     final userName = user.name.isNotEmpty ? user.name : user.email;
 
-    // Optimistic UI — update instantly
+    // Optimistic UI â€” update instantly
     setState(() {
       _submittingQuickRating = true;
       _reviews.insert(0, {
@@ -263,8 +267,8 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
     });
 
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [const Icon(Icons.star, color: AppColors.warning, size: 18), const SizedBox(width: 8), Text("Rated $stars stars!")]),
-      backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      content: Row(children: [const Icon(Icons.star, color: AppColors.warning, size: 18), const SizedBox(width: AppSpacing.sm), Text("Rated $stars stars!")]),
+      backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     ));
 
     try {
@@ -303,7 +307,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
   Future<void> _deleteReview(String reviewId) async {
     try {
       await FirebaseFirestore.instance.collection('addon_reviews').doc(reviewId).delete();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Review deleted.")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Review deleted.'))));
       setState(() => _loadingReviews = true);
       await _loadReviews();
     } catch (e) {
@@ -324,7 +328,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       final upiId = adminConfig['adminUpiId'] ?? '';
       
       if (upiId.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment system currently unavailable. Please contact support.")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Payment system currently unavailable. Please contact support.'))));
         return;
       }
 
@@ -340,7 +344,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
               const SizedBox(height: 12),
               _buildPlanOption(ctx, 'Yearly', (widget.price * 10).toDouble(), Icons.calendar_today, isBestValue: true),
               const SizedBox(height: 12),
-              const Text("Yearly plans include 2 months free!", style: TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.bold)),
+              Text(AppLocalizations.t(context, 'Yearly plans include 2 months free!'), style: const TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -367,8 +371,8 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       if (paid != true) return;
       
       // Notify about pending approval
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Payment submitted! Module will be enabled once approved."),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(AppLocalizations.t(context, 'Payment submitted! Module will be enabled once approved.')),
         backgroundColor: AppColors.primaryLight,
       ));
       return; // Skip local install as it needs admin approval now
@@ -376,14 +380,14 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
 
     // --- Super Admin Path (Legacy/Bypass) ---
     final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       icon: const Icon(Icons.download_rounded, size: 48, color: AppColors.success),
       title: Text("Install $title?"),
-      content: const Text("This module will be added to your application."),
+      content: Text(AppLocalizations.t(context, 'This module will be added to your application.')),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCEL")),
-        ElevatedButton.icon(onPressed: () => Navigator.pop(ctx, true), icon: const Icon(Icons.download_rounded, size: 18), label: const Text("INSTALL"),
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)))),
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'CANCEL'))),
+        ElevatedButton.icon(onPressed: () => Navigator.pop(ctx, true), icon: const Icon(Icons.download_rounded, size: 18), label: Text(AppLocalizations.t(context, 'INSTALL')),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero))),
       ],
     ));
     if (confirm != true) return;
@@ -402,8 +406,8 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       if (mounted) {
         setState(() { _isInstalled = true; _isProcessing = false; });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Row(children: [const Icon(Icons.check_circle, color: Colors.white, size: 20), const SizedBox(width: 8), Text("$title installed!")]),
-          backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          content: Row(children: [const Icon(Icons.check_circle, color: Colors.white, size: 20), const SizedBox(width: AppSpacing.sm), Text("$title installed!")]),
+          backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ));
       }
     } catch (e) {
@@ -415,16 +419,16 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
     return InkWell(
       onTap: () => Navigator.pop(context, {'cycle': cycle, 'amount': price}),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           border: Border.all(color: isBestValue ? AppColors.warning : AppColors.textSecondary(context)),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.zero,
           color: isBestValue ? AppColors.warning.withValues(alpha: 0.05) : null,
         ),
         child: Row(
           children: [
             Icon(icon, color: isBestValue ? AppColors.warning : AppColors.primary),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,9 +440,9 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
             ),
             if (isBestValue)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.warning, borderRadius: BorderRadius.circular(8)),
-                child: const Text("BEST VALUE", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                decoration: const BoxDecoration(color: AppColors.warning, borderRadius: BorderRadius.zero),
+                child: Text(AppLocalizations.t(context, 'BEST VALUE'), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
               ),
           ],
         ),
@@ -452,14 +456,14 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
     final title = widget.addon['title'] as String;
 
     final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      icon: Icon(Icons.warning_amber_rounded, size: 48, color: AppColors.error),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      icon: const Icon(Icons.warning_amber_rounded, size: 48, color: AppColors.error),
       title: Text("Uninstall $title?"),
-      content: const Text("Your data will be preserved if you reinstall later."),
+      content: Text(AppLocalizations.t(context, 'Your data will be preserved if you reinstall later.')),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCEL")),
-        ElevatedButton.icon(onPressed: () => Navigator.pop(ctx, true), icon: const Icon(Icons.delete_outline, size: 18), label: const Text("UNINSTALL"),
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)))),
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'CANCEL'))),
+        ElevatedButton.icon(onPressed: () => Navigator.pop(ctx, true), icon: const Icon(Icons.delete_outline, size: 18), label: Text(AppLocalizations.t(context, 'UNINSTALL')),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero))),
       ],
     ));
     if (confirm != true) return;
@@ -478,8 +482,8 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       if (mounted) {
         setState(() { _isInstalled = false; _isProcessing = false; });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Row(children: [const Icon(Icons.delete_outline, color: Colors.white, size: 20), const SizedBox(width: 8), Text("$title uninstalled.")]),
-          backgroundColor: AppColors.textSecondary(context), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          content: Row(children: [const Icon(Icons.delete_outline, color: Colors.white, size: 20), const SizedBox(width: AppSpacing.sm), Text("$title uninstalled.")]),
+          backgroundColor: AppColors.textSecondary(context), behavior: SnackBarBehavior.floating, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ));
       }
     } catch (e) {
@@ -517,15 +521,15 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 20),
+                        const SizedBox(height: AppSpacing.xxs),
                         Container(
                           width: isMobile ? 56 : 72, height: isMobile ? 56 : 72,
-                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
+                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.zero),
                           child: Icon(addon['icon'] as IconData, color: Colors.white, size: isMobile ? 30 : 40),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Text(addon['title'] as String, style: TextStyle(color: Colors.white, fontSize: isMobile ? 17 : 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-                        Text("Biztonic Labs", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+                        Text(AppLocalizations.t(context, 'Biztonic Labs'), style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
                       ],
                     ),
                   ),
@@ -550,7 +554,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          _statCol(_totalRatings > 0 ? "${_avgRating.toStringAsFixed(1)} ★" : "—", "$_totalRatings ratings", compact),
+                          _statCol(_totalRatings > 0 ? "${_avgRating.toStringAsFixed(1)} â˜…" : "â€”", "$_totalRatings ratings", compact),
                           Container(width: 1, height: compact ? 24 : 30, color: Theme.of(context).dividerColor),
                           _statCol(addon['size'] as String, "Size", compact),
                           Container(width: 1, height: compact ? 24 : 30, color: Theme.of(context).dividerColor),
@@ -588,7 +592,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                       padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: 3),
                       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Icon(Icons.check_circle_outline, size: compact ? 14 : 16, color: addonColor),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Expanded(child: Text(f, style: TextStyle(fontSize: compact ? 12 : 13))),
                       ]),
                     )),
@@ -599,9 +603,9 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                     _sectionTitle("Ratings & Reviews", compact),
 
                     if (_loadingReviews)
-                      const Padding(padding: EdgeInsets.all(20), child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))))
+                      const Padding(padding: EdgeInsets.all(AppSpacing.xxs), child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))))
                     else ...[
-                      // Rating summary — stack vertically on mobile
+                      // Rating summary â€” stack vertically on mobile
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16),
                         child: compact
@@ -610,15 +614,15 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text(_totalRatings > 0 ? _avgRating.toStringAsFixed(1) : "—", style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
-                                    const SizedBox(width: 8),
+                                    Text(_totalRatings > 0 ? _avgRating.toStringAsFixed(1) : "â€”", style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
+                                    const SizedBox(width: AppSpacing.sm),
                                     Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                       _starRow(_avgRating, 16),
                                       Text("$_totalRatings ratings", style: TextStyle(fontSize: 10, color: Theme.of(context).textTheme.bodySmall?.color)),
                                     ]),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppSpacing.sm),
                                 _buildRatingBars(isDark),
                               ],
                             )
@@ -626,19 +630,19 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Column(children: [
-                                  Text(_totalRatings > 0 ? _avgRating.toStringAsFixed(1) : "—", style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
+                                  Text(_totalRatings > 0 ? _avgRating.toStringAsFixed(1) : "â€”", style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
                                   _starRow(_avgRating, 16),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: AppSpacing.xs),
                                   Text("$_totalRatings ratings", style: TextStyle(fontSize: 10, color: Theme.of(context).textTheme.bodySmall?.color)),
                                 ]),
-                                const SizedBox(width: 24),
+                                const SizedBox(width: AppSpacing.lg),
                                 Expanded(child: _buildRatingBars(isDark)),
                               ],
                             ),
                       ),
                       const SizedBox(height: 12),
 
-                      // Quick Rate (tap stars) — only if user hasn't reviewed
+                      // Quick Rate (tap stars) â€” only if user hasn't reviewed
                       if (!_hasUserReview)
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16),
@@ -646,20 +650,20 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
                               color: isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.textSecondary(context),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.zero,
                               border: Border.all(color: Theme.of(context).dividerColor),
                             ),
                             child: _submittingQuickRating
-                              ? const Center(child: Padding(padding: EdgeInsets.all(8), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
+                              ? const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.sm), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
                               : Row(
                               children: [
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text("Rate this module", style: TextStyle(fontWeight: FontWeight.bold, fontSize: compact ? 13 : 14, color: isDark ? Colors.white : Colors.black87)),
-                                      const SizedBox(height: 4),
-                                      Text("Tap a star to rate", style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary(context) : Theme.of(context).textTheme.bodySmall?.color)),
+                                      Text(AppLocalizations.t(context, 'Rate this module'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: compact ? 13 : 14, color: isDark ? Colors.white : Colors.black87)),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      Text(AppLocalizations.t(context, 'Tap a star to rate'), style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary(context) : Theme.of(context).textTheme.bodySmall?.color)),
                                     ],
                                   ),
                                 ),
@@ -679,11 +683,11 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                       // Write detailed review button
                       if (!_hasUserReview && !_showReviewForm)
                         Padding(
-                          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: 8),
+                          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: AppSpacing.sm),
                           child: TextButton.icon(
                             onPressed: () => setState(() => _showReviewForm = true),
                             icon: const Icon(Icons.rate_review_outlined, size: 18),
-                            label: const Text("Write a detailed review"),
+                            label: Text(AppLocalizations.t(context, 'Write a detailed review')),
                             style: TextButton.styleFrom(foregroundColor: AppColors.primary),
                           ),
                         ),
@@ -695,14 +699,14 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                       // Review list
                       if (_reviews.isEmpty && !_loadingReviews)
                         Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Center(child: Text("No reviews yet. Be the first!", style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 13))),
+                          padding: const EdgeInsets.all(AppSpacing.xxs),
+                          child: Center(child: Text(AppLocalizations.t(context, 'No reviews yet. Be the first!'), style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 13))),
                         )
                       else
                         ..._reviews.map((r) => _buildReviewCard(r, currentUserId, isDark, compact, provider.userProfile?.role == 'Super Admin')),
                     ],
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.xl),
                   ],
                 );
               },
@@ -716,11 +720,11 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
   Widget _buildActionArea(bool isDark) {
     if (widget.isLocked) {
       return SizedBox(width: double.infinity, height: 48, child: OutlinedButton.icon(
-        onPressed: null, icon: const Icon(Icons.lock_outline, size: 18), label: const Text("Upgrade to Install"),
+        onPressed: null, icon: const Icon(Icons.lock_outline, size: 18), label: Text(AppLocalizations.t(context, 'Upgrade to Install')),
         style: OutlinedButton.styleFrom(
           foregroundColor: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context),
           side: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ),
       ));
     }
@@ -731,12 +735,12 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
           style: ElevatedButton.styleFrom(
             backgroundColor: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context),
             foregroundColor: isDark ? Colors.white : Colors.black87,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           ),
           child: Text(_isInstalled ? "Uninstalling... ${(_progress * 100).toInt()}%" : "Installing... ${(_progress * 100).toInt()}%"),
         )),
         const SizedBox(height: 6),
-        ClipRRect(borderRadius: BorderRadius.circular(3), child: LinearProgressIndicator(
+        ClipRRect(borderRadius: BorderRadius.zero, child: LinearProgressIndicator(
           value: _progress, minHeight: 4,
           backgroundColor: isDark ? Colors.white24 : AppColors.textSecondary(context),
           valueColor: AlwaysStoppedAnimation(_isInstalled ? AppColors.error : AppColors.success),
@@ -745,11 +749,11 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
     }
     if (_isInstalled) {
       return SizedBox(width: double.infinity, height: 48, child: OutlinedButton.icon(
-        onPressed: _handleUninstall, icon: const Icon(Icons.delete_outline, size: 18), label: const Text("Uninstall"),
+        onPressed: _handleUninstall, icon: const Icon(Icons.delete_outline, size: 18), label: Text(AppLocalizations.t(context, 'Uninstall')),
         style: OutlinedButton.styleFrom(
           foregroundColor: isDark ? AppColors.error : AppColors.error,
           side: BorderSide(color: isDark ? AppColors.error : AppColors.error, width: 1.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ),
       ));
     }
@@ -762,7 +766,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       style: ElevatedButton.styleFrom(
         backgroundColor: isPurchased ? AppColors.primary : AppColors.success,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         elevation: 0,
       ),
     ));
@@ -770,11 +774,11 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
 
   Widget _buildWriteReviewForm(bool isDark, bool compact) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: 8),
+      margin: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: AppSpacing.sm),
       padding: EdgeInsets.all(compact ? 12 : 16),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.textSecondary(context),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
@@ -782,44 +786,44 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
         children: [
           Row(
             children: [
-              const Expanded(child: Text("Write a Review", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
+              Expanded(child: Text(AppLocalizations.t(context, 'Write a Review'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
               IconButton(icon: const Icon(Icons.close, size: 18), onPressed: () => setState(() => _showReviewForm = false), visualDensity: VisualDensity.compact),
             ],
           ),
           const SizedBox(height: 6),
           Row(
             children: [
-              Text("Your rating: ", style: TextStyle(fontSize: compact ? 12 : 13)),
+              Text(AppLocalizations.t(context, 'Your rating: '), style: TextStyle(fontSize: compact ? 12 : 13)),
               ...List.generate(5, (i) => GestureDetector(
                 onTap: () => setState(() => _userRating = i + 1),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
                   child: Icon(i < _userRating ? Icons.star : Icons.star_border, color: AppColors.warning, size: compact ? 24 : 28),
                 ),
               )),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: _reviewController,
             maxLines: 3,
             style: TextStyle(fontSize: compact ? 13 : 14),
             decoration: InputDecoration(
               hintText: "Share your experience...",
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
               filled: true,
               fillColor: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
               contentPadding: const EdgeInsets.all(10),
               isDense: true,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton(
               onPressed: _submittingReview ? null : _submitReview,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8)),
-              child: _submittingReview ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Submit", style: TextStyle(fontSize: 13)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs, vertical: AppSpacing.sm)),
+              child: _submittingReview ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(AppLocalizations.t(context, 'Submit'), style: const TextStyle(fontSize: 13)),
             ),
           ),
         ],
@@ -839,12 +843,12 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
     final comment = review['comment'] as String;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: AppSpacing.xs),
       child: Container(
         padding: EdgeInsets.all(compact ? 10 : 12),
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withValues(alpha: 0.03) : AppColors.textSecondary(context),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.zero,
           border: Border.all(color: isOwn ? AppColors.primary.withValues(alpha: 0.3) : Theme.of(context).dividerColor),
         ),
         child: Column(
@@ -856,17 +860,17 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                 backgroundColor: [AppColors.primary, AppColors.success, AppColors.warning, AppColors.error, AppColors.primaryLight][(review['userName'].hashCode).abs() % 5].withValues(alpha: 0.2),
                 child: Text((review['userName'] as String).substring(0, 1).toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, fontSize: compact ? 10 : 12, color: [AppColors.primary, AppColors.success, AppColors.warning, AppColors.error, AppColors.primaryLight][(review['userName'].hashCode).abs() % 5])),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: [
                     Flexible(child: Text(review['userName'] as String, style: TextStyle(fontWeight: FontWeight.bold, fontSize: compact ? 12 : 13), overflow: TextOverflow.ellipsis)),
                     if (isOwn) Container(
-                      margin: const EdgeInsets.only(left: 4),
+                      margin: const EdgeInsets.only(left: AppSpacing.xs),
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                      child: const Text("You", style: TextStyle(fontSize: 8, color: AppColors.primary, fontWeight: FontWeight.bold)),
+                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
+                      child: Text(AppLocalizations.t(context, 'You'), style: const TextStyle(fontSize: 8, color: AppColors.primary, fontWeight: FontWeight.bold)),
                     ),
                   ]),
                   _starRow((review['rating'] as int).toDouble(), compact ? 11 : 12),
@@ -875,7 +879,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
               if (dateStr.isNotEmpty) Text(dateStr, style: TextStyle(fontSize: compact ? 9 : 10, color: Theme.of(context).textTheme.bodySmall?.color)),
               // Only Super Admin can delete any review
               if (isSuperAdmin)
-                IconButton(icon: Icon(Icons.delete_outline, size: compact ? 14 : 16, color: AppColors.error), onPressed: () => _deleteReview(review['id']), visualDensity: VisualDensity.compact, padding: const EdgeInsets.only(left: 4)),
+                IconButton(icon: Icon(Icons.delete_outline, size: compact ? 14 : 16, color: AppColors.error), onPressed: () => _deleteReview(review['id']), visualDensity: VisualDensity.compact, padding: const EdgeInsets.only(left: AppSpacing.xs)),
             ]),
             if (comment.isNotEmpty) ...[
               const SizedBox(height: 6),
@@ -890,7 +894,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
   Widget _statCol(String value, String label, bool compact) {
     return Column(children: [
       Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: compact ? 13 : 15)),
-      const SizedBox(height: 2),
+      const SizedBox(height: AppSpacing.xxs),
       Text(label, style: TextStyle(fontSize: compact ? 10 : 11, color: Theme.of(context).textTheme.bodySmall?.color)),
     ]);
   }
@@ -902,7 +906,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
   Widget _chip(IconData icon, String label, bool isDark, bool compact) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10, vertical: compact ? 4 : 5),
-      decoration: BoxDecoration(color: isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.textSecondary(context), borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(color: isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.textSecondary(context), borderRadius: BorderRadius.zero),
       child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: compact ? 11 : 13, color: AppColors.textSecondary(context)), SizedBox(width: compact ? 4 : 5), Text(label, style: TextStyle(fontSize: compact ? 10 : 12))]),
     );
   }
@@ -922,8 +926,8 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       final pct = _totalRatings > 0 ? count / _totalRatings : 0.0;
       return Padding(padding: const EdgeInsets.symmetric(vertical: 1.5), child: Row(children: [
         SizedBox(width: 10, child: Text("$star", style: const TextStyle(fontSize: 10))),
-        const SizedBox(width: 4),
-        Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(2), child: LinearProgressIndicator(
+        const SizedBox(width: AppSpacing.xs),
+        Expanded(child: ClipRRect(borderRadius: BorderRadius.zero, child: LinearProgressIndicator(
           value: pct, minHeight: 6,
           backgroundColor: isDark ? Colors.white12 : AppColors.textSecondary(context),
           valueColor: const AlwaysStoppedAnimation(AppColors.warning),
@@ -943,3 +947,5 @@ class _ProgressCurve extends Curve {
     return 0.80 + ((t - 0.75) / 0.25) * 0.20;
   }
 }
+
+

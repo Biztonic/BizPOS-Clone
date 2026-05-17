@@ -1,4 +1,8 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dashboard_provider.dart';
@@ -59,11 +63,11 @@ class CFDScreen extends StatelessWidget {
                       Container(
                          padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
                          color: AppColors.textSecondary(context),
-                         child: const Row(
+                         child: Row(
                             children: [
-                               Icon(Icons.shopping_bag_outlined, size: 32, color: Colors.black87),
-                               SizedBox(width: 16),
-                               Text("Your Order", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
+                               const Icon(Icons.shopping_bag_outlined, size: 32, color: Colors.black87),
+                               const SizedBox(width: AppSpacing.md),
+                               Text(AppLocalizations.t(context, 'Your Order'), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
                             ],
                          ),
                       ),
@@ -72,7 +76,7 @@ class CFDScreen extends StatelessWidget {
                       // List
                       Expanded(
                          child: ListView.separated(
-                            padding: const EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             itemCount: cart.length,
                             separatorBuilder: (_,__) => const Divider(height: 32),
                             itemBuilder: (context, index) {
@@ -128,16 +132,15 @@ class CFDScreen extends StatelessWidget {
                        mainAxisSize: MainAxisSize.min,
                        children: [
                           Icon(Icons.storefront, size: 100, color: Colors.white.withValues(alpha: 0.9)),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSpacing.lg),
                           Text(
                              storeName ?? "Welcome", 
                              style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.bold, letterSpacing: 1.5),
                              textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 16),
-                          const Text(
-                             "Next Customer Please",
-                             style: TextStyle(color: Colors.white70, fontSize: 24, fontStyle: FontStyle.italic),
+                          const SizedBox(height: AppSpacing.md),
+                          Text(AppLocalizations.t(context, 'Next Customer Please'),
+                             style: const TextStyle(color: Colors.white70, fontSize: 24, fontStyle: FontStyle.italic),
                           ),
                        ],
                     ),
@@ -154,12 +157,12 @@ class CFDScreen extends StatelessWidget {
              children: [
                // Store Name (Top Left)
                Positioned(
-                 top: 24,
-                 left: 24,
+                 top: AppSpacing.lg,
+                 left: AppSpacing.lg,
                  child: Row(
                    children: [
                      Icon(Icons.store, color: AppColors.textSecondary(context), size: 28),
-                     const SizedBox(width: 8),
+                     const SizedBox(width: AppSpacing.sm),
                      Text(
                        storeName ?? "Store",
                        style: TextStyle(color: AppColors.textSecondary(context), fontSize: 24, fontWeight: FontWeight.bold),
@@ -180,7 +183,7 @@ class CFDScreen extends StatelessWidget {
                           child: Container(
                              decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(24),
+                                borderRadius: BorderRadius.zero,
                                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 40, offset: const Offset(0, 10))],
                              ),
                              clipBehavior: Clip.antiAlias,
@@ -190,7 +193,7 @@ class CFDScreen extends StatelessWidget {
                               ),
                           ),
                        ),
-                       const SizedBox(height: 32),
+                       const SizedBox(height: AppSpacing.xl),
                        
                        // Hero Details (Flexible to prevent overflow)
                        Flexible(
@@ -207,14 +210,14 @@ class CFDScreen extends StatelessWidget {
                                      maxLines: 2,
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: AppSpacing.md),
                                 FittedBox(
                                   fit: BoxFit.scaleDown,
                                   child: Container(
-                                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                                     decoration: BoxDecoration(
+                                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: 12),
+                                     decoration: const BoxDecoration(
                                         color: Colors.black,
-                                        borderRadius: BorderRadius.circular(50)
+                                        borderRadius: BorderRadius.zero
                                      ),
                                      child: Text(
                                         "₹${heroItem.price.toStringAsFixed(2)}",
@@ -242,10 +245,10 @@ class CFDScreen extends StatelessWidget {
         children: [
            Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: AppColors.textSecondary(context), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: AppColors.textSecondary(context), borderRadius: BorderRadius.zero),
               child: Text("${qty}x", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
            ),
-           const SizedBox(width: 16),
+           const SizedBox(width: AppSpacing.md),
            Expanded(
               child: Column(
                  crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,27 +264,29 @@ class CFDScreen extends StatelessWidget {
      );
   }
 
-  Widget _buildFooter(BuildContext context, DashboardProvider provider, List<InventoryItem> inventory) {
-     final subtotal = provider.calculateCartTotal(inventory);
-     final tax = subtotal * 0.05; // Mock logic, ideally from provider
-     final total = subtotal + tax;
-     
-     return Container(
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-           color: AppColors.textSecondary(context),
-           border: Border(top: BorderSide(color: AppColors.textSecondary(context)))
-        ),
-        child: Column(
-           children: [
-              _row("Subtotal", subtotal),
-              const SizedBox(height: 8),
-              _row("Tax (5%)", tax),
+Widget _buildFooter(BuildContext context, DashboardProvider provider, List<InventoryItem> inventory) {
+      final activeStore = provider.activeStore;
+      final subtotal = provider.calculateCartTotal(inventory);
+      final taxRate = (activeStore?.taxRate ?? 0) / 100;
+      final tax = subtotal * taxRate;
+      final total = subtotal + tax;
+      
+      return Container(
+         padding: const EdgeInsets.all(AppSpacing.xl),
+         decoration: BoxDecoration(
+            color: AppColors.textSecondary(context),
+            border: Border(top: BorderSide(color: AppColors.textSecondary(context)))
+         ),
+         child: Column(
+            children: [
+               _row("Subtotal", subtotal),
+               const SizedBox(height: AppSpacing.sm),
+               _row("Tax (${(taxRate * 100).toStringAsFixed(0)}%)", tax),
               const Divider(height: 32),
               Row(
                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                  children: [
-                    const Text("TOTAL", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.black)),
+                    Text(AppLocalizations.t(context, 'TOTAL'), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.black)),
                     Text("₹${total.toStringAsFixed(2)}", style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: AppColors.success)),
                  ],
               )
@@ -300,3 +305,4 @@ class CFDScreen extends StatelessWidget {
      );
   }
 }
+

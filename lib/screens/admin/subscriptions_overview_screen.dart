@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -23,8 +25,8 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
   
   // Filtering & Sorting State
   String? _selectedAddonFilter;
-  int? _sortColumnIndex;
-  final bool _sortAscending = true;
+  
+  
 
   @override
   void initState() {
@@ -89,7 +91,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
                       AppSpacing.vLg,
                       _buildStoreRevenueList(),
                       AppSpacing.vLg,
-                      Text("Recent Transactions / Coupons", style: AppTypography.h2),
+                      Text(AppLocalizations.t(context, 'Recent Transactions / Coupons'), style: AppTypography.h2),
                       AppSpacing.vMd,
                       _buildRecentHistoryList(),
                       AppSpacing.vXl,
@@ -130,7 +132,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: color.withValues(alpha: 0.1)),
       ),
       child: Column(
@@ -168,7 +170,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
     return AppCard(
       child: Column(
         children: [
-          Text("Plan Distribution", style: AppTypography.titleLarge),
+          Text(AppLocalizations.t(context, 'Plan Distribution'), style: AppTypography.titleLarge),
           const SizedBox(height: AppSpacing.lg),
           SizedBox(height: 180, child: PieChart(PieChartData(sections: sections, centerSpaceRadius: 40))),
           const SizedBox(height: AppSpacing.lg),
@@ -186,10 +188,10 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Top Stores by Revenue", style: AppTypography.titleLarge),
+          Text(AppLocalizations.t(context, 'Top Stores by Revenue'), style: AppTypography.titleLarge),
           const SizedBox(height: AppSpacing.md),
           if (revenueMap.isEmpty)
-            Center(child: Text("No data available", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))))
+            Center(child: Text(AppLocalizations.t(context, 'No data available'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))))
           else
             ...revenueMap.entries.take(5).map((e) => Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -219,7 +221,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Row(
             children: [
-              Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.rectangle)),
               const SizedBox(width: AppSpacing.sm),
               Text(plan, style: AppTypography.bodyMedium),
             ],
@@ -236,7 +238,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Text("No subscription history available", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+            child: Text(AppLocalizations.t(context, 'No subscription history available'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
           ),
         ),
       );
@@ -272,7 +274,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
             contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             leading: CircleAvatar(
               backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              child: Icon(Icons.receipt_long, color: AppColors.primary, size: 20),
+              child: const Icon(Icons.receipt_long, color: AppColors.primary, size: 20),
             ),
             title: Row(
               children: [
@@ -280,7 +282,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
                 _buildStatusBadge(item['status']),
               ],
             ),
-            subtitle: Text("${df.format(createdAt)} • $plan ($cycle)", style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
+            subtitle: Text("${df.format(createdAt)} â€¢ $plan ($cycle)", style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
             trailing: Text("₹$amount", style: AppTypography.titleLarge.copyWith(color: AppColors.success)),
           );
         },
@@ -307,10 +309,10 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Text(statusStr, style: AppTypography.labelSmall.copyWith(color: color, fontWeight: FontWeight.bold)),
@@ -339,7 +341,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
     return AppCard(
       child: Column(
         children: [
-          Text("Addon Adoption", style: AppTypography.titleLarge),
+          Text(AppLocalizations.t(context, 'Addon Adoption'), style: AppTypography.titleLarge),
           const SizedBox(height: AppSpacing.lg),
           SizedBox(height: 180, child: PieChart(PieChartData(sections: sections, centerSpaceRadius: 40))),
           const SizedBox(height: AppSpacing.lg),
@@ -359,7 +361,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Row(
             children: [
-              Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.rectangle)),
               const SizedBox(width: AppSpacing.sm),
               Text(addon.replaceAll('_', ' ').toUpperCase(), style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.w500)),
             ],
@@ -376,7 +378,6 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
     final allAddons = _getAllUniqueAddons(storeDetails);
     final limits = _stats['platformLimits'] ?? {};
     final globalDaily = limits['daily'] ?? 2000;
-    final globalMonthly = limits['monthly'] ?? 50000;
 
     if (_selectedAddonFilter != null) {
       storeDetails = storeDetails.where((s) {
@@ -392,7 +393,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Detailed Overview", style: AppTypography.titleLarge),
+              Text(AppLocalizations.t(context, 'Detailed Overview'), style: AppTypography.titleLarge),
               if (_selectedAddonFilter != null)
                 IconButton(
                   onPressed: () => setState(() => _selectedAddonFilter = null),
@@ -409,7 +410,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
             child: Row(
               children: [
                 FilterChip(
-                  label: Text("All", style: AppTypography.labelSmall),
+                  label: Text(AppLocalizations.t(context, 'All'), style: AppTypography.labelSmall),
                   selected: _selectedAddonFilter == null,
                   onSelected: (_) => setState(() => _selectedAddonFilter = null),
                   selectedColor: AppColors.primary.withValues(alpha: 0.1),
@@ -455,8 +456,8 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
                 if (plan == 'Basic') {
                    final dCount = s['dailyOrders'] ?? 0;
                    final dLimit = s['dailyLimit'] ?? globalDaily;
-                   final mCount = s['monthlyOrders'] ?? 0;
-                   final mLimit = s['monthlyLimit'] ?? globalMonthly;
+                   
+                   
 
                    final dProgress = (dLimit > 0) ? (dCount / dLimit).clamp(0.0, 1.0) : 0.0;
 
@@ -476,7 +477,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
                        ),
                        const SizedBox(height: AppSpacing.xs),
                        ClipRRect(
-                         borderRadius: BorderRadius.circular(2),
+                         borderRadius: BorderRadius.zero,
                          child: LinearProgressIndicator(
                            value: dProgress,
                            minHeight: 4,
@@ -561,13 +562,17 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
     if (plan == 'Basic') color = AppColors.primary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Text(plan.toUpperCase(), style: AppTypography.bodySmall.copyWith(color: color, fontWeight: FontWeight.bold)),
     );
   }
 }
+
+
+
+

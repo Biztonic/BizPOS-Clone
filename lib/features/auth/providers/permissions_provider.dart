@@ -48,7 +48,7 @@ class PermissionsHelper {
         }
         return false;
       }
-      return true;
+      return false; // BUG FIX: Do not grant access by default to unmapped roles
     }
     return true;
   }
@@ -63,13 +63,13 @@ class PermissionsHelper {
       if (!profile!.accessibleAddons!.contains(key)) return false;
     }
     
-    return activeStore!.addons.contains(key);
+    return activeStore!.addons.contains(key) || activeStore!.purchasedAddons.contains(key);
   }
 }
 
 @riverpod
 PermissionsHelper permissions(Ref ref) {
-  final profile = ref.watch(profileNotifierProvider).profile;
+  final profile = ref.watch(profileNotifierProvider).value;
   final storeState = ref.watch(storeNotifierProvider);
   return PermissionsHelper(profile, storeState.activeStore);
 }

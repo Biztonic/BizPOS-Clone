@@ -1,4 +1,6 @@
 import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
 
@@ -15,7 +17,7 @@ class SyncStatusWidget extends StatelessWidget {
         final pending = service.pendingUploadCount;
         final isSyncing = service.syncStatus == "Syncing...";
         
-        Color statusColor = AppColors.success;
+        Color statusColor = AppColors.adaptiveSuccess(context);
         IconData statusIcon = Icons.cloud_done;
         String tooltip = "Synced";
 
@@ -25,10 +27,10 @@ class SyncStatusWidget extends StatelessWidget {
           tooltip = "Offline";
           if (pending > 0) {
              tooltip = "Offline ($pending pending)";
-             statusColor = AppColors.warning;
+             statusColor = AppColors.adaptiveWarning(context);
           }
         } else if (isSyncing || pending > 0) {
-          statusColor = AppColors.primaryLight;
+          statusColor = AppColors.adaptivePrimary(context);
           statusIcon = Icons.sync;
           tooltip = "Syncing ($pending pending)...";
         }
@@ -36,11 +38,13 @@ class SyncStatusWidget extends StatelessWidget {
         return Tooltip(
           message: tooltip,
           child: Container(
-             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-             margin: const EdgeInsets.symmetric(horizontal: 8),
+             height: 40,
+             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+             margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+             alignment: Alignment.center,
              decoration: BoxDecoration(
                color: statusColor.withValues(alpha: 0.1),
-               borderRadius: BorderRadius.circular(12),
+               borderRadius: BorderRadius.zero,
                border: Border.all(color: statusColor.withValues(alpha: 0.3))
              ),
              child: Row(
@@ -69,3 +73,6 @@ class SyncStatusWidget extends StatelessWidget {
     );
   }
 }
+
+
+

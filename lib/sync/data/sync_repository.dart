@@ -1,4 +1,3 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:biztonic_pos/services/database_helper.dart';
 
 class SyncRepository {

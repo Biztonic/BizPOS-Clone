@@ -1,4 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/dashboard_provider.dart';
@@ -36,56 +40,55 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
     final upiUrl = "upi://pay?pa=${widget.adminUpiId}&pn=BizPOS&am=${widget.amount.toStringAsFixed(2)}&cu=INR&tn=Standard%20Plan%20${widget.billingCycle}";
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: 500,
           maxHeight: MediaQuery.of(context).size.height * 0.9,
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.payment, size: 48, color: AppColors.primary),
-              const SizedBox(height: 16),
-              const Text(
-                "Complete Payment",
+              const SizedBox(height: AppSpacing.md),
+              Text(AppLocalizations.t(context, 'Complete Payment'),
                 style: AppTypography.headlineSmall,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 "Scan the QR code below to pay ₹${widget.amount} for the ${widget.billingCycle} Standard Plan.",
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textSecondary(context)),
               ),
               if (widget.selectedAddons.isNotEmpty) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLightGrey.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Column(
                     children: [
-                      const Row(children: [Icon(Icons.list, size: 16, color: AppColors.primary), SizedBox(width: 8), Text("Breakdown", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))]),
+                      Row(children: [const Icon(Icons.list, size: 16, color: AppColors.primary), const SizedBox(width: AppSpacing.sm), Text(AppLocalizations.t(context, 'Breakdown'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))]),
                       const Divider(),
                       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text("${widget.billingCycle} Plan"), Text("₹${(widget.amount - _calculateAddonsTotal(context)).toStringAsFixed(2)}")]),
                       ...widget.selectedAddons.map((key) => Padding(
-                        padding: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.only(top: AppSpacing.xs),
                         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_getAddonTitle(key)), Text("₹${_getAddonPrice(key, widget.billingCycle, context).toStringAsFixed(2)}")]),
                       )),
                     ],
                   ),
                 ),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.lg),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(color: AppColors.border(context)),
                 ),
                 child: QrImageView(
@@ -94,34 +97,34 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
                   size: MediaQuery.of(context).size.height < 600 ? 150.0 : 200.0,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 "Total Amount: ₹${widget.amount}",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.success),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.success),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 "UPI ID: ${widget.adminUpiId}",
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.lg),
               const Divider(),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               const Text(
                 "Once you've made the payment, click 'I HAVE PAID' to submit your request for approval.",
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12, color: AppColors.warning, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.lg),
               Row(
                 children: [
                   Expanded(
                     child: TextButton(
                       onPressed: _isSubmitting ? null : () => Navigator.pop(context),
-                      child: const Text("CANCEL"),
+                      child: Text(AppLocalizations.t(context, 'CANCEL')),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -161,7 +164,7 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
                               width: 16,
                               child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                             )
-                          : const Text("I HAVE PAID"),
+                          : Text(AppLocalizations.t(context, 'I HAVE PAID')),
                     ),
                   ),
                 ],
@@ -201,3 +204,8 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
     }
   }
 }
+
+
+
+
+

@@ -1,11 +1,12 @@
 import '../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import '../../core/design/components/atoms/app_card.dart';
 import '../../core/design/components/atoms/app_button.dart';
-import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/tokens/app_spacing.dart';
 import '../../core/design/tokens/app_typography.dart';
 
@@ -55,17 +56,16 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                       padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.primaryLight.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(AppSpacing.sm),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: const Icon(Icons.business_outlined, color: AppColors.primaryLight),
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    Text('Franchise Overview', style: AppTypography.headlineSmall),
+                    Text(AppLocalizations.t(context, 'Franchise Overview'), style: AppTypography.headlineSmall),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Overview of performance for all stores under your franchise.',
+                Text(AppLocalizations.t(context, 'Overview of performance for all stores under your franchise.'),
                   style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
                 ),
               ],
@@ -95,7 +95,7 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Store Performance', style: AppTypography.titleLarge),
+                Text(AppLocalizations.t(context, 'Store Performance'), style: AppTypography.titleLarge),
                 const SizedBox(height: AppSpacing.lg),
 
                 // Filters
@@ -107,11 +107,11 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                       child: TextField(
                         controller: _searchController,
                         onChanged: (v) => setState(() {}),
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           hintText: 'Filter by Store Name...',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSpacing.sm)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
                         ),
                       ),
                     ),
@@ -129,7 +129,7 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                           hintText: provider.franchises.isNotEmpty ? provider.franchises.first.name : 'Your Franchise',
                           filled: true,
                           fillColor: Theme.of(context).disabledColor.withValues(alpha: 0.05),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSpacing.sm), borderSide: BorderSide.none),
+                          border: const OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide.none),
                           contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                         ),
                       ),
@@ -159,18 +159,18 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                     child: DataTable(
                       headingTextStyle: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary(context)),
                       dataTextStyle: AppTypography.bodyMedium,
-                      columns: const [
-                        DataColumn(label: Text('Store Name')),
-                        DataColumn(label: Text('Owner')),
-                        DataColumn(label: Text('Franchise')),
-                        DataColumn(label: Text('Total Sales')),
-                        DataColumn(label: Text('Total Orders')),
-                        DataColumn(label: Text('Status')),
+                      columns: [
+                        DataColumn(label: Text(AppLocalizations.t(context, 'Store Name'))),
+                        DataColumn(label: Text(AppLocalizations.t(context, 'Owner'))),
+                        DataColumn(label: Text(AppLocalizations.t(context, 'Franchise'))),
+                        DataColumn(label: Text(AppLocalizations.t(context, 'Total Sales'))),
+                        DataColumn(label: Text(AppLocalizations.t(context, 'Total Orders'))),
+                        DataColumn(label: Text(AppLocalizations.t(context, 'Status'))),
                       ],
                       rows: filteredStores.isEmpty
                           ? [
                               DataRow(cells: [
-                                DataCell(Text('No stores found matching your criteria.', style: TextStyle(color: AppColors.textSecondary(context)))),
+                                DataCell(Text(AppLocalizations.t(context, 'No stores found matching your criteria.'), style: TextStyle(color: AppColors.textSecondary(context)))),
                                 const DataCell(SizedBox()),
                                 const DataCell(SizedBox()),
                                 const DataCell(SizedBox()),
@@ -183,7 +183,7 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                                 DataCell(Text(store.name, style: const TextStyle(fontWeight: FontWeight.w600))),
                                 DataCell(Text(store.owner)),
                                 DataCell(Text(store.franchiseName ?? '-')),
-                                const DataCell(Text('₹0.00')),
+                                DataCell(Text(AppLocalizations.t(context, '₹0.00'))),
                                 const DataCell(Text('0')),
                                 DataCell(_buildStatusBadge(store.status)),
                               ]);
@@ -196,11 +196,11 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    AppButton.secondary(onPressed: null, label: 'Previous'),
+                    const AppButton.secondary(onPressed: null, label: 'Previous'),
                     const SizedBox(width: AppSpacing.md),
-                    Text('Page 1 of 1', style: AppTypography.bodySmall),
+                    Text(AppLocalizations.t(context, 'Page 1 of 1'), style: AppTypography.bodySmall),
                     const SizedBox(width: AppSpacing.md),
-                    AppButton.secondary(onPressed: null, label: 'Next'),
+                    const AppButton.secondary(onPressed: null, label: 'Next'),
                   ],
                 )
               ],
@@ -244,7 +244,7 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
   Widget _buildMockDropdown(String hint) {
      return Container(
        padding: const EdgeInsets.symmetric(horizontal: 12),
-       decoration: BoxDecoration(border: Border.all(color: AppColors.textSecondary(context)), borderRadius: BorderRadius.circular(8)),
+       decoration: BoxDecoration(border: Border.all(color: AppColors.textSecondary(context)), borderRadius: BorderRadius.zero),
        child: DropdownButtonHideUnderline(
          child: DropdownButton<String>(
            hint: Text(hint, style: const TextStyle(fontSize: 14)),
@@ -262,7 +262,7 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppSpacing.xl),
+        borderRadius: BorderRadius.zero,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -287,9 +287,9 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
           children: [
             Icon(Icons.business_outlined, size: 64, color: Theme.of(context).disabledColor),
             const SizedBox(height: AppSpacing.lg),
-            Text('Manage Franchises', style: AppTypography.headlineSmall),
+            Text(AppLocalizations.t(context, 'Manage Franchises'), style: AppTypography.headlineSmall),
             const SizedBox(height: AppSpacing.xs),
-            Text('Feature Coming Soon', style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+            Text(AppLocalizations.t(context, 'Feature Coming Soon'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
             const SizedBox(height: AppSpacing.xl),
             AppButton.primary(
               onPressed: () {},
@@ -302,3 +302,5 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
     );
   }
 }
+
+

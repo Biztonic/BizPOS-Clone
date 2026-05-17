@@ -1,4 +1,8 @@
 import '../../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 // ignore_for_file: dead_null_aware_expression
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -22,21 +26,21 @@ class LastFiveBillsDialog extends StatelessWidget {
 
     return Dialog(
       backgroundColor: CarDashboardTheme.panelColor(true).withValues(alpha: 0.95),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: CarDashboardTheme.neonBlue, width: 2),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+        side: BorderSide(color: CarDashboardTheme.neonBlue, width: 2),
       ),
       child: Container(
         width: 600,
         height: 500,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
             Row(
               children: [
                 const Icon(Icons.history, color: CarDashboardTheme.neonBlue, size: 28),
                 const SizedBox(width: 12),
-                const Text("LAST 5 BILLS", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Orbitron')),
+                Text(AppLocalizations.t(context, 'LAST 5 BILLS'), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Orbitron')),
                 const Spacer(),
                 IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Navigator.pop(context)),
               ],
@@ -44,7 +48,7 @@ class LastFiveBillsDialog extends StatelessWidget {
             const Divider(color: Colors.white24, height: 30),
             Expanded(
               child: orders.isEmpty 
-                  ? const Center(child: Text("No Sales History Found", style: TextStyle(color: Colors.white54)))
+                  ? Center(child: Text(AppLocalizations.t(context, 'No Sales History Found'), style: const TextStyle(color: Colors.white54)))
                   : ListView.builder(
                       itemCount: orders.length,
                       itemBuilder: (ctx, i) => _buildOrderTile(context, orders[i]),
@@ -59,10 +63,10 @@ class LastFiveBillsDialog extends StatelessWidget {
   Widget _buildOrderTile(BuildContext context, OrderModel order) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: Colors.white10),
       ),
       child: Row(
@@ -72,7 +76,7 @@ class LastFiveBillsDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text("#${order.id.substring(0, 8).toUpperCase()}", style: const TextStyle(color: CarDashboardTheme.neonBlue, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(DateFormat('hh:mm a').format(order.date), style: const TextStyle(color: Colors.white54, fontSize: 12)),
             ],
           ),
@@ -80,7 +84,7 @@ class LastFiveBillsDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text("?${order.total.toStringAsFixed(2)}", style: const TextStyle(color: CarDashboardTheme.electricGreen, fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text("${order.items.length} Items", style: const TextStyle(color: Colors.white54, fontSize: 12)),
             ],
           ),
@@ -105,21 +109,21 @@ class RefundDialog extends StatelessWidget {
 
     return Dialog(
       backgroundColor: CarDashboardTheme.panelColor(true).withValues(alpha: 0.95),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: CarDashboardTheme.alertRed, width: 2),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+        side: BorderSide(color: CarDashboardTheme.alertRed, width: 2),
       ),
       child: Container(
         width: 700,
         height: 600,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
             Row(
               children: [
                 const Icon(Icons.restart_alt, color: CarDashboardTheme.alertRed, size: 28),
                 const SizedBox(width: 12),
-                const Text("QUICK REFUND (LAST 5)", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Orbitron')),
+                Text(AppLocalizations.t(context, 'QUICK REFUND (LAST 5)'), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Orbitron')),
                 const Spacer(),
                 IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Navigator.pop(context)),
               ],
@@ -127,7 +131,7 @@ class RefundDialog extends StatelessWidget {
             const Divider(color: Colors.white24, height: 30),
             Expanded(
               child: orders.isEmpty 
-                  ? const Center(child: Text("No Orders Found", style: TextStyle(color: Colors.white54)))
+                  ? Center(child: Text(AppLocalizations.t(context, 'No Orders Found'), style: const TextStyle(color: Colors.white54)))
                   : ListView.builder(
                       itemCount: orders.length,
                       itemBuilder: (ctx, i) => _buildRefundTile(context, orders[i]),
@@ -142,10 +146,10 @@ class RefundDialog extends StatelessWidget {
   Widget _buildRefundTile(BuildContext context, OrderModel order) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: Colors.white10),
       ),
       child: Row(
@@ -155,14 +159,14 @@ class RefundDialog extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Order #${order.id.substring(0, 8).toUpperCase()}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                Text("${order.items.length} Items � ${DateFormat('hh:mm a').format(order.date)}", style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                Text("${order.items.length} Items ï¿½ ${DateFormat('hh:mm a').format(order.date)}", style: const TextStyle(color: Colors.white54, fontSize: 12)),
               ],
             ),
           ),
           
           Text("?${order.total.toStringAsFixed(2)}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
           
-          const SizedBox(width: 24),
+          const SizedBox(width: AppSpacing.lg),
           
           NeonButton(
             label: "REFUND",
@@ -171,7 +175,7 @@ class RefundDialog extends StatelessWidget {
             onPressed: () {
               // Action: Confirm Refund
               // For now show snackbar as full refund logic might be complex
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Refund Requested (Feature Placeholder)"), backgroundColor: CarDashboardTheme.alertRed));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Refund Requested (Feature Placeholder)')), backgroundColor: CarDashboardTheme.alertRed));
             },
           )
         ],
@@ -216,21 +220,21 @@ class QuickDayReportDialog extends StatelessWidget {
 
     return Dialog(
        backgroundColor: CarDashboardTheme.panelColor(true).withValues(alpha: 0.95),
-       shape: RoundedRectangleBorder(
-         borderRadius: BorderRadius.circular(20),
-         side: const BorderSide(color: CarDashboardTheme.electricGreen, width: 2),
+       shape: const RoundedRectangleBorder(
+         borderRadius: BorderRadius.zero,
+         side: BorderSide(color: CarDashboardTheme.electricGreen, width: 2),
        ),
        child: Container(
          width: 800,
          height: 600,
-         padding: const EdgeInsets.all(24),
+         padding: const EdgeInsets.all(AppSpacing.lg),
          child: Column(
            children: [
              Row(
                children: [
                  const Icon(Icons.bar_chart, color: CarDashboardTheme.electricGreen, size: 28),
                  const SizedBox(width: 12),
-                 const Text("DAY REPORT (QUICK VIEW)", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Orbitron')),
+                 Text(AppLocalizations.t(context, 'DAY REPORT (QUICK VIEW)'), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Orbitron')),
                  const Spacer(),
                  IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Navigator.pop(context)),
                ],
@@ -247,9 +251,9 @@ class QuickDayReportDialog extends StatelessWidget {
                        mainAxisAlignment: MainAxisAlignment.center,
                        children: [
                          _buildStatBox("TOTAL SALES", "?${totalSales.toStringAsFixed(0)}", CarDashboardTheme.electricGreen),
-                         const SizedBox(height: 24),
+                         const SizedBox(height: AppSpacing.lg),
                          _buildStatBox("TOTAL ORDERS", "$totalCount", CarDashboardTheme.neonBlue),
-                         const SizedBox(height: 24),
+                         const SizedBox(height: AppSpacing.lg),
                          _buildStatBox("AVG BILL", "?${totalCount > 0 ? (totalSales/totalCount).toStringAsFixed(0) : '0'}", AppColors.warning),
                        ],
                      ),
@@ -258,7 +262,7 @@ class QuickDayReportDialog extends StatelessWidget {
                    // Right: Pie Chart
                    Expanded(
                      child: todayOrders.isEmpty 
-                         ? const Center(child: Text("No Data Today", style: TextStyle(color: Colors.white54)))
+                         ? Center(child: Text(AppLocalizations.t(context, 'No Data Today'), style: const TextStyle(color: Colors.white54)))
                          : PieChart(
                              PieChartData(
                                sectionsSpace: 4,
@@ -289,19 +293,20 @@ class QuickDayReportDialog extends StatelessWidget {
   Widget _buildStatBox(String label, String value, Color color) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xxs),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
           Text(label, style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 14)),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(value, style: TextStyle(color: color, fontSize: 32, fontWeight: FontWeight.bold, fontFamily: 'Orbitron')),
         ],
       ),
     );
   }
 }
+

@@ -1,4 +1,6 @@
-import '../../core/design/tokens/app_colors.dart';
+﻿import '../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
@@ -109,7 +111,7 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
         await provider.updateAdminConfig({}, newSecurityPassword: newPass);
         if (!mounted) return;
         setState(() { _hasSecurityPassword = true; _isConfigLocked = false; });
-        messenger.showSnackBar(const SnackBar(content: Text("Security Password Setup Successfully!")));
+        messenger.showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Security Password Setup Successfully!'))));
       }
       return;
     }
@@ -122,7 +124,7 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
       if (isValid) {
         setState(() => _isConfigLocked = false);
       } else {
-        messenger.showSnackBar(const SnackBar(content: Text("Incorrect Security Password"), backgroundColor: AppColors.error));
+        messenger.showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Incorrect Security Password')), backgroundColor: AppColors.error));
       }
     }
   }
@@ -153,11 +155,11 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'CANCEL'))),
           ElevatedButton(
             onPressed: () {
               if (isSetup && ctrl.text != ctrl2.text) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Passwords do not match")));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Passwords do not match'))));
                 return;
               }
               Navigator.pop(ctx, ctrl.text);
@@ -200,7 +202,7 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
       final upiId = _adminUpiCtrl.text.trim();
       if (upiId.isEmpty) {
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Super Admin UPI ID cannot be empty"), backgroundColor: AppColors.error));
+           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Super Admin UPI ID cannot be empty')), backgroundColor: AppColors.error));
            setState(() => _isLoading = false);
         }
         return;
@@ -220,7 +222,7 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
          _isLoading = false;
          _isConfigLocked = true; // Lock again after save
        });
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Settings Updated!")));
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Settings Updated!'))));
     }
   }
 
@@ -256,7 +258,7 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text("Standard Plan & Payments", style: AppTypography.h4.copyWith(color: AppColors.primary)),
+                              Text(AppLocalizations.t(context, 'Standard Plan & Payments'), style: AppTypography.h4.copyWith(color: AppColors.primary)),
                               if (_isConfigLocked)
                                 AppButton.ghost(
                                   onPressed: _unlockConfig,
@@ -301,9 +303,9 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
                     const Divider(),
                     const SizedBox(height: AppSpacing.lg),
                     
-                    Text("Basic Plan Limits", style: AppTypography.h3),
+                    Text(AppLocalizations.t(context, 'Basic Plan Limits'), style: AppTypography.h3),
                     const SizedBox(height: AppSpacing.xs),
-                    Text("Set default limits for all stores on the Basic Plan.", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+                    Text(AppLocalizations.t(context, 'Set default limits for all stores on the Basic Plan.'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
                     const SizedBox(height: AppSpacing.lg),
                     
                     AppTextField(
@@ -323,15 +325,15 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
                     
                     DropdownButtonFormField<String>(
                       value: _syncFrequency,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: "Cloud Sync Frequency (Basic Plan)",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                         helperText: "How often Basic stores sync with cloud"
                       ),
-                      items: const [
-                        DropdownMenuItem(value: '1_DAY', child: Text("1 Day")),
-                        DropdownMenuItem(value: '1_WEEK', child: Text("1 Week")),
-                        DropdownMenuItem(value: '1_MONTH', child: Text("1 Month")),
+                      items: [
+                        DropdownMenuItem(value: '1_DAY', child: Text(AppLocalizations.t(context, '1 Day'))),
+                        DropdownMenuItem(value: '1_WEEK', child: Text(AppLocalizations.t(context, '1 Week'))),
+                        DropdownMenuItem(value: '1_MONTH', child: Text(AppLocalizations.t(context, '1 Month'))),
                       ],
                       onChanged: (val) {
                         if (val != null) setState(() => _syncFrequency = val);
@@ -341,16 +343,16 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
                     
                     DropdownButtonFormField<int>(
                       value: _retentionDays,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: "Cloud Data Retention (Basic Plan)",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                         helperText: "Data older than this will be removed from Cloud"
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 30, child: Text("30 Days")),
-                        DropdownMenuItem(value: 90, child: Text("3 Months")),
-                        DropdownMenuItem(value: 180, child: Text("6 Months")),
-                        DropdownMenuItem(value: 365, child: Text("1 Year")),
+                      items: [
+                        DropdownMenuItem(value: 30, child: Text(AppLocalizations.t(context, '30 Days'))),
+                        DropdownMenuItem(value: 90, child: Text(AppLocalizations.t(context, '3 Months'))),
+                        DropdownMenuItem(value: 180, child: Text(AppLocalizations.t(context, '6 Months'))),
+                        DropdownMenuItem(value: 365, child: Text(AppLocalizations.t(context, '1 Year'))),
                       ],
                       onChanged: (val) {
                         if (val != null) setState(() => _retentionDays = val);
@@ -358,8 +360,8 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     
-                    Text("Global Module Availability", style: AppTypography.h3),
-                    Text("Disable modules platform-wide.", style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+                    Text(AppLocalizations.t(context, 'Global Module Availability'), style: AppTypography.h3),
+                    Text(AppLocalizations.t(context, 'Disable modules platform-wide.'), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
                     const SizedBox(height: AppSpacing.lg),
                     
                     AbsorbPointer(
@@ -410,7 +412,7 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
                                         children: [
                                           Expanded(
                                             flex: 2,
-                                            child: Text("Monthly Rate", style: AppTypography.bodyMedium),
+                                            child: Text(AppLocalizations.t(context, 'Monthly Rate'), style: AppTypography.bodyMedium),
                                           ),
                                           Expanded(
                                             flex: 3,
@@ -468,3 +470,5 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
     }
   }
 }
+
+

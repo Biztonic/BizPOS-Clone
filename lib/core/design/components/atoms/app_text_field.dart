@@ -1,6 +1,8 @@
-import '../../../../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
+
 import '../../tokens/app_spacing.dart';
+import '../../tokens/app_radius.dart';
 
 enum AppTextFieldSize { small, medium, large }
 
@@ -69,13 +71,14 @@ class AppTextField extends StatelessWidget {
     EdgeInsetsGeometry contentPadding;
     double fontSize;
 
+    bool isDense = true;
     switch (size) {
       case AppTextFieldSize.small:
-        contentPadding = const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs);
+        contentPadding = const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm);
         fontSize = 12;
         break;
       case AppTextFieldSize.medium:
-        contentPadding = const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm);
+        contentPadding = const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12);
         fontSize = 14;
         break;
       case AppTextFieldSize.large:
@@ -89,7 +92,7 @@ class AppTextField extends StatelessWidget {
         case AppTextFieldVariant.outlined:
         case AppTextFieldVariant.filled:
           return OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.0),
+            borderRadius: AppRadius.borderMd,
             borderSide: variant == AppTextFieldVariant.filled 
                 ? BorderSide.none 
                 : BorderSide(color: color, width: width),
@@ -118,22 +121,23 @@ class AppTextField extends StatelessWidget {
       validator: validator,
       style: TextStyle(fontSize: fontSize),
       decoration: InputDecoration(
+        isDense: isDense,
         labelText: labelText ?? label,
         hintText: hintText ?? hint,
         helperText: helperText,
         errorText: errorText,
         prefixText: prefixText,
         suffixText: suffixText,
-        prefixIcon: prefixIcon ?? (icon != null ? icon : null),
+        prefixIcon: prefixIcon ?? (icon),
         suffixIcon: suffixIcon,
         filled: variant == AppTextFieldVariant.filled,
         fillColor: enabled 
-            ? (isDark ? AppColors.textSecondary(context).withValues(alpha: 0.1) : Colors.grey[100]) 
-            : (isDark ? Colors.transparent : Colors.grey[50]),
+            ? (isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3) : AppColors.secondary.withValues(alpha: 0.15)) 
+            : (isDark ? Colors.transparent : AppColors.secondary.withValues(alpha: 0.08)),
         contentPadding: contentPadding,
         border: buildBorder(theme.dividerColor),
         enabledBorder: buildBorder(theme.dividerColor),
-        focusedBorder: buildBorder(theme.primaryColor, width: 2.0),
+        focusedBorder: buildBorder(theme.colorScheme.primary, width: 2.0),
         errorBorder: buildBorder(theme.colorScheme.error),
         focusedErrorBorder: buildBorder(theme.colorScheme.error, width: 2.0),
         disabledBorder: buildBorder(theme.dividerColor.withValues(alpha: 0.5)),

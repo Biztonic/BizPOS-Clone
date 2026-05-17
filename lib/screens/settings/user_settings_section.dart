@@ -1,5 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 import 'dart:convert';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,14 +9,16 @@ import 'package:image/image.dart' as img;
 import '../../features/auth/providers/profile_notifier.dart';
 import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/tokens/app_spacing.dart';
-import '../../core/design/density/app_density.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import '../../core/design/components/atoms/app_button.dart';
 import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/components/atoms/app_card.dart';
+import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_radius.dart';
 
 class UserSettingsSection extends ConsumerStatefulWidget {
-  const UserSettingsSection({super.key});
+  final bool isSubView;
+  const UserSettingsSection({super.key, this.isSubView = false});
 
   @override
   ConsumerState<UserSettingsSection> createState() => _UserSettingsSectionState();
@@ -25,6 +29,7 @@ class _UserSettingsSectionState extends ConsumerState<UserSettingsSection> {
   final _phoneController = TextEditingController();
   String? _newPhotoBase64;
   bool _isProcessingImage = false;
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -71,7 +76,7 @@ class _UserSettingsSectionState extends ConsumerState<UserSettingsSection> {
       error: (err, stack) => PosScaffold(title: "User Settings", mainContent: Center(child: Text("Error: $err"))),
       data: (user) {
         if (user == null) {
-          return const PosScaffold(title: "User Settings", mainContent: Center(child: Text("No User Logged In")));
+          return PosScaffold(title: "User Settings", mainContent: Center(child: Text(AppLocalizations.t(context, 'No User Logged In'))));
         }
 
         // Only update controllers if they are empty (initial load)
@@ -89,14 +94,12 @@ class _UserSettingsSectionState extends ConsumerState<UserSettingsSection> {
            imageProvider = MemoryImage(base64Decode(user.photoBase64!));
         }
 
-        return PosScaffold(
-          title: "User Settings",
-          mainContent: ListView(
-            padding: EdgeInsets.all(AppSpacing.lg),
+        final content = ListView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
               AppCard(
                 child: Padding(
-                  padding: EdgeInsets.all(AppSpacing.lg),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   child: Column(
                     children: [
                       Center(
@@ -104,19 +107,24 @@ class _UserSettingsSectionState extends ConsumerState<UserSettingsSection> {
                           children: [
                             Container(
                               decoration: BoxDecoration(
-                                shape: BoxShape.circle,
+                                shape: BoxShape.rectangle,
+                                borderRadius: AppRadius.borderLg,
                                 border: Border.all(
                                   color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
                                   width: 4,
                                 ),
                               ),
-                              child: CircleAvatar(
-                                radius: 60,
-                                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                                backgroundImage: imageProvider,
+                              child: Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  borderRadius: AppRadius.borderMd,
+                                  image: imageProvider != null ? DecorationImage(image: imageProvider, fit: BoxFit.cover) : null,
+                                ),
                                 child: (imageProvider == null && !_isProcessingImage) 
                                     ? Icon(Icons.person, size: 60, color: Theme.of(context).colorScheme.onSurfaceVariant)
-                                    : _isProcessingImage ? const CircularProgressIndicator() : null,
+                                    : _isProcessingImage ? const Center(child: CircularProgressIndicator()) : null,
                               ),
                             ),
                             Positioned(
@@ -124,13 +132,13 @@ class _UserSettingsSectionState extends ConsumerState<UserSettingsSection> {
                               right: 0,
                               child: Material(
                                 color: Theme.of(context).colorScheme.primary,
-                                shape: const CircleBorder(),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
                                 elevation: 4,
                                 child: InkWell(
                                   onTap: _pickImage,
-                                  customBorder: const CircleBorder(),
+                                  customBorder: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
                                   child: Padding(
-                                    padding: EdgeInsets.all(AppSpacing.sm),
+                                    padding: const EdgeInsets.all(AppSpacing.sm),
                                     child: Icon(
                                       Icons.camera_alt,
                                       color: Theme.of(context).colorScheme.onPrimary,
@@ -174,20 +182,32 @@ class _UserSettingsSectionState extends ConsumerState<UserSettingsSection> {
                       const SizedBox(height: AppSpacing.xl),
                       AppButton(
                         label: "Save Profile",
-                        onPressed: _isProcessingImage ? null : () async {
-                          final newName = _nameController.text.trim();
-                          final newPhone = _phoneController.text.trim();
-                          
-                          await ref.read(profileNotifierProvider.notifier).updateProfile(
-                            name: newName,
-                            phoneNumber: newPhone,
-                            photoBase64: _newPhotoBase64
-                          );
-                          
-                          if (mounted) {
-                             ScaffoldMessenger.of(context).showSnackBar(
-                               const SnackBar(content: Text("Profile Updated Successfully"), behavior: SnackBarBehavior.floating)
-                             );
+                        isLoading: _isSaving,
+                        onPressed: _isProcessingImage || _isSaving ? null : () async {
+                          setState(() => _isSaving = true);
+                          try {
+                            final newName = _nameController.text.trim();
+                            final newPhone = _phoneController.text.trim();
+                            
+                            await ref.read(profileNotifierProvider.notifier).updateProfile(
+                              name: newName,
+                              phoneNumber: newPhone,
+                              photoBase64: _newPhotoBase64
+                            );
+                            
+                            if (mounted) {
+                              setState(() => _isSaving = false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(AppLocalizations.t(context, 'Profile Updated Successfully')), behavior: SnackBarBehavior.floating)
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              setState(() => _isSaving = false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Error: $e"), backgroundColor: AppColors.adaptiveError(context))
+                              );
+                            }
                           }
                         },
                         variant: AppButtonVariant.primary,
@@ -198,7 +218,14 @@ class _UserSettingsSectionState extends ConsumerState<UserSettingsSection> {
                 ),
               ),
             ],
-          ),
+          );
+
+        if (widget.isSubView) return content;
+
+        return PosScaffold(
+          title: "User Settings",
+          showSidebar: false,
+          mainContent: content,
         );
       },
     );
@@ -210,10 +237,10 @@ class _UserSettingsSectionState extends ConsumerState<UserSettingsSection> {
     required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: AppRadius.borderMd,
         border: Border.all(
           color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
         ),
@@ -221,7 +248,7 @@ class _UserSettingsSectionState extends ConsumerState<UserSettingsSection> {
       child: Row(
         children: [
           Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,7 +259,7 @@ class _UserSettingsSectionState extends ConsumerState<UserSettingsSection> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   value,
                   style: AppTypography.bodyMedium,
@@ -246,3 +273,6 @@ class _UserSettingsSectionState extends ConsumerState<UserSettingsSection> {
     );
   }
 }
+
+
+

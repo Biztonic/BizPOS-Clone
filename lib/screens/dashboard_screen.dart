@@ -1,4 +1,5 @@
-import '../core/design/tokens/app_colors.dart';
+import '../core/design/design_system.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +10,6 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'settings/subscription_reminder_dialog.dart';
-import '../core/design/layouts/pos_scaffold.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Widget child;
@@ -83,10 +83,10 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.store, size: 64, color: AppColors.textSecondary(context)),
-              const SizedBox(height: 16),
-              Text("No Stores Found", style: TextStyle(fontSize: 20, color: AppColors.textSecondary(context))),
-              const SizedBox(height: 8),
-              Text("You are logged in as ${provider.activeRole}, but no stores are available.", style: TextStyle(color: AppColors.textSecondary(context))),
+              const SizedBox(height: AppSpacing.md),
+              Text(AppLocalizations.t(context, 'No Stores Found'), style: AppTypography.titleLarge.copyWith(color: AppColors.textSecondary(context))),
+              const SizedBox(height: AppSpacing.sm),
+              Text("You are logged in as ${provider.activeRole}, but no stores are available.", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
             ],
           ),
         ),
@@ -97,23 +97,23 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       body: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.store, size: 64, color: AppColors.primaryLight),
-                const SizedBox(height: 24),
-                const Text("Select a Store", textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text("Please select a store to manage from the list below.", textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary(context))),
-                const SizedBox(height: 32),
+                Icon(Icons.store, size: 64, color: AppColors.adaptivePrimary(context)),
+                const SizedBox(height: AppSpacing.lg),
+                Text(AppLocalizations.t(context, 'Select a Store'), textAlign: TextAlign.center, style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.sm),
+                Text(AppLocalizations.t(context, 'Please select a store to manage from the list below.'), textAlign: TextAlign.center, style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+                const SizedBox(height: AppSpacing.xl),
                 Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.textSecondary(context)),
-                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border(context)),
+                    borderRadius: AppRadius.borderMd,
                   ),
                   child: ListView.separated(
                     shrinkWrap: true,
@@ -123,8 +123,8 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                     itemBuilder: (context, index) {
                       final store = provider.stores[index];
                       return ListTile(
-                        title: Text(store.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(store.status, style: TextStyle(color: store.status == 'Active' ? AppColors.success : AppColors.warning)),
+                        title: Text(store.name, style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+                        subtitle: Text(store.status, style: AppTypography.labelMedium.copyWith(color: store.status == 'Active' ? AppColors.adaptiveSuccess(context) : AppColors.adaptiveWarning(context))),
                         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
                           provider.setActiveStoreId(store.id);
@@ -163,3 +163,6 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     }
   }
 }
+
+
+

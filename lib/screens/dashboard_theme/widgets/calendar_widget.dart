@@ -1,4 +1,8 @@
 import '../../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
@@ -95,7 +99,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
               decoration: InputDecoration(hintText: "Enter $type details..."),
            ),
            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
               ElevatedButton(
                  onPressed: () {
                     if (controller.text.isNotEmpty) {
@@ -111,7 +115,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                     }
                     Navigator.pop(ctx);
                  },
-                 child: const Text("Save"),
+                 child: Text(AppLocalizations.t(context, 'Save')),
               )
            ],
         )
@@ -147,16 +151,16 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                   child: Row(
                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                      children: [
-                        Text("Calendar & Notes", style: TextStyle(color: textColor, fontSize: 24, fontWeight: FontWeight.bold)),
+                        Text(AppLocalizations.t(context, 'Calendar & Notes'), style: TextStyle(color: textColor, fontSize: 24, fontWeight: FontWeight.bold)),
                         // CLOSE BUTTON
                         InkWell(
                            onTap: () => Navigator.pop(context),
                            child: Container(
                               width: 36, 
                               height: 36,
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                  color: AppColors.error,
-                                 borderRadius: BorderRadius.circular(8),
+                                 borderRadius: BorderRadius.zero,
                               ),
                               child: const Icon(Icons.close, color: Colors.white, size: 20),
                            ),
@@ -173,11 +177,11 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                       Expanded(
                          flex: 2,
                          child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.md),
                             margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                             decoration: BoxDecoration(
                                color: cardColor,
-                               borderRadius: BorderRadius.circular(24),
+                               borderRadius: BorderRadius.zero,
                                boxShadow: CarDashboardTheme.cardShadow(isDark),
                             ),
                             child: TableCalendar(
@@ -214,13 +218,13 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                   titleCentered: true,
                                   leftChevronIcon: Icon(Icons.chevron_left, color: AppColors.primary, size: 30),
                                   rightChevronIcon: Icon(Icons.chevron_right, color: AppColors.primary, size: 30),
-                                  headerPadding: EdgeInsets.symmetric(vertical: 8),
+                                  headerPadding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                                ),
                                calendarStyle: CalendarStyle(
                                   defaultTextStyle: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 20),
                                   weekendTextStyle: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600, fontSize: 20),
                                   outsideTextStyle: TextStyle(color: textColor.withValues(alpha: 0.3), fontSize: 20),
-                                  cellMargin: const EdgeInsets.all(4),
+                                  cellMargin: const EdgeInsets.all(AppSpacing.xs),
                                   cellPadding: const EdgeInsets.all(0),
                                   cellAlignment: Alignment.center,
                                   selectedDecoration: BoxDecoration(
@@ -252,10 +256,10 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                          flex: 1,
                          child: Container(
                             margin: const EdgeInsets.fromLTRB(0, 0, 16, 16),
-                            padding: const EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             decoration: BoxDecoration(
                                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                               borderRadius: BorderRadius.circular(24),
+                               borderRadius: BorderRadius.zero,
                                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2)),
                                boxShadow: CarDashboardTheme.cardShadow(isDark),
                             ),
@@ -280,8 +284,8 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                         children: [
                                            if (_getEventsForDay(_selectedDay!).isEmpty)
                                               Padding(
-                                                 padding: EdgeInsets.only(top: 32),
-                                                 child: Center(child: Text("No events or notes.", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 18))),
+                                                 padding: const EdgeInsets.only(top: AppSpacing.xl),
+                                                 child: Center(child: Text(AppLocalizations.t(context, 'No events or notes.'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 18))),
                                               ),
                                               
                                            ..._getEventsForDay(_selectedDay!).asMap().entries.map((entry) {
@@ -303,7 +307,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                                  padding: const EdgeInsets.all(12),
                                                  decoration: BoxDecoration(
                                                     color: itemColor.withValues(alpha: 0.1),
-                                                    borderRadius: BorderRadius.circular(16),
+                                                    borderRadius: BorderRadius.zero,
                                                     border: Border.all(color: itemColor.withValues(alpha: 0.5)),
                                                  ),
                                                  child: Row(
@@ -326,19 +330,19 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                      ),
                                   ),
                                   
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: AppSpacing.md),
                                   // ACTION BUTTONS
                                   Row(
                                      children: [
                                         Expanded(
                                            child: ElevatedButton.icon(
                                               icon: const Icon(Icons.note_add, size: 20),
-                                              label: const Text("Note", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                              label: Text(AppLocalizations.t(context, 'Note'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                               style: ElevatedButton.styleFrom(
                                                  backgroundColor: AppColors.primaryLight,
                                                  foregroundColor: Colors.white,
-                                                 padding: const EdgeInsets.symmetric(vertical: 20),
-                                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+                                                 shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                                  elevation: 2
                                               ),
                                               onPressed: () => _addEvent("Note"),
@@ -348,12 +352,12 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                         Expanded(
                                            child: ElevatedButton.icon(
                                               icon: const Icon(Icons.alarm_add, size: 20),
-                                              label: const Text("Reminder", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                              label: Text(AppLocalizations.t(context, 'Reminder'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                               style: ElevatedButton.styleFrom(
                                                  backgroundColor: AppColors.primary, // Different color for reminder
                                                  foregroundColor: Colors.white,
-                                                 padding: const EdgeInsets.symmetric(vertical: 20),
-                                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+                                                 shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                                  elevation: 2
                                               ),
                                               onPressed: () => _addEvent("Reminder"),
@@ -374,3 +378,5 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     );
   }
 }
+
+

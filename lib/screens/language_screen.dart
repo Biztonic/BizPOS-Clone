@@ -1,4 +1,6 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -37,16 +39,13 @@ class _LanguageScreenState extends State<LanguageScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: TextField(
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
                 hintText: AppLocalizations.t(context, 'search'),
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
+                border: const OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide.none),
                 filled: true,
                 fillColor: AppColors.surfaceVariant(context),
               ),
@@ -54,7 +53,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
           ),
           Expanded(
             child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
                 childAspectRatio: 1.5,
@@ -76,7 +75,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                       color: isSelected 
                         ? Theme.of(context).primaryColor
                         : AppColors.surface(context),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.zero,
                       border: Border.all(
                         color: isSelected 
                           ? Theme.of(context).primaryColor
@@ -105,7 +104,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                                   color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: AppSpacing.xs),
                               Text(
                                 name,
                                 textAlign: TextAlign.center,
@@ -120,8 +119,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
                         ),
                         if (isSelected)
                           const Positioned(
-                            top: 8,
-                            right: 8,
+                            top: AppSpacing.sm,
+                            right: AppSpacing.sm,
                             child: Icon(Icons.check_circle, color: Colors.white, size: 20),
                           ),
                       ],
@@ -139,17 +138,19 @@ class _LanguageScreenState extends State<LanguageScreen> {
   String _getNativeIndicator(String code) {
     switch (code) {
       case 'en': return 'Aa';
-      case 'hi': return 'अ';
-      case 'bn': return 'অ';
-      case 'mr': return 'अ';
-      case 'te': return 'అ';
-      case 'ta': return 'அ';
-      case 'gu': return 'અ';
-      case 'ur': return 'ا';
-      case 'kn': return 'ಅ';
-      case 'or': return 'ଅ';
-      case 'ml': return 'അ';
+      case 'hi': return 'à¤…';
+      case 'bn': return 'à¦…';
+      case 'mr': return 'à¤…';
+      case 'te': return 'à°…';
+      case 'ta': return 'à®…';
+      case 'gu': return 'àª…';
+      case 'ur': return 'Ø§';
+      case 'kn': return 'à²…';
+      case 'or': return 'à¬…';
+      case 'ml': return 'à´…';
       default: return 'A';
     }
   }
 }
+
+

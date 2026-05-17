@@ -46,7 +46,7 @@ Widget statesUseCase(BuildContext context) {
     spacing: 16.0,
     children: [
       AppButton.primary(label: 'Loading', isLoading: true, onPressed: () {}),
-      AppButton.primary(label: 'Disabled', onPressed: null),
+      const AppButton.primary(label: 'Disabled', onPressed: null),
     ],
   );
 }

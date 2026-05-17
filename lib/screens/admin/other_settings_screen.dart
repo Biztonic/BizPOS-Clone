@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/store_provider.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
@@ -40,7 +42,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
 
   Future<void> _checkKioskMode() async {
     final mode = await getKioskMode();
-    if (mounted) {
+    if (context.mounted) {
       setState(() {
         _isKioskMode = mode == KioskMode.enabled;
       });
@@ -55,6 +57,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
       } else {
         await stopKioskMode();
       }
+      if (!mounted) return;
       
       // PERSIST STATE (For Auto-Lock on Reboot)
       final provider = Provider.of<StoreProvider>(context, listen: false);
@@ -126,36 +129,36 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text("Edit Store Type"),
+              title: Text(AppLocalizations.t(context, 'Edit Store Type')),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(controller: ctrl, decoration: const InputDecoration(labelText: "Store Type")),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.md),
                     CheckboxListTile(
-                      title: const Text("Enable Kitchen & Counters"),
+                      title: Text(AppLocalizations.t(context, 'Enable Kitchen & Counters')),
                       value: kitchenEnabled,
                       onChanged: (val) => setDialogState(() => kitchenEnabled = val ?? false),
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
                     ),
                     CheckboxListTile(
-                      title: const Text("Enable Dietary Types (Veg/Non-Veg)"),
+                      title: Text(AppLocalizations.t(context, 'Enable Dietary Types (Veg/Non-Veg)')),
                       value: dietaryEnabled,
                       onChanged: (val) => setDialogState(() => dietaryEnabled = val ?? false),
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
                     ),
                     CheckboxListTile(
-                      title: const Text("Enable Packaging Types"),
+                      title: Text(AppLocalizations.t(context, 'Enable Packaging Types')),
                       value: packagingEnabled,
                       onChanged: (val) => setDialogState(() => packagingEnabled = val ?? false),
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
                     ),
                     CheckboxListTile(
-                      title: const Text("Enable Variant Categories"),
+                      title: Text(AppLocalizations.t(context, 'Enable Variant Categories')),
                       value: variantsEnabled,
                       onChanged: (val) => setDialogState(() => variantsEnabled = val ?? false),
                       controlAffinity: ListTileControlAffinity.leading,
@@ -165,7 +168,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
                 ),
               ),
               actions: [
-                 TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                 TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
                  ElevatedButton(
                    onPressed: () async {
                       Navigator.pop(ctx);
@@ -188,7 +191,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
                          await Provider.of<StoreProvider>(context, listen: false).updateStoreType(oldType, newType, config: newConfig);
                       }
                    }, 
-                   child: const Text("Save")
+                   child: Text(AppLocalizations.t(context, 'Save'))
                  ),
               ],
             );
@@ -202,11 +205,11 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
     final confirm = await showDialog<bool>(
       context: context, 
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Store Type?'),
+        title: Text(AppLocalizations.t(context, 'Delete Store Type?')),
         content: Text('Are you sure you want to delete "$type"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: AppColors.error))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'Cancel'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(AppLocalizations.t(context, 'Delete'), style: const TextStyle(color: AppColors.error))),
         ],
       )
     );
@@ -216,6 +219,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
         _types.remove(type);
         _typeConfigs.remove(type);
       });
+      if (!mounted) return;
       await Provider.of<StoreProvider>(context, listen: false).deleteStoreType(type);
     }
   }
@@ -229,8 +233,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "Store Configuration",
+            Text(AppLocalizations.t(context, 'Store Configuration'),
               style: AppTypography.h3,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -247,17 +250,16 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
                         padding: const EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppSpacing.xs),
+                          borderRadius: BorderRadius.zero,
                         ),
                         child: const Icon(Icons.store, color: AppColors.primary),
                       ),
                       const SizedBox(width: AppSpacing.md),
-                      Text("Store Types", style: AppTypography.h4),
+                      Text(AppLocalizations.t(context, 'Store Types'), style: AppTypography.h4),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    "Define the categories of stores available config.",
+                  Text(AppLocalizations.t(context, 'Define the categories of stores available config.'),
                     style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
                   ),
                   const Divider(height: AppSpacing.xl),
@@ -308,7 +310,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
                   _isLoading 
                     ? const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.xl), child: CircularProgressIndicator()))
                     : _types.isEmpty 
-                        ? const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.xl), child: Text('No store types defined.')))
+                        ? Center(child: Padding(padding: const EdgeInsets.all(AppSpacing.xl), child: Text(AppLocalizations.t(context, 'No store types defined.'))))
                         : ListView.separated(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -323,7 +325,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(type, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
                                 subtitle: hasKitchen 
-                                  ? Text("Kitchen Enabled", style: AppTypography.bodySmall.copyWith(color: AppColors.success)) 
+                                  ? Text(AppLocalizations.t(context, 'Kitchen Enabled'), style: AppTypography.bodySmall.copyWith(color: AppColors.success)) 
                                   : null,
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -348,8 +350,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
             ),
             
             const SizedBox(height: AppSpacing.xl),
-            Text(
-              "Device Security", 
+            Text(AppLocalizations.t(context, 'Device Security'), 
               style: AppTypography.h3,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -368,7 +369,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
                         padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
                           color: (_isKioskMode ? AppColors.success : AppColors.warning).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppSpacing.sm)
+                          borderRadius: BorderRadius.zero
                         ),
                         child: Icon(
                           _isKioskMode ? Icons.lock : Icons.lock_open,
@@ -381,7 +382,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Lock Device Mode", style: AppTypography.h4),
+                            Text(AppLocalizations.t(context, 'Lock Device Mode'), style: AppTypography.h4),
                             const SizedBox(height: AppSpacing.xs),
                             Text(
                               _isKioskMode 
@@ -406,7 +407,7 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
                       padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1), 
-                        borderRadius: BorderRadius.circular(AppSpacing.xs)
+                        borderRadius: BorderRadius.zero
                       ),
                       child: Text(
                         _statusMessage, 
@@ -435,8 +436,11 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
         children: [
            Checkbox(value: value, onChanged: onChanged),
            Text(label, style: const TextStyle(fontSize: 13)),
-           const SizedBox(width: 8),
+           const SizedBox(width: AppSpacing.sm),
         ],
      );
   }
 }
+
+
+

@@ -1,4 +1,3 @@
-import 'package:biztonic_pos/models/order_model.dart';
 
 class DashboardStats {
   final double totalSales;

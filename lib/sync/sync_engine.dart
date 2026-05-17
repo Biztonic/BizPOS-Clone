@@ -10,6 +10,11 @@ import 'package:uuid/uuid.dart';
 
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/services/firestore_helper.dart';
+import 'package:biztonic_pos/core/events/event_bus.dart';
+import 'package:biztonic_pos/core/events/app_events.dart';
+import 'package:biztonic_pos/models/order_model.dart';
+import 'package:biztonic_pos/models/inventory_movement.dart';
+import 'package:biztonic_pos/models/business_ledger.dart';
 
 // --- Engine Imports ---
 import 'package:biztonic_pos/sync/orchestrator/sync_orchestrator.dart';
@@ -74,18 +79,13 @@ class SyncService with ChangeNotifier {
   DateTime? _lastSyncTime;
   DateTime? get lastSyncTime => _lastSyncTime;
 
-  String? _lastSyncError;
-  String? get lastSyncError => _lastSyncError;
-  set lastSyncError(String? val) => _lastSyncError = val;
-
-  String? _lastSyncWarning;
-  String? get lastSyncWarning => _lastSyncWarning;
-  set lastSyncWarning(String? val) => _lastSyncWarning = val;
+  String? lastSyncError;
+  String? lastSyncWarning;
 
   /// Extracts a Firebase index creation URL from an error message, if present.
   String? get lastIndexErrorUrl {
-    if (_lastSyncError != null) return _extractIndexLink(_lastSyncError!);
-    if (_lastSyncWarning != null) return _extractIndexLink(_lastSyncWarning!);
+    if (lastSyncError != null) return _extractIndexLink(lastSyncError!);
+    if (lastSyncWarning != null) return _extractIndexLink(lastSyncWarning!);
     return null;
   }
 
@@ -172,7 +172,9 @@ class SyncService with ChangeNotifier {
   void setActiveStoreId(String? id) {
     if (_activeStoreId == id) return;
     _activeStoreId = id;
-    _planPolicy.clearCache();
+    if (_isInitialized) {
+      _planPolicy.clearCache();
+    }
     _cachedPlatformLimits = null;
     _cachedSubscriptionPlan = null;
     notifyListeners();
@@ -250,11 +252,11 @@ class SyncService with ChangeNotifier {
       _orchestrator = SyncOrchestrator(
         pullEngine: _pullEngine,
         outboundManager: _outboundManager,
-        planPolicy: _planPolicy,
+        
         limitsEngine: _limitsEngine,
         setStatus: (s) => _syncStatus = s,
-        setLastError: (e) => _lastSyncError = e,
-        setLastWarning: (w) => _lastSyncWarning = w,
+        setLastError: (e) => lastSyncError = e,
+        setLastWarning: (w) => lastSyncWarning = w,
         setLastSyncTime: (t) => _lastSyncTime = t,
         refreshCounts: refreshLocalCounts,
         checkConnectivity: _checkInternetConnection,
@@ -273,6 +275,11 @@ class SyncService with ChangeNotifier {
 
       _isInitialized = true;
       debugPrint("✅ SyncService Decomposed Initialized");
+
+      // 7. Wire up EventBus → Sync Queue bridge
+      // This is CRITICAL: CheckoutOrderUseCase fires OrderCreatedEvent
+      // after local persistence. We must listen and queue for cloud sync.
+      _setupEventBusListeners();
     } catch (e) {
       debugPrint("❌ SyncService Init Error: $e");
     }
@@ -324,10 +331,8 @@ class SyncService with ChangeNotifier {
 
   void _initConnectivity() {
     Connectivity().checkConnectivity().then((result) {
-      final status = (result is List)
-          ? (result.isNotEmpty ? result.first : ConnectivityResult.none)
-          : result;
-      _updateConnectionStatus(status as ConnectivityResult);
+      final status = result.isNotEmpty ? result.first : ConnectivityResult.none;
+      _updateConnectionStatus(status);
     });
     Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> result) {
       _updateConnectionStatus(result.isNotEmpty ? result.first : ConnectivityResult.none);
@@ -438,6 +443,7 @@ class SyncService with ChangeNotifier {
   // ─────────────────────────────────────────────────────────────
 
   Future<void> processSync({bool forceManual = false, bool forceFull = false}) async {
+    if (!_isInitialized) return;
     await _orchestrator.processSync(forceManual: forceManual, forceFull: forceFull);
   }
 
@@ -510,7 +516,7 @@ class SyncService with ChangeNotifier {
   }
 
   Map<String, dynamic> getDetailedStats() {
-    return _statsEngine.getDetailedStats(
+    final rawStats = _statsEngine.getDetailedStats(
       localCounts: _localCounts,
       cloudCounts: _cloudCounts,
       pendingCount: pendingUploadCount,
@@ -519,6 +525,47 @@ class SyncService with ChangeNotifier {
       lastSync: _lastSyncTime,
       deviceId: _deviceId,
     );
+
+    // Calculate pending breakdown
+    Map<String, int> pendingBreakdown = {};
+    if (_queueBox != null) {
+      for (var val in _queueBox!.values) {
+        if (val is Map) {
+          final itemStoreId = (val['activeStoreId'] ?? '').toString().trim();
+          final payloadStoreId = (val['payload'] is Map ? (val['payload']['storeId'] ?? '').toString().trim() : '');
+          if (itemStoreId == _activeStoreId || payloadStoreId == _activeStoreId) {
+            final col = val['collection'] as String?;
+            if (col != null) {
+               pendingBreakdown[col] = (pendingBreakdown[col] ?? 0) + 1;
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      ...rawStats,
+      'pendingBreakdown': pendingBreakdown,
+      'pending': pendingUploadCount,
+      'orders': _localCounts['orders'] ?? 0,
+      'cloudOrders': _cloudCounts['orders'] ?? 0,
+      'inventory': _localCounts['inventory'] ?? 0,
+      'cloudInventory': _cloudCounts['inventory'] ?? 0,
+      'customers': _localCounts['customers'] ?? 0,
+      'cloudCustomers': _cloudCounts['customers'] ?? 0,
+      'settings': _localCounts['settings'] ?? 0,
+      'cloudSettings': _cloudCounts['settings'] ?? 0,
+      'employees': _localCounts['employees'] ?? 0,
+      'cloudEmployees': _cloudCounts['employees'] ?? 0,
+      'floors': _localCounts['floors'] ?? 0,
+      'cloudFloors': _cloudCounts['floors'] ?? 0,
+      'tables': _localCounts['tables'] ?? 0,
+      'cloudTables': _cloudCounts['tables'] ?? 0,
+      'suppliers': _localCounts['suppliers'] ?? 0,
+      'cloudSuppliers': _cloudCounts['suppliers'] ?? 0,
+      'notes': _localCounts['notes'] ?? 0,
+      'cloudNotes': _cloudCounts['notes'] ?? 0,
+    };
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -600,7 +647,7 @@ class SyncService with ChangeNotifier {
       }
     }
 
-    if (refreshCounts) this.refreshLocalCounts();
+    if (refreshCounts) refreshLocalCounts();
 
     // 5. Queue for Cloud Sync
     await queueOperation(
@@ -672,5 +719,69 @@ class SyncService with ChangeNotifier {
       return value.id;
     }
     return value;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // EVENT BUS → SYNC QUEUE BRIDGE
+  // ─────────────────────────────────────────────────────────────
+
+  /// Wires up EventBus listeners so that domain events (e.g. OrderCreatedEvent)
+  /// are automatically queued for cloud synchronization.
+  ///
+  /// This is the MISSING LINK: CheckoutOrderUseCase persists locally and fires
+  /// events, but without this bridge, nothing gets queued for cloud push.
+  void _setupEventBusListeners() {
+    // ─── OrderCreatedEvent ──────────────────────────────────
+    EventBus.instance.on<OrderCreatedEvent>((event) async {
+      try {
+        final order = event.order;
+        final storeId = event.storeId;
+
+        // 1. Queue order for cloud sync
+        if (order is OrderModel) {
+          final orderData = order.toHiveMap();
+          orderData['storeId'] = storeId;
+          await queueOperation(
+            collection: 'orders',
+            docId: order.id,
+            action: 'create',
+            payload: Map<String, dynamic>.from(orderData),
+          );
+          debugPrint('📤 SyncBridge: Queued order ${order.id} for cloud sync');
+        }
+
+        // 2. Queue business event for cloud sync
+        if (event.event != null && event.event is BusinessEvent) {
+          final bizEvent = event.event as BusinessEvent;
+          await queueOperation(
+            collection: 'business_events',
+            docId: bizEvent.id,
+            action: 'create',
+            payload: bizEvent.toMap(),
+          );
+        }
+
+        // 3. Queue inventory movements for cloud sync
+        for (var movement in event.movements) {
+          if (movement is InventoryMovement) {
+            await queueOperation(
+              collection: 'inventory_movements',
+              docId: movement.id,
+              action: 'create',
+              payload: {
+                ...movement.toMap(),
+                'createdAt': movement.createdAt.toIso8601String(),
+              },
+            );
+          }
+        }
+
+        debugPrint('📤 SyncBridge: OrderCreatedEvent fully processed (${event.movements.length} movements)');
+      } catch (e) {
+        debugPrint('❌ SyncBridge: Failed to queue OrderCreatedEvent: $e');
+      }
+    });
+
+    debugPrint('🔌 SyncService: EventBus listeners wired up');
   }
 }

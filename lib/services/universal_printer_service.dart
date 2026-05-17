@@ -1,38 +1,45 @@
 // ignore_for_file: constant_identifier_names
 import 'dart:async';
 import 'package:flutter/foundation.dart'; // Changed from 'show kIsWeb' to import all of foundation for debugPrint
-import 'package:flutter_thermal_printer/flutter_thermal_printer.dart' if (dart.library.js_util) 'package:biztonic_pos/services/stubs/flutter_thermal_printer_stub.dart';
-import 'package:flutter_thermal_printer/utils/printer.dart' if (dart.library.js_util) 'package:biztonic_pos/services/stubs/printer_stub.dart'; 
+import 'package:flutter_thermal_printer/flutter_thermal_printer.dart'
+    if (dart.library.js_util) 'package:biztonic_pos/services/stubs/flutter_thermal_printer_stub.dart';
+import 'package:flutter_thermal_printer/utils/printer.dart'
+    if (dart.library.js_util) 'package:biztonic_pos/services/stubs/printer_stub.dart';
+
+// ignore: duplicate_import, unused_import, unnecessary_import
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 
 import '../models/printer_device.dart';
 import '../models/settings.dart'; // Added import
 import '../features/receipt_printing/models/receipt_config.dart';
 import '../features/receipt_printing/models/receipt_content.dart';
 import '../features/receipt_printing/core/receipt_generator.dart';
-import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 
 class UniversalPrinterService {
   final _flutterThermalPrinter = kIsWeb ? null : FlutterThermalPrinter.instance;
 
   // Stream controller to expose unified PrinterDevices
-  final StreamController<List<PrinterDevice>> _devicesController = StreamController<List<PrinterDevice>>.broadcast();
+  final StreamController<List<PrinterDevice>> _devicesController =
+      StreamController<List<PrinterDevice>>.broadcast();
   Stream<List<PrinterDevice>> get devicesStream => _devicesController.stream;
 
   // Connection status stream
-  final StreamController<bool> _connectionController = StreamController<bool>.broadcast();
+  final StreamController<bool> _connectionController =
+      StreamController<bool>.broadcast();
   Stream<bool> get connectionStream => _connectionController.stream;
 
   Printer? _connectedPrinter;
   bool get isConnected => _connectedPrinter != null;
   Printer? get connectedPrinter => _connectedPrinter;
-  
+
   DateTime? _lastUsedAt; // Track last interaction
-  
+
   // PRINT QUEUE: Ensures only one print job runs at a time (FIFO)
   // This prevents buffer interleaving/corruption when multiple print requests are made rapidly.
   Future<void> _lock = Future.value();
 
-  static final UniversalPrinterService _instance = UniversalPrinterService._internal();
+  static final UniversalPrinterService _instance =
+      UniversalPrinterService._internal();
   factory UniversalPrinterService() => _instance;
 
   UniversalPrinterService._internal() {
@@ -74,14 +81,15 @@ class UniversalPrinterService {
       }
       return false;
     } catch (e) {
-
       return false;
     }
     // return true;
   }
 
   Future<bool> disconnect() async {
-    if (_connectedPrinter != null && !kIsWeb && _flutterThermalPrinter != null) {
+    if (_connectedPrinter != null &&
+        !kIsWeb &&
+        _flutterThermalPrinter != null) {
       await _flutterThermalPrinter!.disconnect(_connectedPrinter!);
       _connectedPrinter = null;
       _connectionController.add(false);
@@ -118,29 +126,35 @@ class UniversalPrinterService {
       }
 
       if (target == null) {
-        debugPrint('🖨️ PRINT: ERROR - No target printer specified or connected!');
+        debugPrint(
+            '🖨️ PRINT: ERROR - No target printer specified or connected!');
         throw Exception('No target printer');
       }
 
       // 1. Pre-print Handshake: If idle for > 30s, verify first
-      if (_lastUsedAt != null && DateTime.now().difference(_lastUsedAt!).inSeconds > 30) {
+      if (_lastUsedAt != null &&
+          DateTime.now().difference(_lastUsedAt!).inSeconds > 30) {
         debugPrint('🖨️ PRINT: Idle for >30s, verifying connection...');
         final ok = await _verifyConnectionInternal(target);
-        if (!ok) throw Exception('Printer connection verified dead during idle check');
+        if (!ok) {
+          throw Exception('Printer connection verified dead during idle check');
+        }
       }
 
       if (_flutterThermalPrinter != null) {
         try {
-          debugPrint('🖨️ PRINT: Sending ${data.length} bytes to ${target.connectionType} printer (${target.name})');
+          debugPrint(
+              '🖨️ PRINT: Sending ${data.length} bytes to ${target.connectionType} printer (${target.name})');
           await _flutterThermalPrinter!.printData(target, data, longData: true);
           _lastUsedAt = DateTime.now();
-          
+
           // Update last connected if it was null
-          if (_connectedPrinter == null) _connectedPrinter = target;
-          
+          _connectedPrinter ??= target;
+
           debugPrint('🖨️ PRINT: All data sent successfully');
         } catch (e) {
-          debugPrint('🖨️ PRINT: FAILED - $e. Marking printer as disconnected.');
+          debugPrint(
+              '🖨️ PRINT: FAILED - $e. Marking printer as disconnected.');
           if (_connectedPrinter?.address == target.address) {
             _connectedPrinter = null;
             _connectionController.add(false);
@@ -184,7 +198,8 @@ class UniversalPrinterService {
     try {
       debugPrint('🖨️ VERIFY: Sending heartbeat to ${target.name}...');
       // ESC @ = Initialize/Reset printer — harmless, no paper output
-      await _flutterThermalPrinter!.printData(target, [0x1B, 0x40], longData: false);
+      await _flutterThermalPrinter!
+          .printData(target, [0x1B, 0x40], longData: false);
       _lastUsedAt = DateTime.now();
       return true;
     } catch (e) {
@@ -198,7 +213,8 @@ class UniversalPrinterService {
   }
 
   /// Attempts to print; on failure tries to reconnect using [reconnectDevice] and retries once.
-  Future<void> printWithRetry(List<int> data, {PrinterDevice? reconnectDevice}) async {
+  Future<void> printWithRetry(List<int> data,
+      {PrinterDevice? reconnectDevice}) async {
     try {
       await printRaw(data, device: reconnectDevice);
     } catch (e) {
@@ -206,14 +222,14 @@ class UniversalPrinterService {
       if (reconnectDevice != null) {
         debugPrint('🖨️ RETRY: Delaying 1s before reconnect and retry...');
         await Future.delayed(const Duration(seconds: 1));
-        
+
         final retryOk = await connect(reconnectDevice);
         if (retryOk) {
           debugPrint('🖨️ RETRY: Reconnected successfully, retrying print...');
           await printRaw(data, device: reconnectDevice);
           return;
         } else {
-           debugPrint('🖨️ RETRY: FAILED to reconnect during retry.');
+          debugPrint('🖨️ RETRY: FAILED to reconnect during retry.');
         }
       }
       rethrow;
@@ -243,35 +259,49 @@ class UniversalPrinterService {
     bytes += generator.feed(1);
     bytes += generator.text('Order #$orderId',
         styles: const PosStyles(align: PosAlign.center));
-    bytes += generator.text('Date: ${DateTime.now().toString().substring(0, 16)}',
+    bytes += generator.text(
+        'Date: ${DateTime.now().toString().substring(0, 16)}',
         styles: const PosStyles(align: PosAlign.center));
     bytes += generator.feed(1);
     bytes += generator.hr();
     bytes += generator.row([
       PosColumn(text: 'Item', width: 6),
-      PosColumn(text: 'Qty', width: 2, styles: const PosStyles(align: PosAlign.right)),
-      PosColumn(text: 'Price', width: 4, styles: const PosStyles(align: PosAlign.right)),
+      PosColumn(
+          text: 'Qty',
+          width: 2,
+          styles: const PosStyles(align: PosAlign.right)),
+      PosColumn(
+          text: 'Price',
+          width: 4,
+          styles: const PosStyles(align: PosAlign.right)),
     ]);
     bytes += generator.hr();
     for (var item in items) {
       bytes += generator.row([
         PosColumn(text: item['name'].toString(), width: 6),
-        PosColumn(text: '${item['qty']}', width: 2, styles: const PosStyles(align: PosAlign.right)),
-        PosColumn(text: item['price'].toString(), width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(
+            text: '${item['qty']}',
+            width: 2,
+            styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(
+            text: item['price'].toString(),
+            width: 4,
+            styles: const PosStyles(align: PosAlign.right)),
       ]);
     }
     bytes += generator.hr();
     bytes += generator.row([
       PosColumn(text: 'Total', width: 6, styles: const PosStyles(bold: true)),
-      PosColumn(text: total.toStringAsFixed(2), width: 6, styles: const PosStyles(align: PosAlign.right, bold: true)),
+      PosColumn(
+          text: total.toStringAsFixed(2),
+          width: 6,
+          styles: const PosStyles(align: PosAlign.right, bold: true)),
     ]);
     bytes += generator.feed(2);
     bytes += generator.cut();
 
     await printRaw(bytes);
   }
-
-
 
   Future<void> printMainReceipt({
     required String storeName,
@@ -296,7 +326,9 @@ class UniversalPrinterService {
     String? seatNumbers,
   }) async {
     // 1. Setup Config
-    final config = settings.receiptWidth == 58 ? ReceiptConfig.mm58() : ReceiptConfig.mm80();
+    final config = settings.receiptWidth == 58
+        ? ReceiptConfig.mm58()
+        : ReceiptConfig.mm80();
     final generator = ReceiptGenerator(config, settings: settings);
 
     // Dynamic QR Logic
@@ -306,7 +338,9 @@ class UniversalPrinterService {
         // Generate UPI URI
         // Format: upi://pay?pa=<UPI_ID>&pn=<NAME>&am=<AMOUNT>&cu=INR
         final String pa = paymentSettings.upiId;
-        final String pn = Uri.encodeComponent(paymentSettings.upiName.isNotEmpty ? paymentSettings.upiName : storeName);
+        final String pn = Uri.encodeComponent(paymentSettings.upiName.isNotEmpty
+            ? paymentSettings.upiName
+            : storeName);
         final String am = grantTotal.toStringAsFixed(2);
         effectiveQrData = "upi://pay?pa=$pa&pn=$pn&am=$am&cu=INR";
       } else if (settings.qrData.isNotEmpty) {
@@ -318,16 +352,26 @@ class UniversalPrinterService {
     final header = ReceiptHeader(
       storeName: settings.showStoreName ? storeName : '',
       address: settings.showAddress && address.isNotEmpty ? address : null,
-      phone: settings.showPhone && phone.isNotEmpty ? phone : null, 
+      phone: settings.showPhone && phone.isNotEmpty ? phone : null,
       gstin: settings.showTaxDetails && gstin.isNotEmpty ? gstin : null,
-      customMessage: settings.customHeaderMessage.isNotEmpty ? settings.customHeaderMessage : null,
+      customMessage: settings.customHeaderMessage.isNotEmpty
+          ? settings.customHeaderMessage
+          : null,
     );
 
     final billInfo = ReceiptBillInfo(
-      billNo: settings.showOrderNo ? (orderId.length > 5 ? orderId.substring(orderId.length - 5) : orderId) : '',
+      billNo: settings.showOrderNo
+          ? (orderId.length > 5
+              ? orderId.substring(orderId.length - 5)
+              : orderId)
+          : '',
       date: date,
       cashierName: cashierName,
-      tokenNo: settings.showTokenNo ? (orderId.length > 4 ? orderId.substring(orderId.length - 4) : orderId) : null,
+      tokenNo: settings.showTokenNo
+          ? (orderId.length > 4
+              ? orderId.substring(orderId.length - 4)
+              : orderId)
+          : null,
       tableName: tableName,
       seatNumbers: seatNumbers,
     );
@@ -343,20 +387,22 @@ class UniversalPrinterService {
 
     // Summary
     List<ReceiptKeyVal> summaryRows = [];
-    
+
     // Calculate Total Qty — OrderItem.quantity is int, handle all types safely
     int totalQty = items.fold<int>(0, (p, e) {
-       final qty = e['qty'];
-       if (qty is int) return p + qty;
-       if (qty is double) return p + qty.toInt();
-       return p + (int.tryParse(qty.toString()) ?? 0);
+      final qty = e['qty'];
+      if (qty is int) return p + qty;
+      if (qty is double) return p + qty.toInt();
+      return p + (int.tryParse(qty.toString()) ?? 0);
     });
-    
+
     summaryRows.add(ReceiptKeyVal(label: "Total Qty: $totalQty", value: ""));
-    summaryRows.add(ReceiptKeyVal(label: "Subtotal", value: subtotal.toStringAsFixed(2)));
+    summaryRows.add(
+        ReceiptKeyVal(label: "Subtotal", value: subtotal.toStringAsFixed(2)));
 
     if (settings.showDiscount && discount > 0) {
-      summaryRows.add(ReceiptKeyVal(label: "Discount", value: "-${discount.toStringAsFixed(2)}"));
+      summaryRows.add(ReceiptKeyVal(
+          label: "Discount", value: "-${discount.toStringAsFixed(2)}"));
     }
 
     if (settings.showTaxDetails && tax > 0) {
@@ -366,28 +412,36 @@ class UniversalPrinterService {
       String rateLabel = halfRate == halfRate.roundToDouble()
           ? halfRate.toStringAsFixed(0)
           : halfRate.toStringAsFixed(1);
-      summaryRows.add(ReceiptKeyVal(label: "CGST@$rateLabel%", value: displayCgst.toStringAsFixed(2)));
-      summaryRows.add(ReceiptKeyVal(label: "SGST@$rateLabel%", value: displaySgst.toStringAsFixed(2)));
+      summaryRows.add(ReceiptKeyVal(
+          label: "CGST@$rateLabel%", value: displayCgst.toStringAsFixed(2)));
+      summaryRows.add(ReceiptKeyVal(
+          label: "SGST@$rateLabel%", value: displaySgst.toStringAsFixed(2)));
     }
 
     final summary = ReceiptKeyValSummary(
       rows: summaryRows,
-      grandTotal: ReceiptKeyVal(label: "Grand Total", value: grantTotal.toStringAsFixed(2), isBold: true, isLarge: true),
+      grandTotal: ReceiptKeyVal(
+          label: "Grand Total",
+          value: grantTotal.toStringAsFixed(2),
+          isBold: true,
+          isLarge: true),
     );
 
     // Payment Details
-    final payment = ReceiptKeyValSummary(
-      rows: [
-        ReceiptKeyVal(label: "Payment", value: paymentMethod),
-      ]
-    );
+    final payment = ReceiptKeyValSummary(rows: [
+      ReceiptKeyVal(label: "Payment", value: paymentMethod),
+    ]);
 
     // Footer
-    final footer = settings.showFooter ? ReceiptFooter(
-      message: settings.upsellMessage.isNotEmpty ? settings.upsellMessage : "Thank You Visit Again !!!",
-      poweredBy: "Powered by Biztonic POS",
-      qrData: effectiveQrData,
-    ) : null;
+    final footer = settings.showFooter
+        ? ReceiptFooter(
+            message: settings.upsellMessage.isNotEmpty
+                ? settings.upsellMessage
+                : "Thank You Visit Again !!!",
+            poweredBy: "Powered by Biztonic POS",
+            qrData: effectiveQrData,
+          )
+        : null;
 
     final content = ReceiptContent(
       header: header,
@@ -399,14 +453,15 @@ class UniversalPrinterService {
     );
 
     // DEBUG: Log receipt assembly details
-    debugPrint('🖨️ RECEIPT: Items=${receiptItems.length}, StoreName=$storeName, HasFooter=${footer != null}, HasQR=${footer?.qrData != null}');
+    debugPrint(
+        '🖨️ RECEIPT: Items=${receiptItems.length}, StoreName=$storeName, HasFooter=${footer != null}, HasQR=${footer?.qrData != null}');
 
     // 3. Generate
     List<int> bytes = List.from(generator.generate(content));
 
     // DEBUG: Log bytes generated
     debugPrint('🖨️ RECEIPT: Generated ${bytes.length} bytes');
-    
+
     // 4. Print
     await printRaw(bytes);
   }
@@ -414,7 +469,7 @@ class UniversalPrinterService {
   Future<void> printKDSReceipt({
     required String counterName,
     required DateTime date,
-    required String kotNumber, 
+    required String kotNumber,
     required String serviceType,
     required String billerName,
     required List<Map<String, dynamic>> items,
@@ -429,9 +484,10 @@ class UniversalPrinterService {
     // Calculate Dimensions
     // 58mm ~ 32 chars, 80mm ~ 48 chars
     final int charsPerLine = receiptWidth == 58 ? 32 : 48;
-    final int qtyColWidth = receiptWidth == 58 ? 5 : 8; // Enough for "Qty."(4) + space
+    final int qtyColWidth =
+        receiptWidth == 58 ? 5 : 8; // Enough for "Qty."(4) + space
     final int itemColWidth = charsPerLine - qtyColWidth;
-    
+
     final String dashLine = List.filled(charsPerLine, '-').join();
 
     List<int> bytes = [];
@@ -448,7 +504,7 @@ class UniversalPrinterService {
     }
 
     add('$esc\x40'); // Initialize
-    
+
     // 1. HEADER
     add(alignCenter);
     add(boldOn);
@@ -456,23 +512,24 @@ class UniversalPrinterService {
     add('$counterName\n');
     add('$esc\x21\x00'); // Reset
     add(boldOff);
-    
+
     // Date & Time
-    String formattedDate = "${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}"; 
+    String formattedDate =
+        "${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
     add('$formattedDate\n');
-    
+
     // KOT Number
     add('KOT - $kotNumber\n');
-    
+
     // Service Type (Large, Bold)
     add(boldOn);
     add('$esc\x21\x10'); // Double height
     add('$serviceType\n');
     add('$esc\x21\x00');
     add(boldOff);
-    
+
     add('$dashLine\n');
-    
+
     // 2. INFO
     add('Biller: $billerName\n');
     if (tableName != null && tableName.isNotEmpty) {
@@ -482,59 +539,64 @@ class UniversalPrinterService {
       add('Seats: $seatNumbers\n');
     }
     add('$dashLine\n');
-    
+
     // 3. ITEMS
     // Header
     // "Item" (Left) ... "Qty" (Right)
     String headerItem = "Item";
     String headerQty = "Qty";
-    
+
     // Pad Item to fill visible space minus Qty space
     // Actually, simple aligned columns:
     // [ItemName ......] [Qty]
-    
+
     add(boldOn);
     // Construct Header Line
     // We want "Item" at start, "Qty" at end of line? Or fixed columns?
     // Using Fixed Columns for alignment.
     // "Item" + spaces + "Qty"
-    String headerLine = headerItem.padRight(itemColWidth) + headerQty.padLeft(qtyColWidth);
+    String headerLine =
+        headerItem.padRight(itemColWidth) + headerQty.padLeft(qtyColWidth);
     // Ensure it fits exactly charsPerLine
-    if (headerLine.length > charsPerLine) headerLine = headerLine.substring(0, charsPerLine);
-    
+    if (headerLine.length > charsPerLine) {
+      headerLine = headerLine.substring(0, charsPerLine);
+    }
+
     add('$headerLine\n');
     add(boldOff);
     add('$dashLine\n'); // Optional separator or empty
-    
+
     for (var item in items) {
-       String name = item['name'];
-       String qty = item['qty'].toString();
-       
-       add(boldOn);
-       
-       // Process Name (Truncate or wrap?)
-       // Truncate for single line simplicity in KDS usually, or let it wrap if needed?
-       // Let's Truncate to keep alignment clean as per user request "properly on page".
-       String pName = name.length > itemColWidth ? name.substring(0, itemColWidth) : name.padRight(itemColWidth);
-       
-       // Process Qty
-       String pQty = qty.padLeft(qtyColWidth);
-       
-       add("$pName$pQty\n");
-       add(boldOff);
-       
-       // Notes/Modifiers
-       if (item['note'] != null && item['note'].isNotEmpty) {
-          add("  (Note: ${item['note']})\n");
-       }
+      String name = item['name'];
+      String qty = item['qty'].toString();
+
+      add(boldOn);
+
+      // Process Name (Truncate or wrap?)
+      // Truncate for single line simplicity in KDS usually, or let it wrap if needed?
+      // Let's Truncate to keep alignment clean as per user request "properly on page".
+      String pName = name.length > itemColWidth
+          ? name.substring(0, itemColWidth)
+          : name.padRight(itemColWidth);
+
+      // Process Qty
+      String pQty = qty.padLeft(qtyColWidth);
+
+      add("$pName$pQty\n");
+      add(boldOff);
+
+      // Notes/Modifiers
+      if (item['note'] != null && item['note'].isNotEmpty) {
+        add("  (Note: ${item['note']})\n");
+      }
     }
-    
+
     // Footer space
     // Footer feed + cut
     add('\n\n\n');
     // GS V 1 : Partial cut (universally supported)
     bytes += [0x1D, 0x56, 0x01];
-    
+
     await printRaw(bytes);
   }
 
@@ -564,7 +626,7 @@ class UniversalPrinterService {
       type: type,
     );
   }
-  
+
   ConnectionType _mapToConnectionType(PrinterConnectionType type) {
     switch (type) {
       case PrinterConnectionType.bluetooth:

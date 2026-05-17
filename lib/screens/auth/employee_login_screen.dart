@@ -1,7 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import '../../core/design/tokens/app_colors.dart';
-import '../../core/design/tokens/app_typography.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
@@ -138,13 +141,13 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Forget Store?"),
-        content: const Text("This will clear the cached employees and store name from this screen."),
+        title: Text(AppLocalizations.t(context, 'Forget Store?')),
+        content: Text(AppLocalizations.t(context, 'This will clear the cached employees and store name from this screen.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("CANCEL")),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppLocalizations.t(context, 'CANCEL'))),
           TextButton(
             onPressed: () => Navigator.pop(context, true), 
-            child: const Text("FORGET", style: TextStyle(color: AppColors.error))
+            child: Text(AppLocalizations.t(context, 'FORGET'), style: const TextStyle(color: AppColors.error))
           ),
         ],
       ),
@@ -254,7 +257,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
     }
 
     if (storeCode.isEmpty || empId.isEmpty || pin.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Please fill all fields'))));
       setState(() => _isLoading = false);
       return;
     }
@@ -389,9 +392,9 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
       }
     } on FirebaseException catch (e) {
       if (e.code == 'unavailable') {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Connection lost. Please check your internet."),
-          backgroundColor: AppColors.warning, duration: Duration(seconds: 10)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppLocalizations.t(context, 'Connection lost. Please check your internet.')),
+          backgroundColor: AppColors.warning, duration: const Duration(seconds: 10)));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Database Error: ${e.message}"), backgroundColor: AppColors.error));
       }
@@ -441,7 +444,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Configuration Required"),
+        title: Text(AppLocalizations.t(context, 'Configuration Required')),
         content: const Text(
           "To use PIN Login, enable 'Anonymous' sign-in in Firebase Console.\n\n"
           "1. Go to Firebase Console > Authentication\n"
@@ -449,7 +452,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
           "3. Enable 'Anonymous'"
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK")),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.t(context, 'OK'))),
         ],
       ),
     );
@@ -467,7 +470,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
     return _buildStandardUI();
   }
 
-  // ─── PINNED STORE UI: Employee Grid ───
+  // â”€â”€â”€ PINNED STORE UI: Employee Grid â”€â”€â”€
   Widget _buildPinnedStoreUI() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
@@ -492,9 +495,9 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
             opacity: _fadeAnim,
             child: Column(
               children: [
-                // ── Top bar ──
+                // â”€â”€ Top bar â”€â”€
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                   child: Row(
                     children: [
                       IconButton(
@@ -504,20 +507,20 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                       const Spacer(),
                       TextButton.icon(
                         icon: const Icon(Icons.delete_sweep_outlined, color: Colors.white70, size: 18),
-                        label: const Text("Forget Store", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        label: Text(AppLocalizations.t(context, 'Forget Store'), style: const TextStyle(color: Colors.white70, fontSize: 12)),
                         onPressed: _forgetStore,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       TextButton.icon(
                         icon: const Icon(Icons.swap_horiz, color: Colors.white70, size: 18),
-                        label: const Text("Other Store", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        label: Text(AppLocalizations.t(context, 'Other Store'), style: const TextStyle(color: Colors.white70, fontSize: 12)),
                         onPressed: () => setState(() => _showManualForm = true),
                       ),
                     ],
                   ),
                 ),
 
-                // ── Store Branding ──
+                // â”€â”€ Store Branding â”€â”€
                 Container(
                   width: 72,
                   height: 72,
@@ -536,9 +539,9 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                     child: storeImage != null && storeImage.isNotEmpty
                         ? CachedNetworkImage(imageUrl: storeImage, fit: BoxFit.cover,
                             errorWidget: (_, __, ___) => Image.asset('assets/logo.jpg', fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Icon(Icons.storefront, size: 36, color: AppColors.primaryLight)))
+                                errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 36, color: AppColors.primaryLight)))
                         : Image.asset('assets/logo.jpg', fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Icon(Icons.storefront, size: 36, color: AppColors.primaryLight)),
+                            errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 36, color: AppColors.primaryLight)),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -547,14 +550,13 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  "Select your profile to login",
-                  style: TextStyle(fontSize: 13, color: Colors.white60),
+                const SizedBox(height: AppSpacing.xs),
+                Text(AppLocalizations.t(context, 'Select your profile to login'),
+                  style: const TextStyle(fontSize: 13, color: Colors.white60),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.lg),
 
-                // ── Employee Grid or PIN Entry ──
+                // â”€â”€ Employee Grid or PIN Entry â”€â”€
                 Expanded(
                   child: _selectedEmployee == null
                       ? _buildEmployeeGrid(isDark)
@@ -575,22 +577,22 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.people_outline, size: 64, color: Colors.white.withValues(alpha: 0.3)),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Text(
               "No employees found.\nPlease login as owner first.",
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
             ElevatedButton.icon(
               onPressed: () => setState(() => _showManualForm = true),
               icon: const Icon(Icons.edit, size: 18),
-              label: const Text("Manual Login"),
+              label: Text(AppLocalizations.t(context, 'Manual Login')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white.withValues(alpha: 0.15),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
               ),
             ),
           ],
@@ -599,7 +601,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
       child: GridView.builder(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
@@ -624,7 +626,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
           return Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.zero,
               onTap: () {
                 setState(() {
                   _selectedEmployee = emp;
@@ -634,7 +636,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
               child: Container(
                 decoration: BoxDecoration(
                   color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 ),
                 child: Column(
@@ -657,7 +659,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (role.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         role,
                         style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
@@ -686,7 +688,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.zero,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
@@ -706,7 +708,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                 onPressed: () => setState(() => _selectedEmployee = null),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
 
             // Employee avatar
             CircleAvatar(
@@ -723,19 +725,19 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: isDark ? Colors.white : AppColors.textSecondary(context)),
             ),
             if (empRole.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
                   color: const Color(0xFF667eea).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.zero,
                 ),
                 child: Text(empRole, style: const TextStyle(fontSize: 12, color: Color(0xFF667eea), fontWeight: FontWeight.w500)),
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
 
-            Text("Enter 4-digit PIN", style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 13)),
+            Text(AppLocalizations.t(context, 'Enter 4-digit PIN'), style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 13)),
             const SizedBox(height: 12),
 
             TextField(
@@ -749,21 +751,18 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                 color: isDark ? Colors.white : Colors.black87,
               ),
               decoration: InputDecoration(
-                hintText: "• • • •",
-                hintStyle: TextStyle(color: AppColors.textSecondary(context), fontSize: 24, letterSpacing: 12),
+                hintText: "â€¢ â€¢ â€¢ â€¢",
+                hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.black26, fontSize: 24, letterSpacing: 12),
                 filled: true,
-                fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.textSecondary(context),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
-                ),
+                fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.03),
+                border: const OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide.none),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
+                  borderRadius: BorderRadius.zero,
+                  borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                focusedBorder: const OutlineInputBorder(
+                  borderRadius: BorderRadius.zero,
+                  borderSide: BorderSide(color: Color(0xFF667eea), width: 2),
                 ),
                 counterText: "",
                 contentPadding: const EdgeInsets.symmetric(vertical: 18),
@@ -771,9 +770,13 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
               obscureText: true,
               maxLength: 4,
               keyboardType: TextInputType.number,
-              onSubmitted: (_) => _handleLogin(),
+              onChanged: (value) {
+                if (value.length == 4) {
+                  _handleLogin();
+                }
+              },
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xxs),
 
             SizedBox(
               width: double.infinity,
@@ -783,12 +786,12 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF667eea),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                   elevation: 0,
                 ),
                 child: _isLoading
                     ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                    : const Text("LOGIN", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1)),
+                    : Text(AppLocalizations.t(context, 'LOGIN'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1)),
               ),
             ),
           ],
@@ -797,7 +800,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
     );
   }
 
-  // ─── Magic Link UI ───
+  // â”€â”€â”€ Magic Link UI â”€â”€â”€
   Widget _buildMagicLinkUI() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
@@ -816,10 +819,10 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
         child: Center(
           child: Container(
             width: 400,
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(AppSpacing.xl),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E293B) : Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.zero,
               boxShadow: [
                 BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15), blurRadius: 30, offset: const Offset(0, 12)),
               ],
@@ -829,8 +832,8 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text("Loading store details...", style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context))),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(AppLocalizations.t(context, 'Loading store details...'), style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context))),
                     ],
                   )
                 : Column(
@@ -849,7 +852,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                               ? CachedNetworkImage(imageUrl: _storeImage!, fit: BoxFit.cover,
                                   errorWidget: (_, __, ___) => Image.asset('assets/logo.jpg', fit: BoxFit.cover))
                               : Image.asset('assets/logo.jpg', fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Icon(Icons.storefront, size: 36, color: AppColors.primaryLight)),
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 36, color: AppColors.primaryLight)),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -858,13 +861,13 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.textSecondary(context)),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xxs),
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
                           color: const Color(0xFF667eea).withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.zero,
                         ),
                         child: Column(
                           children: [
@@ -876,18 +879,18 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF667eea)),
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
                               _employeeName ?? "Employee",
                               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: isDark ? Colors.white : AppColors.textSecondary(context)),
                             ),
                             if (_employeeRole != null) ...[
-                              const SizedBox(height: 4),
+                              const SizedBox(height: AppSpacing.xs),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.xs),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF667eea).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.zero,
                                 ),
                                 child: Text(_employeeRole!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF667eea))),
                               ),
@@ -895,8 +898,8 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      Text("Enter your 4-digit PIN to login",
+                      const SizedBox(height: AppSpacing.lg),
+                      Text(AppLocalizations.t(context, 'Enter your 4-digit PIN to login'),
                           style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 13)),
                       const SizedBox(height: 12),
                       TextField(
@@ -910,24 +913,24 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                           color: isDark ? Colors.white : Colors.black87,
                         ),
                         decoration: InputDecoration(
-                          hintText: "• • • •",
+                          hintText: "â€¢ â€¢ â€¢ â€¢",
                           hintStyle: TextStyle(color: AppColors.textSecondary(context), fontSize: 24, letterSpacing: 12),
                           filled: true,
                           fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.textSecondary(context),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                          border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+                          focusedBorder: const OutlineInputBorder(
+                            borderRadius: BorderRadius.zero,
+                            borderSide: BorderSide(color: Color(0xFF667eea), width: 2),
                           ),
                           counterText: "",
-                          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                          contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                         ),
                         obscureText: true,
                         maxLength: 4,
                         keyboardType: TextInputType.number,
                         onSubmitted: (_) => _handleLogin(),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xxs),
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -936,18 +939,18 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF667eea),
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                             elevation: 0,
                           ),
                           child: _isLoading
                               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : const Text("LOGIN", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                              : Text(AppLocalizations.t(context, 'LOGIN'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextButton(
                         onPressed: () => context.go('/login'),
-                        child: Text("Back to Admin Login", style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 12)),
+                        child: Text(AppLocalizations.t(context, 'Back to Admin Login'), style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 12)),
                       ),
                     ],
                   ),
@@ -957,7 +960,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
     );
   }
 
-  // ─── Standard UI (Full form) ───
+  // â”€â”€â”€ Standard UI (Full form) â”€â”€â”€
   Widget _buildStandardUI() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
@@ -978,13 +981,13 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: FadeTransition(
                 opacity: _fadeAnim,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // ── Logo ──
+                    // â”€â”€ Logo â”€â”€
                     Container(
                       width: 80,
                       height: 80,
@@ -997,22 +1000,22 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                       ),
                       child: ClipOval(
                         child: Image.asset('assets/logo.jpg', fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Icon(Icons.storefront, size: 40, color: AppColors.primaryLight)),
+                            errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 40, color: AppColors.primaryLight)),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text("Employee Login", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
-                    const SizedBox(height: 4),
-                    const Text("Enter your store credentials", style: TextStyle(color: Colors.white60, fontSize: 13)),
+                    Text(AppLocalizations.t(context, 'Employee Login'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(AppLocalizations.t(context, 'Enter your store credentials'), style: const TextStyle(color: Colors.white60, fontSize: 13)),
                     const SizedBox(height: 28),
 
-                    // ── Login Card ──
+                    // â”€â”€ Login Card â”€â”€
                     Container(
                       width: math.min(size.width - 48, 420),
                       padding: const EdgeInsets.all(28),
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.zero,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
@@ -1033,18 +1036,18 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                               prefixIcon: Icon(Icons.business, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), size: 20),
                               filled: true,
                               fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.textSecondary(context),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                              border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.zero,
                                 borderSide: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                               ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                              focusedBorder: const OutlineInputBorder(
+                                borderRadius: BorderRadius.zero,
+                                borderSide: BorderSide(color: Color(0xFF667eea), width: 2),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.md),
                           Row(
                             children: [
                               Expanded(
@@ -1057,14 +1060,14 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                                     prefixIcon: Icon(Icons.badge, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), size: 20),
                                     filled: true,
                                     fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.textSecondary(context),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                                    border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: BorderRadius.zero,
                                       borderSide: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                                    focusedBorder: const OutlineInputBorder(
+                                      borderRadius: BorderRadius.zero,
+                                      borderSide: BorderSide(color: Color(0xFF667eea), width: 2),
                                     ),
                                     counterText: "",
                                   ),
@@ -1083,25 +1086,30 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                                     prefixIcon: Icon(Icons.lock, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), size: 20),
                                     filled: true,
                                     fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.textSecondary(context),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                                    border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: BorderRadius.zero,
                                       borderSide: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                                    focusedBorder: const OutlineInputBorder(
+                                      borderRadius: BorderRadius.zero,
+                                      borderSide: BorderSide(color: Color(0xFF667eea), width: 2),
                                     ),
                                     counterText: "",
                                   ),
                                   obscureText: true,
                                   maxLength: 4,
                                   keyboardType: TextInputType.number,
+                                  onChanged: (value) {
+                                    if (value.length == 4) {
+                                      _handleLogin();
+                                    }
+                                  },
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSpacing.lg),
 
                           SizedBox(
                             width: double.infinity,
@@ -1111,12 +1119,12 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF667eea),
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                 elevation: 0,
                               ),
                               child: _isLoading
                                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                  : const Text("LOGIN TO STORE", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                                  : Text(AppLocalizations.t(context, 'LOGIN TO STORE'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
                             ),
                           ),
 
@@ -1130,7 +1138,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                               }
                             },
                             child: Text(
-                              _pinnedStore != null ? "← Back to Employee Select" : "Back to Admin Login",
+                              _pinnedStore != null ? "â† Back to Employee Select" : "Back to Admin Login",
                               style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 12),
                             ),
                           ),
@@ -1147,4 +1155,5 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
     );
   }
 }
+
 

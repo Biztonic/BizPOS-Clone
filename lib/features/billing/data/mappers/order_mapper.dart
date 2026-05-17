@@ -2,6 +2,7 @@
 ///
 /// This is the BRIDGE between infrastructure and pure business logic.
 /// All conversion logic lives here — entities never know about DTOs.
+library;
 
 import '../../domain/entities/order_entity.dart';
 import '../dtos/order_dto.dart';

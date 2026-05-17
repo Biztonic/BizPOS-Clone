@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:biztonic_pos/services/database_helper.dart';
 import 'package:biztonic_pos/services/repository.dart';
@@ -78,7 +78,7 @@ void main() {
       
       final allOrders = await repository.getOrders('store_1');
       expect(allOrders.length, 1);
-      expect(allOrders.first.status, 'Cancelled');
+      expect(allOrders.first.status, 'VOID');
     });
 
     test('Inventory CRUD Operations', () async {

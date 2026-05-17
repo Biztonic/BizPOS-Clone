@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CarDashboardTheme {
@@ -166,7 +166,7 @@ class CarDashboardTheme {
         elevation: 0, 
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-           borderRadius: BorderRadius.circular(16),
+           borderRadius: BorderRadius.zero,
            side: BorderSide(color: borderColor(isDark), width: 1), 
         ),
       ),
@@ -178,7 +178,7 @@ class CarDashboardTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: panelColor(isDark),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.zero,
           side: BorderSide(color: borderColor(isDark), width: 1),
         ),
         titleTextStyle: priceStyle.copyWith(color: textColor(isDark)),
@@ -186,3 +186,6 @@ class CarDashboardTheme {
     );
   }
 }
+
+
+

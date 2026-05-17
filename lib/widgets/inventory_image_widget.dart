@@ -1,9 +1,7 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../models/inventory_item.dart';
-import '../features/inventory/domain/entities/inventory_entity.dart';
 
 class InventoryImageWidget extends StatelessWidget {
   final dynamic item; // Supports InventoryItem or InventoryEntity
@@ -20,6 +18,11 @@ class InventoryImageWidget extends StatelessWidget {
     this.borderRadius = 8,
     this.fit = BoxFit.cover,
   });
+
+  /// Returns the pixel-density-aware cache dimension for image decoding.
+  /// This forces Flutter's image codec to decode at 2x display size (for retina),
+  /// saving massive amounts of GPU memory on low-end devices.
+  int _cacheSize(double displaySize) => (displaySize * 2).toInt();
 
   static ImageProvider getImageProvider(dynamic item) {
     final String? localImage = item.localImage;
@@ -55,7 +58,7 @@ class InventoryImageWidget extends StatelessWidget {
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+      borderRadius: BorderRadius.zero,
       child: SizedBox(
         width: width,
         height: height,
@@ -73,6 +76,8 @@ class InventoryImageWidget extends StatelessWidget {
           width: width,
           height: height,
           fit: fit,
+          cacheWidth: _cacheSize(width),
+          cacheHeight: _cacheSize(height),
           errorBuilder: (context, error, stackTrace) {
             if (hasRemote) return _buildRemoteImage(context);
             return _buildPlaceholder(context);
@@ -94,6 +99,9 @@ class InventoryImageWidget extends StatelessWidget {
       width: width,
       height: height,
       fit: fit,
+      memCacheWidth: _cacheSize(width),
+      memCacheHeight: _cacheSize(height),
+      fadeInDuration: const Duration(milliseconds: 150),
       placeholder: (context, url) => Container(
         color: AppColors.border(context),
         child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
@@ -108,9 +116,12 @@ class InventoryImageWidget extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: AppColors.background(context),
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: BorderRadius.zero,
       ),
       child: Icon(Icons.inventory_2, color: AppColors.textHint(context), size: width * 0.4),
     );
   }
 }
+
+
+

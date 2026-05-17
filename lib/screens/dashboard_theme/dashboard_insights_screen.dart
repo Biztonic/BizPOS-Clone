@@ -1,10 +1,14 @@
-import '../../core/design/tokens/app_colors.dart';
+﻿import '../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'dart:math' as math;
 // ignore_for_file: unused_local_variable, unused_element
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as legacy;
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:battery_plus/battery_plus.dart'; 
@@ -13,22 +17,23 @@ import 'package:shared_preferences/shared_preferences.dart'; // Added
 import 'dart:convert'; // Added
 import 'widgets/calculator_widget.dart';
 import 'widgets/calendar_widget.dart';
-import '../../models/order_model.dart';
 import '../../utils/car_dashboard_theme.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../widgets/feature_guard.dart';
 import '../../services/printer_manager_service.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
+import '../../core/reporting/reporting_provider.dart';
+import '../../features/reporting/domain/entities/dashboard_stats.dart';
 enum QuickActionState { menu, reminders, lastBill, hold, refund }
 
-class DashboardInsightsScreen extends StatefulWidget {
+class DashboardInsightsScreen extends ConsumerStatefulWidget {
   const DashboardInsightsScreen({super.key});
 
   @override
-  State<DashboardInsightsScreen> createState() => _DashboardInsightsScreenState();
+  ConsumerState<DashboardInsightsScreen> createState() => _DashboardInsightsScreenState();
 }
 
-class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with WidgetsBindingObserver {
+class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScreen> with WidgetsBindingObserver {
   Timer? _timer;
   DateTime _now = DateTime.now();
   
@@ -101,7 +106,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<DashboardProvider>(context);
+    final provider = legacy.Provider.of<DashboardProvider>(context);
     
     // AUTO-SHOW PRINTER PROMPT (One stay per session)
     if (provider.needsPrinterSetup && !_hasCheckedPrinter) {
@@ -113,20 +118,17 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
 
     final isDarkMode = provider.isDarkMode;
 
+    final reportingState = ref.watch(reportingProvider);
+    final stats = reportingState.stats ?? DashboardStats.empty();
+    
     // Calculate Insights
-    // Calculate Insights
-    final smartStats = provider.smartStats;
-    double totalSales = (smartStats['totalSales'] as num? ?? 0).toDouble(); // Legacy/Global or Month? User asked for Month in smart card.
-    // Actually, Interactive Card expects specific inputs. Let's just prep the map.
-    // The previous manual calc was "All Time".
-    // The new requirement: "First card show total monthly sale... click show todays"
-    // So distinct variables are needed.
+    double totalSales = stats.monthSales;
 
     return Scaffold(
       backgroundColor: CarDashboardTheme.backgroundColor(isDarkMode),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -138,11 +140,11 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                       height: 60, width: 60,
                       decoration: BoxDecoration(
                          color: CarDashboardTheme.primaryColor(isDarkMode).withValues(alpha: 0.1),
-                         shape: BoxShape.circle,
+                         shape: BoxShape.rectangle,
                       ),
                       child: Icon(Icons.store, color: CarDashboardTheme.primaryColor(isDarkMode), size: 32),
                    ),
-                   const SizedBox(width: 16),
+                   const SizedBox(width: AppSpacing.md),
                    Column(
                      crossAxisAlignment: CrossAxisAlignment.start,
                      children: [
@@ -159,25 +161,25 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                       children: [
                         // Online Status
                         Container(
-                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                            decoration: BoxDecoration(
                               color: (provider.isOnline ? AppColors.success : AppColors.error).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.zero,
                               border: Border.all(color: provider.isOnline ? AppColors.success : AppColors.error),
                            ),
                            child: Row(
                               children: [
                                  Icon(provider.isOnline ? Icons.wifi : Icons.wifi_off, color: provider.isOnline ? AppColors.success : AppColors.error, size: 24),
-                                 const SizedBox(width: 8),
+                                 const SizedBox(width: AppSpacing.sm),
                                  Text(provider.isOnline ? "ONLINE" : "OFFLINE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: provider.isOnline ? AppColors.success : AppColors.error)),
                               ],
                            ),
                         ),
-                        const SizedBox(width: 32),
+                        const SizedBox(width: AppSpacing.xl),
 
                         // Settings
                         IconButton(icon: Icon(Icons.settings, color: CarDashboardTheme.textColor(isDarkMode), size: 32), onPressed: () => context.go('/settings')),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: AppSpacing.md),
 
                         // Theme Switcher
                         IconButton(
@@ -185,7 +187,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                            onPressed: () => provider.toggleTheme(),
                            tooltip: "Toggle Theme",
                         ),
-                        const SizedBox(width: 32),
+                        const SizedBox(width: AppSpacing.xl),
                         
                         // Battery Indicator (BIGGER)
                         Row(
@@ -198,7 +200,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                     size: 44 // Increased from 32
                                  ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.sm),
                               Text("$_batteryLevel%", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28, color: CarDashboardTheme.textColor(isDarkMode))), // Increased from 18
                            ],
                         ),
@@ -212,7 +214,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _buildPrinterStatusIndicator(isDarkMode),
-                        const SizedBox(width: 32),
+                        const SizedBox(width: AppSpacing.xl),
                         // Clock (Now on Left with Year and Larger Text)
                         Column(
                            crossAxisAlignment: CrossAxisAlignment.end,
@@ -227,13 +229,13 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                   )),
                            ],
                         ),
-                        const SizedBox(width: 32),
+                        const SizedBox(width: AppSpacing.xl),
 
                         // Logout (Now on Right)
                         Container(
                           decoration: BoxDecoration(
                             color: AppColors.error.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.zero,
                             border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                           ),
                           child: IconButton(
@@ -248,7 +250,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                    )
                 ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xl),
 
               // 2. Dashboard Content
               Expanded(
@@ -270,7 +272,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                               userName: provider.userProfile?.name ?? "User",
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSpacing.lg),
                           // INSIGHTS (Performance, Rushed Hours, Top Products)
                           FeatureGuard(
                             featureKey: 'card.sales_summary',
@@ -280,51 +282,51 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                 SizedBox(
                                   height: 200,
                                   child: _PerformanceIndexCard(
-                                     todaySales: (smartStats['todaySales'] as num? ?? 0).toDouble(),
-                                     todayCount: smartStats['todayOrders'] ?? 0,
-                                     avgDailySale: (smartStats['avgDailySale'] as num? ?? 0).toDouble(),
+                                     todaySales: stats.todaySales,
+                                     todayCount: stats.todayOrders,
+                                     avgDailySale: stats.avgDailySale,
                                      isDarkMode: isDarkMode,
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: AppSpacing.md),
                                 SizedBox(
                                   height: 200,
                                   child: _RushedHoursCard(
-                                     peakHour: provider.peakHour,
-                                     leastHour: provider.leastHour,
+                                     peakHour: stats.peakHour,
+                                     leastHour: stats.leastHour,
                                      hasOrders: provider.orders.isNotEmpty,
                                      isDarkMode: isDarkMode,
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: AppSpacing.md),
                                 SizedBox(
                                   height: 200,
                                   child: _TopSellingProductsCard(
-                                     topProducts: provider.topProducts,
+                                     topProducts: stats.topProducts,
                                      isDarkMode: isDarkMode,
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: AppSpacing.md),
                                 SizedBox(
                                   height: 200,
                                   child: _PaymentBreakdownCard(
-                                     paymentStats: provider.getPaymentStats(),
+                                     paymentStats: stats.paymentStats,
                                      isDarkMode: isDarkMode,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: AppSpacing.xl),
                           // QUICK ACTIONS
-                          Text("QUICK ACTIONS", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode))),
-                          const SizedBox(height: 16),
+                          Text(AppLocalizations.t(context, 'QUICK ACTIONS'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode))),
+                          const SizedBox(height: AppSpacing.md),
                           Container(
                             height: 350, 
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(AppSpacing.xxs),
                             decoration: BoxDecoration(
                                color: CarDashboardTheme.panelColor(isDarkMode),
-                               borderRadius: BorderRadius.circular(20),
+                               borderRadius: BorderRadius.zero,
                                border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode)),
                             ),
                             child: AnimatedSwitcher(
@@ -332,7 +334,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                child: _buildQuickActionContent(provider, isDarkMode),
                             ),
                           ),
-                          const SizedBox(height: 40), 
+                          const SizedBox(height: AppSpacing.xs), 
                         ],
                       );
                     }
@@ -354,7 +356,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                   userName: provider.userProfile?.name ?? "User",
                                 ),
                               ),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: AppSpacing.lg),
 
                               // INSIGHTS ROW (Performance, Rushed Hours, Top Products)
                               Expanded(
@@ -366,32 +368,32 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                     children: [
                                       // 1. Store Performance Index
                                       Expanded(child: _PerformanceIndexCard(
-                                         todaySales: (smartStats['todaySales'] as num? ?? 0).toDouble(),
-                                         todayCount: smartStats['todayOrders'] ?? 0,
-                                         avgDailySale: (smartStats['avgDailySale'] as num? ?? 0).toDouble(),
+                                         todaySales: stats.todaySales,
+                                         todayCount: stats.todayOrders,
+                                         avgDailySale: stats.avgDailySale,
                                          isDarkMode: isDarkMode,
                                       )),
-                                      const SizedBox(width: 16),
+                                      const SizedBox(width: AppSpacing.md),
 
                                       // 2. Rushed Hours (Historical Density)
                                       Expanded(child: _RushedHoursCard(
-                                         peakHour: provider.peakHour,
-                                         leastHour: provider.leastHour,
+                                         peakHour: stats.peakHour,
+                                         leastHour: stats.leastHour,
                                          hasOrders: provider.orders.isNotEmpty,
                                          isDarkMode: isDarkMode,
                                       )),
-                                      const SizedBox(width: 16),
+                                      const SizedBox(width: AppSpacing.md),
 
                                       // 3. Top Selling Products
                                       Expanded(child: _TopSellingProductsCard(
-                                         topProducts: provider.topProducts,
+                                         topProducts: stats.topProducts,
                                          isDarkMode: isDarkMode,
                                       )),
-                                      const SizedBox(width: 16),
+                                      const SizedBox(width: AppSpacing.md),
 
                                       // 4. Payment Breakdown
                                       Expanded(child: _PaymentBreakdownCard(
-                                         paymentStats: provider.getPaymentStats(),
+                                         paymentStats: stats.paymentStats,
                                          isDarkMode: isDarkMode,
                                       )),
                                     ],
@@ -401,23 +403,23 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                             ],
                           ),
                         ),
-                        const SizedBox(width: 32),
+                        const SizedBox(width: AppSpacing.xl),
                         
                         // RIGHT COLUMN: Quick Actions (Functional)
                         Expanded(
                           flex: 2,
                           child: Container(
-                            padding: const EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             decoration: BoxDecoration(
                                color: CarDashboardTheme.panelColor(isDarkMode),
-                               borderRadius: BorderRadius.circular(20),
+                               borderRadius: BorderRadius.zero,
                                border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode)),
                             ),
                             child: Column(
                                crossAxisAlignment: CrossAxisAlignment.start,
                                children: [
-                                   Text("QUICK ACTIONS", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode))),
-                                   const SizedBox(height: 24),
+                                   Text(AppLocalizations.t(context, 'QUICK ACTIONS'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode))),
+                                   const SizedBox(height: AppSpacing.lg),
                                    Expanded(
                                    child: AnimatedSwitcher(
                                        duration: const Duration(milliseconds: 300),
@@ -443,11 +445,13 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
   // --- ACTIONS LOGIC ---
   
   void _showCalculator(BuildContext context, bool isDarkMode) {
-     final provider = Provider.of<DashboardProvider>(context, listen: false);
+     final provider = legacy.Provider.of<DashboardProvider>(context, listen: false);
      
-     final stats = provider.smartStats;
-     final todaysSale = stats['todaySales'] as double;
-     final todaysOrders = stats['todayOrders'] as int;
+     final reportingState = ref.read(reportingProvider);
+     final stats = reportingState.stats ?? DashboardStats.empty();
+     
+     final todaysSale = stats.todaySales;
+     final todaysOrders = stats.todayOrders;
      
      Navigator.push(
         context,
@@ -473,7 +477,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
 
   void _showRefundOptions(DashboardProvider provider) {
       if (provider.orders.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No orders available for refund.")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'No orders available for refund.'))));
         return;
      }
      // Show last 5
@@ -482,7 +486,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
      showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-           title: const Text("Select Order to Refund"),
+           title: Text(AppLocalizations.t(context, 'Select Order to Refund')),
            content: SizedBox(
               width: 350,
               height: 300,
@@ -494,17 +498,17 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                     return ListTile(
                        leading: const Icon(Icons.receipt_long),
                        title: Text("₹${order.total}"),
-                       subtitle: Text("#${order.id.substring(0,6)} • ${DateFormat('HH:mm').format(order.date)}"),
+                       subtitle: Text("#${order.id.substring(0,6)} â€¢ ${DateFormat('HH:mm').format(order.date)}"),
                        trailing: const Icon(Icons.chevron_right),
                        onTap: () {
                           Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Refund process initiated.")));
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Refund process initiated.'))));
                        },
                     );
                  },
               ),
            ),
-           actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))],
+           actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel')))],
         )
      );
   }
@@ -520,8 +524,8 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                mainAxisAlignment: MainAxisAlignment.center,
                children: [
                   Icon(Icons.notifications_off, size: 48, color: CarDashboardTheme.subTextColor(isDark)),
-                  const SizedBox(height: 16),
-                  Text("No reminders found.", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDark)))
+                  const SizedBox(height: AppSpacing.md),
+                  Text(AppLocalizations.t(context, 'No reminders found.'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDark)))
                ],
             ),
          );
@@ -530,14 +534,14 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
       return ListView(
          children: [
             if (_todayReminders.isNotEmpty) ...[
-               Text("TODAY", style: TextStyle(color: CarDashboardTheme.primaryColor(isDark), fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-               const SizedBox(height: 8),
+               Text(AppLocalizations.t(context, 'TODAY'), style: TextStyle(color: CarDashboardTheme.primaryColor(isDark), fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+               const SizedBox(height: AppSpacing.sm),
                ..._todayReminders.map((e) => _buildReminderTile(e, isDark, true)),
-               const SizedBox(height: 16),
+               const SizedBox(height: AppSpacing.md),
             ],
             if (_upcomingReminders.isNotEmpty) ...[
-               Text("UPCOMING", style: TextStyle(color: CarDashboardTheme.subTextColor(isDark), fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-               const SizedBox(height: 8),
+               Text(AppLocalizations.t(context, 'UPCOMING'), style: TextStyle(color: CarDashboardTheme.subTextColor(isDark), fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+               const SizedBox(height: AppSpacing.sm),
                ..._upcomingReminders.map((e) => _buildReminderTile(e, isDark, false)),
             ]
          ],
@@ -550,11 +554,11 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
      final date = event['date']?.toString();
 
      return Container(
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
            color: CarDashboardTheme.backgroundColor(isDark),
-           borderRadius: BorderRadius.circular(8),
+           borderRadius: BorderRadius.zero,
            border: Border.all(color: isToday ? CarDashboardTheme.primaryColor(isDark).withValues(alpha: 0.5) : CarDashboardTheme.borderColor(isDark)),
         ),
         child: Row(
@@ -588,7 +592,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
      });
 
      try {
-        final provider = Provider.of<DashboardProvider>(context, listen: false);
+        final provider = legacy.Provider.of<DashboardProvider>(context, listen: false);
         final userId = provider.userProfile?.uid ?? 'guest';
         final prefs = await SharedPreferences.getInstance();
         final stored = prefs.getString('calendar_events_v2_$userId');
@@ -691,7 +695,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                icon: Icon(Icons.arrow_back, color: CarDashboardTheme.textColor(isDarkMode)),
                onPressed: () => setState(() => _actionState = QuickActionState.menu),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Text(title, style: TextStyle(
                color: CarDashboardTheme.textColor(isDarkMode), 
                fontWeight: FontWeight.bold, 
@@ -705,7 +709,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
              key: const ValueKey('reminders'),
              children: [
                 header("Reminders"),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Expanded(child: _buildRemindersList(isDarkMode)),
              ],
           );
@@ -722,7 +726,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                children: [
                   header(title),
                   const Spacer(),
-                  Text("No recent orders.", style: TextStyle(color: AppColors.textSecondary(context))),
+                  Text(AppLocalizations.t(context, 'No recent orders.'), style: TextStyle(color: AppColors.textSecondary(context))),
                   const Spacer(),
                ],
              );
@@ -732,7 +736,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
              key: ValueKey(title),
              children: [
                 header(title),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Expanded(
                    child: ListView.separated(
                       itemCount: recentOrders.length,
@@ -742,12 +746,12 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                          return ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: Container(
-                               padding: const EdgeInsets.all(8),
-                               decoration: BoxDecoration(color: CarDashboardTheme.backgroundColor(isDarkMode), borderRadius: BorderRadius.circular(8)),
+                               padding: const EdgeInsets.all(AppSpacing.sm),
+                               decoration: BoxDecoration(color: CarDashboardTheme.backgroundColor(isDarkMode), borderRadius: BorderRadius.zero),
                                child: Icon(Icons.receipt, color: CarDashboardTheme.primaryColor(isDarkMode)),
                             ),
                             title: Text("₹${order.total.toStringAsFixed(0)}", style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontWeight: FontWeight.bold, fontSize: 18)),
-                            subtitle: Text("#${order.id.substring(0,6)} • ${DateFormat('HH:mm').format(order.date)}", style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 14)),
+                            subtitle: Text("#${order.id.substring(0,6)} â€¢ ${DateFormat('HH:mm').format(order.date)}", style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 14)),
                             trailing: isRefund 
                                ? Builder(
                                    builder: (context) {
@@ -757,7 +761,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                             boxShadow: isRefunded ? [] : [
                                                BoxShadow(color: AppColors.error.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 4))
                                             ],
-                                            borderRadius: BorderRadius.circular(25),
+                                            borderRadius: BorderRadius.zero,
                                             gradient: isRefunded 
                                                ? LinearGradient(colors: [AppColors.textSecondary(context), AppColors.textSecondary(context)])
                                                : const LinearGradient(colors: [Color(0xFFFF5252), Color(0xFFFF1744)])
@@ -767,7 +771,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                               backgroundColor: Colors.transparent, 
                                               shadowColor: Colors.transparent,
                                               minimumSize: const Size(100, 45),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))
+                                              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero)
                                            ),
                                            onPressed: isRefunded ? null : () async { 
                                               if (isRefunded) return;
@@ -776,14 +780,14 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                               final confirm = await showDialog<bool>(
                                                  context: context,
                                                  builder: (ctx) => AlertDialog(
-                                                    title: const Text("Confirm Refund"),
+                                                    title: Text(AppLocalizations.t(context, 'Confirm Refund')),
                                                     content: Text("Refund ₹${order.total.toStringAsFixed(0)}? This action cannot be undone."),
                                                     actions: [
-                                                       TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+                                                       TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'Cancel'))),
                                                        ElevatedButton(
                                                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
                                                           onPressed: () => Navigator.pop(ctx, true), 
-                                                          child: const Text("Refund")
+                                                          child: Text(AppLocalizations.t(context, 'Refund'))
                                                        )
                                                     ],
                                                  )
@@ -791,7 +795,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                                               
                                               if (confirm == true) {
                                                   // ignore: use_build_context_synchronously
-                                                  final provider = Provider.of<DashboardProvider>(context, listen: false); // Ensure fresh access if needed, though provider is passed
+                                                  final provider = legacy.Provider.of<DashboardProvider>(context, listen: false); // Ensure fresh access if needed, though provider is passed
                                                   await provider.refundOrder(order.id);
                                               }
                                            }, 
@@ -816,8 +820,8 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                 header("Held Orders"),
                 const Spacer(),
                 Icon(Icons.pause_circle_outline, size: 48, color: AppColors.textSecondary(context)),
-                const SizedBox(height: 16),
-                Text("No active held orders.", style: TextStyle(color: AppColors.textSecondary(context))),
+                const SizedBox(height: AppSpacing.md),
+                Text(AppLocalizations.t(context, 'No active held orders.'), style: TextStyle(color: AppColors.textSecondary(context))),
                 const Spacer(),
              ],
           );
@@ -829,18 +833,18 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
   Widget _buildActionButton(String label, IconData icon, VoidCallback onTap, bool isDark) {
      return InkWell(
        onTap: onTap,
-       borderRadius: BorderRadius.circular(12),
+       borderRadius: BorderRadius.zero,
        child: Container(
           decoration: BoxDecoration(
              color: CarDashboardTheme.backgroundColor(isDark),
-             borderRadius: BorderRadius.circular(12),
+             borderRadius: BorderRadius.zero,
              border: Border.all(color: CarDashboardTheme.borderColor(isDark)),
           ),
           child: Column(
              mainAxisAlignment: MainAxisAlignment.center,
              children: [
                 Icon(icon, size: 36, color: CarDashboardTheme.primaryColor(isDark)),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(label, style: CarDashboardTheme.buttonText.copyWith(color: CarDashboardTheme.textColor(isDark))),
              ],
           ),
@@ -860,10 +864,10 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
           final String statusText = !isAssigned ? "NO ASSIGNMENT" : (isConnected ? "PRINTER" : "DISCONNECTED");
           final IconData statusIcon = !isAssigned ? Icons.print_disabled : (isConnected ? Icons.print : Icons.print_disabled);
           return Container(
-             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
              decoration: BoxDecoration(
                 color: statusColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.zero,
                 border: Border.all(color: statusColor.withValues(alpha: 0.5)),
              ),
              child: Row(
@@ -874,7 +878,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
                       color: statusColor, 
                       size: 24
                    ),
-                   const SizedBox(width: 8),
+                   const SizedBox(width: AppSpacing.sm),
                    Text(
                       statusText, 
                       style: TextStyle(
@@ -896,12 +900,12 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A), // Dark mode for automotive theme
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        title: Row(
           children: [
-            Icon(Icons.print, color: AppColors.primaryLightAccent),
-            SizedBox(width: 12),
-            Text("Printer Setup", style: TextStyle(color: Colors.white)),
+            const Icon(Icons.print, color: AppColors.primaryLightAccent),
+            const SizedBox(width: 12),
+            Text(AppLocalizations.t(context, 'Printer Setup'), style: const TextStyle(color: Colors.white)),
           ],
         ),
         content: const Text(
@@ -914,7 +918,7 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
               provider.dismissPrinterSetup();
               Navigator.pop(ctx);
             },
-            child: Text("Later", style: TextStyle(color: AppColors.textSecondary(context))),
+            child: Text(AppLocalizations.t(context, 'Later'), style: TextStyle(color: AppColors.textSecondary(context))),
           ),
           ElevatedButton(
             onPressed: () {
@@ -925,9 +929,9 @@ class _DashboardInsightsScreenState extends State<DashboardInsightsScreen> with 
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryLightAccent,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
-            child: const Text("Connect Now"),
+            child: Text(AppLocalizations.t(context, 'Connect Now')),
           ),
         ],
       ),
@@ -989,10 +993,10 @@ class _InteractiveKpiCardState extends State<_InteractiveKpiCard> {
       return GestureDetector(
          onTap: _toggle,
          child: Container(
-           padding: const EdgeInsets.all(20),
+           padding: const EdgeInsets.all(AppSpacing.xxs),
            decoration: BoxDecoration(
              color: CarDashboardTheme.cardColor(widget.isDarkMode),
-             borderRadius: BorderRadius.circular(16),
+             borderRadius: BorderRadius.zero,
              border: Border.all(
                 color: _showSecondary ? activeColor : CarDashboardTheme.borderColor(widget.isDarkMode),
                 width: _showSecondary ? 1.5 : 1.0
@@ -1008,7 +1012,7 @@ class _InteractiveKpiCardState extends State<_InteractiveKpiCard> {
                    padding: const EdgeInsets.all(12),
                    decoration: BoxDecoration(
                      color: activeColor.withValues(alpha: 0.1),
-                     borderRadius: BorderRadius.circular(12)
+                     borderRadius: BorderRadius.zero
                    ),
                    child: Icon(widget.icon, color: activeColor, size: 28),
                  ),
@@ -1024,7 +1028,7 @@ class _InteractiveKpiCardState extends State<_InteractiveKpiCard> {
                       ),
                    )
                  ),
-                 const SizedBox(height: 4),
+                 const SizedBox(height: AppSpacing.xs),
                  AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     child: Text(
@@ -1089,11 +1093,11 @@ class _AnimatedBillingButtonState extends State<_AnimatedBillingButton> with Sin
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.zero,
           boxShadow: CarDashboardTheme.cardShadow(widget.isDarkMode),
         ),
         child: ClipRRect(
-           borderRadius: BorderRadius.circular(20),
+           borderRadius: BorderRadius.zero,
            child: LayoutBuilder(
              builder: (context, constraints) {
                return AnimatedBuilder(
@@ -1116,34 +1120,34 @@ class _AnimatedBillingButtonState extends State<_AnimatedBillingButton> with Sin
                            duration: const Duration(milliseconds: 300),
                            child: _showWelcome 
                              ? Padding(
-                                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                                  child: Column(
                                    mainAxisAlignment: MainAxisAlignment.center,
                                    children: [
                                       const Icon(Icons.auto_awesome, color: AppColors.warning, size: 40),
-                                      const SizedBox(height: 8),
+                                      const SizedBox(height: AppSpacing.sm),
                                       Text("Welcome ${widget.userName}", 
                                           textAlign: TextAlign.center,
                                           style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)
                                       ),
-                                      const Text("to Biztonic Automation", 
+                                      Text(AppLocalizations.t(context, 'to Biztonic Automation'), 
                                           textAlign: TextAlign.center,
-                                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)
+                                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)
                                       ),
-                                      const Text("The Smart Billing Solution", 
+                                      Text(AppLocalizations.t(context, 'The Smart Billing Solution'), 
                                           textAlign: TextAlign.center,
-                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: Colors.white70)
+                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: Colors.white70)
                                       ),
                                    ],
                                  ),
                              )
-                             : const Row(
+                             : Row(
                                  mainAxisAlignment: MainAxisAlignment.center,
                                  children: [
-                                   Icon(Icons.play_circle_fill, size: 48, color: Colors.white),
-                                   SizedBox(width: 16),
-                                   Text("START BILLING",
-                                       style: TextStyle(
+                                   const Icon(Icons.play_circle_fill, size: 48, color: Colors.white),
+                                   const SizedBox(width: AppSpacing.md),
+                                   Text(AppLocalizations.t(context, 'START BILLING'),
+                                       style: const TextStyle(
                                            fontSize: 32,
                                            fontWeight: FontWeight.bold,
                                            color: Colors.white,
@@ -1197,7 +1201,7 @@ class _PerformanceIndexCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: CarDashboardTheme.cardColor(isDarkMode),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode).withValues(alpha: 0.5)),
         boxShadow: [
           if (rawIndex >= 90)
@@ -1209,7 +1213,7 @@ class _PerformanceIndexCard extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.zero,
         child: Stack(
           children: [
             // Background Gauge "Track"
@@ -1229,7 +1233,7 @@ class _PerformanceIndexCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("PERFORMANCE", 
+                      Text(AppLocalizations.t(context, 'PERFORMANCE'), 
                         style: CarDashboardTheme.labelStyle.copyWith(
                           fontSize: 12, 
                           fontWeight: FontWeight.w900, 
@@ -1263,7 +1267,7 @@ class _PerformanceIndexCard extends StatelessWidget {
                             Text("${displayIndex.toStringAsFixed(0)}%", 
                               style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: CarDashboardTheme.textColor(isDarkMode))
                             ),
-                            Text("GOAL", 
+                            Text(AppLocalizations.t(context, 'GOAL'), 
                               style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: CarDashboardTheme.subTextColor(isDarkMode).withValues(alpha: 0.7))
                             ),
                           ],
@@ -1274,10 +1278,10 @@ class _PerformanceIndexCard extends StatelessWidget {
                   const Spacer(),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                     decoration: BoxDecoration(
                       color: performanceColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.zero,
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -1346,10 +1350,10 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
         },
         child: Container(
           key: ValueKey(_showFreeHours),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpacing.xxs),
           decoration: BoxDecoration(
             color: CarDashboardTheme.cardColor(widget.isDarkMode),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.zero,
             border: Border.all(color: _showFreeHours ? AppColors.primaryLightAccent.withValues(alpha: 0.3) : AppColors.warning.withValues(alpha: 0.3)),
             boxShadow: CarDashboardTheme.cardShadow(widget.isDarkMode),
           ),
@@ -1377,7 +1381,7 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
                   Text(_showFreeHours ? "QUIETEST HOUR" : "RUSHED HOUR", 
                     style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: CarDashboardTheme.subTextColor(widget.isDarkMode).withValues(alpha: 0.6))
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
@@ -1391,8 +1395,8 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
               Row(
                 children: [
                   Icon(Icons.touch_app, size: 12, color: CarDashboardTheme.subTextColor(widget.isDarkMode).withValues(alpha: 0.4)),
-                  const SizedBox(width: 4),
-                  Text("TAP TO FLIP", style: TextStyle(fontSize: 9, color: CarDashboardTheme.subTextColor(widget.isDarkMode).withValues(alpha: 0.4), fontWeight: FontWeight.bold)),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(AppLocalizations.t(context, 'TAP TO FLIP'), style: TextStyle(fontSize: 9, color: CarDashboardTheme.subTextColor(widget.isDarkMode).withValues(alpha: 0.4), fontWeight: FontWeight.bold)),
                 ],
               ),
             ],
@@ -1415,10 +1419,10 @@ class _TopSellingProductsCard extends StatelessWidget {
     var topDisplay = topProducts.take(4).toList();
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: CarDashboardTheme.cardColor(isDarkMode),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode)),
         boxShadow: CarDashboardTheme.cardShadow(isDarkMode),
       ),
@@ -1428,13 +1432,13 @@ class _TopSellingProductsCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("TOP SELLING", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode), fontWeight: FontWeight.bold)),
-              Icon(Icons.auto_awesome, color: AppColors.warning, size: 20),
+              Text(AppLocalizations.t(context, 'TOP SELLING'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode), fontWeight: FontWeight.bold)),
+              const Icon(Icons.auto_awesome, color: AppColors.warning, size: 20),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           if (topDisplay.isEmpty)
-            Expanded(child: Center(child: Text("Waiting for sales...", style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context)))))
+            Expanded(child: Center(child: Text(AppLocalizations.t(context, 'Waiting for sales...'), style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context)))))
           else
             Expanded(
               child: ListView.builder(
@@ -1450,13 +1454,13 @@ class _TopSellingProductsCard extends StatelessWidget {
                         Container(
                           width: 32, height: 32,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle, 
+                            shape: BoxShape.rectangle, 
                             color: CarDashboardTheme.primaryColor(isDarkMode).withValues(alpha: 0.1),
                           ),
                           alignment: Alignment.center,
                           child: Text("${index + 1}", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: CarDashboardTheme.primaryColor(isDarkMode))),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(item['name'] ?? "", 
                             maxLines: 1, overflow: TextOverflow.ellipsis,
@@ -1491,10 +1495,10 @@ class _PaymentBreakdownCard extends StatelessWidget {
     final total = paymentStats.values.fold(0.0, (sum, val) => sum + val);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xxs),
       decoration: BoxDecoration(
         color: CarDashboardTheme.cardColor(isDarkMode),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode).withValues(alpha: 0.5)),
         boxShadow: CarDashboardTheme.cardShadow(isDarkMode),
         gradient: isDarkMode ? LinearGradient(
@@ -1515,14 +1519,14 @@ class _PaymentBreakdownCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("PAYMENT DISTRIBUTION", style: CarDashboardTheme.labelStyle.copyWith(
+                  Text(AppLocalizations.t(context, 'PAYMENT DISTRIBUTION'), style: CarDashboardTheme.labelStyle.copyWith(
                     color: CarDashboardTheme.subTextColor(isDarkMode), 
                     fontWeight: FontWeight.bold,
                     fontSize: 10,
                     letterSpacing: 1.5
                   )),
-                  const SizedBox(height: 4),
-                  Text("Revenue Share", style: TextStyle(
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(AppLocalizations.t(context, 'Revenue Share'), style: TextStyle(
                     color: CarDashboardTheme.textColor(isDarkMode),
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
@@ -1530,17 +1534,17 @@ class _PaymentBreakdownCard extends StatelessWidget {
                 ],
               ),
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: CarDashboardTheme.primaryColor(isDarkMode).withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+                  shape: BoxShape.rectangle,
                 ),
                 child: Icon(Icons.account_balance_wallet_rounded, 
                   color: CarDashboardTheme.primaryColor(isDarkMode), size: 18),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xxs),
           if (paymentStats.isEmpty)
             Expanded(
               child: Center(
@@ -1556,7 +1560,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text("Calculating stats...", style: TextStyle(
+                    Text(AppLocalizations.t(context, 'Calculating stats...'), style: TextStyle(
                       fontSize: 12, 
                       color: CarDashboardTheme.subTextColor(isDarkMode),
                       fontStyle: FontStyle.italic,
@@ -1571,7 +1575,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: math.min(sortedStats.length, 3),
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
                 itemBuilder: (context, index) {
                   final entry = sortedStats[index];
                   final percentage = total > 0 ? (entry.value / total) : 0.0;
@@ -1596,13 +1600,13 @@ class _PaymentBreakdownCard extends StatelessWidget {
                                 height: 8,
                                 decoration: BoxDecoration(
                                   color: primaryColor,
-                                  shape: BoxShape.circle,
+                                  shape: BoxShape.rectangle,
                                   boxShadow: [
                                     BoxShadow(color: primaryColor.withValues(alpha: 0.5), blurRadius: 4),
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.sm),
                               Text(entry.key, style: TextStyle(
                                 fontSize: 13, 
                                 fontWeight: FontWeight.bold, 
@@ -1617,7 +1621,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
                           )),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Stack(
                         children: [
                           Container(
@@ -1625,7 +1629,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
                             width: double.infinity,
                             decoration: BoxDecoration(
                               color: isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.zero,
                             ),
                           ),
                           TweenAnimationBuilder<double>(
@@ -1643,7 +1647,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
                                       primaryColor.withValues(alpha: 0.6),
                                     ],
                                   ),
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.zero,
                                   boxShadow: [
                                     BoxShadow(
                                       color: primaryColor.withValues(alpha: 0.3),
@@ -1667,4 +1671,9 @@ class _PaymentBreakdownCard extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
 

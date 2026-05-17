@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
@@ -36,7 +38,7 @@ class DashboardGridMenu extends StatelessWidget {
     ]);
 
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),

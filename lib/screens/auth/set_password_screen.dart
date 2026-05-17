@@ -1,6 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import '../../core/design/tokens/app_colors.dart';
-import '../../core/design/tokens/app_typography.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
@@ -83,8 +86,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account activated successfully!'),
+          SnackBar(
+            content: Text(AppLocalizations.t(context, 'Account activated successfully!')),
             backgroundColor: AppColors.success,
           ),
         );
@@ -110,7 +113,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Activate Account'),
+        title: Text(AppLocalizations.t(context, 'Activate Account')),
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
@@ -130,14 +133,14 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),
                 child: Container(
-                  padding: const EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.zero,
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.2),
@@ -153,9 +156,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Icon(Icons.lock_reset, size: 64, color: Color(0xFF667eea)),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Welcome to BizPOS!',
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(AppLocalizations.t(context, 'Welcome to BizPOS!'),
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -163,7 +165,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Text(
                           'Please set a password for ${widget.email} to continue.',
                           style: TextStyle(
@@ -172,7 +174,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: AppSpacing.xl),
                         TextFormField(
                           controller: _passwordController,
                           decoration: InputDecoration(
@@ -182,14 +184,14 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                               icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                             ),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
                           ),
                           obscureText: _obscurePassword,
                           validator: (val) => (val == null || val.length < 6)
                               ? 'Min 6 characters'
                               : null,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.md),
                         TextFormField(
                           controller: _confirmController,
                           decoration: InputDecoration(
@@ -199,14 +201,14 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                               icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
                               onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                             ),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
                           ),
                           obscureText: _obscureConfirm,
                           validator: (val) => val != _passwordController.text
                               ? 'Passwords do not match'
                               : null,
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: AppSpacing.xl),
                         SizedBox(
                           height: 56,
                           child: ElevatedButton(
@@ -214,9 +216,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF667eea),
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
+                              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                               elevation: 8,
                             ),
                             child: _isLoading
@@ -228,9 +228,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Text(
-                                    'Set Password & Login',
-                                    style: TextStyle(
+                                : Text(AppLocalizations.t(context, 'Set Password & Login'),
+                                    style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -249,4 +248,6 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     );
   }
 }
+
+
 

@@ -1,4 +1,8 @@
-import '../../core/design/tokens/app_colors.dart';
+﻿import '../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -109,7 +113,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
         context: context,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export successful')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Export successful'))));
       }
     } catch (e) {
       if (mounted) {
@@ -143,7 +147,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
               icon: const Icon(Icons.arrow_back),
               onPressed: () => context.go('/reports'),
             ),
-            title: const Text('Financial Reports', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(AppLocalizations.t(context, 'Financial Reports'), style: const TextStyle(fontWeight: FontWeight.bold)),
             actions: [
               IconButton(
                 icon: const Icon(Icons.file_download),
@@ -160,10 +164,10 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
               child: InkWell(
                 onTap: _selectDateRange,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.textSecondary(context) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.zero,
                     border: Border.all(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                   ),
                   child: Row(
@@ -189,7 +193,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
           // SUMMARY CARDS
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -203,7 +207,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                        ),
                      ],
                    ),
-                   const SizedBox(height: 16),
+                   const SizedBox(height: AppSpacing.md),
                    Row(
                      children: [
                        ReportStatCard(
@@ -212,7 +216,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                          baseColor: AppColors.warning, 
                          icon: Icons.money,
                        ),
-                       const SizedBox(width: 16),
+                       const SizedBox(width: AppSpacing.md),
                        ReportStatCard(
                          title: "Card / Online", 
                          value: "₹${cardPayments.toStringAsFixed(0)}", 
@@ -230,11 +234,11 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
           if (totalRevenue > 0)
             SliverToBoxAdapter(
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.textSecondary(context) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.zero,
                   boxShadow: [
                     BoxShadow(
                       color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03), 
@@ -246,15 +250,14 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Revenue vs Costs vs Profit", 
+                    Text(AppLocalizations.t(context, 'Revenue vs Costs vs Profit'), 
                       style: TextStyle(
                         fontSize: 16, 
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : Colors.black87,
                       )
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.xl),
                     SizedBox(
                       height: 200,
                       child: BarChart(
@@ -275,9 +278,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                                     );
                                     Widget text;
                                     switch (value.toInt()) {
-                                      case 0: text = Text('Revenue', style: style); break;
-                                      case 1: text = Text('COGS', style: style); break;
-                                      case 2: text = Text('Profit', style: style); break;
+                                      case 0: text = Text(AppLocalizations.t(context, 'Revenue'), style: style); break;
+                                      case 1: text = Text(AppLocalizations.t(context, 'COGS'), style: style); break;
+                                      case 2: text = Text(AppLocalizations.t(context, 'Profit'), style: style); break;
                                       default: text = Text('', style: style); break;
                                     }
                                     return SideTitleWidget(axisSide: meta.axisSide, child: text);
@@ -291,9 +294,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                           gridData: const FlGridData(show: false),
                           borderData: FlBorderData(show: false),
                           barGroups: [
-                            BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: totalRevenue, color: AppColors.primaryLight, width: 22, borderRadius: BorderRadius.circular(4))]),
-                            BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: cogs, color: AppColors.error, width: 22, borderRadius: BorderRadius.circular(4))]),
-                            BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: grossProfit, color: AppColors.success, width: 22, borderRadius: BorderRadius.circular(4))]),
+                            BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: totalRevenue, color: AppColors.primaryLight, width: 22, borderRadius: BorderRadius.zero)]),
+                            BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: cogs, color: AppColors.error, width: 22, borderRadius: BorderRadius.zero)]),
+                            BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: grossProfit, color: AppColors.success, width: 22, borderRadius: BorderRadius.zero)]),
                           ],
                         ),
                       ),
@@ -306,24 +309,23 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
           // P&L TABLE
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "Profit & Loss (Estimated)", 
+                  Text(AppLocalizations.t(context, 'Profit & Loss (Estimated)'), 
                     style: TextStyle(
                       fontSize: 18, 
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.white : Colors.black87,
                     )
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: isDark ? AppColors.textSecondary(context) : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.zero,
                       boxShadow: [
                         BoxShadow(
                           color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.05), 
@@ -340,9 +342,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                         const Divider(height: 24),
                         Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.success,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.zero,
                           ),
                           child: _buildRowItem("Gross Profit", grossProfit, isPositive: true, isBold: true),
                         ),
@@ -385,3 +387,4 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
     );
   }
 }
+

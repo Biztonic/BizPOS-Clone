@@ -2,6 +2,7 @@
 ///
 /// These are stateless business rules that enforce invariants
 /// on inventory entities. No infrastructure imports allowed.
+library;
 
 import '../entities/inventory_entity.dart';
 

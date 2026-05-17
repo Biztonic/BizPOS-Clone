@@ -1,5 +1,7 @@
-// ignore_for_file: use_build_context_synchronously
+﻿// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import '../../services/device_manager_service.dart';
 import '../customer_display_screen.dart';
 import '../cfd_screen.dart';
@@ -62,13 +64,13 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text("Device Found", style: AppTypography.titleMedium),
+          title: Text(AppLocalizations.t(context, 'Device Found'), style: AppTypography.titleMedium),
           content: const Text("Found 'Samsung TV' at 192.168.1.105", style: AppTypography.bodyMedium),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context), 
-              child: const Text("Cancel")
+              child: Text(AppLocalizations.t(context, 'Cancel'))
             ),
             AppButton(
               label: "Add",
@@ -134,7 +136,7 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.tv_off_outlined, size: 64, color: Theme.of(context).disabledColor),
-            SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.md),
             const Text(
               "No displays configured.\nGo to Discover to add one.", 
               textAlign: TextAlign.center,
@@ -146,24 +148,24 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
     }
     return ListView.builder(
       itemCount: savedDisplays.length,
-      padding: EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       itemBuilder: (context, index) {
         final device = savedDisplays[index];
         return Padding(
-          padding: EdgeInsets.only(bottom: AppSpacing.md),
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
           child: AppCard(
              child: ListTile(
                leading: Container(
-                 padding: const EdgeInsets.all(8),
+                 padding: const EdgeInsets.all(AppSpacing.sm),
                  decoration: BoxDecoration(
                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                   borderRadius: BorderRadius.circular(8),
+                   borderRadius: BorderRadius.zero,
                  ),
                  child: Icon(Icons.tv, color: Theme.of(context).colorScheme.primary),
                ),
                title: Text(device.name, style: AppTypography.titleSmall),
                subtitle: Text(
-                 "${device.type.name.toUpperCase().replaceAll('_', ' ')} • ${device.connection.name.toUpperCase()}",
+                 "${device.type.name.toUpperCase().replaceAll('_', ' ')} â€¢ ${device.connection.name.toUpperCase()}",
                  style: AppTypography.bodySmall,
                ),
                trailing: IconButton(
@@ -175,7 +177,7 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
                ),
                onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Sending test signal..."), behavior: SnackBarBehavior.floating)
+                    SnackBar(content: Text(AppLocalizations.t(context, 'Sending test signal...')), behavior: SnackBarBehavior.floating)
                   );
                },
              ),
@@ -187,7 +189,7 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
 
   Widget _buildDiscoverTab(DensityConfig density) {
     return ListView(
-      padding: EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
         SizedBox(
           width: double.infinity,
@@ -199,9 +201,9 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
             variant: AppButtonVariant.primary,
           ),
         ),
-        SizedBox(height: AppSpacing.xl),
-        const Text("Manual Connect", style: AppTypography.titleSmall),
-        SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.xl),
+        Text(AppLocalizations.t(context, 'Manual Connect'), style: AppTypography.titleSmall),
+        const SizedBox(height: AppSpacing.lg),
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -212,7 +214,7 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
                 hintText: "e.g. 192.168.1.100",
               ),
             ),
-            SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.md),
             AppButton(
               onPressed: () {
                  _addDisplay(DisplayDevice(
@@ -235,18 +237,17 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
 
   Widget _buildLocalOptions(DensityConfig density) {
     return ListView(
-      padding: EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
         AppCard(
           child: Padding(
-            padding: EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
                children: [
                  Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
-                 SizedBox(width: 16),
-                 const Expanded(
-                   child: Text(
-                     "Use this device as a dedicated display unit if connected via HDMI to a TV.",
+                 const SizedBox(width: AppSpacing.md),
+                 Expanded(
+                   child: Text(AppLocalizations.t(context, 'Use this device as a dedicated display unit if connected via HDMI to a TV.'),
                      style: AppTypography.bodySmall,
                    )
                  )
@@ -254,7 +255,7 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
             ),
           ),
         ),
-        SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.xl),
         _buildLocalActionItem(
           title: "Launch Order Status Board",
           subtitle: "Open the public view for prepared/ready orders",
@@ -263,7 +264,7 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
              Navigator.push(context, MaterialPageRoute(builder: (context) => const CustomerDisplayScreen()));
           },
         ),
-        SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.md),
         _buildLocalActionItem(
           title: "Launch Customer Facing Display (CFD)",
           subtitle: "Show cart items and total (Mock)",
@@ -293,4 +294,8 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
     );
   }
 }
+
+
+
+
 

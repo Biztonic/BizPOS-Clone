@@ -8,6 +8,7 @@
 /// - Replaces the billing-related portions of [OrderProvider] and
 ///   [DashboardProvider] over time.
 /// - The legacy providers remain functional during the transition.
+library;
 
 import 'package:flutter/foundation.dart';
 
@@ -23,8 +24,8 @@ enum BillingStatus { idle, loading, success, error }
 
 class BillingProvider with ChangeNotifier {
   // ─── Dependencies ──────────────────────────────────────────
-  late final BillingRepository _repository;
-  late final CheckoutOrchestrator _orchestrator;
+  final BillingRepository _repository;
+  final CheckoutOrchestrator _orchestrator;
   final SyncService _syncService;
 
   // ─── State ─────────────────────────────────────────────────
@@ -84,11 +85,10 @@ class BillingProvider with ChangeNotifier {
 
   String generateOrderId() => _syncService.generateUniqueId('ORD');
 
-  // ─── Constructor ───────────────────────────────────────────
-  BillingProvider(this._syncService, {BillingRepository? repository}) {
-    _repository = repository ?? BillingRepositoryImpl();
-    _orchestrator = CheckoutOrchestrator(billingRepository: _repository);
-  }
+  BillingProvider(this._syncService, {BillingRepository? repository})
+      : _repository = repository ?? BillingRepositoryImpl(),
+        _orchestrator = CheckoutOrchestrator(
+            billingRepository: repository ?? BillingRepositoryImpl());
 
   // ─── Checkout (via Orchestrator) ───────────────────────────
 

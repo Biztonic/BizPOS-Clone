@@ -12,7 +12,7 @@ void main() {
   group('System Stress Test Simulation', () {
     final repository = Repository();
     final syncService = SyncService();
-    final uuid = Uuid();
+    const uuid = Uuid();
 
     test('High Volume Checkout Simulation (1000 Orders)', () async {
       debugPrint('--- Starting High Volume Checkout Test ---');

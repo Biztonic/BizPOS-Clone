@@ -7,12 +7,10 @@ part 'profile_notifier.g.dart';
 
 @riverpod
 class ProfileNotifier extends _$ProfileNotifier {
-  late final AuthRepository _repository;
+  final AuthRepository _repository = AuthRepository();
 
   @override
   AsyncValue<UserProfile?> build() {
-    _repository = AuthRepository();
-    
     // Watch auth state to react to login/logout
     final authState = ref.watch(authNotifierProvider);
     
@@ -20,12 +18,13 @@ class ProfileNotifier extends _$ProfileNotifier {
       return const AsyncValue.data(null);
     }
     
-    return _fetchProfile(authState.user!.uid);
+    // Fire off async profile fetch, set state when complete
+    _fetchProfile(authState.user!.uid);
+    return const AsyncValue.loading();
   }
 
-  AsyncValue<UserProfile?> _fetchProfile(String uid) {
-    // Initial loading state is handled by build returning the future/result
-    return AsyncValue.guard(() async {
+  Future<void> _fetchProfile(String uid) async {
+    state = await AsyncValue.guard(() async {
       final data = await _repository.fetchUserProfile(uid);
       if (data == null) return null;
       return UserProfile.fromMap(data, uid);

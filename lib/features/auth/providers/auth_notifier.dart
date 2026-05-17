@@ -1,17 +1,15 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../data/auth_repository.dart';
 import 'auth_state.dart';
-import '../domain/models/app_user.dart';
 
 part 'auth_notifier.g.dart';
 
 @riverpod
 class AuthNotifier extends _$AuthNotifier {
-  late final AuthRepository _repository;
+  final AuthRepository _repository = AuthRepository();
 
   @override
   AuthState build() {
-    _repository = AuthRepository(); // Ideally injected via another provider
     _init();
     return const AuthState();
   }

@@ -1,11 +1,12 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/tokens/app_spacing.dart';
-import '../../core/design/density/app_density.dart';
 import '../../core/design/components/atoms/app_button.dart';
 import '../../core/design/components/atoms/app_card.dart';
 import '../../core/design/components/atoms/app_text_field.dart';
@@ -54,7 +55,7 @@ class _ManageStringListScreenState extends State<ManageStringListScreen> {
     if (val.isEmpty) return;
     
     if (_items.contains(val)) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Item already exists")));
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Item already exists'))));
        return;
     }
 
@@ -86,12 +87,12 @@ class _ManageStringListScreenState extends State<ManageStringListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final density = AppDensityProvider.configOf(context);
+    
 
     return PosScaffold(
       title: widget.title,
       mainContent: Padding(
-        padding: EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
              AppCard(
@@ -123,8 +124,7 @@ class _ManageStringListScreenState extends State<ManageStringListScreen> {
                    ? const Center(child: CircularProgressIndicator())
                    : _items.isEmpty 
                        ? Center(
-                           child: Text(
-                             "No items found. Add one above.", 
+                           child: Text(AppLocalizations.t(context, 'No items found. Add one above.'), 
                              style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))
                            )
                          )

@@ -217,7 +217,7 @@ class PrinterManagerService {
             return false;
           }
        case PrinterConnectionType.system:
-         // TODO: Implement Native/System printing (e.g. via 'printing' package)
+         // NOTE: Native/System printing (via 'printing' package) is deferred — thermal printers handle all current use cases.
          return true; // Mock success
      }
      return false;

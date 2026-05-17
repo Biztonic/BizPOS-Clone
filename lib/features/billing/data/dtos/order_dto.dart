@@ -6,6 +6,7 @@
 ///   - SQLite (toSqlMap / fromSqlMap)
 ///
 /// The domain OrderEntity stays pure.
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 

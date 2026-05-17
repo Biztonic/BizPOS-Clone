@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/dashboard_provider.dart';
@@ -42,7 +44,7 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
       {'icon': Icons.dashboard, 'label': 'DASHBOARD', 'route': '/dashboard'},
     ];
 
-    // Addon-gated features – only show if addon is active
+    // Addon-gated features â€“ only show if addon is active
     if (provider.hasAddon('customer_management') && isOwnerOrAdmin) {
       items.add({'icon': Icons.people, 'label': 'CUSTOMERS', 'route': '/customers'});
     }
@@ -62,7 +64,7 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
       items.add({'icon': Icons.sync_alt, 'label': 'DATA CENTER', 'route': '/data-sync'});
     }
 
-    // Printer – always available as a utility
+    // Printer â€“ always available as a utility
     items.add({'icon': Icons.print, 'label': 'PRINTER', 'route': '/printer'});
     
     // Settings
@@ -109,7 +111,7 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
       opacity: 1.0, // Solid Background
       color: CarDashboardTheme.panelColor(isDarkMode), // No opacity, strictly solid
       borderColor: CarDashboardTheme.textColor(isDarkMode).withValues(alpha: 0.1),
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -119,10 +121,10 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
             height: 4,
             decoration: BoxDecoration(
               color: CarDashboardTheme.subTextColor(isDarkMode).withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(2)
+              borderRadius: BorderRadius.zero
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xxs),
           
           // Scrollable Menu List
           SizedBox(
@@ -157,10 +159,10 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(16), // Increased padding
+            padding: const EdgeInsets.all(AppSpacing.md), // Increased padding
             decoration: BoxDecoration(
               color: isSelected ? itemColor.withValues(alpha: 0.2) : itemColor.withValues(alpha: 0.05),
-              shape: BoxShape.circle,
+              shape: BoxShape.rectangle,
               border: Border.all(
                 color: borderColor,
                 width: isSelected ? 2 : 1
@@ -186,3 +188,6 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
     );
   }
 }
+
+
+

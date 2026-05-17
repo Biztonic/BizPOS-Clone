@@ -1,4 +1,6 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'cfd_screen.dart';
 import 'customer_display_screen.dart';
@@ -19,11 +21,10 @@ class DisplayManagementScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.t(context, 'display'))),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          const Text(
-            "External Displays",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(AppLocalizations.t(context, 'External Displays'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
             
@@ -113,23 +114,23 @@ class DisplayManagementScreen extends StatelessWidget {
       IconData icon, Color color, VoidCallback onTap) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.zero,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+                  shape: BoxShape.rectangle,
                 ),
                 child: Icon(icon, color: color, size: 28),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +141,7 @@ class DisplayManagementScreen extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -154,7 +155,7 @@ class DisplayManagementScreen extends StatelessWidget {
                 onPressed: () => _showDisplaySettingsDialog(context, title),
                 tooltip: 'Configure Physical Display',
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondary(context)),
             ],
           ),
@@ -167,20 +168,20 @@ class DisplayManagementScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text("Select Display Mode"),
+        title: Text(AppLocalizations.t(context, 'Select Display Mode')),
         children: [
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (_) => const DigitalMenuBoard()));
             },
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               child: Row(
                 children: [
-                  Icon(Icons.tv, color: AppColors.primaryLight),
-                  SizedBox(width: 12),
-                  Text("Digital Display Mode (View Only)", style: TextStyle(fontSize: 16)),
+                  const Icon(Icons.tv, color: AppColors.primaryLight),
+                  const SizedBox(width: 12),
+                  Text(AppLocalizations.t(context, 'Digital Display Mode (View Only)'), style: const TextStyle(fontSize: 16)),
                 ],
               ),
             ),
@@ -190,13 +191,13 @@ class DisplayManagementScreen extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (_) => const SelfOrderingScreen()));
             },
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               child: Row(
                 children: [
-                  Icon(Icons.touch_app, color: AppColors.success),
-                  SizedBox(width: 12),
-                  Text("Self-Ordering Kiosk (Interactive)", style: TextStyle(fontSize: 16)),
+                  const Icon(Icons.touch_app, color: AppColors.success),
+                  const SizedBox(width: 12),
+                  Text(AppLocalizations.t(context, 'Self-Ordering Kiosk (Interactive)'), style: const TextStyle(fontSize: 16)),
                 ],
               ),
             ),
@@ -229,8 +230,8 @@ class DisplayManagementScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   const Text("Target Physical Display:", style: TextStyle(fontWeight: FontWeight.bold)),
-                   const SizedBox(height: 8),
+                   Text(AppLocalizations.t(context, 'Target Physical Display:'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                   const SizedBox(height: AppSpacing.sm),
                    DropdownButton<String>(
                      isExpanded: true,
                      value: selectedDisplay,
@@ -239,19 +240,19 @@ class DisplayManagementScreen extends StatelessWidget {
                        setState(() => selectedDisplay = val!);
                      }
                    ),
-                   const SizedBox(height: 16),
+                   const SizedBox(height: AppSpacing.md),
                    Text("Note: Connecting to a physical display requires 'desktop_multi_window' package support. This setting is currently saved but will not actively move the window until the package is integrated.", style: TextStyle(fontSize: 12, color: AppColors.textSecondary(context), fontStyle: FontStyle.italic))
                 ],
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+                TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.t(context, 'Cancel'))),
                 ElevatedButton(
                   onPressed: () {
                     // Start saving preference logic here (e.g., SharedPreferences)
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Display mapped to $selectedDisplay")));
                     Navigator.pop(context);
                   },
-                  child: const Text("Save"),
+                  child: Text(AppLocalizations.t(context, 'Save')),
                 )
               ],
             );
@@ -261,3 +262,7 @@ class DisplayManagementScreen extends StatelessWidget {
     );
   }
 }
+
+
+
+

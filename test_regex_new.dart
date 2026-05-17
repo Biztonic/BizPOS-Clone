@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 void main() {
   final priceRegex = RegExp(r'(?:Rs\.?|INR|\$|₹)?\s*(\d[\d.,\s]*\d|\d+)\s*(?:Rs\.?|INR|\$|₹|\/-)?\s*$', caseSensitive: false);
   final noiseWords = ['menu', 'items', 'price', 'cost', 'tax', 'total', 'page', 'gst', 'cgst', 'sgst', 'rate'];
@@ -44,7 +45,7 @@ void main() {
              
              if (!noiseWords.contains(possibleCategory.toLowerCase())) {
                 currentCategory = possibleCategory;
-                print("SET CATEGORY: '${currentCategory}'");
+                print("SET CATEGORY: '$currentCategory'");
                 continue; 
              }
         }
@@ -52,15 +53,15 @@ void main() {
 
     if (name.isNotEmpty && name.length > 2) {
        if (name.replaceAll(RegExp(r'[^A-Za-z]'), '').isEmpty) {
-          print("REJECT NUMBERS ONLY: '${name}'");
+          print("REJECT NUMBERS ONLY: '$name'");
           continue;
        }
        if (noiseWords.contains(name.toLowerCase())) {
-          print("REJECT NOISE WORD: '${name}'");
+          print("REJECT NOISE WORD: '$name'");
           continue;
        }
        
-       print("MATCHED ITEM: Name: '${name}', Price: ${price}, Category: ${currentCategory}");
+       print("MATCHED ITEM: Name: '$name', Price: $price, Category: $currentCategory");
     }
   }
 }

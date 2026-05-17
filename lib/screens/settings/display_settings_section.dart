@@ -1,31 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../utils/theme.dart';
 import '../../features/receipt_printing/screens/receipt_settings_screen.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
-import '../../core/design/density/app_density.dart';
+
 import '../../core/design/tokens/app_spacing.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/components/atoms/app_card.dart';
 
 class DisplaySettingsSection extends ConsumerWidget {
-  const DisplaySettingsSection({super.key});
+  final bool isSubView;
+  const DisplaySettingsSection({super.key, this.isSubView = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeState = ref.watch(themeProvider);
     final themeNotifier = ref.read(themeProvider.notifier);
-    final density = AppDensityProvider.configOf(context);
 
-    return PosScaffold(
-      title: "Appearance Settings",
-      mainContent: ListView(
-        padding: EdgeInsets.all(AppSpacing.lg),
+    final content = ListView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           // Theme Color
-          Text('Theme Color', style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Theme Color'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: Wrap(
@@ -41,7 +41,7 @@ class DisplaySettingsSection extends ConsumerWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       color: color,
-                      shape: BoxShape.circle,
+                      shape: BoxShape.rectangle,
                       border: isSelected
                           ? Border.all(color: themeState.isDarkMode ? Colors.white : Colors.black, width: 3)
                           : null,
@@ -64,7 +64,7 @@ class DisplaySettingsSection extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
           
           // Interface Style
-          Text('Interface Style', style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Interface Style'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: Column(
@@ -72,12 +72,12 @@ class DisplaySettingsSection extends ConsumerWidget {
               children: [
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Interface Layout', style: AppTypography.bodyLarge),
+                  title: Text(AppLocalizations.t(context, 'Interface Layout'), style: AppTypography.bodyLarge),
                   leading: Container(
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
+                      shape: BoxShape.rectangle,
                     ),
                     child: const Icon(Icons.view_quilt, color: AppColors.primaryLight, size: 20),
                   ),
@@ -91,19 +91,19 @@ class DisplaySettingsSection extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.border(context)),
-                    borderRadius: BorderRadius.circular(density.buttonRadius),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<UIStyle>(
                       isExpanded: true,
                       value: themeState.uiStyle,
                       style: AppTypography.bodyMedium,
-                      items: const [
+                      items: [
                         DropdownMenuItem(
                           value: UIStyle.standard, 
-                          child: Text("Standard")
+                          child: Text(AppLocalizations.t(context, 'Standard'))
                         ),
-                        DropdownMenuItem(value: UIStyle.car_dashboard, child: Text("Automotive (Landscape)")),
+                        DropdownMenuItem(value: UIStyle.car_dashboard, child: Text(AppLocalizations.t(context, 'Automotive (Landscape)'))),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -120,12 +120,12 @@ class DisplaySettingsSection extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
           
           // Theme Mode Toggle (Added this as it was in DashboardProvider but missing in UI?)
-          Text('Theme Mode', style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Theme Mode'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: SwitchListTile(
-              title: const Text("Dark Mode", style: AppTypography.bodyLarge),
-              subtitle: const Text("Use a dark color scheme", style: AppTypography.bodySmall),
+              title: Text(AppLocalizations.t(context, 'Dark Mode'), style: AppTypography.bodyLarge),
+              subtitle: Text(AppLocalizations.t(context, 'Use a dark color scheme'), style: AppTypography.bodySmall),
               value: themeState.isDarkMode,
               onChanged: (val) => themeNotifier.toggleTheme(),
               secondary: Icon(themeState.isDarkMode ? Icons.dark_mode : Icons.light_mode, color: AppColors.primary),
@@ -136,7 +136,7 @@ class DisplaySettingsSection extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
           
           // Receipt Configuration
-          Text('Receipt Configuration', style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Receipt Configuration'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           
           AppCard(
@@ -146,12 +146,12 @@ class DisplaySettingsSection extends ConsumerWidget {
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+                  shape: BoxShape.rectangle,
                 ),
                 child: const Icon(Icons.receipt_long, color: AppColors.primary, size: 20),
               ),
-              title: const Text('Configure Receipt Layout', style: AppTypography.bodyLarge),
-              subtitle: const Text('Customize header, footer, visibility & live preview', style: AppTypography.bodySmall),
+              title: Text(AppLocalizations.t(context, 'Configure Receipt Layout'), style: AppTypography.bodyLarge),
+              subtitle: Text(AppLocalizations.t(context, 'Customize header, footer, visibility & live preview'), style: AppTypography.bodySmall),
               trailing: const Icon(Icons.arrow_forward_ios, size: 14),
               onTap: () {
                 Navigator.push(
@@ -162,7 +162,17 @@ class DisplaySettingsSection extends ConsumerWidget {
             ),
           ),
         ],
-      ),
+      );
+
+    if (isSubView) return content;
+
+    return PosScaffold(
+      title: "Appearance Settings",
+      showSidebar: false,
+      mainContent: content,
     );
   }
 }
+
+
+

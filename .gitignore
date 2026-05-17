@@ -90,3 +90,12 @@ google-services.json
 
 # Large log files
 *.txt
+
+# Flutter Ephemeral Files
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# Agent & Scratch Files
+superpowers-main/
+scratch/
+

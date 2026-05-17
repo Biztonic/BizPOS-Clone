@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:widgetbook/widgetbook.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 import '../../../core/design/components/atoms/app_text_field.dart';
 
@@ -8,23 +9,23 @@ import '../../../core/design/components/atoms/app_text_field.dart';
   type: AppTextField,
 )
 Widget appTextFieldVariantsUseCase(BuildContext context) {
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
+  return const Padding(
+    padding: EdgeInsets.all(AppSpacing.md),
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
+      children: [
         AppTextField(
           labelText: 'Outlined Variant',
           hintText: 'Enter text here',
           variant: AppTextFieldVariant.outlined,
         ),
-        SizedBox(height: 16),
+        SizedBox(height: AppSpacing.md),
         AppTextField(
           labelText: 'Filled Variant',
           hintText: 'Enter text here',
           variant: AppTextFieldVariant.filled,
         ),
-        SizedBox(height: 16),
+        SizedBox(height: AppSpacing.md),
         AppTextField(
           labelText: 'Underlined Variant',
           hintText: 'Enter text here',
@@ -40,21 +41,21 @@ Widget appTextFieldVariantsUseCase(BuildContext context) {
   type: AppTextField,
 )
 Widget appTextFieldSizesUseCase(BuildContext context) {
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
+  return const Padding(
+    padding: EdgeInsets.all(AppSpacing.md),
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
+      children: [
         AppTextField(
           labelText: 'Small Size',
           size: AppTextFieldSize.small,
         ),
-        SizedBox(height: 16),
+        SizedBox(height: AppSpacing.md),
         AppTextField(
           labelText: 'Medium Size',
           size: AppTextFieldSize.medium,
         ),
-        SizedBox(height: 16),
+        SizedBox(height: AppSpacing.md),
         AppTextField(
           labelText: 'Large Size',
           size: AppTextFieldSize.large,

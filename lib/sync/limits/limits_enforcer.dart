@@ -98,7 +98,6 @@ class LimitsEnforcer {
     try {
       final repo = getRepository();
       final db = await repo.database;
-      if (db == null) return {'today': 0, 'monthly': 0, 'total': 0};
 
       final now = DateTime.now();
       final todayStart = DateTime(now.year, now.month, now.day).toIso8601String();

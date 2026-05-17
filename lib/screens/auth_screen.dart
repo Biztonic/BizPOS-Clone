@@ -1,10 +1,15 @@
 import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
+import '../core/design/layouts/pos_scaffold.dart';
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // NEW
 import 'package:go_router/go_router.dart';
+import '../core/design/tokens/app_typography.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -94,18 +99,14 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
 
-    return Scaffold(
-      body: Container(
+    return PosScaffold(
+      showSidebar: false,
+      showGlobalActions: false,
+      mainContent: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? const [Color(0xFF0D1B2A), Color(0xFF1B2838), Color(0xFF0D1B2A)]
-                : const [Color(0xFF667eea), Color(0xFF764ba2)],
-          ),
+          gradient: AppColors.authGradient(context),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -124,10 +125,15 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   Expanded(
                     flex: 1,
                     child: Container(
-                      color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.05),
+                      decoration: BoxDecoration(
+                         color: AppColors.surface(context),
+                        boxShadow: [
+                          if (!isDark) BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.05), blurRadius: 40, offset: const Offset(-20, 0))
+                        ],
+                      ),
                       child: Center(
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(48),
+                          padding: const EdgeInsets.all(AppSpacing.xxl),
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 450),
                             child: FadeTransition(
@@ -147,7 +153,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             return SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
                   child: FadeTransition(
                     opacity: _fadeAnim,
                     child: _buildAuthForm(context, isLoading, isDark, size),
@@ -163,34 +169,32 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
   Widget _buildBrandingPane(bool isDark) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(64),
+      padding: const EdgeInsets.all(AppSpacing.xxxl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Logo
-          Container(
-            width: 80, height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 8))],
-            ),
+            Container(
+              width: 80, height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).colorScheme.onPrimary,
+                boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 8))],
+              ),
             child: ClipOval(
-              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.storefront, size: 40, color: AppColors.primary)),
+              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 40, color: AppColors.primary)),
             ),
           ),
-          const SizedBox(height: 32),
-          const Text(
-            "BizTonic POS",
-            style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1),
+          const SizedBox(height: AppSpacing.xl),
+          Text(AppLocalizations.t(context, 'BizTonic POS'),
+            style: AppTypography.displayLarge,
           ),
-          const SizedBox(height: 16),
-          Text(
-            "The all-in-one platform for modern commerce. Manage sales, inventory, and staff with surgical precision.",
-            style: TextStyle(fontSize: 18, color: Colors.white.withValues(alpha: 0.8), height: 1.5),
-          ),
-          const SizedBox(height: 48),
+          const SizedBox(height: AppSpacing.md),
+            Text(AppLocalizations.t(context, 'The all-in-one platform for modern commerce. Manage sales, inventory, and staff with surgical precision.'),
+              style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8), height: 1.5),
+            ),
+          const SizedBox(height: AppSpacing.xxl),
           
           // Feature List
           _buildFeatureItem(Icons.bolt, "Lightning Fast Billing", "Process transitions in seconds, even offline."),
@@ -204,23 +208,23 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
   Widget _buildFeatureItem(IconData icon, String title, String desc) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: Colors.white, size: 20),
+            padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12), borderRadius: BorderRadius.zero),
+              child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 20),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 2),
-                Text(desc, style: const TextStyle(color: Colors.white60, fontSize: 13)),
+                Text(title, style: AppTypography.titleMedium.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(desc, style: AppTypography.bodySmall.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.6))),
               ],
             ),
           ),
@@ -233,34 +237,35 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // ── Mobile Header (Hidden on Wide) ──
+        // â”€â”€ Mobile Header (Hidden on Wide) â”€â”€
         if (MediaQuery.of(context).size.width < 900) ...[
           Container(
-            width: 80, height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 8))],
-            ),
+              width: 80, height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).colorScheme.onPrimary,
+                boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 8))],
+              ),
             child: ClipOval(
-              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.storefront, size: 40, color: AppColors.primary)),
+              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 40, color: AppColors.primary)),
             ),
           ),
-          const SizedBox(height: 16),
-          const Text("BizTonic POS", style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1)),
-          const SizedBox(height: 32),
+          const SizedBox(height: AppSpacing.md),
+          Text(AppLocalizations.t(context, 'BizTonic POS'), style: AppTypography.headlineMedium.copyWith(color: Theme.of(context).colorScheme.onPrimary, letterSpacing: 1)),
+          const SizedBox(height: AppSpacing.xl),
         ],
 
-        // ── Auth Card ──
+        // â”€â”€ Auth Card â”€â”€
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B) : Colors.white,
-            borderRadius: BorderRadius.circular(28),
+            color: AppColors.surface(context),
+            borderRadius: BorderRadius.zero,
+            border: Border.all(color: AppColors.outline(context)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
+                color: Theme.of(context).shadowColor.withValues(alpha: isDark ? 0.4 : 0.08),
                 blurRadius: 40, offset: const Offset(0, 20),
               ),
             ],
@@ -273,14 +278,14 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               children: [
                 Text(
                   _isLogin ? "Welcome Back" : "Create Account",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: isDark ? Colors.white : AppColors.textSecondary(context)),
+                  style: AppTypography.headlineSmall.copyWith(color: AppColors.textPrimary(context)),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   _isLogin ? "Sign in to manage your store" : "Get started with BizTonic",
-                  style: TextStyle(fontSize: 14, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
+                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Email
                 _buildTextField(
@@ -289,6 +294,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   label: "Email Address",
                   icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
+                  autofillHints: [AutofillHints.email],
                   isDark: isDark,
                   validator: (value) {
                     if (value == null || value.isEmpty || !value.contains('@')) {
@@ -297,7 +303,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.xxs),
 
                 // Password
                 _buildTextField(
@@ -306,9 +312,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   label: "Password",
                   icon: Icons.lock_outline,
                   obscure: _obscurePassword,
+                  autofillHints: [AutofillHints.password],
                   isDark: isDark,
                   suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary(context), size: 20),
+                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: isDark ? Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.38) : Theme.of(context).shadowColor.withValues(alpha: 0.1), size: 20),
                     onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                   validator: (value) {
@@ -320,7 +327,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 ),
 
                 if (!_isLogin) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   _buildTextField(
                     key: const Key('mobile_input'),
                     controller: _mobileController,
@@ -337,7 +344,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     },
                   ),
                 ],
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xl),
 
                 // Submit Button
                 SizedBox(
@@ -346,18 +353,18 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     key: const Key('login_button'),
                     onPressed: isLoading ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF667eea),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                       elevation: 8,
-                      shadowColor: const Color(0xFF667eea).withValues(alpha: 0.5),
+                      shadowColor: AppColors.primary.withValues(alpha: 0.5),
                     ),
                     child: isLoading
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                        : Text(_isLogin ? "SIGN IN" : "CREATE ACCOUNT", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                        ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary, strokeWidth: 2.5))
+                        : Text(_isLogin ? "SIGN IN" : "CREATE ACCOUNT", style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800, letterSpacing: 1)),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xxs),
 
                 // Toggle & Manual Activation
                 Center(
@@ -371,23 +378,21 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         ),
                       ),
                       if (_isLogin) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         TextButton(
                           onPressed: () {
                             final email = _emailController.text.trim();
                             if (email.isEmpty || !email.contains('@')) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Please enter your email address first')),
+                                SnackBar(content: Text(AppLocalizations.t(context, 'Please enter your email address first'))),
                               );
                               return;
                             }
                             context.push('/set-password?email=$email');
                           },
-                          child: Text(
-                            "Converted from Sales App? Activate Account",
-                            style: TextStyle(
-                              color: isDark ? AppColors.primaryLight : const Color(0xFF667eea),
-                              fontSize: 13,
+                          child: Text(AppLocalizations.t(context, 'Converted from Sales App? Activate Account'),
+                            style: AppTypography.labelMedium.copyWith(
+                              color: AppColors.adaptivePrimary(context),
                               fontWeight: FontWeight.w700,
                               decoration: TextDecoration.underline,
                             ),
@@ -402,42 +407,42 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           ),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.lg),
 
-        // ── Employee Login Link ──
+        // â”€â”€ Employee Login Link â”€â”€
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.15),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: isDark ? 0.08 : 0.15),
+            borderRadius: BorderRadius.zero,
+            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.1)),
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.zero,
               onTap: () => context.push('/employee-login'),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs, vertical: 18),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
-                      child: const Icon(Icons.badge_outlined, color: Colors.white, size: 24),
+                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.15), borderRadius: BorderRadius.zero),
+                      child: Icon(Icons.badge_outlined, color: Theme.of(context).colorScheme.onPrimary, size: 24),
                     ),
-                    const SizedBox(width: 16),
-                    const Expanded(
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Employee PIN Login", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
-                          SizedBox(height: 2),
-                          Text("Quick access for store staff", style: TextStyle(color: Colors.white60, fontSize: 12)),
+                          Text(AppLocalizations.t(context, 'Employee PIN Login'), style: AppTypography.titleMedium.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
+                          const SizedBox(height: AppSpacing.xxs),
+                          Text(AppLocalizations.t(context, 'Quick access for store staff'), style: AppTypography.bodySmall.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.6))),
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                    const Icon(Icons.arrow_forward_ios, color: Color(0x8CFFFFFF), size: 16),
                   ],
                 ),
               ),
@@ -456,40 +461,60 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     required bool isDark,
     TextInputType? keyboardType,
     bool obscure = false,
+    Iterable<String>? autofillHints,
     Widget? suffixIcon,
     String? prefix,
     String? Function(String?)? validator,
   }) {
+    final Color textColor = AppColors.textPrimary(context);
+    final Color labelColor = AppColors.textSecondary(context);
+    final Color fillColor = AppColors.surfaceVariant(context);
+    final Color borderColor = AppColors.border(context);
+    const Color activeColor = AppColors.primary;
+
     return TextFormField(
       key: key,
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscure,
-      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+      autofillHints: autofillHints,
+      style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500, letterSpacing: 0.2),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
-        prefixIcon: Icon(icon, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), size: 20),
+        labelStyle: TextStyle(color: labelColor, fontSize: 14, fontWeight: FontWeight.w500),
+        floatingLabelStyle: const TextStyle(
+          color: activeColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+        prefixIcon: Icon(icon, color: isDark ? Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.38) : activeColor.withValues(alpha: 0.8), size: 22),
         prefixText: prefix,
-        prefixStyle: TextStyle(color: isDark ? Colors.white : Colors.black87),
+        prefixStyle: TextStyle(color: textColor, fontWeight: FontWeight.w600),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.textSecondary(context),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
-        ),
+        fillColor: fillColor,
+        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xxs),
+        border: const OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: borderColor, width: 1.5),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: activeColor, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        errorBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: AppColors.error, width: 1.5),
+        ),
+        focusedErrorBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: AppColors.error, width: 2),
+        ),
       ),
       validator: validator,
     );
   }
 }
+
+

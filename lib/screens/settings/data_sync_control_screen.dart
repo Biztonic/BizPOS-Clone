@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/dashboard_provider.dart';
@@ -6,7 +8,6 @@ import 'package:biztonic_pos/services/sync_service.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import '../../core/design/components/atoms/app_button.dart';
 import '../../core/design/components/atoms/app_card.dart';
-import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/components/molecules/app_dialog.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_spacing.dart';
@@ -45,7 +46,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                   tooltip: 'Refresh Cloud Stats',
                   onPressed: () {
                      syncService.refreshCloudCounts();
-                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Refreshing Cloud Stats...")));
+                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Refreshing Cloud Stats...'))));
                   },
                 )
               ],
@@ -103,13 +104,13 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
           children: [
             Icon(isGridView ? Icons.grid_view : Icons.view_list, size: 20, color: AppColors.textSecondary(context)),
             const SizedBox(width: AppSpacing.sm),
-            Text("Module Control Matrix", style: AppTypography.h4),
+            Text(AppLocalizations.t(context, 'Module Control Matrix'), style: AppTypography.h4),
           ],
         ),
         Container(
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(AppSpacing.sm),
+            borderRadius: BorderRadius.zero,
             border: Border.all(color: AppColors.surfaceVariant(context)),
           ),
           child: Row(
@@ -140,11 +141,11 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Global Actions", style: AppTypography.h4),
+          Text(AppLocalizations.t(context, 'Global Actions'), style: AppTypography.h4),
           const SizedBox(height: AppSpacing.lg),
           _buildGlobalActions(context, syncService, isOnline, stats, provider),
           const SizedBox(height: AppSpacing.xl * 2),
-          Text("Backup & Restore", style: AppTypography.h4),
+          Text(AppLocalizations.t(context, 'Backup & Restore'), style: AppTypography.h4),
           const SizedBox(height: AppSpacing.lg),
           _buildBackupSection(context, provider),
         ],
@@ -157,11 +158,11 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Divider(height: AppSpacing.xl * 2),
-        Text("Global Actions", style: AppTypography.h4),
+        Text(AppLocalizations.t(context, 'Global Actions'), style: AppTypography.h4),
         const SizedBox(height: AppSpacing.lg),
         _buildGlobalActions(context, syncService, isOnline, stats, provider),
         const SizedBox(height: AppSpacing.xl * 2),
-        Text("Backup & Restore", style: AppTypography.h4),
+        Text(AppLocalizations.t(context, 'Backup & Restore'), style: AppTypography.h4),
         const SizedBox(height: AppSpacing.lg),
         _buildBackupSection(context, provider),
       ],
@@ -193,7 +194,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
          if (context.mounted) {
             final service = Provider.of<DashboardProvider>(context, listen: false).syncService;
             if (service.lastSyncError != null && service.lastSyncError!.isNotEmpty) {
-               final indexUrl = service.lastIndexErrorUrl;
+               
                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                  content: Text("Sync Error: ${service.lastSyncError}"), 
                  backgroundColor: AppColors.error,
@@ -202,6 +203,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                service.lastSyncError = null; // Clear after showing
             } else if (service.lastSyncWarning != null && service.lastSyncWarning!.isNotEmpty) {
                final indexUrl = service.lastIndexErrorUrl;
+               
                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                  content: Text(service.lastSyncWarning!), 
                  backgroundColor: AppColors.warning,
@@ -267,7 +269,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
           children: [
             Container(
               width: 56, height: 56,
-              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.2), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.2), shape: BoxShape.rectangle),
               child: Icon(
                 isOnline ? ((totalPending > 0 || hasMismatch) ? Icons.cloud_sync : Icons.cloud_done) : Icons.cloud_off, 
                 color: statusColor, 
@@ -318,7 +320,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppSpacing.sm),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Icon(icon, color: color, size: 20),
                 ),
@@ -329,7 +331,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                     children: [
                       Text(label, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
                       if (isSyncing)
-                        Text("Syncing...", style: AppTypography.bodySmall.copyWith(color: color, fontWeight: FontWeight.bold))
+                        Text(AppLocalizations.t(context, 'Syncing...'), style: AppTypography.bodySmall.copyWith(color: color, fontWeight: FontWeight.bold))
                       else if (pending > 0)
                         Text("$pending Pending", style: AppTypography.bodySmall.copyWith(color: AppColors.warning, fontWeight: FontWeight.bold))
                       else 
@@ -345,7 +347,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
                 color: AppColors.surfaceVariant(context).withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(AppSpacing.sm),
+                borderRadius: BorderRadius.zero,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -422,14 +424,14 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                     ),
                     if (isSuper) 
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
-                        decoration: BoxDecoration(color: AppColors.surface(context), borderRadius: BorderRadius.circular(AppSpacing.xs)),
-                        child: Text("Super Override", style: AppTypography.labelSmall),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+                        decoration: BoxDecoration(color: AppColors.surface(context), borderRadius: BorderRadius.zero),
+                        child: Text(AppLocalizations.t(context, 'Super Override'), style: AppTypography.labelSmall),
                       ),
                   ]),
                   const SizedBox(height: AppSpacing.sm),
-                  Text("• Sync Frequency: $freq", style: AppTypography.bodySmall),
-                  Text("• Cloud Retention: $retention Days", style: AppTypography.bodySmall),
+                  Text("â€¢ Sync Frequency: $freq", style: AppTypography.bodySmall),
+                  Text("â€¢ Cloud Retention: $retention Days", style: AppTypography.bodySmall),
                 ],
               ),
             );
@@ -443,7 +445,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
             child: Row(children: [
               const Icon(Icons.check_circle, color: AppColors.primary),
               const SizedBox(width: AppSpacing.md),
-              Expanded(child: Text("Starting Plan: Offline Mode. Unlimited Orders.", style: AppTypography.bodyMedium.copyWith(color: AppColors.primary))),
+              Expanded(child: Text(AppLocalizations.t(context, 'Starting Plan: Offline Mode. Unlimited Orders.'), style: AppTypography.bodyMedium.copyWith(color: AppColors.primary))),
             ]),
           ),
 
@@ -483,16 +485,16 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppSpacing.sm)),
+          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
           child: const Icon(Icons.timer, color: AppColors.primary, size: 20),
         ),
-        title: Text("Sync Frequency", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-        subtitle: Text("Control cloud synchronization interval", style: AppTypography.bodySmall),
+        title: Text(AppLocalizations.t(context, 'Sync Frequency'), style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+        subtitle: Text(AppLocalizations.t(context, 'Control cloud synchronization interval'), style: AppTypography.bodySmall),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
           decoration: BoxDecoration(
             color: AppColors.surfaceVariant(context).withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(AppSpacing.sm)
+            borderRadius: BorderRadius.zero
           ),
           child: Builder(
             builder: (context) {
@@ -530,7 +532,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
           child: Column(
             children: [
               SwitchListTile(
-                title: Text("Auto Backup", style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+                title: Text(AppLocalizations.t(context, 'Auto Backup'), style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
                 subtitle: Text(provider.autoBackupEnabled 
                     ? "Running ${provider.backupFrequency.toLowerCase()} at ${provider.backupTime.format(context)}" 
                     : "Automatically save local backups",
@@ -539,7 +541,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                 onChanged: (val) => provider.toggleAutoBackup(val),
                 secondary: Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(color: AppColors.secondary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppSpacing.sm)),
+                  decoration: BoxDecoration(color: AppColors.secondary.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
                   child: const Icon(Icons.access_time, color: AppColors.secondary, size: 20),
                 ),
               ),
@@ -551,7 +553,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: "Frequency", 
                             labelStyle: AppTypography.bodySmall,
                             border: InputBorder.none, 
@@ -572,7 +574,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                             if (time != null) provider.setBackupTime(time);
                           },
                           child: InputDecorator(
-                            decoration: InputDecoration(
+                            decoration: const InputDecoration(
                               labelText: "Time", 
                               labelStyle: AppTypography.bodySmall,
                               border: InputBorder.none, 
@@ -599,7 +601,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("Backup History", style: AppTypography.headlineSmall.copyWith(fontSize: 18)),
+            Text(AppLocalizations.t(context, 'Backup History'), style: AppTypography.headlineSmall.copyWith(fontSize: 18)),
             if (provider.isFetchingBackups)
               const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
             else
@@ -613,7 +615,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
         const SizedBox(height: AppSpacing.sm),
         
         if (provider.availableBackups.isEmpty && !provider.isFetchingBackups)
-          Padding(padding: EdgeInsets.all(AppSpacing.lg), child: Center(child: Text("No backups found", style: TextStyle(color: AppColors.textSecondary(context)))))
+          Padding(padding: const EdgeInsets.all(AppSpacing.lg), child: Center(child: Text(AppLocalizations.t(context, 'No backups found'), style: TextStyle(color: AppColors.textSecondary(context)))))
         else if (provider.availableBackups.isEmpty && provider.isFetchingBackups)
           const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.lg), child: CircularProgressIndicator()))
         else
@@ -633,7 +635,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.history, color: AppColors.textSecondary(context)),
                 title: Text(name, style: AppTypography.bodyMedium),
-                subtitle: Text("${_timeAgo(date)} • $size KB", style: AppTypography.bodySmall),
+                subtitle: Text("${_timeAgo(date)} â€¢ $size KB", style: AppTypography.bodySmall),
                 trailing: AppButton(
                   label: "Restore",
                   variant: AppButtonVariant.ghost,
@@ -648,7 +650,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                       onPrimaryPressed: () {
                         Navigator.pop(context);
                         provider.restoreLocalBackup(file: backup['file'], webKey: backup['isWeb'] ? backup['key'] : null);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Restoring Backup..."), backgroundColor: AppColors.primary));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Restoring Backup...')), backgroundColor: AppColors.primary));
                       },
                       secondaryButtonText: "Cancel",
                     );
@@ -668,7 +670,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppSpacing.sm)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -697,3 +699,6 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
     return "Just now";
   }
 }
+
+
+

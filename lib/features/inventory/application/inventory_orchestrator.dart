@@ -5,6 +5,7 @@
 ///   - Repository persistence
 ///   - Event bus notifications (decoupled sync)
 ///   - Idempotency guards
+library;
 
 import 'package:flutter/foundation.dart';
 

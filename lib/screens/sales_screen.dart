@@ -5,15 +5,11 @@ import '../providers/order_provider.dart';
 import '../models/order_model.dart';
 import '../services/printer_manager_service.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../l10n/app_localizations.dart';
 import '../core/design/layouts/pos_scaffold.dart';
 import '../core/design/components/atoms/app_button.dart';
 import '../core/design/components/atoms/app_card.dart';
-import '../core/design/tokens/app_spacing.dart';
-import '../core/design/tokens/app_typography.dart';
-import '../core/design/tokens/app_colors.dart';
-import '../core/design/density/app_density.dart';
+import '../core/design/design_system.dart';
 
 class SalesScreen extends StatefulWidget {
   const SalesScreen({super.key});
@@ -30,7 +26,7 @@ class _SalesScreenState extends State<SalesScreen> {
   bool _isLoading = false;
   bool _hasMore = true;
   String? _errorMessage;
-  DocumentSnapshot? _lastDocument;
+  
   int _totalCount = 0;
   double _totalSales = 0;
   
@@ -214,7 +210,6 @@ class _SalesScreenState extends State<SalesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final density = AppDensityProvider.configOf(context);
     final isMobile = MediaQuery.of(context).size.width < 700;
 
     return PosScaffold(
@@ -247,9 +242,8 @@ class _SalesScreenState extends State<SalesScreen> {
         ? _buildRightPanel()
         : Row(
             children: [
-              // LEFT PANEL: Date Selectors
               _buildLeftPanel(),
-              // RIGHT PANEL
+              const VerticalDivider(width: 1),
               Expanded(
                 child: _buildRightPanel(),
               )
@@ -261,13 +255,13 @@ class _SalesScreenState extends State<SalesScreen> {
   void _showMobileDateSelector() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl))),
       builder: (ctx) => SizedBox(
          height: 400,
          child: Column(
            children: [
              const SizedBox(height: AppSpacing.md),
-             Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.textSecondary(context), borderRadius: BorderRadius.circular(2))),
+             Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.textSecondary(context), borderRadius: AppRadius.borderCircular)),
              const SizedBox(height: AppSpacing.md),
              Expanded(child: _buildLeftPanel(isMobile: true)),
            ],
@@ -277,12 +271,10 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   Widget _buildLeftPanel({bool isMobile = false}) {
-    final theme = Theme.of(context);
     return Container(
             width: isMobile ? double.infinity : 320,
             decoration: BoxDecoration(
-              color: theme.cardColor,
-              border: isMobile ? null : Border(right: BorderSide(color: theme.dividerColor)),
+              color: AppColors.surface(context),
             ),
             child: Row(
               children: [
@@ -404,63 +396,80 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   Widget _buildRightPanel() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final density = AppDensityProvider.configOf(context);
 
     return RefreshIndicator(
       onRefresh: () => _fetchOrders(isRefresh: true),
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(density.cardPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _getDateSummaryLabel(),
-                  style: AppTypography.displaySmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary)
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                   "Showing $_totalCount transaction${_totalCount == 1 ? '' : 's'} • Total: ₹${_totalSales.toStringAsFixed(2)}",
-                   style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))
-                )
-              ],
-            )
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: _orders.isEmpty && !_isLoading 
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.history_toggle_off, size: 64, color: AppColors.textSecondary(context)),
-                      const SizedBox(height: AppSpacing.md),
-                      Text(_errorMessage ?? AppLocalizations.t(context, 'no_data'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 16)),
-                      if (_errorMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.sm),
-                          child: AppButton.primary(onPressed: () => _fetchOrders(isRefresh: true), label: AppLocalizations.t(context, 'refresh')),
-                        )
-                    ],
+      child: CustomScrollView(
+        controller: _listScrollController,
+        slivers: [
+          // 1. Stats Header
+          SliverToBoxAdapter(
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(density.cardPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getDateSummaryLabel(),
+                    style: AppTypography.displaySmall.copyWith(
+                      fontWeight: FontWeight.bold, 
+                      color: AppColors.adaptivePrimary(context)
+                    )
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                     "Showing $_totalCount transaction${_totalCount == 1 ? '' : 's'} • Total: ₹${_totalSales.toStringAsFixed(2)}",
+                     style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))
                   )
+                ],
+              )
+            ),
+          ),
+
+          // 2. Main List or Empty State
+          if (_orders.isEmpty && !_isLoading)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.history_toggle_off, size: 64, color: AppColors.textSecondary(context).withValues(alpha: 0.5)),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(_errorMessage ?? AppLocalizations.t(context, 'no_data'), 
+                      style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary(context))
+                    ),
+                    if (_errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.sm),
+                        child: AppButton.primary(onPressed: () => _fetchOrders(isRefresh: true), label: AppLocalizations.t(context, 'refresh')),
+                      )
+                  ],
                 )
-              : ListView.builder(
-                  controller: _listScrollController,
-                  padding: EdgeInsets.all(density.cardPadding),
-                  itemCount: _orders.length + 1,
-                  itemBuilder: (context, index) {
+              ),
+            )
+          else
+            SliverPadding(
+              padding: EdgeInsets.all(density.cardPadding),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
                     if (index == _orders.length) {
                       return _hasMore 
                           ? const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.md), child: CircularProgressIndicator())) 
-                          : const SizedBox(height: 50);
+                          : const SizedBox(height: 100); // Bottom padding
                     }
-                    return _buildOrderCard(_orders[index]);
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: _buildOrderCard(_orders[index]),
+                    );
                   },
+                  childCount: _orders.length + 1,
                 ),
-          ),
+              ),
+            ),
         ],
       ),
     );
@@ -485,8 +494,8 @@ class _SalesScreenState extends State<SalesScreen> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textSecondary(context))),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            child: Text(label, style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.textSecondary(context))),
           ),
           Expanded(
             child: ListWheelScrollView.useDelegate(
@@ -509,7 +518,7 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   Widget _buildWheelItem({required String text, required bool isSelected, required VoidCallback onTap}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.adaptivePrimary(context);
     
     return Center(
       child: GestureDetector(
@@ -519,21 +528,21 @@ class _SalesScreenState extends State<SalesScreen> {
           width: isSelected ? 80 : 60,
           decoration: BoxDecoration(
              color: isSelected 
-                ? (isDark ? AppColors.primaryLight.withValues(alpha: 0.2) : AppColors.primaryLight.withValues(alpha: 0.1)) 
+                ? primaryColor.withValues(alpha: 0.1) 
                 : Colors.transparent, 
-             borderRadius: BorderRadius.circular(8)
+             borderRadius: AppRadius.borderMd
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xs),
           alignment: Alignment.center,
           child: Text(
             text,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: AppTypography.titleMedium.copyWith(
               fontSize: 20, 
               fontWeight: isSelected ? FontWeight.w900 : FontWeight.normal,
               color: isSelected 
-                  ? AppColors.primaryLight
-                  : (isDark ? Colors.white24 : AppColors.textSecondary(context)),
+                  ? primaryColor
+                  : AppColors.textSecondary(context).withValues(alpha: 0.4),
             ),
           ),
         ),
@@ -544,10 +553,13 @@ class _SalesScreenState extends State<SalesScreen> {
   // --- EXISTING METHODS ---
   Widget _buildOrderCard(OrderModel order) {
     final bool isRefunded = order.status == 'Refunded';
+    final primaryColor = AppColors.adaptivePrimary(context);
+    final errorColor = AppColors.adaptiveError(context);
+    final successColor = AppColors.adaptiveSuccess(context);
     
     return AppCard(
       key: Key('order_card_${order.id}'),
-      backgroundColor: isRefunded ? AppColors.error.withValues(alpha: 0.05) : null,
+      backgroundColor: isRefunded ? errorColor.withValues(alpha: 0.05) : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -560,13 +572,13 @@ class _SalesScreenState extends State<SalesScreen> {
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
                       color: isRefunded 
-                          ? AppColors.error.withValues(alpha: 0.1) 
-                          : AppColors.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
+                          ? errorColor.withValues(alpha: 0.1) 
+                          : primaryColor.withValues(alpha: 0.1),
+                      borderRadius: AppRadius.borderMd,
                     ),
                     child: Icon(
                       isRefunded ? Icons.undo : Icons.receipt_long_rounded, 
-                      color: isRefunded ? AppColors.error : AppColors.primary, 
+                      color: isRefunded ? errorColor : primaryColor, 
                       size: 24
                     ),
                   ),
@@ -600,7 +612,7 @@ class _SalesScreenState extends State<SalesScreen> {
                   const SizedBox(height: AppSpacing.xs),
                   _buildStatusBadge(
                     order.status,
-                    isRefunded ? AppColors.error : AppColors.success,
+                    isRefunded ? errorColor : successColor,
                   ),
                 ],
               )
@@ -635,7 +647,7 @@ class _SalesScreenState extends State<SalesScreen> {
                 Expanded(
                   child: AppButton.danger(
                     icon: Icons.undo_rounded,
-                    label: AppLocalizations.t(context, 'delete'),
+                    label: AppLocalizations.t(context, 'refund'),
                     onPressed: () => _confirmRefund(context, order.id)
                   ),
                 ),
@@ -652,7 +664,7 @@ class _SalesScreenState extends State<SalesScreen> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppSpacing.sm),
+        borderRadius: AppRadius.borderSm,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
@@ -670,11 +682,10 @@ class _SalesScreenState extends State<SalesScreen> {
     final store = provider.activeStore;
     final receiptSettings = store?.receipt;
     
-    // Thermal Printer Layout Constants
     const TextStyle monoStyle = TextStyle(
       fontFamily: 'Courier', 
       fontSize: 12, 
-      color: Colors.black,
+      color: Colors.black, // Receipts are usually white background anyway
       height: 1.2
     );
     final TextStyle boldMonoStyle = monoStyle.copyWith(fontWeight: FontWeight.bold);
@@ -682,12 +693,12 @@ class _SalesScreenState extends State<SalesScreen> {
     showDialog(
       context: context, 
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)), // Sharp edges like paper
-        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+        backgroundColor: Colors.white, // Keep receipt paper white
         child: Container(
           width: 380, // Approximate width of a receipt
           constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs, horizontal: AppSpacing.md),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -699,41 +710,41 @@ class _SalesScreenState extends State<SalesScreen> {
               if (store?.gstin != null && store!.gstin!.isNotEmpty)
                  Center(child: Text("GSTIN NO : ${store.gstin}", style: monoStyle)),
               
-             const SizedBox(height: 8),
-             const Text("________________________________________", style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
-             const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
+              Text(AppLocalizations.t(context, '________________________________________'), style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
+              const SizedBox(height: AppSpacing.sm),
              
              // DETAILS
              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                Text("Date: ${DateFormat('dd/MM/yy').format(order.date)}", style: monoStyle),
-               const Text("Self Service", style: monoStyle),
+               Text(AppLocalizations.t(context, 'Self Service'), style: monoStyle),
              ]),
              Text(DateFormat('HH:mm').format(order.date), style: monoStyle),
              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-               const Text("Cashier: Cashier", style: monoStyle), // Placeholder for now
+               Text(AppLocalizations.t(context, 'Cashier: Cashier'), style: monoStyle), // Placeholder for now
                Text("Bill No.: ${order.id.length > 5 ? order.id.substring(order.id.length - 5) : order.id}", style: monoStyle),
              ]),
              
              if (receiptSettings?.showTokenNo ?? true) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Center(child: Text("Token No.: ${order.id.length > 4 ? order.id.substring(order.id.length - 4) : order.id}", style: boldMonoStyle.copyWith(fontSize: 14))),
              ],
 
-             const SizedBox(height: 4),
-             const Text("________________________________________", style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
-             const SizedBox(height: 4),
+             const SizedBox(height: AppSpacing.xs),
+             Text(AppLocalizations.t(context, '________________________________________'), style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
+             const SizedBox(height: AppSpacing.xs),
              
              // ITEMS HEADER
              // No.  Item                     Qty    Price   Amount
              // 3    22                       4      8       9
-             const Row(children: [
-               SizedBox(width: 25, child: Text("No.", style: monoStyle)),
-               Expanded(child: Text("Item", style: monoStyle)),
-               SizedBox(width: 30, child: Text("Qty", style: monoStyle, textAlign: TextAlign.right)),
-               SizedBox(width: 60, child: Text("Price", style: monoStyle, textAlign: TextAlign.right)),
-               SizedBox(width: 60, child: Text("Amount", style: monoStyle, textAlign: TextAlign.right)),
-             ]),
-             const Text("________________________________________", style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
+              Row(children: [
+                SizedBox(width: 25, child: Text(AppLocalizations.t(context, 'No.'), style: monoStyle)),
+                Expanded(child: Text(AppLocalizations.t(context, 'Item'), style: monoStyle)),
+                SizedBox(width: 30, child: Text(AppLocalizations.t(context, 'Qty'), style: monoStyle, textAlign: TextAlign.right)),
+                SizedBox(width: 60, child: Text(AppLocalizations.t(context, 'Price'), style: monoStyle, textAlign: TextAlign.right)),
+                SizedBox(width: 60, child: Text(AppLocalizations.t(context, 'Amount'), style: monoStyle, textAlign: TextAlign.right)),
+              ]),
+              Text(AppLocalizations.t(context, '________________________________________'), style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
              
              // ITEMS
              Expanded(
@@ -743,7 +754,7 @@ class _SalesScreenState extends State<SalesScreen> {
                  itemBuilder: (context, index) {
                     final item = order.items[index];
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -767,7 +778,7 @@ class _SalesScreenState extends State<SalesScreen> {
                ),
              ),
              
-             const Text("________________________________________", style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
+              Text(AppLocalizations.t(context, '________________________________________'), style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
                           // TOTALS
               // Total Qty: 5                          Sub   100.00
               Builder(builder: (context) {
@@ -779,14 +790,14 @@ class _SalesScreenState extends State<SalesScreen> {
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                       Text("Total Qty: ${order.items.fold<int>(0, (p, e) => p + e.quantity)}", style: monoStyle),
                       Row(children: [
-                        const SizedBox(width: 50, child: Text("Sub", style: monoStyle, textAlign: TextAlign.right)),
+                        SizedBox(width: 50, child: Text(AppLocalizations.t(context, 'Sub'), style: monoStyle, textAlign: TextAlign.right)),
                         SizedBox(width: 70, child: Text(derivedSubtotal.toStringAsFixed(2), style: monoStyle, textAlign: TextAlign.right)),
                       ])
                     ]),
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                       const Spacer(),
                       Row(children: [
-                        const SizedBox(width: 50, child: Text("Total", style: monoStyle, textAlign: TextAlign.right)),
+                        SizedBox(width: 50, child: Text(AppLocalizations.t(context, 'Total'), style: monoStyle, textAlign: TextAlign.right)),
                         SizedBox(width: 70, child: Text(derivedSubtotal.toStringAsFixed(2), style: monoStyle, textAlign: TextAlign.right)),
                       ])
                     ]),
@@ -814,24 +825,24 @@ class _SalesScreenState extends State<SalesScreen> {
                  }),
               ],
              
-             const Text("________________________________________", style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
+              Text(AppLocalizations.t(context, '________________________________________'), style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
              
              // GRAND TOTAL
              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text("Grand Total", style: boldMonoStyle),
+                Text(AppLocalizations.t(context, 'Grand Total'), style: boldMonoStyle),
                 Text(order.total.toStringAsFixed(2), style: boldMonoStyle),
              ]),
              
-             const SizedBox(height: 8),
-             const Text("Paid via Other [UPI]", style: monoStyle), // Placeholder
+             const SizedBox(height: AppSpacing.sm),
+              Text(AppLocalizations.t(context, 'Paid via Other [UPI]'), style: monoStyle), // Placeholder
              
-             const SizedBox(height: 8),
-             const Text("________________________________________", style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
+             const SizedBox(height: AppSpacing.sm),
+              Text(AppLocalizations.t(context, '________________________________________'), style: monoStyle, textAlign: TextAlign.center, maxLines: 1),
              
              // FOOTER
-             const SizedBox(height: 8),
-             const Center(child: Text("Thank You Visit Again !!!", style: monoStyle)),
-             const SizedBox(height: 16),
+             const SizedBox(height: AppSpacing.sm),
+              Center(child: Text(AppLocalizations.t(context, 'Thank You Visit Again !!!'), style: monoStyle)),
+             const SizedBox(height: AppSpacing.md),
              
              // Actions
              Row(
@@ -839,15 +850,15 @@ class _SalesScreenState extends State<SalesScreen> {
                children: [
                   TextButton.icon(
                     icon: const Icon(Icons.print, size: 16, color: Colors.black),
-                    label: const Text("PRINT", style: TextStyle(color: Colors.black)),
+                    label: Text(AppLocalizations.t(context, 'PRINT'), style: const TextStyle(color: Colors.black)),
                     onPressed: () {
                        PrinterManagerService().printOrderReceipt(order, provider.activeStore, cashierName: provider.userProfile?.name ?? "Cashier");
                     },
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.md),
                   TextButton.icon(
                     icon: const Icon(Icons.close, size: 16, color: AppColors.error),
-                    label: const Text("CLOSE", style: TextStyle(color: AppColors.error)),
+                    label: Text(AppLocalizations.t(context, 'CLOSE'), style: const TextStyle(color: AppColors.error)),
                     onPressed: () => Navigator.pop(ctx),
                   ),
                ],
@@ -892,3 +903,7 @@ class _SalesScreenState extends State<SalesScreen> {
     );
   }
 }
+
+
+
+

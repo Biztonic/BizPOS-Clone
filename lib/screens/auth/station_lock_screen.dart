@@ -1,7 +1,10 @@
-// ignore_for_file: unused_field, use_build_context_synchronously
+﻿// ignore_for_file: unused_field, use_build_context_synchronously
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import '../../core/design/tokens/app_colors.dart';
-import '../../core/design/tokens/app_typography.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/dashboard_provider.dart';
@@ -39,10 +42,10 @@ class _StationLockScreenState extends State<StationLockScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.lock_outline, size: 80, color: Colors.white54),
-            const SizedBox(height: 24),
-            Text("Station Locked", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white)),
+            const SizedBox(height: AppSpacing.lg),
+            Text(AppLocalizations.t(context, 'Station Locked'), style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white)),
             Text(provider.activeStore?.name ?? "Store Handover", style: const TextStyle(color: Colors.white70)),
-            const SizedBox(height: 48),
+            const SizedBox(height: AppSpacing.xxl),
             
             // OPTION 1: OWNER RESUME
             _buildUserCard(
@@ -54,7 +57,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
               onTap: () => _showOwnerUnlockDialog(context, provider)
             ),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
             
             // OPTION 2: EMPLOYEE LOGIN
             _buildUserCard(
@@ -71,7 +74,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
               }
             ),
 
-            const SizedBox(height: 48),
+            const SizedBox(height: AppSpacing.xxl),
             TextButton.icon(
               onPressed: () {
                  // Full Logout
@@ -79,7 +82,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
                  context.go('/login'); 
               }, 
               icon: const Icon(Icons.logout, color: Colors.white54),
-              label: const Text("Exit to Main Login", style: TextStyle(color: Colors.white54))
+              label: Text(AppLocalizations.t(context, 'Exit to Main Login'), style: const TextStyle(color: Colors.white54))
             )
 
           ],
@@ -91,13 +94,13 @@ class _StationLockScreenState extends State<StationLockScreen> {
   Widget _buildUserCard(BuildContext context, {required String name, required String role, required Color color, required IconData icon, required VoidCallback onTap}) {
      return InkWell(
        onTap: onTap,
-       borderRadius: BorderRadius.circular(16),
+       borderRadius: BorderRadius.zero,
        child: Container(
          width: 320,
-         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
          decoration: BoxDecoration(
            color: Colors.white,
-           borderRadius: BorderRadius.circular(16),
+           borderRadius: BorderRadius.zero,
            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))]
          ),
          child: Row(
@@ -107,7 +110,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
                radius: 28,
                child: Icon(icon, color: color, size: 30),
              ),
-             const SizedBox(width: 16),
+             const SizedBox(width: AppSpacing.md),
              Expanded(
                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,12 +132,12 @@ class _StationLockScreenState extends State<StationLockScreen> {
      showDialog(
        context: context,
        builder: (ctx) => AlertDialog(
-          title: const Text("Unlock Station"),
+          title: Text(AppLocalizations.t(context, 'Unlock Station')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Enter your credentials to resume."),
-              const SizedBox(height: 16),
+              Text(AppLocalizations.t(context, 'Enter your credentials to resume.')),
+              const SizedBox(height: AppSpacing.md),
               // If owner has PIN, ask PIN. Else Password (complex). 
               // For simplicity in this 'Handover' request, we assume trust or basic PIN if set.
               // If no PIN set on Owner profile, we might just let them in (if previously auth'd).
@@ -151,7 +154,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
             ElevatedButton(
               onPressed: () async {
                  // verify
@@ -160,7 +163,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
                  final owner = provider.originalProfile ?? provider.userProfile;
                  if (owner?.pinHash != null && owner!.pinHash!.isNotEmpty) {
                     if (!PinUtils.verifyPin(_pinController.text, owner.uid, owner.pinHash!)) {
-                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid PIN")));
+                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Invalid PIN'))));
                        return;
                     }
                  } else {
@@ -174,11 +177,14 @@ class _StationLockScreenState extends State<StationLockScreen> {
                  }
                  if (mounted) context.go('/dashboard');
               },
-              child: const Text("Unlock"),
+              child: Text(AppLocalizations.t(context, 'Unlock')),
             ) 
           ],
        )
      );
   }
 }
+
+
+
 

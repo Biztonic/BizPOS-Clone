@@ -1,4 +1,6 @@
 import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -73,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   width: 200,
                   height: 200,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xxs),
                 const CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(AppColors.success), // Matched with logo green?
                   strokeWidth: 2,

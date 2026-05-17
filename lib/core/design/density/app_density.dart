@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 
 enum AppDensity {
   compact,
@@ -36,9 +38,9 @@ class DensityConfig {
           gridSpacing: 8,
           inputHeight: 32,
           rowHeight: 36,
-          cardRadius: 4,
-          buttonRadius: 4,
-          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          cardRadius: 0,
+          buttonRadius: 0,
+          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
         );
       case AppDensity.comfortable:
         return const DensityConfig(
@@ -47,9 +49,9 @@ class DensityConfig {
           gridSpacing: 16,
           inputHeight: 40,
           rowHeight: 48,
-          cardRadius: 8,
-          buttonRadius: 8,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          cardRadius: 0,
+          buttonRadius: 0,
+          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
         );
       case AppDensity.touch:
         return const DensityConfig(
@@ -58,9 +60,9 @@ class DensityConfig {
           gridSpacing: 24,
           inputHeight: 56,
           rowHeight: 64,
-          cardRadius: 12,
-          buttonRadius: 12,
-          contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          cardRadius: 0,
+          buttonRadius: 0,
+          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         );
     }
   }

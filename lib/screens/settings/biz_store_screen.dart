@@ -1,8 +1,14 @@
 import '../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:biztonic_pos/core/design/layouts/pos_scaffold.dart';
 import 'package:biztonic_pos/providers/dashboard_provider.dart';
 import 'addon_detail_screen.dart';
 import 'package:intl/intl.dart';
@@ -183,7 +189,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     final upiId = (adminConfig['adminUpiId'] ?? 'biztonicautomation@okaxis').toString();
 
     if (upiId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Upgrade currently unavailable. Please contact support.")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Upgrade currently unavailable. Please contact support.'))));
       return;
     }
 
@@ -191,7 +197,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     final planSelection = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Select Subscription Plan"),
+        title: Text(AppLocalizations.t(context, 'Select Subscription Plan')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -234,7 +240,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
 
       if (done == true) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Upgrade request submitted! Waiting for Admin approval."), backgroundColor: AppColors.success));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Upgrade request submitted! Waiting for Admin approval.')), backgroundColor: AppColors.success));
         _loadData();
       }
     }
@@ -265,8 +271,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text("Enhance your store with these powerful modules.", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
-                  const SizedBox(height: 16),
+                  Text(AppLocalizations.t(context, 'Enhance your store with these powerful modules.'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
+                  const SizedBox(height: AppSpacing.md),
                   Flexible(
                     child: ListView.builder(
                       shrinkWrap: true,
@@ -304,11 +310,11 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                   ),
                   const Divider(),
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("Addons Total:", style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(AppLocalizations.t(context, 'Addons Total:'), style: const TextStyle(fontWeight: FontWeight.bold)),
                         Text("₹${addonTotal.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
                       ],
                     ),
@@ -317,11 +323,11 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("SKIP / CANCEL")),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'SKIP / CANCEL'))),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx, tempSelected),
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                child: const Text("CONTINUE TO PAYMENT"),
+                child: Text(AppLocalizations.t(context, 'CONTINUE TO PAYMENT')),
               ),
             ],
           );
@@ -334,16 +340,16 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     return InkWell(
       onTap: () => Navigator.pop(context, {'cycle': cycle, 'amount': price}),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           border: Border.all(color: isBestValue ? AppColors.warning : AppColors.textSecondary(context)),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.zero,
           color: isBestValue ? AppColors.warning.withValues(alpha: 0.05) : null,
         ),
         child: Row(
           children: [
             Icon(icon, color: isBestValue ? AppColors.warning : AppColors.primary),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -355,9 +361,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
             ),
             if (isBestValue)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.warning, borderRadius: BorderRadius.circular(8)),
-                child: const Text("BEST VALUE", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                decoration: const BoxDecoration(color: AppColors.warning, borderRadius: BorderRadius.zero),
+                child: Text(AppLocalizations.t(context, 'BEST VALUE'), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
               ),
           ],
         ),
@@ -371,7 +377,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     final activeStore = provider.activeStore;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    if (activeStore == null) return const Scaffold(body: Center(child: Text("No Store Selected")));
+    if (activeStore == null) return Scaffold(body: Center(child: Text(AppLocalizations.t(context, 'No Store Selected'))));
 
     final currentAddons = Set<String>.from(activeStore.addons);
     final plan = activeStore.subscriptionPlan;
@@ -381,262 +387,376 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     // Check for pending request
     final hasPending = provider.pendingSubscriptions.any((r) => r.storeId == activeStore.id);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("BizStore"),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: "Modules", icon: Icon(Icons.apps)),
-            Tab(text: "Subscription", icon: Icon(Icons.account_balance_wallet)),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        } else {
+          context.go('/dashboard');
+        }
+      },
+      child: PosScaffold(
+        title: AppLocalizations.t(context, 'BizStore'),
+        mainContent: Column(
+          children: [
+            Container(
+              color: AppColors.primary,
+              child: TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: "Modules", icon: Icon(Icons.apps)),
+                  Tab(text: "Subscription", icon: Icon(Icons.account_balance_wallet)),
+                ],
+                indicatorColor: Colors.white,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+              ),
+            ),
+            Expanded(
+              child: _isLoading 
+                  ? const Center(child: CircularProgressIndicator()) 
+                  : TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildModulesTab(provider, activeStore, currentAddons, isStandard, isSuperAdmin, isDark, hasPending),
+                        isSuperAdmin 
+                          ? _buildSuperAdminOverview(provider, isDark)
+                          : _buildSubscriptionTab(provider, activeStore, isStandard, hasPending, isDark),
+                      ],
+                    ),
+            ),
           ],
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
         ),
       ),
-      body: _isLoading 
-          ? const Center(child: CircularProgressIndicator()) 
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildModulesTab(provider, activeStore, currentAddons, isStandard, isSuperAdmin, isDark, hasPending),
-                isSuperAdmin 
-                  ? _buildSuperAdminOverview(provider, isDark)
-                  : _buildSubscriptionTab(provider, activeStore, isStandard, hasPending, isDark),
-              ],
-            ),
     );
   }
 
-  Widget _buildModulesTab(DashboardProvider provider, dynamic activeStore, Set<String> currentAddons, bool isStandard, bool isSuperAdmin, bool isDark, bool hasPending) {
-    return Column(
-      children: [
-        // Plan Header
-        Container(
-          padding: const EdgeInsets.all(16),
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: isStandard 
-              ? (isDark ? AppColors.success.withValues(alpha: 0.15) : AppColors.success) 
-              : (isDark ? AppColors.primary.withValues(alpha: 0.15) : AppColors.primary),
-            border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
-          ),
-          child: Row(
-            children: [
-              Icon(isStandard ? Icons.verified : Icons.stars, color: isStandard ? AppColors.success : AppColors.primary, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Plan: ${activeStore.subscriptionPlan}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(
-                      isStandard ? "All modules unlocked" : (isSuperAdmin ? "Super Admin bypass" : "Upgrade to unlock full features"), 
-                      style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color),
-                    ),
-                  ],
-                ),
-              ),
-              if (!isSuperAdmin)
-                ElevatedButton(
-                  onPressed: hasPending ? null : _upgradeFlow,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isStandard ? AppColors.success : AppColors.primary, 
-                    foregroundColor: Colors.white
-                  ),
-                  child: Text(hasPending ? "PENDING..." : (isStandard ? "BUY COUPON" : "UPGRADE")),
-                )
-            ],
-          ),
-        ),
-        
-        Expanded(
-          child: Builder(
-            builder: (context) {
-              final visibleAddons = addonsMetadata.where((a) {
-                final key = a['key'] as String;
-                return !provider.globalDisabledAddons.contains(key);
-              }).toList();
+  Widget _buildModulesTab(DashboardProvider provider, dynamic activeStore,
+      Set<String> currentAddons, bool isStandard, bool isSuperAdmin, bool isDark,
+      bool hasPending) {
+    final visibleAddons = addonsMetadata.where((a) {
+      final key = a['key'] as String;
+      return !provider.globalDisabledAddons.contains(key);
+    }).toList();
 
-              return GridView.builder(
-                padding: const EdgeInsets.all(12),
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: MediaQuery.of(context).size.width < 500 ? 400 : 300,
-                  childAspectRatio: MediaQuery.of(context).size.width < 500 ? 3.5 : 2.4,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                ),
-                itemCount: visibleAddons.length,
-                itemBuilder: (context, index) {
-                  final addon = visibleAddons[index];
-                  final key = addon['key'] as String;
-                  final price = provider.platformLimits['rate_$key'] ?? 0;
-                  return Stack(
+    return CustomScrollView(
+      slivers: [
+        // Plan Header
+        SliverToBoxAdapter(
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: isStandard
+                  ? (isDark
+                      ? AppColors.success.withValues(alpha: 0.15)
+                      : AppColors.success)
+                  : (isDark
+                      ? AppColors.primary.withValues(alpha: 0.15)
+                      : AppColors.primary),
+              border: Border(
+                  bottom: BorderSide(color: Theme.of(context).dividerColor)),
+            ),
+            child: Row(
+              children: [
+                Icon(isStandard ? Icons.verified : Icons.stars,
+                    color: isStandard ? AppColors.success : AppColors.primary,
+                    size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                        _buildCompactCard(
-                        addon: addon,
-                        isInstalled: currentAddons.contains(key),
-                        isLocked: !isStandard && !isSuperAdmin && !activeStore.purchasedAddons.contains(key),
-                        addonColor: addon['color'] as Color,
-                        isDark: isDark,
-                        price: price,
-                        isPending: provider.pendingSubscriptions.any((r) => r.selectedAddons.contains(key)),
-                        isSuperAdmin: isSuperAdmin,
-                        isEnabled: true, // Always true since we filtered out disabled ones
-                        remainingDays: provider.getAddonDays(key),
-                        onToggle: (val) async {
-                          try {
-                            await provider.toggleGlobalAddon(key, val);
-                            _loadData();
-                          } catch (e) {
-                             if (!context.mounted) return;
-                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
-                          }
-                        },
+                      Text("Plan: ${activeStore.subscriptionPlan}",
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(
+                        isStandard
+                            ? "All modules unlocked"
+                            : (isSuperAdmin
+                                ? "Super Admin bypass"
+                                : "Upgrade to unlock full features"),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).textTheme.bodySmall?.color),
                       ),
                     ],
-                  );
-                },
-              );
-            }
+                  ),
+                ),
+                if (!isSuperAdmin)
+                  ElevatedButton(
+                    onPressed: hasPending ? null : _upgradeFlow,
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            isStandard ? AppColors.success : AppColors.primary,
+                        foregroundColor: Colors.white),
+                    child: Text(
+                        hasPending ? "PENDING..." : (isStandard ? "BUY COUPON" : "UPGRADE")),
+                  )
+              ],
+            ),
+          ),
+        ),
+
+        SliverPadding(
+          padding: const EdgeInsets.all(12),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent:
+                  MediaQuery.of(context).size.width < 500 ? 400 : 300,
+              childAspectRatio:
+                  MediaQuery.of(context).size.width < 500 ? 3.5 : 2.4,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final addon = visibleAddons[index];
+                final key = addon['key'] as String;
+                final price = provider.platformLimits['rate_$key'] ?? 0;
+                return _buildCompactCard(
+                  addon: addon,
+                  isInstalled: currentAddons.contains(key),
+                  isLocked: !isStandard &&
+                      !isSuperAdmin &&
+                      !activeStore.purchasedAddons.contains(key),
+                  addonColor: addon['color'] as Color,
+                  isDark: isDark,
+                  price: price,
+                  isPending: provider.pendingSubscriptions
+                      .any((r) => r.selectedAddons.contains(key)),
+                  isSuperAdmin: isSuperAdmin,
+                  isEnabled: true, // Always true since we filtered out disabled ones
+                  remainingDays: provider.getAddonDays(key),
+                  onToggle: (val) async {
+                    try {
+                      await provider.toggleGlobalAddon(key, val);
+                      _loadData();
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text("Error: $e")));
+                    }
+                  },
+                );
+              },
+              childCount: visibleAddons.length,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSubscriptionTab(DashboardProvider provider, dynamic activeStore, bool isStandard, bool hasPending, bool isDark) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Current Plan Status Card
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildSubscriptionTab(DashboardProvider provider, dynamic activeStore,
+      bool isStandard, bool hasPending, bool isDark) {
+    final historyItems =
+        provider.subscriptionHistory.where((s) => s.status != 'QUEUED').toList();
+
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Current Plan Status Card
+                Card(
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xxs),
+                    child: Column(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("Active Plan", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
-                            Text(
-                              activeStore.subscriptionPlan, 
-                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isStandard ? AppColors.success : AppColors.primary),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(AppLocalizations.t(context, 'Active Plan'),
+                                    style: TextStyle(
+                                        color: AppColors.textSecondary(context),
+                                        fontSize: 13)),
+                                Text(
+                                  activeStore.subscriptionPlan,
+                                  style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: isStandard
+                                          ? AppColors.success
+                                          : AppColors.primary),
+                                ),
+                              ],
                             ),
+                            _buildPlanBadge(isStandard),
                           ],
                         ),
-                        _buildPlanBadge(isStandard),
+                        const SizedBox(height: AppSpacing.md),
+                        if (isStandard) _buildRemainingDaysInfo(provider, isDark),
+                        const SizedBox(height: AppSpacing.md),
+                        const Divider(),
+                        const SizedBox(height: AppSpacing.md),
+                        if (hasPending)
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                                color: AppColors.warning.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.zero),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.hourglass_empty,
+                                    color: AppColors.warning, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                    child: Text(AppLocalizations.t(context, 'Upgrade Request Pending Approval'),
+                                        style: const TextStyle(
+                                            color: AppColors.warning,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13))),
+                              ],
+                            ),
+                          )
+                        else if (!isStandard)
+                          SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                  onPressed: _upgradeFlow,
+                                  child: Text(AppLocalizations.t(context, 'UPGRADE NOW'))))
+                        else ...[
+                          Text(AppLocalizations.t(context, 'Enjoy full standard features & cloud sync.'),
+                              style: TextStyle(
+                                  color: AppColors.textSecondary(context),
+                                  fontStyle: FontStyle.italic)),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _upgradeFlow,
+                              icon: const Icon(Icons.add_shopping_cart, size: 18),
+                              label: Text(AppLocalizations.t(context, 'PURCHASE ADVANCE COUPON')),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    if (isStandard) _buildRemainingDaysInfo(provider, isDark),
-                    const SizedBox(height: 16),
-                    const Divider(),
-                  const SizedBox(height: 16),
-                  if (hasPending)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.hourglass_empty, color: AppColors.warning, size: 20),
-                          SizedBox(width: 12),
-                          Expanded(child: Text("Upgrade Request Pending Approval", style: TextStyle(color: AppColors.warning, fontWeight: FontWeight.bold, fontSize: 13))),
-                        ],
-                      ),
-                    )
-                  else if (!isStandard)
-                    SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _upgradeFlow, child: const Text("UPGRADE NOW")))
-                  else ...[
-                    Text("Enjoy full standard features & cloud sync.", style: TextStyle(color: AppColors.textSecondary(context), fontStyle: FontStyle.italic)),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity, 
-                      child: OutlinedButton.icon(
-                        onPressed: _upgradeFlow, 
-                        icon: const Icon(Icons.add_shopping_cart, size: 18),
-                        label: const Text("PURCHASE ADVANCE COUPON"),
-                      ),
-                    ),
-                  ],
-                ],
+                  ),
+                ),
+
+                const SizedBox(height: AppSpacing.lg),
+                // Auto-activate Toggle
+                Card(
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero),
+                  child: SwitchListTile(
+                    secondary: Icon(Icons.auto_awesome,
+                        color: activeStore.autoActivateSubscription
+                            ? AppColors.warning
+                            : AppColors.textSecondary(context)),
+                    title: Text(AppLocalizations.t(context, 'Auto-activate next subscription'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text(AppLocalizations.t(context, 'Automatically activate queued coupons when the current plan expires.'),
+                        style: const TextStyle(fontSize: 12)),
+                    value: activeStore.autoActivateSubscription,
+                    onChanged: (val) => provider.toggleAutoActivateSub(val),
+                    activeColor: AppColors.warning,
+                  ),
+                ),
+
+                const SizedBox(height: AppSpacing.xl),
+                Text(AppLocalizations.t(context, 'Ready Coupons (In Queue)'),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.md),
+              ],
+            ),
+          ),
+        ),
+
+        // Queued Subs Sliver
+        _buildQueuedSubsSliver(provider, isDark),
+
+        if (provider.rejectedSubscriptions.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+              child: Text(AppLocalizations.t(context, 'Rejected Requests'),
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.error)),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            sliver: SliverToBoxAdapter(
+              child: _buildRejectedRequests(provider, isDark),
+            ),
+          ),
+        ],
+
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+            child: Text(AppLocalizations.t(context, 'Purchase History'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ),
+        ),
+
+        if (historyItems.isEmpty)
+          SliverToBoxAdapter(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Text(AppLocalizations.t(context, 'No subscription history found')),
               ),
             ),
-          ),
-          
-          const SizedBox(height: 24),
-          // Auto-activate Toggle
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: SwitchListTile(
-              secondary: Icon(Icons.auto_awesome, color: activeStore.autoActivateSubscription ? AppColors.warning : AppColors.textSecondary(context)),
-              title: const Text("Auto-activate next subscription", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              subtitle: const Text("Automatically activate queued coupons when the current plan expires.", style: TextStyle(fontSize: 12)),
-              value: activeStore.autoActivateSubscription,
-              onChanged: (val) => provider.toggleAutoActivateSub(val),
-              activeColor: AppColors.warning,
-            ),
-          ),
-
-          const SizedBox(height: 32),
-          const Text("Ready Coupons (In Queue)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          
-          _buildQueuedSubs(provider, isDark),
-          
-          if (provider.rejectedSubscriptions.isNotEmpty) ...[
-            const SizedBox(height: 32),
-            const Text("Rejected Requests", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.error)),
-            const SizedBox(height: 16),
-            _buildRejectedRequests(provider, isDark),
-          ],
-
-          const SizedBox(height: 32),
-          const Text("Purchase History", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          
-          if (provider.subscriptionHistory.isEmpty)
-             Center(child: Padding(
-               padding: EdgeInsets.all(32.0),
-               child: Text("No subscription history found", style: TextStyle(color: AppColors.textSecondary(context))),
-             ))
-          else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: provider.subscriptionHistory.where((s) => s.status != 'QUEUED').length,
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            sliver: SliverList.separated(
+              itemCount: historyItems.length,
               separatorBuilder: (ctx, idx) => const SizedBox(height: 10),
               itemBuilder: (ctx, idx) {
-                final historyItems = provider.subscriptionHistory.where((s) => s.status != 'QUEUED').toList();
                 final sub = historyItems[idx];
                 final df = DateFormat('dd MMM yyyy');
                 return ListTile(
-                  tileColor: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.textSecondary(context),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  tileColor: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : AppColors.textSecondary(context),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero),
                   leading: CircleAvatar(
-                    backgroundColor: sub.isActive ? AppColors.success.withValues(alpha: 0.1) : AppColors.textSecondary(context).withValues(alpha: 0.1),
-                    child: Icon(Icons.history, color: sub.isActive ? AppColors.success : AppColors.textSecondary(context)),
+                    backgroundColor: sub.isActive
+                        ? AppColors.success.withValues(alpha: 0.1)
+                        : AppColors.textSecondary(context).withValues(alpha: 0.1),
+                    child: Icon(Icons.history,
+                        color: sub.isActive
+                            ? AppColors.success
+                            : AppColors.textSecondary(context)),
                   ),
-                  title: Text("${sub.planName} - ${sub.billingCycle}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text("Valid: ${df.format(sub.startDate)} - ${df.format(sub.endDate)}"),
+                  title: Text("${sub.planName} - ${sub.billingCycle}",
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(
+                      "Valid: ${df.format(sub.startDate)} - ${df.format(sub.endDate)}"),
                   trailing: Text(
                     sub.isActive ? "ACTIVE" : "EXPIRED",
-                    style: TextStyle(color: sub.isActive ? AppColors.success : AppColors.textSecondary(context), fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(
+                        color:
+                            sub.isActive ? AppColors.success : AppColors.textSecondary(context),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
                   ),
                 );
               },
             ),
-        ],
-      ),
+          ),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xs)),
+      ],
     );
   }
 
@@ -663,9 +783,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
         child: Card(
           elevation: isInstalled ? 2 : 0.5,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.zero,
             side: isInstalled
-              ? BorderSide(color: AppColors.success, width: 1.5)
+              ? const BorderSide(color: AppColors.success, width: 1.5)
               : BorderSide(color: Theme.of(context).dividerColor, width: 0.5),
           ),
           child: Padding(
@@ -678,7 +798,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                       width: 48, height: 48,
                       decoration: BoxDecoration(
                         color: addonColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: Icon(addon['icon'] as IconData, color: addonColor, size: 24),
                     ),
@@ -686,7 +806,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                       Positioned(
                         right: -2, top: -2,
                         child: Container(
-                          padding: const EdgeInsets.all(4),
+                          padding: const EdgeInsets.all(AppSpacing.xs),
                           decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
                           child: const Icon(Icons.check, color: Colors.white, size: 8),
                         ),
@@ -710,11 +830,11 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                           ),
                           if (hasValidity)
                             Container(
-                              margin: const EdgeInsets.only(left: 4),
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              margin: const EdgeInsets.only(left: AppSpacing.xs),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: AppSpacing.xxs),
                               decoration: BoxDecoration(
                                 color: AppColors.success.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.zero,
                               ),
                               child: Text(
                                 "$remainingDays Days",
@@ -723,7 +843,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                             ),
                         ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         addon['description'] as String,
                         style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color),
@@ -740,11 +860,11 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                      // scale: 0.7, // Only available in newer flutter versions or via Transform
                    )
                 else if (isInstalled)
-                  Icon(Icons.check_circle, color: AppColors.success, size: 22)
+                  const Icon(Icons.check_circle, color: AppColors.success, size: 22)
                 else if (isLocked)
                   Icon(Icons.lock, color: AppColors.textSecondary(context), size: 20)
                 else if (isPending)
-                  const Text("PENDING", style: TextStyle(color: AppColors.warning, fontSize: 10, fontWeight: FontWeight.bold))
+                  Text(AppLocalizations.t(context, 'PENDING'), style: const TextStyle(color: AppColors.warning, fontSize: 10, fontWeight: FontWeight.bold))
                 else
                   Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary(context)),
               ],
@@ -760,7 +880,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: isStandard ? AppColors.success.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.zero,
       ),
       child: Text(
         isStandard ? "UNLIMITED" : "BASIC", 
@@ -804,7 +924,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.zero,
           ),
           child: Row(
             children: [
@@ -852,7 +972,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: addonColor.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.zero,
                     border: Border.all(color: addonColor.withValues(alpha: 0.1)),
                   ),
                   child: Row(
@@ -867,7 +987,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                               metadata['title'] as String? ?? key,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                             ),
-                            Text("Module active", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 11)),
+                            Text(AppLocalizations.t(context, 'Module active'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 11)),
                           ],
                         ),
                       ),
@@ -875,7 +995,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text("$addonDays", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: addonColor)),
-                          Text("days left", style: TextStyle(fontSize: 10, color: addonColor, fontWeight: FontWeight.w500)),
+                          Text(AppLocalizations.t(context, 'days left'), style: TextStyle(fontSize: 10, color: addonColor, fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ],
@@ -889,107 +1009,155 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildQueuedSubs(DashboardProvider provider, bool isDark) {
-    final queued = provider.subscriptionHistory.where((s) => s.status == 'QUEUED').toList();
+  Widget _buildQueuedSubsSliver(DashboardProvider provider, bool isDark) {
+    final queued =
+        provider.subscriptionHistory.where((s) => s.status == 'QUEUED').toList();
     if (queued.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        width: double.infinity,
-        decoration: BoxDecoration(color: isDark ? Colors.white.withValues(alpha: 0.03) : AppColors.textSecondary(context), borderRadius: BorderRadius.circular(12)),
-        child: Text("No advance subscriptions in queue.", textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13, fontStyle: FontStyle.italic)),
+      return SliverToBoxAdapter(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          width: double.infinity,
+          decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.03)
+                  : AppColors.textSecondary(context),
+              borderRadius: BorderRadius.zero),
+          child: Text(AppLocalizations.t(context, 'No advance subscriptions in queue.'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: AppColors.textSecondary(context),
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic)),
+        ),
       );
     }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: queued.length,
-      separatorBuilder: (ctx, idx) => const SizedBox(height: 10),
-      itemBuilder: (ctx, idx) {
-        final sub = queued[idx];
-        return ListTile(
-          tileColor: isDark ? AppColors.warning.withValues(alpha: 0.05) : AppColors.warning,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.warning.withValues(alpha: 0.2))),
-          leading: const CircleAvatar(backgroundColor: AppColors.warning, child: Icon(Icons.confirmation_num, color: Colors.white)),
-          title: Text("${sub.planName} Coupon (${sub.billingCycle})", style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: const Text("Status: QUEUED for later use"),
-          trailing: ElevatedButton(
-            onPressed: () => provider.activateSubscriptionCoupon(sub.id),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning, foregroundColor: Colors.white),
-            child: const Text("ACTIVATE NOW"),
-          ),
-        );
-      },
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      sliver: SliverList.separated(
+        itemCount: queued.length,
+        separatorBuilder: (ctx, idx) => const SizedBox(height: 10),
+        itemBuilder: (ctx, idx) {
+          final sub = queued[idx];
+          return ListTile(
+            tileColor: isDark
+                ? AppColors.warning.withValues(alpha: 0.05)
+                : AppColors.warning,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+                side: BorderSide(
+                    color: AppColors.warning.withValues(alpha: 0.2))),
+            leading: const CircleAvatar(
+                backgroundColor: AppColors.warning,
+                child: Icon(Icons.confirmation_num, color: Colors.white)),
+            title: Text("${sub.planName} Coupon (${sub.billingCycle})",
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(AppLocalizations.t(context, 'Status: QUEUED for later use')),
+            trailing: ElevatedButton(
+              onPressed: () => provider.activateSubscriptionCoupon(sub.id),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.warning,
+                  foregroundColor: Colors.white),
+              child: Text(AppLocalizations.t(context, 'ACTIVATE NOW')),
+            ),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildSuperAdminOverview(DashboardProvider provider, bool isDark) {
-    if (_globalStats.isEmpty) return const Center(child: CircularProgressIndicator());
-    
-    final planDist = Map<String, dynamic>.from(_globalStats['planDistribution'] ?? {});
+    if (_globalStats.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final planDist =
+        Map<String, dynamic>.from(_globalStats['planDistribution'] ?? {});
     final totalValue = (_globalStats['totalValue'] ?? 0.0).toDouble();
     final activeSubs = _globalStats['activeSubs'] ?? 0;
     final totalStores = _globalStats['totalStores'] ?? 0;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("Global Subscription Overview", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
-          
-          // KPI CARDS
-          Row(
-            children: [
-              _buildStatCard("Total Stores", totalStores.toString(), Icons.store, AppColors.primaryLight, isDark),
-              const SizedBox(width: 16),
-              _buildStatCard("Active Subs", activeSubs.toString(), Icons.verified, AppColors.success, isDark),
-            ],
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(AppLocalizations.t(context, 'Global Subscription Overview'),
+                    style:
+                        const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.lg),
+
+                // KPI CARDS
+                Row(
+                  children: [
+                    _buildStatCard("Total Stores", totalStores.toString(),
+                        Icons.store, AppColors.primaryLight, isDark),
+                    const SizedBox(width: AppSpacing.md),
+                    _buildStatCard("Active Subs", activeSubs.toString(),
+                        Icons.verified, AppColors.success, isDark),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _buildStatCard(
+                    "Total Revenue",
+                    "₹${totalValue.toStringAsFixed(2)}",
+                    Icons.payments,
+                    AppColors.warning,
+                    isDark,
+                    fullWidth: true),
+
+                const SizedBox(height: AppSpacing.xl),
+
+                // CHARTS SECTION
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    bool narrow = constraints.maxWidth < 600;
+                    return narrow
+                        ? Column(
+                            children: [
+                              _buildPlanDistributionCard(planDist, isDark),
+                              const SizedBox(height: AppSpacing.md),
+                              _buildTrendCard(isDark),
+                            ],
+                          )
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                  child: _buildPlanDistributionCard(
+                                      planDist, isDark)),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(child: _buildTrendCard(isDark)),
+                            ],
+                          );
+                  },
+                ),
+
+                const SizedBox(height: AppSpacing.xl),
+                Text(AppLocalizations.t(context, 'Search & Quick Activity'),
+                    style:
+                        const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.md),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          _buildStatCard("Total Revenue", "₹${totalValue.toStringAsFixed(2)}", Icons.payments, AppColors.warning, isDark, fullWidth: true),
-          
-          const SizedBox(height: 32),
-          
-          // CHARTS SECTION
-          LayoutBuilder(
-            builder: (context, constraints) {
-              bool narrow = constraints.maxWidth < 600;
-              return narrow 
-                ? Column(
-                    children: [
-                      _buildPlanDistributionCard(planDist, isDark),
-                      const SizedBox(height: 16),
-                      _buildTrendCard(isDark),
-                    ],
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _buildPlanDistributionCard(planDist, isDark)),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildTrendCard(isDark)),
-                    ],
-                  );
-            },
-          ),
-          
-          const SizedBox(height: 32),
-          const Text("Search & Quick Activity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          _buildGlobalHistory(isDark),
-        ],
-      ),
+        ),
+        _buildGlobalHistorySliver(isDark),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xs)),
+      ],
     );
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isDark, {bool fullWidth = false}) {
     final widget = Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xxs),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2D2D44) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.zero,
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05), blurRadius: 10)],
         border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
       ),
@@ -997,10 +1165,10 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
             child: Icon(icon, color: color, size: 28),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1020,11 +1188,11 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     final colors = [AppColors.primaryLight, AppColors.success, AppColors.warning, AppColors.primaryLight, AppColors.error, AppColors.primary];
     int colorIdx = 0;
 
-    dist.forEach((plan, count) {
+    dist.forEach((plan, countValue) {
       sections.add(PieChartSectionData(
         color: colors[colorIdx % colors.length],
-        value: count.toDouble(),
-        title: '$count',
+        value: countValue.toDouble(),
+        title: '$countValue',
         radius: 40,
         titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
       ));
@@ -1032,23 +1200,23 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     });
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xxs),
       height: 320,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2D2D44) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
       ),
       child: Column(
         children: [
-          const Text("Plan Distribution", style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
+          Text(AppLocalizations.t(context, 'Plan Distribution'), style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.xxs),
           Expanded(
             child: sections.isEmpty 
-              ? const Center(child: Text("No data"))
+              ? Center(child: Text(AppLocalizations.t(context, 'No data')))
               : PieChart(PieChartData(sections: sections, centerSpaceRadius: 40, sectionsSpace: 2)),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           Wrap(
             spacing: 12, runSpacing: 8,
             children: dist.keys.map((k) => Row(
@@ -1067,17 +1235,17 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
 
   Widget _buildTrendCard(bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xxs),
       height: 320,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2D2D44) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
       ),
       child: Column(
         children: [
-          const Text("Subscription Revenue Trends", style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
+          Text(AppLocalizations.t(context, 'Subscription Revenue Trends'), style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.lg),
           Expanded(
             child: LineChart(
               LineChartData(
@@ -1101,98 +1269,130 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
             ),
           ),
           const SizedBox(height: 12),
-          Text("Weekly cumulative growth metrics", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 10)),
+          Text(AppLocalizations.t(context, 'Weekly cumulative growth metrics'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 10)),
         ],
       ),
     );
   }
 
-  Widget _buildGlobalHistory(bool isDark) {
+  Widget _buildGlobalHistorySliver(bool isDark) {
     final history = _globalStats['recentHistory'] as List? ?? [];
-    
+
     if (history.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.03) : AppColors.textSecondary(context),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.query_stats, color: AppColors.textSecondary(context), size: 32),
-            SizedBox(height: 12),
-            Text("No recent subscription activity found.", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13, fontStyle: FontStyle.italic)),
-          ],
+      return SliverToBoxAdapter(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.03)
+                : AppColors.textSecondary(context),
+            borderRadius: BorderRadius.zero,
+            border: Border.all(
+                color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.query_stats,
+                  color: AppColors.textSecondary(context), size: 32),
+              const SizedBox(height: 12),
+              Text(AppLocalizations.t(context, 'No recent subscription activity found.'),
+                  style: TextStyle(
+                      color: AppColors.textSecondary(context),
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic)),
+            ],
+          ),
         ),
       );
     }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: history.length,
-      separatorBuilder: (ctx, i) => const Divider(height: 1),
-      itemBuilder: (ctx, i) {
-        final item = history[i];
-        final createdAt = item['createdAt'];
-        String dateStr = 'Recently';
-        if (createdAt is Timestamp) {
-          dateStr = DateFormat('dd MMM, hh:mm a').format(createdAt.toDate());
-        }
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      sliver: SliverList.separated(
+        itemCount: history.length,
+        separatorBuilder: (ctx, i) => const Divider(height: 1),
+        itemBuilder: (ctx, i) {
+          final item = history[i];
+          final createdAt = item['createdAt'];
+          String dateStr = 'Recently';
+          if (createdAt is Timestamp) {
+            dateStr = DateFormat('dd MMM, hh:mm a').format(createdAt.toDate());
+          }
 
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: CircleAvatar(
-            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-            child: const Icon(Icons.receipt_long, color: AppColors.primary, size: 20),
-          ),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Store: ${item['storeId'] ?? 'N/A'}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              Text("₹${item['amount'] ?? 0}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success)),
-            ],
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              Text("${item['plan'] ?? 'Standard'} - ${item['billingCycle'] ?? 'Monthly'}", style: const TextStyle(fontSize: 12)),
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Text(dateStr, style: TextStyle(fontSize: 11, color: AppColors.textSecondary(context))),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                    child: Text(item['status']?.toString().toUpperCase() ?? 'ACTIVE', style: const TextStyle(fontSize: 9, color: AppColors.success, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+          return ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            leading: CircleAvatar(
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              child: const Icon(Icons.receipt_long,
+                  color: AppColors.primary, size: 20),
+            ),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Store: ${item['storeId'] ?? 'N/A'}",
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14)),
+                Text("₹${item['amount'] ?? 0}",
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: AppColors.success)),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                    "${item['plan'] ?? 'Standard'} - ${item['billingCycle'] ?? 'Monthly'}",
+                    style: const TextStyle(fontSize: 12)),
+                const SizedBox(height: AppSpacing.xxs),
+                Row(
+                  children: [
+                    Text(dateStr,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary(context))),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: AppSpacing.xxs),
+                      decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.zero),
+                      child: Text(
+                          item['status']?.toString().toUpperCase() ?? 'ACTIVE',
+                          style: const TextStyle(
+                              fontSize: 9,
+                              color: AppColors.success,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
   Widget _buildRejectedRequests(DashboardProvider provider, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: isDark ? AppColors.error.withValues(alpha: 0.05) : AppColors.error,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: isDark ? AppColors.error.withValues(alpha: 0.1) : AppColors.error),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(Icons.report_problem, color: AppColors.error, size: 32),
-          SizedBox(height: 12),
-          Text("No subscription rejection records found.", style: TextStyle(color: AppColors.error, fontSize: 13)),
+          const Icon(Icons.report_problem, color: AppColors.error, size: 32),
+          const SizedBox(height: 12),
+          Text(AppLocalizations.t(context, 'No subscription rejection records found.'), style: const TextStyle(color: AppColors.error, fontSize: 13)),
         ],
       ),
     );
   }
 }
+

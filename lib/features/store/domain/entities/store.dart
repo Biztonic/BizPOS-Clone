@@ -117,6 +117,7 @@ class Store {
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'name': name,
       'owner': owner,
       'ownerEmail': ownerEmail,

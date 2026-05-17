@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/tokens/app_spacing.dart';
-import '../../core/design/density/app_density.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/components/atoms/app_card.dart';
@@ -15,25 +16,23 @@ class BarcodeScannerSettingsScreen extends StatefulWidget {
 
 class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScreen> {
   bool _autoEnter = true;
-  String _prefix = "";
-  String _suffix = "";
 
   @override
   Widget build(BuildContext context) {
-    final density = AppDensityProvider.configOf(context);
+    
 
     return PosScaffold(
       title: "Barcode Scanners",
       mainContent: ListView(
-        padding: EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          Text("Scanner Behavior", style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Scanner Behavior'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             padding: EdgeInsets.zero,
             child: SwitchListTile(
-              title: const Text("Auto Enter", style: AppTypography.bodyLarge),
-              subtitle: const Text("Automatically submit after scan", style: AppTypography.bodySmall),
+              title: Text(AppLocalizations.t(context, 'Auto Enter'), style: AppTypography.bodyLarge),
+              subtitle: Text(AppLocalizations.t(context, 'Automatically submit after scan'), style: AppTypography.bodySmall),
               activeColor: Theme.of(context).colorScheme.primary,
               value: _autoEnter,
               onChanged: (val) => setState(() => _autoEnter = val),
@@ -41,14 +40,13 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
           ),
           
           const SizedBox(height: AppSpacing.xl),
-          Text("Prefix & Suffix", style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Prefix & Suffix'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Configure special scanner characters",
+                Text(AppLocalizations.t(context, 'Configure special scanner characters'),
                   style: AppTypography.bodySmall.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                   ),
@@ -60,7 +58,7 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
                       child: AppTextField(
                         labelText: "Prefix",
                         hintText: "Enter prefix",
-                        onChanged: (val) => _prefix = val,
+                        onChanged: (val) {},
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
@@ -68,7 +66,7 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
                       child: AppTextField(
                         labelText: "Suffix",
                         hintText: "Enter suffix",
-                        onChanged: (val) => _suffix = val,
+                        onChanged: (val) {},
                       ),
                     ),
                   ],
@@ -88,8 +86,7 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
                   size: 24,
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Text(
-                  "Connect your scanner via USB or Bluetooth. It will work as a keyboard input.",
+                Text(AppLocalizations.t(context, 'Connect your scanner via USB or Bluetooth. It will work as a keyboard input.'),
                   textAlign: TextAlign.center,
                   style: AppTypography.bodySmall.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),

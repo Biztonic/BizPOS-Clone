@@ -2,6 +2,7 @@
 ///
 /// These events replace direct Provider-to-Provider calls, enabling
 /// feature modules to communicate without import dependencies.
+library;
 
 // ─── Billing Events ──────────────────────────────────────────
 class OrderCreatedEvent {

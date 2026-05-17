@@ -1,4 +1,8 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -88,21 +92,21 @@ class _CentralItemSelectionDialogState extends State<CentralItemSelectionDialog>
   @override
   Widget build(BuildContext context) {
     return Dialog(
-       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
        child: Container(
          width: 500, // Matching web dialog style
          height: 600,
-         padding: const EdgeInsets.all(24),
+         padding: const EdgeInsets.all(AppSpacing.lg),
          child: Column(
            children: [
              Row(
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
-                 const Text('Import from Central Catalog', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                 Text(AppLocalizations.t(context, 'Import from Central Catalog'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context))
                ],
              ),
-             const SizedBox(height: 16),
+             const SizedBox(height: AppSpacing.md),
              Wrap(
                spacing: 8,
                runSpacing: 8,
@@ -141,19 +145,19 @@ class _CentralItemSelectionDialogState extends State<CentralItemSelectionDialog>
                   ),
                 ],
              ),
-             const SizedBox(height: 8),
+             const SizedBox(height: AppSpacing.sm),
              Expanded(
                child: _isLoading 
                    ? const Center(child: CircularProgressIndicator())
                    : _items.isEmpty
-                       ? const Center(child: Text("No items found for your store type."))
+                       ? Center(child: Text(AppLocalizations.t(context, 'No items found for your store type.')))
                        : ListView.separated(
                            itemCount: _items.length,
                            separatorBuilder: (ctx, i) => const Divider(),
                            itemBuilder: (ctx, i) {
                                final item = _items[i];
                                return Padding(
-                                 padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                                  child: Row(
                                    crossAxisAlignment: CrossAxisAlignment.start,
                                    children: [
@@ -181,7 +185,7 @@ class _CentralItemSelectionDialogState extends State<CentralItemSelectionDialog>
                                              maxLines: 2,
                                              overflow: TextOverflow.ellipsis,
                                            ),
-                                           const SizedBox(height: 4),
+                                           const SizedBox(height: AppSpacing.xs),
                                            Text(
                                              'SKU: ${item.sku}\nType: ${item.storeType ?? "All"}',
                                              style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
@@ -191,7 +195,7 @@ class _CentralItemSelectionDialogState extends State<CentralItemSelectionDialog>
                                          ],
                                        ),
                                      ),
-                                     const SizedBox(width: 8),
+                                     const SizedBox(width: AppSpacing.sm),
                                      
                                      // Trailing Action
                                      Builder(
@@ -203,15 +207,15 @@ class _CentralItemSelectionDialogState extends State<CentralItemSelectionDialog>
                                          );
                                          
                                          if (exists) {
-                                           return const Padding(
-                                             padding: EdgeInsets.only(top: 8.0),
-                                             child: Text("Imported", style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 12)),
+                                           return Padding(
+                                             padding: const EdgeInsets.only(top: AppSpacing.sm),
+                                             child: Text(AppLocalizations.t(context, 'Imported'), style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 12)),
                                            );
                                          }
   
                                          return ElevatedButton(
                                            style: ElevatedButton.styleFrom(
-                                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.sm),
                                              minimumSize: Size.zero,
                                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                            ),
@@ -236,7 +240,7 @@ class _CentralItemSelectionDialogState extends State<CentralItemSelectionDialog>
                                                 }
                                               }
                                            },
-                                           child: const Text('Import', style: TextStyle(fontSize: 13)),
+                                           child: Text(AppLocalizations.t(context, 'Import'), style: const TextStyle(fontSize: 13)),
                                          );
                                        }
                                      ),
@@ -249,20 +253,20 @@ class _CentralItemSelectionDialogState extends State<CentralItemSelectionDialog>
              // Pagination Controls
              if (!_isLoading && (_currentPage > 0 || _hasMore))
                 Padding(
-                  padding: const EdgeInsets.only(top: 16.0),
+                  padding: const EdgeInsets.only(top: AppSpacing.md),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                        OutlinedButton(
                          onPressed: _currentPage > 0 ? () => _loadItems(prev: true) : null, 
-                         child: const Text('Previous')
+                         child: Text(AppLocalizations.t(context, 'Previous'))
                        ),
-                       const SizedBox(width: 20),
+                       const SizedBox(width: AppSpacing.xxs),
                        Text("Page ${_currentPage + 1}"),
-                       const SizedBox(width: 20),
+                       const SizedBox(width: AppSpacing.xxs),
                        OutlinedButton(
                          onPressed: _hasMore ? () => _loadItems(next: true) : null,
-                         child: const Text('Next')
+                         child: Text(AppLocalizations.t(context, 'Next'))
                        ),
                     ],
                   ),
@@ -273,3 +277,7 @@ class _CentralItemSelectionDialogState extends State<CentralItemSelectionDialog>
     );
   }
 }
+
+
+
+

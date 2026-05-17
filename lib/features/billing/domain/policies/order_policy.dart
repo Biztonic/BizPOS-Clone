@@ -2,6 +2,7 @@
 ///
 /// Pure business rules — no infrastructure imports.
 /// These are the "guard rails" that prevent invalid state transitions.
+library;
 
 import '../entities/order_entity.dart';
 

@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user_profile.dart';
-import '../dependency_injection/providers.dart';
+import '../../services/firestore_helper.dart';
 
 /// Provider for the FirebaseAuth instance
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
@@ -18,8 +18,7 @@ final userProfileProvider = FutureProvider<UserProfile?>((ref) async {
   final user = ref.watch(authStateChangesProvider).value;
   if (user == null) return null;
 
-  final db = ref.watch(databaseHelperProvider);
-  final doc = await ref.watch(repositoryProvider).dbHelper.getFirestore().collection('users').doc(user.uid).get();
+  final doc = await getFirestore().collection('users').doc(user.uid).get();
   
   if (doc.exists) {
     return UserProfile.fromMap(doc.data()!, doc.id);

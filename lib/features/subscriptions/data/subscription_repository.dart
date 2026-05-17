@@ -33,7 +33,9 @@ class SubscriptionRepository {
                if (tA == null || tB == null) return 0;
                return (tB as dynamic).compareTo(tA);
              });
-           } catch (e) {}
+           } catch (e) {
+      debugPrint('Error fetching subscriptions: $e');
+    }
            
            final doc = pendingDocs.first;
            final data = doc.data();

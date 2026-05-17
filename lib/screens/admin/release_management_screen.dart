@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
@@ -55,7 +57,9 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error loading config: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error loading config: $e")));
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -65,6 +69,8 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final successMsg = AppLocalizations.t(context, 'Release published successfully!');
     try {
       await FirebaseFirestore.instance.collection('settings').doc('app_version').set({
         'version': _versionController.text.trim(),
@@ -75,11 +81,11 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
         'updatedAt': FieldValue.serverTimestamp(),
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Release published successfully!")));
+        messenger.showSnackBar(SnackBar(content: Text(successMsg)));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error saving release: $e")));
+        messenger.showSnackBar(SnackBar(content: Text("Error saving release: $e")));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -108,13 +114,11 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Publish New Version",
+                Text(AppLocalizations.t(context, 'Publish New Version'),
                   style: AppTypography.h3,
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                Text(
-                  "Updates published here will immediately prompt users to update if their version is lower.",
+                Text(AppLocalizations.t(context, 'Updates published here will immediately prompt users to update if their version is lower.'),
                   style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -165,8 +169,8 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       SwitchListTile(
-                        title: Text("Force Update", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-                        subtitle: const Text("Users cannot skip this update"),
+                        title: Text(AppLocalizations.t(context, 'Force Update'), style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                        subtitle: Text(AppLocalizations.t(context, 'Users cannot skip this update')),
                         value: _forceUpdate,
                         onChanged: (val) => setState(() => _forceUpdate = val),
                         contentPadding: EdgeInsets.zero,

@@ -8,6 +8,7 @@
 ///   - Idempotency guards
 ///
 /// The Presentation layer calls THIS, not the domain directly.
+library;
 
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -21,6 +22,9 @@ import '../domain/entities/order_entity.dart';
 import '../domain/repositories/billing_repository.dart';
 import '../domain/policies/order_policy.dart';
 import '../domain/use_cases/calculate_tax.dart';
+
+import 'package:biztonic_pos/features/inventory/domain/entities/inventory_movement.dart';
+import 'package:biztonic_pos/features/reporting/domain/entities/business_ledger.dart';
 
 /// Parameters for the checkout orchestration.
 class CheckoutParams {
@@ -143,11 +147,42 @@ class CheckoutOrchestrator {
       }
 
       // ─── Step 7: Fire Decoupled Event ───────────────────────
+      // Generate Inventory Movements if tracking is enabled
+      final List<InventoryMovement> movements = [];
+      if (params.trackInventory) {
+        for (var item in enrichedOrder.items) {
+          movements.add(InventoryMovement(
+            id: _generateId('INV_MOV'),
+            itemId: item.itemId, // Fix: Changed item.id to item.itemId
+            storeId: params.activeStoreId,
+            type: MovementType.sale,
+            delta: -(item.quantity),
+            orderId: orderId,
+            reason: 'Sale',
+            deviceId: params.deviceId,
+            createdAt: now,
+          ));
+        }
+      }
+
+      // Generate Business Ledger Event
+      final businessEvent = BusinessEvent(
+        id: _generateId('BIZ'),
+        storeId: params.activeStoreId,
+        entityType: 'ORDER',
+        entityId: orderId,
+        eventType: 'CREATE',
+        amount: enrichedOrder.total,
+        quantity: enrichedOrder.items.fold(0, (sum, item) => sum + item.quantity),
+        createdAt: now,
+        deviceId: params.deviceId,
+      );
+
       EventBus.instance.fire(OrderCreatedEvent(
         order: enrichedOrder,
         storeId: params.activeStoreId,
-        event: null,
-        movements: const [],
+        event: businessEvent,
+        movements: movements,
       ));
 
       debugPrint('✅ Checkout complete: $orderId');

@@ -2,6 +2,7 @@ import '../core/design/tokens/app_colors.dart';
 // ignore_for_file: unused_field, deprecated_member_use_from_same_package, dead_code, curly_braces_in_flow_control_structures, unused_element, avoid_types_as_parameter_names, dead_null_aware_expression, body_might_complete_normally_catch_error, deprecated_member_use, unused_local_variable
 import 'package:biztonic_pos/models/role_model.dart';
 import 'package:biztonic_pos/models/franchise.dart';
+import 'package:biztonic_pos/core/theme/theme_provider.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -27,9 +28,9 @@ import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:biztonic_pos/services/recovery_service.dart';
 import 'package:biztonic_pos/services/offline_service.dart';
 import 'package:biztonic_pos/providers/customer_provider.dart';
-import 'package:biztonic_pos/main.dart'; 
+import '../routing/router_notifier.dart';
 import 'package:biztonic_pos/providers/store_provider.dart';
-import 'package:biztonic_pos/providers/inventory_provider.dart';
+import 'package:biztonic_pos/features/inventory/presentation/providers/inventory_provider.dart';
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/services/employee_repository.dart';
 import 'package:biztonic_pos/utils/theme.dart';
@@ -41,6 +42,7 @@ import 'package:biztonic_pos/services/database_helper.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'package:biztonic_pos/features/inventory/domain/use_cases/adjust_stock.dart';
+import 'package:biztonic_pos/features/inventory/data/mappers/inventory_mapper.dart';
 
 class DashboardProvider with ChangeNotifier {
   final FirebaseFirestore _db = getFirestore();
@@ -62,12 +64,14 @@ class DashboardProvider with ChangeNotifier {
   final bool _isSwitchingStore = false;
   bool _isInitialized = false;
   bool _isFetchingUserData = false; // Prevent redundant concurrent fetches
+  int _fetchGeneration = 0; // Tracks fetch generation to discard stale retries
+  bool _pendingStoreRetry = false; // Flag: StoreProvider was injected after auth fired
   bool get isInitialized => _isInitialized;
   
   // Missing fields restored
   List<UserProfile> _systemUsers = [];
   bool _subscriptionHistoryLoaded = false;
-  List<InventoryItem> _centralInventory = [];
+  final List<InventoryItem> _centralInventory = [];
   // Redefine if missing, or we can just hope it's not complaining about it
   List<SubscriptionHistory> get rejectedSubscriptions => _subscriptionHistory.where((s) => s.status == 'REJECTED').toList();
   bool _isOnline = true;
@@ -80,6 +84,20 @@ class DashboardProvider with ChangeNotifier {
   bool _autoBackupEnabled = false;
   String _backupFrequency = 'Daily';
   TimeOfDay _backupTime = const TimeOfDay(hour: 0, minute: 0);
+  
+  // Stream Subscriptions for cleanup
+  final List<StreamSubscription> _subscriptions = [];
+  bool _isDisposed = false;
+
+  RouterNotifier? _routerNotifier;
+  
+  // UI States
+  bool _isSidebarCollapsed = false;
+  bool get isSidebarCollapsed => _isSidebarCollapsed;
+  void toggleSidebar() {
+     _isSidebarCollapsed = !_isSidebarCollapsed;
+     notifyListeners();
+  }
 
   // Backup Cache
   List<Map<String, dynamic>> _availableBackups = [];
@@ -88,7 +106,12 @@ class DashboardProvider with ChangeNotifier {
   bool get isFetchingBackups => _isFetchingBackups;
 
   void setLoading(bool val) {
+    if (_isDisposed) return;
     _isLoading = val;
+    notifyListeners();
+  }
+
+  void refreshDashboard() {
     notifyListeners();
   }
 
@@ -106,9 +129,9 @@ class DashboardProvider with ChangeNotifier {
      }
 
      final offlineService = OfflineService();
-     _isOnline = offlineService.isOnline; 
-    
-     offlineService.connectivityStream.listen((status) {
+     _isOnline = offlineService.isOnline;      
+     final connectivitySub = offlineService.connectivityStream.listen((status) {
+       if (_isDisposed) return;
        if (_isOnline != status) {
          _isOnline = status;
          notifyListeners();
@@ -117,9 +140,39 @@ class DashboardProvider with ChangeNotifier {
          }
        }
      });
+     _subscriptions.add(connectivitySub);
 
-     _syncService.addListener(_onSyncUpdate);
-     debugPrint('✅ DashboardProvider Constructor END');
+    // _syncService.addListener(_onSyncUpdate); // Removed to prevent UI jank during background syncs
+
+    // Developer mode moved to init()
+    
+    debugPrint('✅ DashboardProvider Constructor END');
+  }
+
+  @override
+  void dispose() {
+    debugPrint('🗑️ DashboardProvider.dispose() called');
+    _isDisposed = true;
+    for (var sub in _subscriptions) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
+    // _syncService.removeListener(_onSyncUpdate);
+    
+    if (_inventoryProvider != null) _inventoryProvider!.removeListener(_onInventoryChange);
+    if (_orderProvider != null) _orderProvider!.removeListener(_onOrderChange);
+    if (_customerProvider != null) _customerProvider!.removeListener(_onCustomerChange);
+    if (_storeProvider != null) _storeProvider!.removeListener(_onStoreChange);
+    
+    _countersSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
   }
 
   bool _isInitStarted = false;
@@ -133,6 +186,7 @@ class DashboardProvider with ChangeNotifier {
       // _isInitialized = true; // REMOVED: Set true only after first data fetch or failure
       
       debugPrint('📦 DashboardProvider: Loading from cache...');
+      _loadDeveloperMode();
       _loadFromCache();
       _loadConsumableDurationFromCache(); 
       _loadGlobalSettingsFromCache(); 
@@ -163,27 +217,28 @@ class DashboardProvider with ChangeNotifier {
       }
       
       debugPrint('🔑 DashboardProvider: Setting up Auth Listener...');
-      _auth.authStateChanges().listen((user) async {
+      final authSub = _auth.authStateChanges().listen((user) async {
+        if (_isDisposed) return;
         if (user != null) {
           debugPrint('👤 DashboardProvider: User detected: ${user.uid}');
           await DatabaseHelper.switchUser(user.uid);
-          // NEW: Restore last active store ID early, even if online, 
-          // so we have a target while waiting for Firestore
           await _restorePinnedStore(uid: user.uid); 
-          _fetchUserData(user.uid);
+          await _fetchUserData(user.uid); // AWAIT THIS
           _listenToGlobalSettings(); 
         } else {
           debugPrint('👤 DashboardProvider: No user logged in (or Offline Mode).');
-          // If we are offline-logged-in, _checkOfflineSession will rehydrate and set _isInitialized
           if (_isOfflineLoggedIn) {
              await _checkOfflineSession();
           } else {
-             // Truly not logged in (Login Screen state)
+             _userProfile = null;
+             _activeRole = 'Unauthorized';
              _isInitialized = true;
+             _routerNotifier?.notify();
              notifyListeners();
           }
         }
       });
+      _subscriptions.add(authSub);
       debugPrint('✅ DashboardProvider.init END');
     } catch (e, stack) {
       debugPrint('❌ DashboardProvider.init CRITICAL ERROR: $e');
@@ -280,12 +335,7 @@ class DashboardProvider with ChangeNotifier {
   CustomerProvider? _customerProvider;
   CustomerProvider? get customerProvider => _customerProvider;
   StoreProvider? _storeProvider; 
-  RouterNotifier? _routerNotifier;
-
-  void injectRouterNotifier(RouterNotifier router) {
-    _routerNotifier = router;
-  }
-
+  
   void injectInventory(InventoryProvider provider) {
     if (_inventoryProvider == provider) return;
     if (_inventoryProvider != null) {
@@ -324,20 +374,35 @@ class DashboardProvider with ChangeNotifier {
     _storeProvider = provider;
     _storeProvider!.addListener(_onStoreChange);
 
-    // FIX: Android Race Condition
+    // FIX: Android Race Condition (STABILIZED)
     // On Android, Firebase resolves cached auth SYNCHRONOUSLY, so _fetchUserData
     // runs BEFORE injectStoreProvider is called. The store loading block was skipped
-    // because _storeProvider was null. Now we detect that case and retry.
+    // because _storeProvider was null. Now we detect that case and schedule a
+    // deferred retry instead of force-resetting the lock (which caused
+    // "Future already completed" crashes from re-entrant calls).
     final user = _auth.currentUser;
     if (user != null && _stores.isEmpty && _activeStoreId == null && _userProfile != null) {
-      debugPrint('🔁 DashboardProvider: Retrying _fetchUserData (StoreProvider was injected after auth fired)');
-      _isInitialized = false;
-      _hasCheckedStores = false;
-      _isFetchingUserData = false; // CRITICAL: Reset lock so retry can proceed
-      _fetchUserData(user.uid);
+      debugPrint('🔁 DashboardProvider: StoreProvider injected after auth fired. Scheduling deferred retry...');
+      _pendingStoreRetry = true;
+      // Use scheduleMicrotask to ensure the current _fetchUserData call has
+      // fully completed (including its finally block) before we retry.
+      Future.microtask(() {
+        if (_pendingStoreRetry && !_isDisposed) {
+          _pendingStoreRetry = false;
+          _isInitialized = false;
+          _hasCheckedStores = false;
+          // _isFetchingUserData will be false by now (set in finally block)
+          debugPrint('🔁 DashboardProvider: Executing deferred _fetchUserData retry');
+          _fetchUserData(user.uid);
+        }
+      });
     }
 
     notifyListeners();
+  }
+
+  void injectRouterNotifier(RouterNotifier notifier) {
+    _routerNotifier = notifier;
   }
 
   /// Safety-net: Called by StoreSelectScreen if it mounts with empty stores.
@@ -457,6 +522,24 @@ class DashboardProvider with ChangeNotifier {
       return [];
   }
 
+  // --- INVENTORY METHODS (LEGACY BRIDGE) ---
+  
+  Future<void> addItem(InventoryItem item) async {
+    if (_inventoryProvider != null) {
+      final entity = InventoryMapper.fromLegacy(item);
+      await _inventoryProvider!.saveItem(entity);
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateItem(InventoryItem item) async {
+    if (_inventoryProvider != null) {
+      final entity = InventoryMapper.fromLegacy(item);
+      await _inventoryProvider!.saveItem(entity);
+      notifyListeners();
+    }
+  }
+
   Future<void> requestDemo(String name, String phone) async {
       await _db.collection('leads').add({
           'name': name, 'phone': phone, 'createdAt': FieldValue.serverTimestamp()
@@ -568,15 +651,15 @@ class DashboardProvider with ChangeNotifier {
           'subscriptionPlan': plan,
           'addons': addonList,
         });
-        _updateLocalStoreState(plan, addonList);
+        await _updateLocalStoreState(plan, addonList);
       }
       return;
     }
 
     if (activeStore!.autoActivateSubscription) {
       try {
-        final snapshot = await _db.collection('subscription_history')
-            .where('storeId', isEqualTo: checkingStoreId)
+        final snapshot = await _db.collection('stores').doc(checkingStoreId)
+            .collection('subscription_history')
             .get();
 
         final queuedSubs = snapshot.docs
@@ -604,15 +687,15 @@ class DashboardProvider with ChangeNotifier {
         'subscriptionPlan': 'Basic',
         'addons': permanentAddons,
       });
-      _updateLocalStoreState('Basic', permanentAddons);
+      await _updateLocalStoreState('Basic', permanentAddons);
     }
   }
 
   int get consolidatedStandardDays => _getConsolidatedStandardDays();
 
   Future<DateTime> _getLatestSubscriptionEndDate(String storeId) async {
-    final snapshot = await _db.collection('subscription_history')
-        .where('storeId', isEqualTo: storeId)
+    final snapshot = await _db.collection('stores').doc(storeId)
+        .collection('subscription_history')
         .get();
     final histories = snapshot.docs.map((d) => SubscriptionHistory.fromMap(d.data(), d.id)).toList();
     final relevant = histories.where((h) => (h.status == 'ACTIVE' || h.status == 'QUEUED') && h.endDate.isAfter(DateTime.now())).toList();
@@ -624,8 +707,20 @@ class DashboardProvider with ChangeNotifier {
     return maxEnd;
   }
 
-  void _updateLocalStoreState(String plan, List<String> addons) {
+  Future<void> _updateLocalStoreState(String plan, List<String> addons) async {
     if (activeStore == null) return;
+    // Actually update the store state via StoreProvider (the source of truth for activeStore)
+    if (_storeProvider != null && _activeStoreId != null) {
+      try {
+        final updatedStore = activeStore!.copyWith(
+          subscriptionPlan: plan,
+          addons: addons,
+        );
+        await _storeProvider!.updateStoreSettings(updatedStore);
+      } catch (e) {
+        debugPrint('⚠️ DashboardProvider._updateLocalStoreState: $e');
+      }
+    }
     notifyListeners();
   }
 
@@ -648,7 +743,9 @@ class DashboardProvider with ChangeNotifier {
   Future<void> activateSubscriptionCoupon(String historyId) async {
     if (activeStore == null) return;
     try {
-      final subDoc = await _db.collection('subscription_history').doc(historyId).get();
+      final subDocRef = _db.collection('stores').doc(activeStore!.id)
+          .collection('subscription_history').doc(historyId);
+      final subDoc = await subDocRef.get();
       if (!subDoc.exists) return;
       final data = subDoc.data()!;
       if (data['status'] == 'ACTIVE') return; 
@@ -658,7 +755,7 @@ class DashboardProvider with ChangeNotifier {
           ? startDate.add(const Duration(days: 365)) 
           : startDate.add(const Duration(days: 30));
 
-      await _db.collection('subscription_history').doc(historyId).update({
+      await subDocRef.update({
         'status': 'ACTIVE',
         'startDate': startDate.millisecondsSinceEpoch,
         'endDate': endDate.millisecondsSinceEpoch,
@@ -667,6 +764,12 @@ class DashboardProvider with ChangeNotifier {
       await _db.collection('stores').doc(activeStore!.id).update({
         'subscriptionPlan': 'Standard',
       });
+      
+      // Refresh local state and subscription history
+      final selectedAddons = List<String>.from(data['selectedAddons'] ?? []);
+      final currentAddons = Set<String>.from(activeStore!.addons);
+      currentAddons.addAll(selectedAddons);
+      await _updateLocalStoreState('Standard', currentAddons.toList());
       await fetchSubscriptionHistory();
       notifyListeners();
     } catch (e) {
@@ -759,12 +862,23 @@ class DashboardProvider with ChangeNotifier {
   }
 
   bool hasAddon(String key) {
-    if (globalDisabledAddons.contains(key)) return false;
-    if (activeStore == null) return false;
-    if (_userProfile != null && _userProfile!.role != 'Store Owner' && _userProfile!.accessibleAddons != null) {
-       if (!_userProfile!.accessibleAddons!.contains(key)) return false;
+    if (globalDisabledAddons.contains(key)) {
+      debugPrint('🔒 hasAddon($key): BLOCKED by globalDisabledAddons');
+      return false;
     }
-    return activeStore!.addons.contains(key);
+    if (activeStore == null) {
+      debugPrint('🔒 hasAddon($key): BLOCKED - activeStore is null');
+      return false;
+    }
+    if (_userProfile != null && _userProfile!.role != 'Store Owner' && _userProfile!.accessibleAddons != null) {
+       if (!_userProfile!.accessibleAddons!.contains(key)) {
+         debugPrint('🔒 hasAddon($key): BLOCKED by accessibleAddons filter (role: ${_userProfile!.role})');
+         return false;
+       }
+    }
+    final result = activeStore!.addons.contains(key) || activeStore!.purchasedAddons.contains(key);
+    debugPrint('🔑 hasAddon($key): $result | addons=${activeStore!.addons} | purchasedAddons=${activeStore!.purchasedAddons} | plan=${activeStore!.subscriptionPlan}');
+    return result;
   }
 
   Future<void> updateStoreAddons(List<String> newAddons) async {
@@ -833,8 +947,8 @@ class DashboardProvider with ChangeNotifier {
   List<InventoryItem> get centralInventory => _centralInventory;
   int? get customThemeColor => _customThemeColor;
 
-  final List<StreamSubscription> _subscriptions = [];
   DateTime? _lastSyncReload;
+  Timer? _syncDebounceTimer;
 
   void _onSyncUpdate() {
     final newStatus = _syncService.syncStatus;
@@ -851,9 +965,15 @@ class DashboardProvider with ChangeNotifier {
           _loadFromCache();
        }
     }
-    // Only notify if something actually changed
+    // Only notify if something actually changed, with debouncing
     if (statusChanged) {
-      notifyListeners();
+      _syncDebounceTimer?.cancel();
+      _syncDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+        if (!_isDisposed) {
+          debugPrint('🔄 DashboardProvider: Debounced sync update notification');
+          notifyListeners();
+        }
+      });
     }
   }
   
@@ -944,6 +1064,8 @@ class DashboardProvider with ChangeNotifier {
        _isInitialized = false;
        _isInitStarted = false;
        _isFetchingUserData = false;
+       _pendingStoreRetry = false;
+       _fetchGeneration++; // Invalidate any in-flight fetches
 
        // 3. HIVE CACHE CLEARING (order/inventory caches only, NOT store caches)
        final cachesToClear = ['cache_orders', 'cache_inventory', 'cache_customers', 'cache_employees'];
@@ -964,7 +1086,8 @@ class DashboardProvider with ChangeNotifier {
    }
 
   bool isFeatureEnabled(String key) {
-    if (key == 'dashboard') return true;
+    // Core features that are always enabled
+    if (['dashboard', 'pos', 'reports', 'settings'].contains(key)) return true;
     String internalAddonKey = key;
     if (key == 'crm') internalAddonKey = 'customer_management';
     if (key == 'employees') internalAddonKey = 'employee_management';
@@ -977,7 +1100,10 @@ class DashboardProvider with ChangeNotifier {
     ];
 
     if (addonKeys.contains(internalAddonKey)) {
-      if (!hasAddon(internalAddonKey)) return false;
+      if (!hasAddon(internalAddonKey)) {
+        debugPrint('⛔ isFeatureEnabled($key → $internalAddonKey): HIDDEN - addon not purchased');
+        return false;
+      }
     }
 
     if (activeRole != 'Store Owner' && activeRole != 'Admin' && activeRole != 'Super Admin') {
@@ -1103,7 +1229,7 @@ class DashboardProvider with ChangeNotifier {
       bool isGlobalView = uid == null && (_isDeveloperMode && _activeRole == 'Super Admin');
       if (uid != null || isGlobalView) {
           if (_inventoryProvider != null) {
-              await _inventoryProvider!.fetchInventory(uid, refresh: true); 
+              await _inventoryProvider!.fetchInventory(uid ?? 'global', refresh: true); 
           } else {
               final sqlItems = await _repository.getInventory(uid);
               final Set<String> originalSqlIds = sqlItems.map((i) => i.id).toSet();
@@ -1133,6 +1259,7 @@ class DashboardProvider with ChangeNotifier {
             }
             await fetchEmployees(refresh: true);
            if (isGlobalView && _storeSettings == null) {
+               _activeStoreId = 'global';
                _storeSettings = StoreSettings(id: 'global', storeName: 'Global View', modules: ModuleSettings(), receipt: ReceiptSettings(), payment: PaymentSettings(), dashboard: DashboardSettings(), syncSettings: SyncSettings(), kds: KdsSettings());
               _subscribeToSystemUsers();
            }
@@ -1219,10 +1346,21 @@ class DashboardProvider with ChangeNotifier {
 
   List<Store> get stores => _stores;
 
+  ThemeNotifier? _themeNotifier;
+
+  void injectThemeNotifier(ThemeNotifier notifier) {
+    _themeNotifier = notifier;
+    // Synchronize initial state
+    _isDarkMode = _themeNotifier!.isDarkMode;
+    _currentTheme = _themeNotifier!.currentTheme;
+    _uiStyle = _themeNotifier!.uiStyle;
+    notifyListeners();
+  }
+
   // Theme & UI Getters
-  bool get isDarkMode => _isDarkMode;
-  AppColorTheme get currentTheme => _currentTheme;
-  UIStyle get uiStyle => _uiStyle;
+  bool get isDarkMode => _themeNotifier?.isDarkMode ?? _isDarkMode;
+  AppColorTheme get currentTheme => _themeNotifier?.currentTheme ?? _currentTheme;
+  UIStyle get uiStyle => _themeNotifier?.uiStyle ?? _uiStyle;
   bool get isDeveloperMode => _isDeveloperMode;
   
   Future<Map<String, dynamic>> getPlatformLimits() async => await _syncService.retrievePlatformLimits();
@@ -1294,28 +1432,57 @@ class DashboardProvider with ChangeNotifier {
   }
 
   void setUIStyle(UIStyle style) {
-    _uiStyle = style;
-    notifyListeners();
-    if (Hive.isBoxOpen('settings')) {
-      Hive.box('settings').put('uiStyle', style.index);
+    if (_themeNotifier != null) {
+      _themeNotifier!.setUIStyle(style);
+    } else {
+      _uiStyle = style;
+      if (Hive.isBoxOpen('settings')) {
+        Hive.box('settings').put('uiStyle', style.index);
+      }
     }
+    notifyListeners();
   }
 
   void setAppTheme(AppColorTheme theme) {
-    _currentTheme = theme;
+    if (_themeNotifier != null) {
+      _themeNotifier!.setAppTheme(theme);
+    } else {
+      _currentTheme = theme;
+    }
     notifyListeners();
   }
 
   void toggleTheme() {
-    _isDarkMode = !_isDarkMode;
+    if (_themeNotifier != null) {
+      _themeNotifier!.toggleTheme();
+    } else {
+      _isDarkMode = !_isDarkMode;
+      if (Hive.isBoxOpen('settings')) {
+        Hive.box('settings').put('isDarkMode', _isDarkMode);
+      }
+    }
     notifyListeners();
-    if (Hive.isBoxOpen('settings')) {
-      Hive.box('settings').put('isDarkMode', _isDarkMode);
+  }
+
+  Future<void> _loadDeveloperMode() async {
+    try {
+      final box = await Hive.openBox('settings');
+      _isDeveloperMode = box.get('isDeveloperMode', defaultValue: false);
+      debugPrint('🛠️ DashboardProvider: Loaded Developer Mode state: $_isDeveloperMode');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('⚠️ DashboardProvider: Error loading developer mode: $e');
     }
   }
 
-  void toggleDeveloperMode() {
+  void toggleDeveloperMode() async {
     _isDeveloperMode = !_isDeveloperMode;
+    try {
+      final box = await Hive.openBox('settings');
+      await box.put('isDeveloperMode', _isDeveloperMode);
+    } catch (e) {
+      debugPrint('⚠️ DashboardProvider: Error saving developer mode: $e');
+    }
     notifyListeners();
   }
 
@@ -1349,6 +1516,10 @@ class DashboardProvider with ChangeNotifier {
     final now = DateTime.now();
     final expiry = now.add(Duration(days: request.durationInDays));
     
+    // Hoist outside transaction so we can use them for local state update after commit
+    List<String> finalPurchased = [];
+    List<String> finalActive = [];
+
     await _db.runTransaction((tx) async {
       final storeRef = _db.collection('stores').doc(storeId);
       final storeSnap = await tx.get(storeRef);
@@ -1360,6 +1531,10 @@ class DashboardProvider with ChangeNotifier {
         if (!currentPurchased.contains(addon)) currentPurchased.add(addon);
         if (!currentActive.contains(addon)) currentActive.add(addon);
       }
+
+      // Capture for post-transaction local state update
+      finalPurchased = currentPurchased;
+      finalActive = currentActive;
 
       // 1. Update Request Status (Move Writes AFTER Reads)
       tx.update(_db.collection('subscription_requests').doc(request.id), {
@@ -1380,14 +1555,29 @@ class DashboardProvider with ChangeNotifier {
       final historyRef = storeRef.collection('subscription_history').doc();
       tx.set(historyRef, {
         'planName': request.planType,
+        'billingCycle': request.billingCycle,
         'durationDays': request.durationInDays,
         'startDate': FieldValue.serverTimestamp(),
         'endDate': Timestamp.fromDate(expiry),
         'price': request.amount,
         'status': 'ACTIVE',
+        'storeId': storeId,
         'selectedAddons': request.selectedAddons,
       });
     });
+
+    // Force refresh local store state so sidebar/UI immediately reflects changes
+    await _updateLocalStoreState(request.planType, finalActive);
+    // Also update purchasedAddons locally
+    if (activeStore != null && _storeProvider != null) {
+      try {
+        final updatedStore = activeStore!.copyWith(purchasedAddons: finalPurchased);
+        await _storeProvider!.updateStoreSettings(updatedStore);
+      } catch (e) {
+        debugPrint('⚠️ DashboardProvider: Error updating purchasedAddons locally: $e');
+      }
+    }
+    await fetchSubscriptionHistory();
     fetchPendingSubscriptions();
     notifyListeners();
   }
@@ -1471,6 +1661,7 @@ class DashboardProvider with ChangeNotifier {
     await _db.collection('subscription_requests').add({
       'storeId': _activeStoreId,
       'storeName': sName,
+      'ownerEmail': activeStore?.ownerEmail ?? _auth.currentUser?.email ?? '',
       'planType': planType,
       'durationInDays': finalDuration,
       'amount': amount,
@@ -1480,6 +1671,8 @@ class DashboardProvider with ChangeNotifier {
       'createdAt': FieldValue.serverTimestamp(),
       'userId': _auth.currentUser?.uid,
     });
+    // Refresh pending list so UI shows the new pending request immediately
+    await fetchPendingSubscriptions();
   }
 
 
@@ -1883,8 +2076,27 @@ class DashboardProvider with ChangeNotifier {
       return;
     }
     _isFetchingUserData = true;
+    _fetchGeneration++;
+    final int thisGeneration = _fetchGeneration;
+    debugPrint('👤 DashboardProvider: _fetchUserData starting (generation: $thisGeneration)');
     
     try {
+      // 1. OPTIMISTIC LOAD: Check Cache First for immediate UI responsiveness
+      final cachedProfile = await OfflineService().getCachedUserProfile(uid: uid);
+      if (cachedProfile != null) {
+         final data = Map<String, dynamic>.from(cachedProfile);
+         _userProfile = UserProfile.fromMap(data, uid);
+         _activeRole = _userProfile?.role ?? 'Unauthorized';
+         debugPrint('📦 DashboardProvider: Loaded role from cache: $_activeRole');
+         
+         // If we have a role, we can allow the UI to start rendering earlier
+         if (!_isInitialized && _activeRole != 'Unauthorized' && _activeRole != 'Unauthorized') {
+            _isInitialized = true;
+            _routerNotifier?.notify();
+            notifyListeners();
+         }
+      }
+
       debugPrint('👤 DashboardProvider: Fetching user data for $uid');
       DocumentSnapshot<Map<String, dynamic>> doc;
       try {
@@ -1901,9 +2113,13 @@ class DashboardProvider with ChangeNotifier {
       }
 
       if (doc.exists && doc.data() != null) {
-        _userProfile = UserProfile.fromMap(doc.data()!, uid);
+        final data = doc.data()!;
+        _userProfile = UserProfile.fromMap(data, uid);
         _activeRole = _userProfile!.role;
         debugPrint('👤 DashboardProvider: User Role identified as: $_activeRole');
+
+        // Persist to Cache for next launch
+        await OfflineService().cacheUserProfile(data, uid: uid);
         
         // Load additional configs once user is identified
         _loadAdminConfig();
@@ -1972,10 +2188,14 @@ class DashboardProvider with ChangeNotifier {
             _activeStoreId = soloStoreId;
             await _storeProvider!.setActiveStoreId(soloStoreId);
           } else if (_activeStoreId != null) {
-             // Re-trigger cache load for the current active store
-             _loadFromCache(); 
-             fetchPendingSubscriptions();
-          }
+              // Re-trigger cache load for the current active store
+              _loadFromCache(); 
+              fetchPendingSubscriptions();
+              // Load subscription history and auto-activate if needed
+              fetchSubscriptionHistory().then((_) {
+                _checkAndAutoActivateReadySubs();
+              });
+           }
         } else {
            // FIX: _storeProvider is NULL (Android race condition - auth fired before injection)
            // Don't mark as fully initialized yet — injectStoreProvider will retry _fetchUserData
@@ -2091,18 +2311,26 @@ class DashboardProvider with ChangeNotifier {
       // AUTO-SELECT SINGLE STORE: If no active store is set but we now have exactly one, auto-select it.
       if (newId == null && _stores.length == 1 && !isSuperAdmin) {
           final soloId = _stores.first.id;
-          debugPrint('🎯 DashboardProvider: Single store detected via StoreProvider, auto-selecting: $soloId');
-          _storeProvider!.setActiveStoreId(soloId);
-          return; // The next call to _onStoreChange (after setActiveStoreId) will handle the state update
+          if (soloId.isNotEmpty) {
+             debugPrint('🎯 DashboardProvider: Single store detected via StoreProvider, auto-selecting: $soloId');
+             _storeProvider!.setActiveStoreId(soloId);
+             return; // The next call to _onStoreChange (after setActiveStoreId) will handle the state update
+          }
       }
 
       if (_activeStoreId != newId) {
         debugPrint('🔄 DashboardProvider: Active store changed to $newId');
         _activeStoreId = newId;
-        if (newId != null) {
+        if (newId != null && newId.isNotEmpty) {
           _initSync(); 
           _initPermissions();
           _initBackupService();
+
+          // Load subscription state for the new store
+          fetchSubscriptionHistory().then((_) {
+            _checkAndAutoActivateReadySubs();
+          });
+          fetchPendingSubscriptions();
 
           // Pin store and cache employees for offline employee login
           try {
@@ -2120,8 +2348,9 @@ class DashboardProvider with ChangeNotifier {
           }
         }
         notifyListeners();
-      } else if (oldStores.length != _stores.length) {
-        // Only notify if the stores list actually changed in length
+      } else {
+        // Store ID is the same — but store DATA may have changed (addons, plan, etc.)
+        // Always propagate StoreProvider changes so sidebar/UI reacts to addon/plan updates
         notifyListeners();
       }
     }

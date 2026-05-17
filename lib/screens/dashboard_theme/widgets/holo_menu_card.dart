@@ -1,5 +1,7 @@
 
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import '../../../../utils/car_dashboard_theme.dart';
 import 'glass_panel.dart';
 
@@ -49,7 +51,7 @@ class _HoloMenuCardState extends State<HoloMenuCard> {
                  size: widget.isLarge ? 48 : 32,
                  color: CarDashboardTheme.neonBlue,
                ),
-               const SizedBox(height: 16),
+               const SizedBox(height: AppSpacing.md),
                Text(
                  widget.label.toUpperCase(),
                  style: CarDashboardTheme.labelStyle.copyWith(

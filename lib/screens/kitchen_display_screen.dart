@@ -1,4 +1,8 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -32,7 +36,7 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
     final storeId = provider.activeStoreId;
 
     if (storeId == null) {
-      return const Scaffold(body: Center(child: Text("Please select a store first.")));
+      return Scaffold(body: Center(child: Text(AppLocalizations.t(context, 'Please select a store first.'))));
     }
 
     // Stream of Active Orders (New OR Preparing)
@@ -45,7 +49,7 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kitchen Display System (KDS)'),
+        title: Text(AppLocalizations.t(context, 'Kitchen Display System (KDS)')),
         actions: [
           IconButton(icon: const Icon(Icons.history), onPressed: () {}), 
         ],
@@ -62,13 +66,13 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
 
           final docs = snapshot.data?.docs ?? [];
           if (docs.isEmpty) {
-            return Center(child: Text('No active orders', style: TextStyle(fontSize: 24, color: AppColors.textSecondary(context))));
+            return Center(child: Text(AppLocalizations.t(context, 'No active orders'), style: TextStyle(fontSize: 24, color: AppColors.textSecondary(context))));
           }
 
           final orders = docs.map((d) => OrderModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
 
           return GridView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 350,
               childAspectRatio: 0.75, 
@@ -153,7 +157,7 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
       elevation: 4,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         side: BorderSide(
           color: isLate ? AppColors.error : (order.status == 'New' ? AppColors.primaryLight : AppColors.warning), 
           width: 2
@@ -230,3 +234,6 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
     );
   }
 }
+
+
+

@@ -1,4 +1,8 @@
 import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -46,7 +50,7 @@ class _PromotionalSignageState extends State<PromotionalSignage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("Promotional Screen"),
+        title: Text(AppLocalizations.t(context, 'Promotional Screen')),
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -64,9 +68,9 @@ class _PromotionalSignageState extends State<PromotionalSignage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
                Icon(Icons.local_offer, size: 100, color: Colors.white.withValues(alpha: 0.8)),
-               const SizedBox(height: 48),
+               const SizedBox(height: AppSpacing.xxl),
                Padding(
-                 padding: const EdgeInsets.symmetric(horizontal: 48.0),
+                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
                  child: Text(
                    _promos[_currentIndex],
                    textAlign: TextAlign.center,
@@ -79,8 +83,8 @@ class _PromotionalSignageState extends State<PromotionalSignage> {
                    ),
                  ),
                ),
-               const SizedBox(height: 24),
-               const Text("Visit Counter for details", style: TextStyle(color: Colors.white70, fontSize: 24))
+               const SizedBox(height: AppSpacing.lg),
+               Text(AppLocalizations.t(context, 'Visit Counter for details'), style: const TextStyle(color: Colors.white70, fontSize: 24))
             ],
           ),
         ),

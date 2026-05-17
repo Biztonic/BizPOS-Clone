@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
+import '../core/design/tokens/app_typography.dart';
 
 class ReportStatCard extends StatelessWidget {
   final String title;
@@ -20,7 +23,7 @@ class ReportStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.xxs),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -30,7 +33,7 @@ class ReportStatCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.zero,
           boxShadow: [
             BoxShadow(
               color: baseColor.withValues(alpha: 0.3),
@@ -45,10 +48,10 @@ class ReportStatCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Icon(icon, color: Colors.white, size: 24),
                 ),
@@ -56,9 +59,8 @@ class ReportStatCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: AppTypography.titleSmall.copyWith(
                       color: Colors.white,
-                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
                     ),
@@ -67,22 +69,20 @@ class ReportStatCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Text(
               value,
-              style: const TextStyle(
+              style: AppTypography.displaySmall.copyWith(
                 color: Colors.white,
-                fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
             ),
             if (subtitle != null) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 subtitle!,
-                style: TextStyle(
+                style: AppTypography.bodySmall.copyWith(
                   color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -93,3 +93,6 @@ class ReportStatCard extends StatelessWidget {
     );
   }
 }
+
+
+

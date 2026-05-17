@@ -12,6 +12,7 @@
 ///
 /// Only domain entities, repository interfaces, and the
 /// application orchestrator are part of the public contract.
+library;
 
 // ─── Domain: Entities ────────────────────────────────────
 export 'domain/entities/order_entity.dart';

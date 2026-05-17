@@ -1,16 +1,27 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:biztonic_pos/services/firestore_helper.dart';
 import 'package:biztonic_pos/services/offline_service.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:biztonic_pos/services/database_helper.dart';
+import 'package:biztonic_pos/features/store/data/store_repository_mixin.dart';
 import '../domain/entities/store.dart';
 import '../domain/entities/counter_model.dart';
 
-class StoreRepository {
+class StoreRepository with StoreRepositoryMixin {
   final FirebaseFirestore _db = getFirestore();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
   final OfflineService _offlineService = OfflineService();
   final SyncService _syncService;
+
+  @override
+  final DatabaseHelper dbHelper = DatabaseHelper();
+
+  @override
+  Future<Database> get database => dbHelper.database;
 
   StoreRepository(this._syncService);
 
@@ -47,7 +58,9 @@ class StoreRepository {
       for (var doc in q0.docs) {
         uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
       }
-    } catch (e) {}
+    } catch (e) {
+      debugPrint('Error fetching stores by owner: $e');
+    }
 
     // 2. Fetch by Email
     if (user.email != null) {
@@ -56,7 +69,9 @@ class StoreRepository {
         for (var doc in q1.docs) {
           uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
         }
-      } catch (e) {}
+      } catch (e) {
+        debugPrint('Error fetching stores by email: $e');
+      }
     }
 
     // 3. Direct access linking
@@ -81,7 +96,9 @@ class StoreRepository {
           }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      debugPrint('Error fetching stores by access link: $e');
+    }
 
     return uniqueStores.values.toList();
   }

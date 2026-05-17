@@ -1,21 +1,17 @@
 @echo off
-title FlutterApp-Chrome
-
-:: Navigate to the directory where this batch file is located
 pushd "%~dp0"
 
-echo Current directory is: %CD%
+set FLUTTER_BIN=C:\src\flutter\bin\flutter.bat
 
-if not exist "pubspec.yaml" (
-    echo ERROR: pubspec.yaml not found in %CD%
-    echo Make sure you are running this from the root of the Flutter project.
+if not exist "%FLUTTER_BIN%" (
+    echo Error: Flutter binary not found at %FLUTTER_BIN%
     pause
     popd
     exit /b 1
 )
 
-echo Starting the application in Chrome (Optimized Mode)...
-call "C:\src\flutter\bin\flutter.bat" run -d chrome --release
+echo Starting BizPOS in Chrome...
+call "%FLUTTER_BIN%" run -d chrome --web-port 8080
 
 popd
 pause

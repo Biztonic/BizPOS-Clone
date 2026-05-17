@@ -1,8 +1,8 @@
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:uuid/uuid.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart'; // Added for kIsWeb
 import '../providers/dashboard_provider.dart';
 import '../models/customer.dart';
@@ -28,6 +28,7 @@ class CustomersScreen extends StatefulWidget {
 
 class _CustomersScreenState extends State<CustomersScreen> {
   final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
   String _searchQuery = "";
   String _sortBy = 'Name';
   bool _isSelectionMode = false;
@@ -37,8 +38,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
+      _debounce?.cancel();
+      _debounce = Timer(const Duration(milliseconds: 300), () {
+        setState(() {
+          _searchQuery = _searchController.text.toLowerCase();
+        });
       });
     });
     
@@ -53,6 +57,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -84,19 +89,43 @@ class _CustomersScreenState extends State<CustomersScreen> {
         return PosScaffold(
           title: _isSelectionMode ? '${_selectedIds.length} Selected' : 'Customers',
           actions: _buildScaffoldActions(context, provider),
-          mainContent: Column(
-            children: [
-              if (isDesktop) _buildStatsRow(provider),
-              _buildFilterBar(context),
-              Expanded(
-                child: provider.isLoading 
-                    ? const Center(child: CircularProgressIndicator())
-                    : isDesktop 
-                        ? _buildTableView(context, provider, displayedCustomers)
-                        : _buildListView(context, provider, displayedCustomers),
-              ),
-            ],
-          ),
+          mainContent: provider.isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : CustomScrollView(
+                  slivers: [
+                    if (isDesktop) 
+                      SliverToBoxAdapter(child: _buildStatsRow(provider)),
+                    
+                    SliverToBoxAdapter(child: _buildFilterBar(context)),
+
+                    if (displayedCustomers.isEmpty)
+                      SliverFillRemaining(child: _buildEmptyState())
+                    else if (isDesktop)
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                        sliver: SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: _buildTableView(context, provider, displayedCustomers),
+                        ),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (ctx, i) => Padding(
+                              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                              child: _buildCustomerCard(context, displayedCustomers[i], provider),
+                            ),
+                            childCount: displayedCustomers.length,
+                            addAutomaticKeepAlives: false,
+                          ),
+                        ),
+                      ),
+                    
+                    const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
+                  ],
+                ),
         );
       },
     );
@@ -169,16 +198,19 @@ class _CustomersScreenState extends State<CustomersScreen> {
           Container(
              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
              decoration: BoxDecoration(
+               color: AppColors.surface(context),
                border: Border.all(color: AppColors.border(context)),
-               borderRadius: BorderRadius.circular(12),
+               borderRadius: BorderRadius.zero,
              ),
              child: DropdownButtonHideUnderline(
                child: DropdownButton<String>(
                  value: _sortBy,
-                 items: const [
-                   DropdownMenuItem(value: 'Name', child: Text('Sort by Name')),
-                   DropdownMenuItem(value: 'Points', child: Text('Sort by Points')),
-                   DropdownMenuItem(value: 'Spent', child: Text('Sort by Spent')),
+                 dropdownColor: AppColors.surface(context),
+                 style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary(context)),
+                 items: [
+                   DropdownMenuItem(value: 'Name', child: Text(AppLocalizations.t(context, 'Sort by Name'))),
+                   DropdownMenuItem(value: 'Points', child: Text(AppLocalizations.t(context, 'Sort by Points'))),
+                   DropdownMenuItem(value: 'Spent', child: Text(AppLocalizations.t(context, 'Sort by Spent'))),
                  ],
                  onChanged: (v) => setState(() => _sortBy = v!),
                )
@@ -194,27 +226,14 @@ class _CustomersScreenState extends State<CustomersScreen> {
     );
   }
 
-  Widget _buildListView(BuildContext context, DashboardProvider provider, List<Customer> customers) {
-    if (customers.isEmpty) return _buildEmptyState();
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      itemCount: customers.length,
-      separatorBuilder: (ctx, i) => const SizedBox(height: AppSpacing.md),
-      itemBuilder: (ctx, i) => _buildCustomerCard(context, customers[i], provider),
-    );
-  }
-
   Widget _buildTableView(BuildContext context, DashboardProvider provider, List<Customer> customers) {
-    if (customers.isEmpty) return _buildEmptyState();
-
     return PosDataTable(
-      columns: [
-        const PosDataColumn(label: 'Customer', fixedWidth: 300),
-        const PosDataColumn(label: 'Contact', fixedWidth: 250),
-        const PosDataColumn(label: 'Points', fixedWidth: 120),
-        const PosDataColumn(label: 'Spent', fixedWidth: 120),
-        const PosDataColumn(label: 'Actions', fixedWidth: 200),
+      columns: const [
+        PosDataColumn(label: 'Customer', fixedWidth: 300),
+        PosDataColumn(label: 'Contact', fixedWidth: 250),
+        PosDataColumn(label: 'Points', fixedWidth: 120),
+        PosDataColumn(label: 'Spent', fixedWidth: 120),
+        PosDataColumn(label: 'Actions', fixedWidth: 200),
       ],
       rows: customers.map((c) => PosDataRow(
         cells: [
@@ -224,10 +243,14 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 Checkbox(
                   value: _selectedIds.contains(c.id),
                   onChanged: (val) => _toggleSelection(c.id),
+                  activeColor: AppColors.adaptivePrimary(context),
                 ),
               CircleAvatar(
-                backgroundColor: [AppColors.primary, AppColors.success, AppColors.warning, AppColors.error, AppColors.primaryLight][c.name.length % 5].withValues(alpha: 0.2),
-                child: Text(c.name.isNotEmpty ? c.name[0].toUpperCase() : '?', style: TextStyle(color: [AppColors.primary, AppColors.success, AppColors.warning, AppColors.error, AppColors.primaryLight][c.name.length % 5])),
+                backgroundColor: _getAvatarColor(context, c.name).withValues(alpha: 0.1),
+                child: Text(
+                  c.name.isNotEmpty ? c.name[0].toUpperCase() : '?', 
+                  style: TextStyle(color: _getAvatarColor(context, c.name), fontWeight: FontWeight.bold)
+                ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
@@ -236,15 +259,15 @@ class _CustomersScreenState extends State<CustomersScreen> {
                   children: [
                     Text(c.name, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
                     if (c.tier == 'VIP')
-                      const Text('VIP', style: TextStyle(color: AppColors.primaryLight, fontSize: 10, fontWeight: FontWeight.bold)),
+                      Text(AppLocalizations.t(context, 'VIP'), style: TextStyle(color: AppColors.adaptivePrimary(context), fontSize: 10, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
             ],
           ),
           Text(c.email.isNotEmpty ? c.email : (c.mobile ?? 'N/A')),
-          Text("${c.loyaltyPoints} pts", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w500, color: AppColors.warning)),
-          Text("\$${c.totalSpent.toStringAsFixed(2)}", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.success)),
+          Text("${c.loyaltyPoints} pts", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w500, color: AppColors.adaptiveWarning(context))),
+          Text("\$${c.totalSpent.toStringAsFixed(2)}", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.adaptiveSuccess(context))),
           Row(
             children: [
               AppButton.secondary(
@@ -269,6 +292,17 @@ class _CustomersScreenState extends State<CustomersScreen> {
     );
   }
 
+  Color _getAvatarColor(BuildContext context, String name) {
+    final colors = [
+      AppColors.adaptivePrimary(context),
+      AppColors.adaptiveSuccess(context),
+      AppColors.adaptiveWarning(context),
+      AppColors.adaptiveError(context),
+      AppColors.adaptiveInfo(context),
+    ];
+    return colors[name.length % colors.length];
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -291,10 +325,17 @@ class _CustomersScreenState extends State<CustomersScreen> {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: _isSelectionMode 
-          ? Checkbox(value: isSelected, onChanged: (_) => _toggleSelection(c.id))
+          ? Checkbox(
+              value: isSelected, 
+              onChanged: (_) => _toggleSelection(c.id),
+              activeColor: AppColors.adaptivePrimary(context),
+            )
           : CircleAvatar(
-              backgroundColor: [AppColors.primary, AppColors.success, AppColors.warning, AppColors.error, AppColors.primaryLight][c.name.length % 5].withValues(alpha: 0.2),
-              child: Text(c.name.isNotEmpty ? c.name[0].toUpperCase() : '?', style: TextStyle(color: [AppColors.primary, AppColors.success, AppColors.warning, AppColors.error, AppColors.primaryLight][c.name.length % 5])),
+              backgroundColor: _getAvatarColor(context, c.name).withValues(alpha: 0.1),
+              child: Text(
+                c.name.isNotEmpty ? c.name[0].toUpperCase() : '?', 
+                style: TextStyle(color: _getAvatarColor(context, c.name), fontWeight: FontWeight.bold)
+              ),
             ),
         title: Text(c.name, style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
         subtitle: Text(c.email.isNotEmpty ? c.email : (c.mobile ?? 'No Contact')),
@@ -339,11 +380,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         children: [
-          Expanded(child: _buildStatCard("Total Customers", "$total", Icons.people, AppColors.primary)),
+          Expanded(child: _buildStatCard("Total Customers", "$total", Icons.people, AppColors.adaptivePrimary(context))),
           const SizedBox(width: AppSpacing.md),
-          Expanded(child: _buildStatCard("Loyalty Active", "$loyalty", Icons.stars, AppColors.warning)),
+          Expanded(child: _buildStatCard("Loyalty Active", "$loyalty", Icons.stars, AppColors.adaptiveWarning(context))),
           const SizedBox(width: AppSpacing.md),
-          Expanded(child: _buildStatCard("VIP Members", "$vips", Icons.diamond, AppColors.primaryLight)),
+          Expanded(child: _buildStatCard("VIP Members", "$vips", Icons.diamond, AppColors.adaptiveInfo(context))),
         ],
       ),
     );
@@ -356,7 +397,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
             child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -364,7 +405,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label, style: AppTypography.labelMedium.copyWith(color: AppColors.textSecondary(context), fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(value, style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.bold)),
             ],
           )
@@ -378,8 +419,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
      showDialog(
         context: context, 
         builder: (ctx) => AlertDialog(
+           backgroundColor: AppColors.surface(context),
            title: Text("Adjust Points for ${c.name}"),
-           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
            content: AppTextField(
               controller: controller,
               keyboardType: TextInputType.number,
@@ -387,7 +429,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
               prefixIcon: const Icon(Icons.stars_outlined),
            ),
            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context)))),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'), style: TextStyle(color: AppColors.textSecondary(context)))),
               AppButton.primary(
                  onPressed: () {
                     final points = int.tryParse(controller.text) ?? 0;
@@ -405,11 +447,12 @@ class _CustomersScreenState extends State<CustomersScreen> {
      showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-           title: const Text("Delete Customer?"),
+           backgroundColor: AppColors.surface(context),
+           title: Text(AppLocalizations.t(context, 'Delete Customer?')),
            content: Text("Are you sure you want to delete ${c.name}? This will remove all transaction history linked to this customer profile."),
-           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context)))),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'), style: TextStyle(color: AppColors.textSecondary(context)))),
               AppButton.danger(
                  onPressed: () {
                     provider.customerProvider?.deleteCustomer(c.id);
@@ -426,14 +469,16 @@ class _CustomersScreenState extends State<CustomersScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface(context),
         title: Text("Delete ${_selectedIds.length} Customers?"),
-        content: const Text("This action cannot be undone. All selected customer profiles will be permanently removed."),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Text(AppLocalizations.t(context, 'This action cannot be undone. All selected customer profiles will be permanently removed.')),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context)))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'), style: TextStyle(color: AppColors.textSecondary(context)))),
           AppButton.danger(
             onPressed: () async {
               final provider = Provider.of<DashboardProvider>(context, listen: false);
+              final messenger = ScaffoldMessenger.of(context);
               final List<String> idsToDelete = _selectedIds.toList();
               
               for (var id in idsToDelete) {
@@ -445,8 +490,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
                   _isSelectionMode = false;
                   _selectedIds.clear();
                 });
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
+                if (ctx.mounted) Navigator.pop(ctx);
+                messenger.showSnackBar(
                   SnackBar(
                     content: Text("Deleted ${idsToDelete.length} customers"),
                     behavior: SnackBarBehavior.floating,
@@ -477,11 +522,12 @@ class _CustomersScreenState extends State<CustomersScreen> {
         showDialog(
           context: context, 
           builder: (ctx) => AlertDialog(
-            title: const Text("Feature Not Available"),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            content: const Text("Importing contacts is only available on Android devices. Please use a physical device to use this feature."),
+            backgroundColor: AppColors.surface(context),
+            title: Text(AppLocalizations.t(context, 'Feature Not Available')),
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            content: Text(AppLocalizations.t(context, 'Importing contacts is only available on Android devices. Please use a physical device to use this feature.')),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'OK')))
             ],
           )
         );
@@ -492,7 +538,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
     try {
       if (await FlutterContacts.requestPermission()) {
         final contacts = await FlutterContacts.getContacts(withProperties: true, withPhoto: false);
-        if (mounted) _showContactSelectionDialog(contacts);
+        if (context.mounted) _showContactSelectionDialog(contacts);
       }
     } catch (e) {
       if (mounted) {
@@ -516,8 +562,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
           final filtered = validContacts.where((c) => c.displayName.toLowerCase().contains(query.toLowerCase())).toList();
           
           return AlertDialog(
-             title: const Text("Import Contacts"),
-             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+             backgroundColor: AppColors.surface(context),
+             title: Text(AppLocalizations.t(context, 'Import Contacts')),
+             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
              content: SizedBox(
                width: double.maxFinite,
                child: Column(
@@ -530,32 +577,33 @@ class _CustomersScreenState extends State<CustomersScreen> {
                            setDialogState(() => query = val);
                         },
                      ),
-                     const SizedBox(height: 16),
+                     const SizedBox(height: AppSpacing.md),
                      Expanded(
                         child: ListView.builder(
                            itemCount: filtered.length,
                            itemBuilder: (c, i) {
-                               final contact = filtered[i];
-                               final isSelected = selected.contains(contact);
-                               return CheckboxListTile(
-                                  value: isSelected,
-                                  onChanged: (val) {
-                                     setDialogState(() {
-                                        if (val == true) {
-                                          selected.add(contact);
-                                        } else {
-                                          selected.remove(contact);
-                                        }
-                                     });
-                                  },
-                                  title: Text(contact.displayName),
-                                  subtitle: Text(contact.phones.isNotEmpty ? contact.phones.first.number : (contact.emails.isNotEmpty ? contact.emails.first.address : "")),
-                               );
+                                final contact = filtered[i];
+                                final isSelected = selected.contains(contact);
+                                return CheckboxListTile(
+                                   value: isSelected,
+                                   activeColor: AppColors.adaptivePrimary(context),
+                                   onChanged: (val) {
+                                      setDialogState(() {
+                                         if (val == true) {
+                                           selected.add(contact);
+                                         } else {
+                                           selected.remove(contact);
+                                         }
+                                      });
+                                   },
+                                   title: Text(contact.displayName),
+                                   subtitle: Text(contact.phones.isNotEmpty ? contact.phones.first.number : (contact.emails.isNotEmpty ? contact.emails.first.address : "")),
+                                );
                            },
                         ),
                      ),
                      Padding(
-                       padding: const EdgeInsets.symmetric(vertical: 8.0),
+                       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -579,7 +627,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                ),
              ),
              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context)))),
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'), style: TextStyle(color: AppColors.textSecondary(context)))),
                 AppButton.primary(
                    onPressed: () {
                       _batchAddContacts(selected);
@@ -635,7 +683,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
            added = newCustomers.length;
         }
      }
-     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Imported $added contacts ($skipped skipped)"), behavior: SnackBarBehavior.floating));
+     if (mounted) {
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Imported $added contacts ($skipped skipped)"), behavior: SnackBarBehavior.floating));
+     }
   }
 }
 
@@ -663,3 +713,7 @@ class _CustomerScreenData {
   @override
   int get hashCode => Object.hash(customersLength, activeStoreId, customersHash);
 }
+
+
+
+

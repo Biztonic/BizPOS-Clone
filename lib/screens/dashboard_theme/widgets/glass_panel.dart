@@ -1,5 +1,7 @@
-// ignore_for_file: deprecated_member_use
+﻿// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import '../../../utils/car_dashboard_theme.dart';
 
 class GlassPanel extends StatelessWidget {
@@ -36,14 +38,14 @@ class GlassPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget content = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+      borderRadius: BorderRadius.zero,
       child: Container(
         width: width,
         height: height,
-        padding: padding ?? const EdgeInsets.all(16),
+        padding: padding ?? const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: color ?? CarDashboardTheme.overlayLight.withValues(alpha: opacity ?? 0.05), 
-          borderRadius: BorderRadius.circular(borderRadius),
+          borderRadius: BorderRadius.zero,
           border: border ?? Border.all(color: borderColor ?? Colors.white.withValues(alpha: 0.1), width: 1.0),
           gradient: gradient ?? (color != null ? null : CarDashboardTheme.glassGradient),
           boxShadow: withGlow ? [
@@ -68,3 +70,6 @@ class GlassPanel extends StatelessWidget {
     return content;
   }
 }
+
+
+

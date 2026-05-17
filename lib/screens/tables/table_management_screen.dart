@@ -1,4 +1,7 @@
-import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/design_system.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
@@ -118,10 +121,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
 
     final isMobileView = MediaQuery.of(context).size.width < 600;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    return PosScaffold(
       appBar: AppBar(
-        title: isMobileView ? const Text("Tables", style: TextStyle(fontWeight: FontWeight.bold)) : const Text("Table Management", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: isMobileView ? Text(AppLocalizations.t(context, 'Tables'), style: const TextStyle(fontWeight: FontWeight.bold)) : Text(AppLocalizations.t(context, 'Table Management'), style: const TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
         backgroundColor: Theme.of(context).cardColor,
         foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
@@ -129,11 +131,11 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
           // PREMIUM FLOOR SELECTOR
           if (floors.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.xs),
               child: Container(
                 decoration: BoxDecoration(
                   color: AppColors.textSecondary(context).withAlpha((0.05 * 255).toInt()),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.borderMd,
                   border: Border.all(color: AppColors.textSecondary(context).withAlpha((0.1 * 255).toInt())),
                 ),
                 child: SingleChildScrollView(
@@ -142,19 +144,19 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                     children: floors.map((f) {
                       final isSelected = f.id == _selectedFloorId;
                       return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
                         child: InkWell(
                           onTap: () => setState(() {
                             _selectedFloorId = f.id;
                             _selectedTableId = null;
                           }),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppRadius.borderMd,
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                             decoration: BoxDecoration(
                               color: isSelected ? AppColors.primaryLight : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: AppRadius.borderMd,
                               boxShadow: isSelected 
                                 ? [BoxShadow(color: AppColors.primaryLight.withAlpha((0.3 * 255).toInt()), blurRadius: 4, offset: const Offset(0, 2))]
                                 : null,
@@ -165,16 +167,16 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                 Icon(
                                   Icons.layers_outlined,
                                   size: 14,
-                                  color: isSelected ? Colors.white : AppColors.textSecondary(context),
+                                       color: isSelected ? Theme.of(context).colorScheme.onPrimary : AppColors.textSecondary(context),
                                 ),
                                 if (!isMobileView || floors.length < 3) ...[
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: AppSpacing.sm),
                                   Text(
                                     f.name,
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                      color: isSelected ? Colors.white : AppColors.textSecondary(context),
+                                      color: isSelected ? Theme.of(context).colorScheme.onPrimary : AppColors.textSecondary(context),
                                     ),
                                   ),
                                 ],
@@ -188,26 +190,26 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                 ),
               ),
             ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
             
           SizedBox(width: isMobileView ? 8 : 16),
           
           // MODE TOGGLE
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: isMobileView ? 4.0 : 16.0, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: isMobileView ? 4.0 : 16.0, vertical: AppSpacing.sm),
             child: ToggleButtons(
               isSelected: [!_isEditMode, _isEditMode],
               onPressed: (index) => setState(() {
                  _isEditMode = index == 1;
                  _selectedTableId = null; // Clear selection on mode switch
               }),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.borderMd,
               fillColor: Theme.of(context).primaryColor,
-              selectedColor: Colors.white,
+               selectedColor: Theme.of(context).colorScheme.onPrimary,
               color: Theme.of(context).iconTheme.color,
               children: [
-                 Padding(padding: EdgeInsets.symmetric(horizontal: isMobileView ? 8 : 12), child: Row(children: [const Icon(Icons.visibility, size: 16), if (!isMobileView) const SizedBox(width: 4), if (!isMobileView) const Text("View")])),
-                 Padding(padding: EdgeInsets.symmetric(horizontal: isMobileView ? 8 : 12), child: Row(children: [const Icon(Icons.edit, size: 16), if (!isMobileView) const SizedBox(width: 4), if (!isMobileView) const Text("Edit Layout")])),
+                 Padding(padding: EdgeInsets.symmetric(horizontal: isMobileView ? 8 : 12), child: Row(children: [const Icon(Icons.visibility, size: 16), if (!isMobileView) const SizedBox(width: AppSpacing.xs), if (!isMobileView) Text(AppLocalizations.t(context, 'View'))])),
+                 Padding(padding: EdgeInsets.symmetric(horizontal: isMobileView ? 8 : 12), child: Row(children: [const Icon(Icons.edit, size: 16), if (!isMobileView) const SizedBox(width: AppSpacing.xs), if (!isMobileView) Text(AppLocalizations.t(context, 'Edit Layout'))])),
               ],
             ),
           ),
@@ -236,7 +238,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                 ElevatedButton.icon(
                    onPressed: () => _showBookTableDialog(null), // General Booking
                    icon: const Icon(Icons.calendar_today, size: 16),
-                   label: const Text("Book Table"),
+                   label: Text(AppLocalizations.t(context, 'Book Table')),
                    style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).cardColor, 
                       foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
@@ -248,14 +250,14 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
           ]
         ],
       ),
-      body: _selectedFloorId == null 
+      mainContent: _selectedFloorId == null 
          ? Center(child: Column(
              mainAxisAlignment: MainAxisAlignment.center,
              children: [
                 Icon(Icons.layers_clear, size: 64, color: AppColors.textSecondary(context)),
-                const SizedBox(height: 16),
-                Text("No Floor Selected", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 18)),
-                if (_isEditMode) TextButton(onPressed: _showAddFloorDialog, child: const Text("Create a Floor"))
+                const SizedBox(height: AppSpacing.md),
+                Text(AppLocalizations.t(context, 'No Floor Selected'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 18)),
+                if (_isEditMode) TextButton(onPressed: _showAddFloorDialog, child: Text(AppLocalizations.t(context, 'Create a Floor')))
              ],
          ))
          : Stack(
@@ -308,12 +310,12 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   right: 0,
                   child: Center(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: AppRadius.borderLg,
                       child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                           decoration: BoxDecoration(
                              color: Theme.of(context).cardColor.withValues(alpha: 0.7),
-                             borderRadius: BorderRadius.circular(30),
+                             borderRadius: AppRadius.borderLg,
                              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4))]
                           ),
@@ -321,9 +323,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 _AddTableButton(label: "Square", icon: Icons.crop_square, onTap: () => _addTable('square')),
-                                Container(width: 1, height: 24, margin: const EdgeInsets.symmetric(horizontal: 8), color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+                                Container(width: 1, height: 24, margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm), color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
                                 _AddTableButton(label: "Round", icon: Icons.circle_outlined, onTap: () => _addTable('circle')),
-                                Container(width: 1, height: 24, margin: const EdgeInsets.symmetric(horizontal: 8), color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+                                Container(width: 1, height: 24, margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm), color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
                                 _AddTableButton(label: "Rect", icon: Icons.rectangle_outlined, onTap: () => _addTable('rectangular')),
                               ],
                           ),
@@ -334,17 +336,17 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                
                // EDIT PROPERTIES PANEL (Right Overlay)                if (_isEditMode && _selectedTableId != null)
                    Positioned(
-                     top: 16, bottom: 16, right: 16, left: isMobileView ? 16 : null,
+                     top: AppSpacing.md, bottom: AppSpacing.md, right: AppSpacing.md, left: isMobileView ? 16 : null,
                      child: ClipRRect(
-                       borderRadius: BorderRadius.circular(16),
+                       borderRadius: AppRadius.borderLg,
                        child: Container(
                            decoration: BoxDecoration(
                              color: Theme.of(context).cardColor.withValues(alpha: 0.85),
-                             borderRadius: BorderRadius.circular(16),
+                             borderRadius: AppRadius.borderLg,
                              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                             boxShadow: [
-                               BoxShadow(
-                                 color: Colors.black.withValues(alpha: 0.2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).shadowColor.withValues(alpha: 0.2),
                                  blurRadius: 20,
                                  offset: const Offset(0, 10),
                                )
@@ -409,8 +411,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     );
   }
   
-  Widget _tableVisual(TableModel table, Size size, bool isSelected) {
-     Color tableColor;
+   Widget _tableVisual(TableModel table, Size size, bool isSelected) {
+     Color bgColor;
      Color borderColor;
      Color statusTextColor;
      
@@ -420,23 +422,25 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
      // Use TableModel business logic for reservation status
      bool effectiveIsReserved = table.isBooked || table.isImpendingReservation;
      
+     final isDark = Theme.of(context).brightness == Brightness.dark;
+
      if (statusLower == 'occupied') {
-         tableColor = AppColors.error;
+         bgColor = isDark ? AppColors.error.withValues(alpha: 0.15) : AppColors.error.withValues(alpha: 0.1);
          borderColor = AppColors.error;
-         statusTextColor = AppColors.error;
+         statusTextColor = isDark ? AppColors.error : const Color(0xFFC62828);
      } else if (effectiveIsReserved) {
-         tableColor = AppColors.warning;
+         bgColor = isDark ? AppColors.warning.withValues(alpha: 0.15) : AppColors.warning.withValues(alpha: 0.1);
          borderColor = AppColors.warning;
-         statusTextColor = AppColors.warning;
+         statusTextColor = isDark ? AppColors.warning : const Color(0xFFE65100);
      } else {
-         tableColor = AppColors.success;
-         borderColor = AppColors.success;
-         statusTextColor = AppColors.success;
+         bgColor = Theme.of(context).cardColor;
+         borderColor = isDark ? Colors.white24 : Colors.grey.shade300;
+         statusTextColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87;
      }
 
      if (isSelected) {
         borderColor = AppColors.primaryLight;
-        tableColor = AppColors.primaryLight;
+        bgColor = isDark ? AppColors.primaryLight.withValues(alpha: 0.2) : AppColors.primaryLight.withValues(alpha: 0.1);
      }
 
      const double chairSize = 24.0;
@@ -453,21 +457,16 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                Builder(
                  builder: (context) {
                      bool isSeatOccupied = table.seats[i].orderId != null;
-                     // A seat is occupied if it has its own orderId OR if the table has a global orderId (whole table order)
                      bool isOccupied = isSeatOccupied || table.isOccupied; // Use isOccupied from TableModel
                      bool shouldAnimate = false;
                      
                      int bookedCount = table.bookedSeats ?? table.seats.length;
                      
-                     // Calculate shouldAnimate
                      if (table.isOccupied && table.orderId != null) {
-                           // Whole table order: animate all valid seats (up to bookedCount if set)
                            if (i < bookedCount) shouldAnimate = true;
                      } else if (isSeatOccupied) {
-                           // Per-seat order: animate only the occupied seat
                            shouldAnimate = true;
                      } else if (effectiveIsReserved) {
-                        // Only animate up to the bookedSeats count for reservations
                         if (i < bookedCount) {
                            shouldAnimate = true;
                         }
@@ -483,118 +482,80 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
               width: size.width,
               height: size.height,
               decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      tableColor,
-                      tableColor.withValues(alpha: 0.8),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: bgColor,
                   shape: table.shape == 'circle' ? BoxShape.circle : BoxShape.rectangle,
-                  borderRadius: table.shape == 'rectangular' || table.shape == 'square' ? BorderRadius.circular(12) : null,
+                  borderRadius: table.shape == 'rectangular' || table.shape == 'square' ? AppRadius.borderLg : null,
                   border: Border.all(
-                    color: isSelected ? AppColors.primaryLight : borderColor.withValues(alpha: 0.5), 
-                    width: isSelected ? 3 : 1.5
+                    color: borderColor, 
+                    width: isSelected ? 2.5 : 1.5
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isSelected ? 0.3 : 0.15), 
-                      blurRadius: isSelected ? 12 : 8, 
-                      offset: Offset(0, isSelected ? 6 : 4),
-                      spreadRadius: isSelected ? 2 : 0,
+                       color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                      blurRadius: isSelected ? 16 : 8, 
+                      offset: Offset(0, isSelected ? 8 : 4),
                     )
                   ]
                ),
-               child: Stack(
-                 children: [
-                   // Glossy effect
-                   if (table.shape != 'circle')
-                     Positioned(
-                       top: 0, left: 0, right: 0,
-                       child: Container(
-                         height: size.height * 0.4,
+               child: Center(
+                 child: Column(
+                   mainAxisAlignment: MainAxisAlignment.center,
+                   children: [
+                     Text(
+                        table.name, 
+                        style: TextStyle(
+                           fontWeight: FontWeight.w700, 
+                           color: statusTextColor,
+                           fontSize: 18,
+                        )
+                     ),
+                     if (statusLower == 'occupied' && table.orderId != null)
+                       Container(
+                         margin: const EdgeInsets.only(top: AppSpacing.xs),
+                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                          decoration: BoxDecoration(
-                           gradient: LinearGradient(
-                             colors: [
-                               Colors.white.withValues(alpha: 0.2),
-                               Colors.white.withValues(alpha: 0.0),
-                             ],
-                             begin: Alignment.topCenter,
-                             end: Alignment.bottomCenter,
-                           ),
-                           borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                            color: AppColors.error.withValues(alpha: 0.1),
+                            border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                           borderRadius: BorderRadius.circular(12),
                          ),
-                       ),
-                     ),
-                   Center(
-                     child: Column(
-                       mainAxisAlignment: MainAxisAlignment.center,
-                       children: [
-                         Text(
-                            table.name, 
-                            style: TextStyle(
-                               fontWeight: FontWeight.bold, 
-                               color: statusTextColor,
-                               fontSize: 18,
-                               shadows: [
-                                 Shadow(
-                                   color: Colors.white.withValues(alpha: 0.5),
-                                   offset: const Offset(0, 1),
-                                   blurRadius: 2,
-                                 )
-                               ]
-                            )
-                         ),
-                         if (statusLower == 'occupied' && table.orderId != null)
+                         child: Text(AppLocalizations.t(context, 'ACTIVE'), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.error))
+                       )
+                     else if (effectiveIsReserved)
+                       Column(
+                         children: [
                            Container(
-                             margin: const EdgeInsets.only(top: 4),
-                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                             decoration: BoxDecoration(
-                               color: Colors.white.withValues(alpha: 0.9), 
-                               borderRadius: BorderRadius.circular(20),
-                               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2)]
-                             ),
-                             child: Text("ACTIVE", style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: AppColors.error))
-                           )
-                         else if (effectiveIsReserved)
-                           Column(
-                             children: [
-                               Container(
-                                  margin: const EdgeInsets.only(top: 4),
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.warning, 
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 2)]
-                                  ),
-                                  child: const Text("BOOKED", style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black87))
-                               ),
-                               if (table.bookedTime != null)
-                                 Padding(
-                                   padding: const EdgeInsets.only(top: 4),
-                                   child: Text(
-                                      TimeOfDay.fromDateTime(table.bookedTime!).format(context), 
-                                      style: TextStyle(fontSize: 11, color: statusTextColor, fontWeight: FontWeight.w800)
-                                   ),
-                                 )
-                             ]
-                           )
-                         else
-                           Text(
-                              "${table.seats.length} Seats", 
-                              style: TextStyle(fontSize: 10, color: statusTextColor.withValues(alpha: 0.7), fontWeight: FontWeight.w600)
+                              margin: const EdgeInsets.only(top: AppSpacing.xs),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.warning.withValues(alpha: 0.1), 
+                                border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(AppLocalizations.t(context, 'BOOKED'), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.warning))
                            ),
-                       ],
-                     ),
-                   ),
-                 ],
+                           if (table.bookedTime != null)
+                             Padding(
+                               padding: const EdgeInsets.only(top: AppSpacing.xs),
+                               child: Text(
+                                  TimeOfDay.fromDateTime(table.bookedTime!).format(context), 
+                                  style: TextStyle(fontSize: 11, color: statusTextColor, fontWeight: FontWeight.w600)
+                               ),
+                             )
+                         ]
+                       )
+                     else
+                       Text(
+                          "${table.seats.length} Seats", 
+                          style: TextStyle(fontSize: 11, color: statusTextColor.withValues(alpha: 0.6), fontWeight: FontWeight.w500)
+                       ),
+                   ],
+                 ),
                ),
              ),
          ],
        ),
      );
-  }
+   }
 
   Widget _buildChair(int index, int totalSeats, String shape, Size tableSize, double chairSize, double distance, bool isOccupied, bool shouldAnimate, bool isTableOccupied) {
       double angle = 0;
@@ -642,39 +603,39 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
           height: 600, // Constrained height
           decoration: BoxDecoration(
              color: Theme.of(context).cardColor,
-             borderRadius: BorderRadius.circular(12),
+             borderRadius: AppRadius.borderLg,
           ),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpacing.xxs),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
                Row(
                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                  children: [
-                   const Text("Edit Table", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                   Text(AppLocalizations.t(context, 'Edit Table'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                    IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => _selectedTableId = null))
                  ],
                ),
                const Divider(),
-               const SizedBox(height: 16),
+               const SizedBox(height: AppSpacing.md),
                
                TextField(
                   decoration: InputDecoration(
                      labelText: "Name / Number",
-                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                     border: const OutlineInputBorder(borderRadius: AppRadius.borderMd),
                      filled: true,
                      fillColor: Theme.of(context).canvasColor
                   ),
                   controller: nameController, 
                   // onSubmitted removed, use Save Button
                ),
-               const SizedBox(height: 16),
+               const SizedBox(height: AppSpacing.md),
                
-               Text("Seats", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary(context))),
-               const SizedBox(height: 8),
+               Text(AppLocalizations.t(context, 'Seats'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary(context))),
+               const SizedBox(height: AppSpacing.sm),
                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(border: Border.all(color: Theme.of(context).dividerColor), borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.xs),
+                   decoration: BoxDecoration(border: Border.all(color: Theme.of(context).dividerColor), borderRadius: AppRadius.borderMd),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -689,21 +650,21 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   ),
                ),
                
-               const SizedBox(height: 20),
-                Text("Billing Mode", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary(context))),
-                const SizedBox(height: 8),
+               const SizedBox(height: AppSpacing.xxs),
+                Text(AppLocalizations.t(context, 'Billing Mode'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary(context))),
+                const SizedBox(height: AppSpacing.sm),
                DropdownButtonFormField<String>(
                   value: table.billingMode,
-                  decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0)),
-                  items: const [
-                     DropdownMenuItem(value: 'per-table', child: Text("Per Table (One Bill)")),
-                     DropdownMenuItem(value: 'per-seat', child: Text("Per Seat (Split Bill)")),
+                   decoration: const InputDecoration(border: OutlineInputBorder(borderRadius: AppRadius.borderMd), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0)),
+                  items: [
+                     DropdownMenuItem(value: 'per-table', child: Text(AppLocalizations.t(context, 'Per Table (One Bill)'))),
+                     DropdownMenuItem(value: 'per-seat', child: Text(AppLocalizations.t(context, 'Per Seat (Split Bill)'))),
                   ],
                   onChanged: (val) {
                      if (val != null) _updateTable(table, billingMode: val);
                   },
                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xxs),
                
                // SAVE BUTTON
                SizedBox(
@@ -727,11 +688,11 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                         }
                         
                         _updateTable(table, name: newName);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Table Saved")));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Table Saved'))));
                         setState(() => _selectedTableId = null); // Close panel? Or keep open? User said "Add save option", implying manual save.
                      },
-                     style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12)),
-                     child: const Text("Save Changes"),
+                                                                         style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: Theme.of(context).colorScheme.onPrimary, padding: const EdgeInsets.symmetric(vertical: 12)),
+                     child: Text(AppLocalizations.t(context, 'Save Changes')),
                   ),
                ),
                
@@ -747,7 +708,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                         elevation: 0
                      ),
                      icon: const Icon(Icons.delete_outline),
-                     label: const Text("Delete Table"),
+                     label: Text(AppLocalizations.t(context, 'Delete Table')),
                      onPressed: () {
                         provider.deleteTable(table.id);
                         setState(() => _selectedTableId = null);
@@ -827,41 +788,40 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             final isMobileDialog = MediaQuery.of(context).size.width < 800;
 
             return Dialog(
-               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-               insetPadding: isMobileDialog ? const EdgeInsets.all(16) : const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+               shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+               insetPadding: isMobileDialog ? const EdgeInsets.all(AppSpacing.md) : const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.lg),
                child: Container(
                   width: isMobileDialog ? MediaQuery.of(context).size.width : 900,
                   height: isMobileDialog ? MediaQuery.of(context).size.height : 700,
                   clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Theme.of(context).cardColor),
+                  decoration: BoxDecoration(borderRadius: AppRadius.borderLg, color: Theme.of(context).cardColor),
                   child: LayoutBuilder(
                      builder: (context, constraints) {
                         final isMobile = constraints.maxWidth < 800;
-                        
-                        final orderPanel = Container(
+                                               final orderPanel = Container(
                               color: Theme.of(context).scaffoldBackgroundColor,
                               child: Column(
                                  children: [
                                     // Header
                                     Container(
-                                       padding: const EdgeInsets.all(16),
-                                       decoration: BoxDecoration(color: Theme.of(context).cardColor, border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor))),
+                                       padding: const EdgeInsets.all(AppSpacing.lg),
+                                       decoration: BoxDecoration(color: Theme.of(context).cardColor, border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)))),
                                        child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [                                              Row(
                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                  children: [
-                                                    Text("Table ${table.name}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                                    Text("Table ${table.name}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
                                                     Row(
                                                       children: [                                                        if (billSelectedSeats.length > 1)
                                                           Padding(
-                                                            padding: const EdgeInsets.only(right: 8.0),
+                                                            padding: const EdgeInsets.only(right: AppSpacing.sm),
                                                             child: ElevatedButton.icon(
                                                               onPressed: () {
                                                                 // MERGE LOGIC: Group all items of selected seats into the primary seat's order
                                                                 setDialogState(() {
                                                                     final mainSeatIdx = billSelectedSeats.isNotEmpty ? billSelectedSeats.first : null;
-                                      if (mainSeatIdx == null) return;
+                                                                    if (mainSeatIdx == null) return;
                                                                     for (var i = 0; i < currentOrderItems.length; i++) {
                                                                        if (currentOrderItems[i].seatIndex != null && billSelectedSeats.contains(currentOrderItems[i].seatIndex)) {
                                                                            // Move item to the main seat
@@ -869,26 +829,27 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                        }
                                                                     }
                                                                     selectedSeatIndex = mainSeatIdx;
-                                                                    // Keep billSelectedSeats for payment/save context if needed, or clear?
-                                                                    // User said: "again click on merger to combine bill for selected seat"
                                                                 });
-                                                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Seats merged in draft")));
+                                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Seats merged in draft'))));
                                                               }, 
                                                               icon: const Icon(Icons.merge_type, size: 16),
-                                                              label: const Text("MERGE", style: TextStyle(fontSize: 12)),
+                                                              label: Text(AppLocalizations.t(context, 'MERGE'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                                               style: ElevatedButton.styleFrom(
                                                                 backgroundColor: AppColors.warning,
-                                                                foregroundColor: Colors.white,
-                                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                                                                minimumSize: const Size(0, 30)
+                                                                 foregroundColor: Colors.white,
+                                                                elevation: 0,
+                                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                                                                minimumSize: const Size(0, 36),
+                                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
                                                               ),
                                                             ),
                                                           ),
                                                         Container(
-                                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                                            decoration: BoxDecoration(
-                                                              color: table.status == 'Occupied' ? AppColors.error : AppColors.success,
-                                                              borderRadius: BorderRadius.circular(4)
+                                                              color: table.status == 'Occupied' ? AppColors.error.withValues(alpha: 0.1) : AppColors.success.withValues(alpha: 0.1),
+                                                              borderRadius: BorderRadius.circular(20),
+                                                              border: Border.all(color: table.status == 'Occupied' ? AppColors.error.withValues(alpha: 0.3) : AppColors.success.withValues(alpha: 0.3))
                                                            ),
                                                            child: Text(table.status, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: table.status == 'Occupied' ? AppColors.error : AppColors.success))
                                                         ),
@@ -897,28 +858,33 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                   ],
                                                ),
                                                if (table.seats.isNotEmpty) ...[
-                                                   const SizedBox(height: 8),
-                                                   const Text("Select Seat / Table:", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                                                   const SizedBox(height: 8),
+                                                   const SizedBox(height: AppSpacing.md),
+                                                   Text(AppLocalizations.t(context, 'Select Seat / Table:'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).textTheme.bodySmall?.color)),
+                                                   const SizedBox(height: AppSpacing.sm),
                                                    SingleChildScrollView(
                                                      scrollDirection: Axis.horizontal,
                                                      child: Row(
                                                        children: [
                                                          // WHOLE TABLE TILE
-                                                         GestureDetector(
-                                                           onTap: () => setDialogState(() {
-                                                              selectedSeatIndex = -1;
-                                                              billSelectedSeats.clear();
-                                                           }),
-                                                           child: Container(
-                                                             margin: const EdgeInsets.only(right: 8),
-                                                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                             decoration: BoxDecoration(
-                                                               color: selectedSeatIndex == -1 ? Theme.of(context).primaryColor : Theme.of(context).cardColor,
-                                                               border: Border.all(color: selectedSeatIndex == -1 ? Theme.of(context).primaryColor : Theme.of(context).dividerColor),
-                                                               borderRadius: BorderRadius.circular(20)
+                                                         Padding(
+                                                           padding: const EdgeInsets.only(right: AppSpacing.sm),
+                                                           child: ChoiceChip(
+                                                             label: Text(AppLocalizations.t(context, 'Whole Table')),
+                                                             selected: selectedSeatIndex == -1,
+                                                             onSelected: (val) {
+                                                               setDialogState(() {
+                                                                 selectedSeatIndex = -1;
+                                                                 billSelectedSeats.clear();
+                                                               });
+                                                             },
+                                                             selectedColor: Theme.of(context).primaryColor,
+                                                             labelStyle: TextStyle(
+                                                               color: selectedSeatIndex == -1 ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).textTheme.bodyLarge?.color,
+                                                               fontWeight: selectedSeatIndex == -1 ? FontWeight.bold : FontWeight.w500,
                                                              ),
-                                                             child: Text("Whole Table", style: TextStyle(color: selectedSeatIndex == -1 ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold)),
+                                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                             side: BorderSide(color: selectedSeatIndex == -1 ? Colors.transparent : Theme.of(context).dividerColor),
+                                                             showCheckmark: false,
                                                            ),
                                                          ),
                                                          // SEAT TILES
@@ -927,131 +893,168 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                            final isSel = selectedSeatIndex == i;
                                                            final isBillSelected = billSelectedSeats.contains(i);
                                                            
-                                                           return GestureDetector(
-                                                             onTap: () {
-                                                               setDialogState(() {
-                                                                 if (selectedSeatIndex == i) {
-                                                                    // Toggle bill selection for merging/payment
-                                                                    if (isBillSelected) {
-                                                                      billSelectedSeats.remove(i);
-                                                                    } else {
-                                                                      billSelectedSeats.add(i);
-                                                                    }
-                                                                 } else {
-                                                                   selectedSeatIndex = i;
-                                                                   // When switching seats, also include it in billSelected for potential merge/payment
-                                                                   if (!billSelectedSeats.contains(i)) {
-                                                                      billSelectedSeats.add(i);
-                                                                   }
-                                                                 }
-                                                               });
-                                                             },
-                                                             child: Container(
-                                                               margin: const EdgeInsets.only(right: 8),
-                                                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                               decoration: BoxDecoration(
-                                                                 color: isSel ? Theme.of(context).primaryColor : (isBillSelected ? Theme.of(context).primaryColor.withValues(alpha: 0.2) : Theme.of(context).cardColor),
-                                                                 border: Border.all(color: isSel ? Theme.of(context).primaryColor : (isBillSelected ? Theme.of(context).primaryColor : Theme.of(context).dividerColor)),
-                                                                 borderRadius: BorderRadius.circular(20)
-                                                               ),
-                                                               child: Row(
+                                                           return Padding(
+                                                             padding: const EdgeInsets.only(right: AppSpacing.sm),
+                                                             child: ChoiceChip(
+                                                               label: Row(
+                                                                 mainAxisSize: MainAxisSize.min,
                                                                  children: [
-                                                                   Text("Seat ${seat.number}", style: TextStyle(color: isSel ? Colors.white : (isBillSelected ? Theme.of(context).primaryColor : Theme.of(context).textTheme.bodyLarge?.color), fontWeight: (isBillSelected || isSel) ? FontWeight.bold : FontWeight.normal)),
+                                                                   Text("Seat ${seat.number}"),
                                                                    if (isBillSelected || isSel) ...[
-                                                                     const SizedBox(width: 4),
-                                                                     Icon(isSel ? Icons.radio_button_checked : Icons.check_circle, size: 12, color: isSel ? Colors.white : AppColors.primaryLight),
+                                                                     const SizedBox(width: AppSpacing.xs),
+                                                                     Icon(isSel ? Icons.radio_button_checked : Icons.check_circle, size: 14, color: isSel ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).primaryColor),
                                                                    ]
                                                                  ],
                                                                ),
+                                                               selected: isSel || isBillSelected,
+                                                               onSelected: (val) {
+                                                                 setDialogState(() {
+                                                                   if (selectedSeatIndex == i) {
+                                                                      if (isBillSelected) {
+                                                                         billSelectedSeats.remove(i);
+                                                                      } else {
+                                                                         billSelectedSeats.add(i);
+                                                                      }
+                                                                   } else {
+                                                                     selectedSeatIndex = i;
+                                                                     if (!billSelectedSeats.contains(i)) billSelectedSeats.add(i);
+                                                                   }
+                                                                 });
+                                                               },
+                                                               selectedColor: isSel ? Theme.of(context).primaryColor : Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                                                               labelStyle: TextStyle(
+                                                                 color: isSel ? Theme.of(context).colorScheme.onPrimary : (isBillSelected ? Theme.of(context).primaryColor : Theme.of(context).textTheme.bodyLarge?.color),
+                                                                 fontWeight: (isBillSelected || isSel) ? FontWeight.bold : FontWeight.w500,
+                                                               ),
+                                                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                               side: BorderSide(color: isSel || isBillSelected ? Colors.transparent : Theme.of(context).dividerColor),
+                                                               showCheckmark: false,
                                                              ),
                                                            );
                                                          }),
-
                                                        ],
                                                      ),
                                                    ),
-                                                   const SizedBox(height: 8),
-                                                   Text(selectedSeatIndex == -1 ? "Ordering for Whole Table" : "Ordering for Seat ${table.seats[selectedSeatIndex!].number}", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 10, fontStyle: FontStyle.italic)),
+                                                   const SizedBox(height: AppSpacing.md),
+                                                   Container(
+                                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                     decoration: BoxDecoration(color: Theme.of(context).primaryColor.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8)),
+                                                     child: Row(
+                                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                       children: [
+                                                         Text(selectedSeatIndex == -1 ? "Ordering for Whole Table" : "Ordering for Seat ${table.seats[selectedSeatIndex!].number}", style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 13, fontWeight: FontWeight.w600)),
+                                                         Text(existingOrder != null ? "Order #${existingOrder!.id.substring(0,6)}" : "New Order", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12, fontWeight: FontWeight.w500))
+                                                       ],
+                                                     ),
+                                                   ),
                                                 ],
-                                              const SizedBox(height: 4),
-                                              Text(existingOrder != null ? "Order #${existingOrder!.id.substring(0,6)}" : "New Order", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12))
-
                                           ],
                                        ),
                                     ),
                                     
                                     // List
                                     Expanded(
-                                       child: () {
-                                          final filteredItems = selectedSeatIndex == -1 
-                                             ? currentOrderItems 
-                                             : currentOrderItems.where((i) => i.seatIndex == selectedSeatIndex).toList();
-                                             
-                                          return filteredItems.isEmpty 
-                                             ? Center(child: Text(selectedSeatIndex == -1 ? "No items added" : "No items for Seat ${table.seats[selectedSeatIndex!].number}", style: TextStyle(color: AppColors.textSecondary(context)))) 
-                                             : ListView.builder(
-                                                padding: const EdgeInsets.all(8),
-                                                itemCount: filteredItems.length,
-                                                itemBuilder: (c, idx) {
-                                                   final orderItem = filteredItems[idx];
-                                                   // Find original index for removal
-                                                   final originalIdx = currentOrderItems.indexOf(orderItem);
-                                                   
-                                                   return Card(
-                                                      elevation: 0,
-                                                      margin: const EdgeInsets.only(bottom: 8),
-                                                      child: ListTile(
-                                                         title: Text(orderItem.item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                                         subtitle: Column(
-                                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                                            children: [
-                                                               Text("x${orderItem.quantity}  @ ${orderItem.item.price}"),
-                                                               if (orderItem.seatIndex != null)
-                                                                  Container(
-                                                                     margin: const EdgeInsets.only(top: 4),
-                                                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                                     decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(4)),
-                                                                     child: Text("Seat ${table.seats[orderItem.seatIndex!].number}", style: TextStyle(fontSize: 10, color: AppColors.primaryLight, fontWeight: FontWeight.bold))
-                                                                  )
-                                                            ],
+                                       child: Container(
+                                          color: Theme.of(context).scaffoldBackgroundColor,
+                                          child: () {
+                                             final filteredItems = selectedSeatIndex == -1 
+                                                ? currentOrderItems 
+                                                : currentOrderItems.where((i) => i.seatIndex == selectedSeatIndex).toList();
+                                                
+                                             return filteredItems.isEmpty 
+                                                ? Center(
+                                                    child: Column(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Container(
+                                                            padding: const EdgeInsets.all(24),
+                                                            decoration: BoxDecoration(color: Theme.of(context).cardColor, shape: BoxShape.circle),
+                                                            child: Icon(Icons.shopping_basket_outlined, size: 48, color: Theme.of(context).dividerColor),
+                                                        ),
+                                                        const SizedBox(height: AppSpacing.md),
+                                                        Text("No items added yet", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 16, fontWeight: FontWeight.w500)),
+                                                      ]
+                                                    )
+                                                  )
+                                                : ListView.builder(
+                                                   padding: const EdgeInsets.all(AppSpacing.md),
+                                                   itemCount: filteredItems.length,
+                                                   itemBuilder: (c, idx) {
+                                                      final orderItem = filteredItems[idx];
+                                                      // Find original index for removal
+                                                      final originalIdx = currentOrderItems.indexOf(orderItem);
+                                                      
+                                                      return Container(
+                                                         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                                                         decoration: BoxDecoration(
+                                                            color: Theme.of(context).cardColor,
+                                                            borderRadius: BorderRadius.circular(12),
+                                                            border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+                                                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))]
                                                          ),
-                                                         trailing: IconButton(
-                                                            icon: const Icon(Icons.remove_circle_outline, color: AppColors.error),
-                                                            onPressed: () {
-                                                               setDialogState(() {
-                                                                  if (orderItem.quantity > 1) {
-                                                                     currentOrderItems[originalIdx] = orderItem.copyWith(quantity: orderItem.quantity - 1);
-                                                                  } else {
-                                                                     currentOrderItems.removeAt(originalIdx);
-                                                                  }
-                                                               });
-                                                            },
+                                                         child: ListTile(
+                                                            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
+                                                            title: Text(orderItem.item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                                            subtitle: Padding(
+                                                              padding: const EdgeInsets.only(top: 4.0),
+                                                              child: Column(
+                                                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                                                 children: [
+                                                                    Text("x${orderItem.quantity}  @ ₹${orderItem.item.price}", style: TextStyle(color: AppColors.textSecondary(context), fontWeight: FontWeight.w500)),
+                                                                    if (orderItem.seatIndex != null)
+                                                                       Container(
+                                                                          margin: const EdgeInsets.only(top: AppSpacing.xs),
+                                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                                          decoration: BoxDecoration(color: Theme.of(context).primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                                                                          child: Text("Seat ${table.seats[orderItem.seatIndex!].number}", style: TextStyle(fontSize: 11, color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold))
+                                                                       )
+                                                                 ],
+                                                              ),
+                                                            ),
+                                                            trailing: Row(
+                                                              mainAxisSize: MainAxisSize.min,
+                                                              children: [
+                                                                Text("₹${(orderItem.quantity * orderItem.item.price).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                                                const SizedBox(width: AppSpacing.sm),
+                                                                IconButton(
+                                                                   icon: const Icon(Icons.remove_circle_outline, color: AppColors.error),
+                                                                   onPressed: () {
+                                                                      setDialogState(() {
+                                                                         if (orderItem.quantity > 1) {
+                                                                            currentOrderItems[originalIdx] = orderItem.copyWith(quantity: orderItem.quantity - 1);
+                                                                         } else {
+                                                                            currentOrderItems.removeAt(originalIdx);
+                                                                         }
+                                                                      });
+                                                                   },
+                                                                ),
+                                                              ]
+                                                            )
                                                          ),
-                                                      ),
-                                                   );
-                                                },
-                                             );
-                                       }()
+                                                      );
+                                                   },
+                                                );
+                                          }()
+                                       )
                                     ),
                                     
                                     // Footer Actions
                                     Container(
-                                       padding: const EdgeInsets.all(16),
-                                       decoration: BoxDecoration(color: Theme.of(context).cardColor, border: Border(top: BorderSide(color: Theme.of(context).dividerColor))),
+                                       padding: const EdgeInsets.all(AppSpacing.lg),
+                                       decoration: BoxDecoration(color: Theme.of(context).cardColor, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -4))]),
                                        child: Column(
                                           children: [
                                              Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 children: [
-                                                   const Text("Total:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                                   Text("₹${total.toStringAsFixed(2)}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).primaryColor)),
+                                                   Text(AppLocalizations.t(context, 'Total Amount:'), style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: AppColors.textSecondary(context))),
+                                                   Text("₹${total.toStringAsFixed(2)}", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24, color: Theme.of(context).primaryColor)),
                                                 ],
                                              ),
-                                             const SizedBox(height: 16),
-                                                                                         // Action Buttons
+                                             const SizedBox(height: AppSpacing.md),
+                                             // Action Buttons
                                              Row(
                                                 children: [
-                                                   // Checkout Options
                                                    Expanded(
                                                       child: Column(
                                                          children: [
@@ -1078,7 +1081,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                             }
                                                                             
                                                                             if (itemsToBill.isEmpty) {
-                                                                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No items for selected seat(s)")));
+                                                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'No items for selected seat(s)'))));
                                                                                 return;
                                                                             }
 
@@ -1142,11 +1145,11 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Cash Payment Received: ₹${totalBill.toStringAsFixed(2)}")));
                                                                           },
                                                                         icon: const Icon(Icons.money),
-                                                                        label: const Text("CASH"),
-                                                                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12)),
+                                                                        label: Text(AppLocalizations.t(context, 'CASH'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                                                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
                                                                      ),
                                                                   ),
-                                                                  const SizedBox(width: 8),
+                                                                  const SizedBox(width: AppSpacing.sm),
                                                                   Expanded(
                                                                      child: ElevatedButton.icon(
                                                                         onPressed: () async {
@@ -1168,7 +1171,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                            }
                                                                            
                                                                            if (itemsToBill.isEmpty) {
-                                                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No items for selected seat(s)")));
+                                                                               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'No items for selected seat(s)'))));
                                                                                return;
                                                                            }
 
@@ -1231,8 +1234,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("UPI Payment Received: ₹${totalBill.toStringAsFixed(2)}")));
                                                                         },
                                                                         icon: const Icon(Icons.qr_code_scanner),
-                                                                        label: const Text("UPI"),
-                                                                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryLight, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12)),
+                                                                        label: Text(AppLocalizations.t(context, 'UPI'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                                                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryLight, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
                                                                      ),
                                                                   ),
                                                                ],
@@ -1277,15 +1280,16 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                                store: dashboardProvider.activeStore,
                                                                                billerName: dashboardProvider.userProfile?.name ?? "Server"
                                                                             );
-                                                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("KOT Printed")));
+                                                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'KOT Printed'))));
                                                                          },
                                                                         icon: const Icon(Icons.print),
-                                                                        label: const Text("PRINT KOT"),
+                                                                        label: Text(AppLocalizations.t(context, 'PRINT KOT'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                                                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)))
                                                                      ),
                                                                   ),
-                                                                  const SizedBox(width: 8),
+                                                                  const SizedBox(width: AppSpacing.md),
                                                                   Expanded(
-                                                                     child: ElevatedButton(
+                                                                     child: ElevatedButton.icon(
                                                                         onPressed: () async {
                                                                            if (currentOrderItems.isEmpty) return;
 
@@ -1311,7 +1315,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                            }
 
                                                                            if (contextItems.isEmpty) {
-                                                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No items to save for the current selection")));
+                                                                               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'No items to save for the current selection'))));
                                                                                return;
                                                                            }
                                                                            
@@ -1350,32 +1354,33 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                               await dashboardProvider.updateOrder(newOrder);
                                                                            }
                                                                            Navigator.pop(ctx);
-                                                                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Order Saved & Updated")));
+                                                                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Order Saved & Updated'))));
                                                                         },
-                                                                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12)),
-                                                                        child: const Text("SAVE & KOT"),
+                                                                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
+                                                                        icon: const Icon(Icons.save),
+                                                                        label: Text(AppLocalizations.t(context, 'SAVE & KOT'), style: const TextStyle(fontWeight: FontWeight.bold)),
                                                                      ),
                                                                   ),
                                                                ],
                                                             ),
                                                             if (table.status.toLowerCase() == 'occupied') ...[
-                                                               const SizedBox(height: 8),
+                                                               const SizedBox(height: AppSpacing.sm),
                                                                TextButton.icon(
                                                                   onPressed: () {
                                                                      showDialog(context: context, builder: (dCtx) => AlertDialog(
-                                                                        title: const Text("Clear Table?"),
+                                                                        title: Text(AppLocalizations.t(context, 'Clear Table?')),
                                                                         actions: [
-                                                                           TextButton(onPressed: () => Navigator.pop(dCtx), child: const Text("Cancel")),
+                                                                           TextButton(onPressed: () => Navigator.pop(dCtx), child: Text(AppLocalizations.t(context, 'Cancel'))),
                                                                            TextButton(onPressed: () {
                                                                               tableProvider.clearTable(table.id);
                                                                               Navigator.pop(dCtx);
                                                                               Navigator.pop(ctx);
-                                                                           }, child: const Text("Clear", style: TextStyle(color: AppColors.error))),
+                                                                           }, child: Text(AppLocalizations.t(context, 'Clear'), style: const TextStyle(color: AppColors.error))),
                                                                         ],
                                                                      ));
                                                                   },
                                                                   icon: const Icon(Icons.cleaning_services, color: AppColors.error, size: 18),
-                                                                  label: const Text("FORCE CLEAR TABLE", style: TextStyle(color: AppColors.error, fontSize: 12)),
+                                                                  label: Text(AppLocalizations.t(context, 'FORCE CLEAR TABLE'), style: const TextStyle(color: AppColors.error, fontSize: 12)),
                                                                )
                                                             ]
                                                          ],
@@ -1391,55 +1396,65 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                         );
                         
                         final menuPanel = Container(
-                           color: Theme.of(context).cardColor,
+                           color: Theme.of(context).scaffoldBackgroundColor,
                            child: Column(
                               children: [
                                  // Search
-                                 Padding(
-                                    padding: const EdgeInsets.all(16),
+                                 Container(
+                                    color: Theme.of(context).cardColor,
+                                    padding: const EdgeInsets.all(AppSpacing.md),
                                     child: TextField(
                                        decoration: InputDecoration(
                                           hintText: "Search Menu...",
                                           prefixIcon: const Icon(Icons.search),
-                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                          contentPadding: const EdgeInsets.symmetric(horizontal: 16)
+                                          filled: true,
+                                          fillColor: Theme.of(context).scaffoldBackgroundColor,
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14)
                                        ),
                                        onChanged: (val) => setDialogState(() => searchQuery = val),
                                     ),
                                  ),
                                  
                                  // CATEGORY FILTERS (NEW)
-                                 SizedBox(
-                                    height: 40,
-                                    child: ListView.separated(
-                                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                                       scrollDirection: Axis.horizontal,
-                                       itemCount: categories.length,
-                                       separatorBuilder: (_, __) => const SizedBox(width: 8),
-                                       itemBuilder: (c, i) {
-                                          final cat = categories[i];
-                                          final isSel = selectedCategory == cat;
-                                          return ChoiceChip(
-                                             label: Text(cat),
-                                             selected: isSel,
-                                             onSelected: (val) => setDialogState(() => selectedCategory = cat),
-                                             selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
-                                             labelStyle: TextStyle(color: isSel ? Theme.of(context).primaryColor : Colors.black87, fontWeight: isSel ? FontWeight.bold : FontWeight.normal),
-                                          );
-                                       },
+                                 Container(
+                                    color: Theme.of(context).cardColor,
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                                    child: SizedBox(
+                                       height: 40,
+                                       child: ListView.separated(
+                                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: categories.length,
+                                          separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+                                          itemBuilder: (c, i) {
+                                             final cat = categories[i];
+                                             final isSel = selectedCategory == cat;
+                                             return ChoiceChip(
+                                                label: Text(cat),
+                                                selected: isSel,
+                                                onSelected: (val) => setDialogState(() => selectedCategory = cat),
+                                                selectedColor: Theme.of(context).primaryColor,
+                                                showCheckmark: false,
+                                                labelStyle: TextStyle(color: isSel ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color, fontWeight: isSel ? FontWeight.bold : FontWeight.w500),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                side: BorderSide(color: isSel ? Colors.transparent : Theme.of(context).dividerColor),
+                                             );
+                                          },
+                                       ),
                                     ),
                                  ),
-                                 const SizedBox(height: 8),
                                  
                                  // Grid
                                  Expanded(
                                     child: GridView.builder(
-                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                       padding: const EdgeInsets.all(AppSpacing.lg),
                                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                           crossAxisCount: 3, 
-                                          childAspectRatio: 0.8,
-                                          crossAxisSpacing: 12,
-                                          mainAxisSpacing: 12
+                                          childAspectRatio: 0.85,
+                                          crossAxisSpacing: 16,
+                                          mainAxisSpacing: 16
                                        ),
                                        itemCount: filteredMenu.length,
                                        itemBuilder: (c, i) {
@@ -1469,13 +1484,13 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                     }
                                                 });
                                              },
-                                             borderRadius: BorderRadius.circular(12),
+                                             borderRadius: AppRadius.borderMd,
                                              child: Container(
                                                 decoration: BoxDecoration(
-                                                   color: Colors.white,
-                                                   borderRadius: BorderRadius.circular(12),
-                                                   border: Border.all(color: inCartCount > 0 ? AppColors.success : AppColors.textSecondary(context), width: inCartCount > 0 ? 2 : 1),
-                                                   boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]
+                                                   color: Theme.of(context).cardColor,
+                                                   borderRadius: BorderRadius.circular(16),
+                                                   border: Border.all(color: inCartCount > 0 ? Theme.of(context).primaryColor : Theme.of(context).dividerColor.withValues(alpha: 0.5), width: inCartCount > 0 ? 2 : 1),
+                                                   boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 4))]
                                                 ),
                                                 child: Column(
                                                    crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1483,25 +1498,25 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                       Expanded(
                                                          child: Container(
                                                             decoration: BoxDecoration(
-                                                               color: AppColors.textSecondary(context),
-                                                               borderRadius: const BorderRadius.vertical(top: Radius.circular(12))
+                                                               color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
+                                                               borderRadius: const BorderRadius.vertical(top: Radius.circular(14))
                                                             ),
-                                                            child: Icon(Icons.fastfood, size: 40, color: AppColors.textSecondary(context)),
+                                                            child: Icon(Icons.fastfood, size: 40, color: Theme.of(context).primaryColor.withValues(alpha: 0.5)),
                                                          ),
                                                       ),
                                                       Padding(
-                                                         padding: const EdgeInsets.all(8.0),
+                                                         padding: const EdgeInsets.all(AppSpacing.md),
                                                          child: Column(
                                                             crossAxisAlignment: CrossAxisAlignment.start,
                                                             children: [
-                                                               Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                                               const SizedBox(height: 4),
+                                                               Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                                               const SizedBox(height: AppSpacing.xs),
                                                                Row(
                                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                                   children: [
-                                                                     Text("₹${item.price.toStringAsFixed(2)}", style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold)),
+                                                                     Text("₹${item.price.toStringAsFixed(2)}", style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
                                                                      if (inCartCount > 0) 
-                                                                        CircleAvatar(radius: 10, backgroundColor: AppColors.success, child: Text("$inCartCount", style: const TextStyle(color: Colors.white, fontSize: 10)))
+                                                                        CircleAvatar(radius: 12, backgroundColor: Theme.of(context).primaryColor, child: Text("$inCartCount", style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)))
                                                                   ],
                                                                )
                                                             ],
@@ -1526,9 +1541,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                     Row(
                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                        children: [
-                                          const Padding(
-                                             padding: EdgeInsets.only(left: 16.0),
-                                             child: Text("Quick Order", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                          Padding(
+                                             padding: const EdgeInsets.only(left: AppSpacing.md),
+                                             child: Text(AppLocalizations.t(context, 'Quick Order'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                           ),
                                           IconButton(
                                              icon: const Icon(Icons.close),
@@ -1536,10 +1551,10 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                           ),
                                        ]
                                     ),
-                                    const TabBar(
-                                       labelColor: Colors.black,
+                                    TabBar(
+                                                                      labelColor: Theme.of(context).textTheme.bodyLarge?.color,
                                        indicatorColor: AppColors.primaryLight,
-                                       tabs: [Tab(text: "Menu"), Tab(text: "Current Order")]
+                                       tabs: const [Tab(text: "Menu"), Tab(text: "Current Order")]
                                     ),
                                     Expanded(
                                        child: TabBarView(
@@ -1562,7 +1577,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                               Container(
                                  width: 50,
                                  alignment: Alignment.topCenter,
-                                 padding: const EdgeInsets.only(top: 16),
+                                 padding: const EdgeInsets.only(top: AppSpacing.md),
                                  child: IconButton(
                                     icon: const Icon(Icons.close),
                                     onPressed: () => Navigator.pop(ctx),
@@ -1599,21 +1614,21 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             final maxSeats = t?.seats.length ?? 1;
             
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text("Book a Table", style: TextStyle(fontWeight: FontWeight.bold)),
+              shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
+              title: Text(AppLocalizations.t(context, 'Book a Table'), style: const TextStyle(fontWeight: FontWeight.bold)),
               content: SizedBox(
                  width: 400,
                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                       const Text("Table", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                       const SizedBox(height: 8),
+                       Text(AppLocalizations.t(context, 'Table'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                       const SizedBox(height: AppSpacing.sm),
                        DropdownButtonFormField<String>(
                           value: selectedTable,
-                          decoration: InputDecoration(
-                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                             contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: const InputDecoration(
+                             border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
+                             contentPadding: EdgeInsets.symmetric(horizontal: 12),
                              hintText: "Select a table"
                           ),
                           items: tables.map((t) {
@@ -1640,13 +1655,13 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                              }
                           },
                        ),
-                       const SizedBox(height: 16),
+                       const SizedBox(height: AppSpacing.md),
                        
-                       const Text("Number of Seats", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                       const SizedBox(height: 8),
+                       Text(AppLocalizations.t(context, 'Number of Seats'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                       const SizedBox(height: AppSpacing.sm),
                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(border: Border.all(color: AppColors.textSecondary(context)), borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.xs),
+                          decoration: BoxDecoration(border: Border.all(color: AppColors.textSecondary(context)), borderRadius: AppRadius.borderSm),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -1666,10 +1681,10 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                             ],
                           ),
                        ),
-                       const SizedBox(height: 16),
+                       const SizedBox(height: AppSpacing.md),
                        
-                       const Text("Date", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                       const SizedBox(height: 8),
+                       Text(AppLocalizations.t(context, 'Date'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                       const SizedBox(height: AppSpacing.sm),
                        InkWell(
                           onTap: () async {
                              final picked = await showDatePicker(
@@ -1684,21 +1699,21 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                              decoration: BoxDecoration(
                                 border: Border.all(color: AppColors.textSecondary(context)), 
-                                borderRadius: BorderRadius.circular(8)
+                                borderRadius: AppRadius.borderSm
                              ),
                              child: Row(
                                 children: [
                                    const Icon(Icons.calendar_today, size: 16),
-                                   const SizedBox(width: 8),
+                                   const SizedBox(width: AppSpacing.sm),
                                    Text("${selectedDate.day}/${selectedDate.month}/${selectedDate.year}")
                                 ],
                              ),
                           ),
                        ),
-                       const SizedBox(height: 16),
+                       const SizedBox(height: AppSpacing.md),
                        
-                       const Text("Time", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                       const SizedBox(height: 8),
+                       Text(AppLocalizations.t(context, 'Time'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                       const SizedBox(height: AppSpacing.sm),
                        InkWell(
                           onTap: () async {
                              final picked = await showTimePicker(context: context, initialTime: selectedTime);
@@ -1708,18 +1723,18 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                              decoration: BoxDecoration(
                                 border: Border.all(color: AppColors.textSecondary(context)), 
-                                borderRadius: BorderRadius.circular(8)
+                                borderRadius: AppRadius.borderSm
                              ),
                              child: Row(
                                 children: [
                                    const Icon(Icons.access_time, size: 16),
-                                   const SizedBox(width: 8),
+                                   const SizedBox(width: AppSpacing.sm),
                                    Text(selectedTime.format(context))
                                 ],
                              ),
                           ),
                        ),
-                       const SizedBox(height: 24),
+                       const SizedBox(height: AppSpacing.lg),
                        
                        SizedBox(
                           width: double.infinity,
@@ -1737,16 +1752,16 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                       // Check if new booking is within 2 hours of the existing booking
                                       final difference = table.bookedTime!.difference(newBookedTime).inMinutes.abs();
                                       if (difference < 120) {
-                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                             content: Text("Table is already booked around this time. Please choose a different time or table."), 
+                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                             content: Text(AppLocalizations.t(context, 'Table is already booked around this time. Please choose a different time or table.')), 
                                              backgroundColor: AppColors.error
                                           ));
                                           return;
                                       }
                                    } else {
                                       // Legacy format or manual override reserving
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                         content: Text("Table is already booked. Clear existing booking first."), 
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                         content: Text(AppLocalizations.t(context, 'Table is already booked. Clear existing booking first.')), 
                                          backgroundColor: AppColors.error
                                       ));
                                       return;
@@ -1755,15 +1770,15 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
 
                                 provider.bookTable(selectedTable!, selectedDate, selectedTime, numberOfSeats);
                                 Navigator.pop(ctx);
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Table Marked as Reserved")));
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Table Marked as Reserved'))));
                              },
                              style: ElevatedButton.styleFrom(
                                 backgroundColor: Theme.of(context).primaryColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+                                                                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderMd)
                              ),
-                             child: const Text("Book Table"),
+                             child: Text(AppLocalizations.t(context, 'Book Table')),
                           ),
                        )
                     ],
@@ -1844,10 +1859,10 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   void _showAddFloorDialog() {
      final controller = TextEditingController();
      showDialog(context: context, builder: (ctx) => AlertDialog(
-        title: const Text("New Floor"),
+        title: Text(AppLocalizations.t(context, 'New Floor')),
         content: TextField(controller: controller, decoration: const InputDecoration(hintText: "E.g. Ground Floor")),
         actions: [
-           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
            TextButton(onPressed: () {
               if (controller.text.isNotEmpty) {
                  final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
@@ -1861,7 +1876,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                  setState(() => _selectedFloorId = newFloor.id); // Auto switch
                  Navigator.pop(ctx);
               }
-           }, child: const Text("Create")),
+           }, child: Text(AppLocalizations.t(context, 'Create'))),
         ],
      ));
   }
@@ -1869,7 +1884,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
    void _showEditFloorDialog(Floor floor) {
       final controller = TextEditingController(text: floor.name);
       showDialog(context: context, builder: (ctx) => AlertDialog(
-         title: const Text("Rename Floor"),
+         title: Text(AppLocalizations.t(context, 'Rename Floor')),
          content: TextField(controller: controller),
          actions: [
             TextButton(
@@ -1878,26 +1893,26 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   _deleteFloor(floor.id);
                }, 
                style: TextButton.styleFrom(foregroundColor: AppColors.error),
-               child: const Text("Delete Floor")
+               child: Text(AppLocalizations.t(context, 'Delete Floor'))
             ),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
             TextButton(onPressed: () {
                if (controller.text.isNotEmpty) {
                   final provider = Provider.of<TableProvider>(context, listen: false);
                   provider.updateFloor(Floor(id: floor.id, storeId: floor.storeId, name: controller.text.trim()));
                   Navigator.pop(ctx);
                }
-            }, child: const Text("Save")),
+            }, child: Text(AppLocalizations.t(context, 'Save'))),
          ],
       ));
    }
   
   void _deleteFloor(String floorId) {
      showDialog(context: context, builder: (ctx) => AlertDialog(
-        title: const Text("Delete Floor?"),
-        content: const Text("This will hide all tables on this floor. Are you sure?"),
+        title: Text(AppLocalizations.t(context, 'Delete Floor?')),
+        content: Text(AppLocalizations.t(context, 'This will hide all tables on this floor. Are you sure?')),
         actions: [
-           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
            TextButton(onPressed: () {
               final provider = Provider.of<TableProvider>(context, listen: false);
               provider.deleteFloor(floorId);
@@ -1905,7 +1920,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                  if (_selectedFloorId == floorId) _selectedFloorId = null;
               });
               Navigator.pop(ctx);
-           }, style: TextButton.styleFrom(foregroundColor: AppColors.error), child: const Text("Delete")),
+           }, style: TextButton.styleFrom(foregroundColor: AppColors.error), child: Text(AppLocalizations.t(context, 'Delete'))),
         ],
      ));
   }
@@ -1923,7 +1938,7 @@ class _AddTableButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         child: Column(
            mainAxisSize: MainAxisSize.min,
            children: [
@@ -2043,10 +2058,16 @@ class _PulsingChairState extends State<_PulsingChair> with SingleTickerProviderS
           width: widget.size,
           height: widget.size,
           decoration: BoxDecoration(
-             color: widget.isOccupied ? AppColors.error : AppColors.textSecondary(context),
+             color: widget.isOccupied ? AppColors.error : Theme.of(context).dividerColor.withValues(alpha: 0.5),
              shape: BoxShape.circle,
-             border: Border.all(color: Colors.white, width: 1.5),
-             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 2, offset: const Offset(0,1))]
+             border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2.5),
+             boxShadow: [
+               BoxShadow(
+                 color: Colors.black.withValues(alpha: 0.05),
+                 blurRadius: 4,
+                 offset: const Offset(0, 2),
+               )
+             ]
           ),
        );
     }
@@ -2138,5 +2159,7 @@ class _GridPainter extends CustomPainter {
       oldDelegate.cellHeight != cellHeight ||
       oldDelegate.color != color;
 }
+
+
 
 

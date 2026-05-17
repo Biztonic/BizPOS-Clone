@@ -4,6 +4,7 @@
 /// single-responsibility business operation.
 ///
 /// No infrastructure imports allowed.
+library;
 
 import 'package:biztonic_pos/core/base/use_case.dart';
 import '../entities/order_entity.dart';

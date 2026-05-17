@@ -1,4 +1,6 @@
-import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/design_system.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -7,10 +9,6 @@ import 'package:share_plus/share_plus.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
-import '../../core/design/density/app_density.dart';
-import '../../core/design/tokens/app_spacing.dart';
-import '../../core/design/tokens/app_typography.dart';
-import '../../core/design/components/atoms/app_button.dart';
 
 
 class StaffDashboardScreen extends StatefulWidget {
@@ -44,7 +42,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         
         return PosScaffold(
           appBar: AppBar(
-            title: const Text("Employee Management"),
+            title: Text(AppLocalizations.t(context, 'Employee Management')),
             actions: [
               IconButton(
                 icon: const Icon(Icons.shield_outlined),
@@ -80,7 +78,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                     ? const Center(child: CircularProgressIndicator())
                     : provider.employees.isEmpty
                         ? Center(
-                            child: Text("No employees found. Tap + to add staff.",
+                            child: Text(AppLocalizations.t(context, 'No employees found. Tap + to add staff.'),
                                 style: TextStyle(color: AppColors.textSecondary(context))))
                         : ListView.builder(
                             padding: EdgeInsets.symmetric(horizontal: density.cardPadding),
@@ -90,14 +88,13 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                               return Card(
                                 elevation: 0,
                                 margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(density.cardRadius)),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
                                 child: ListTile(
                                   leading: CircleAvatar(
                                       child: Text(emp.name.isNotEmpty ? emp.name[0] : '?')),
                                   title: Text(emp.name,
                                       style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
-                                  subtitle: Text("${emp.role} • ID: ${emp.employeeId ?? 'N/A'}",
+                                  subtitle: Text("${emp.role} â€¢ ID: ${emp.employeeId ?? 'N/A'}",
                                       style: AppTypography.bodySmall),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -130,7 +127,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _showEmployeeDialog(context, storeRoles: storeRoles),
             icon: const Icon(Icons.add),
-            label: const Text("Add Employee"),
+            label: Text(AppLocalizations.t(context, 'Add Employee')),
           ),
         );
       },
@@ -147,7 +144,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       padding: EdgeInsets.all(density.cardPadding),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surface(context) : Colors.white,
-        borderRadius: BorderRadius.circular(density.cardRadius),
+        borderRadius: AppRadius.borderLg,
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10,
               offset: const Offset(0, 4)),
@@ -171,17 +168,17 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     );
   }
 
-  // ─── Delete Confirmation ────────────────────────────
+  // â”€â”€â”€ Delete Confirmation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _confirmDeleteEmployee(BuildContext context, DashboardProvider provider, dynamic emp) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text("Delete Employee"),
+        title: Text(AppLocalizations.t(context, 'Delete Employee')),
         content: Text("Are you sure you want to remove ${emp.name}?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(AppLocalizations.t(context, 'Cancel'))),
           TextButton(onPressed: () => Navigator.pop(c, true),
-              child: const Text("Delete", style: TextStyle(color: AppColors.error))),
+              child: Text(AppLocalizations.t(context, 'Delete'), style: const TextStyle(color: AppColors.error))),
         ],
       ),
     );
@@ -193,7 +190,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     }
   }
 
-  // ─── Share Login Link Dialog ────────────────────────
+  // â”€â”€â”€ Share Login Link Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _showShareDialog(BuildContext context, StoreProvider storeProvider, dynamic emp) {
     final store = storeProvider.activeStore;
     final storeCode = store?.shortCode ?? store?.id ?? 'UNKNOWN';
@@ -211,22 +208,22 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         title: Row(
           children: [
             const Icon(Icons.link, color: AppColors.primaryLight),
-            const SizedBox(width: 8),
-            Expanded(child: Text("Share Link – ${emp.name}", overflow: TextOverflow.ellipsis)),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(child: Text("Share Link â€“ ${emp.name}", overflow: TextOverflow.ellipsis)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Share this link with the employee. They can open it on any device and log in with their 4-digit PIN.",
+            Text(AppLocalizations.t(context, 'Share this link with the employee. They can open it on any device and log in with their 4-digit PIN.'),
                 style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.primaryLight.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.borderMd,
                 border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2)),
               ),
               child: SelectableText(loginUrl,
@@ -237,13 +234,13 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("Close"),
+            child: Text(AppLocalizations.t(context, 'Close')),
           ),
           // Native Share button (works on mobile & desktop)
           if (!kIsWeb)
             ElevatedButton.icon(
               icon: const Icon(Icons.share, size: 18),
-              label: const Text("Share"),
+              label: Text(AppLocalizations.t(context, 'Share')),
               onPressed: () async {
                 final box = ctx.findRenderObject() as RenderBox?;
                 final sharePositionOrigin = box != null
@@ -261,11 +258,11 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             ),
           ElevatedButton.icon(
             icon: const Icon(Icons.copy, size: 18),
-            label: const Text("Copy Link"),
+            label: Text(AppLocalizations.t(context, 'Copy Link')),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: loginUrl));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Link copied to clipboard!")),
+                SnackBar(content: Text(AppLocalizations.t(context, 'Link copied to clipboard!'))),
               );
               Navigator.pop(ctx);
             },
@@ -275,7 +272,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     );
   }
 
-  // ─── Employee Create / Edit Dialog ──────────────────
+  // â”€â”€â”€ Employee Create / Edit Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _showEmployeeDialog(BuildContext context,
       {required List<String> storeRoles, dynamic employee}) {
     final nameController = TextEditingController(text: employee?.name ?? '');
@@ -314,12 +311,12 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                     onChanged: (v) => setState(() => roleController.text = v!),
                     decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
                       icon: const Icon(Icons.add, size: 16),
-                      label: const Text("Add Custom Role"),
+                      label: Text(AppLocalizations.t(context, 'Add Custom Role')),
                       onPressed: () => _showAddRoleDialog(context),
                     ),
                   ),
@@ -327,7 +324,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               ),
             ),
             actions: [
-              TextButton(onPressed: isSaving ? null : () => Navigator.pop(ctx), child: const Text("Cancel")),
+              TextButton(onPressed: isSaving ? null : () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
               ElevatedButton(
                 onPressed: isSaving ? null : () async {
                   if (employee == null && nameController.text.isEmpty) return;
@@ -350,7 +347,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   }
                   if (context.mounted) Navigator.pop(ctx);
                 },
-                child: isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Save"),
+                child: isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(AppLocalizations.t(context, 'Save')),
               ),
             ],
           );
@@ -359,13 +356,13 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     );
   }
 
-  // ─── Add Custom Role Dialog ─────────────────────────
+  // â”€â”€â”€ Add Custom Role Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _showAddRoleDialog(BuildContext context) {
     final controller = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Add Custom Role"),
+        title: Text(AppLocalizations.t(context, 'Add Custom Role')),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(labelText: "Role Name", border: OutlineInputBorder()),
@@ -373,7 +370,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
           ElevatedButton(
             onPressed: () async {
               final roleName = controller.text.trim();
@@ -386,20 +383,20 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               }
               if (ctx.mounted) Navigator.pop(ctx);
             },
-            child: const Text("Add"),
+            child: Text(AppLocalizations.t(context, 'Add')),
           ),
         ],
       ),
     );
   }
 
-  // ─── Add Custom Role Dialog (Generic) ──────────────
+  // â”€â”€â”€ Add Custom Role Dialog (Generic) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<String?> _showSimpleAddRoleDialog(BuildContext context) async {
     final controller = TextEditingController();
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Add New Role"),
+        title: Text(AppLocalizations.t(context, 'Add New Role')),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(labelText: "Role Name", border: OutlineInputBorder()),
@@ -407,17 +404,17 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text("Add"),
+            child: Text(AppLocalizations.t(context, 'Add')),
           ),
         ],
       ),
     );
   }
 
-  // ─── Role Permissions Editor (Full Screen Dialog) ───
+  // â”€â”€â”€ Role Permissions Editor (Full Screen Dialog) â”€â”€â”€
   void _showRolePermissionsEditor(
       BuildContext context, StoreProvider storeProvider, List<String> storeRoles) {
     // Work with local mutable copies
@@ -436,8 +433,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             title: Row(
               children: [
                 const Icon(Icons.shield, color: AppColors.primary),
-                const SizedBox(width: 8),
-                const Expanded(child: Text("Role Permissions")),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: Text(AppLocalizations.t(context, 'Role Permissions'))),
                 IconButton(
                   icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
                   tooltip: "Add New Role",
@@ -461,14 +458,14 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Define what each role can access in this store.",
+                    Text(AppLocalizations.t(context, 'Define what each role can access in this store.'),
                         style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.md),
                     if (localRoles.isEmpty)
                       Center(
                         child: Padding(
-                          padding: EdgeInsets.all(24.0),
-                          child: Text("No custom roles defined. Tap + to add one.",
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Text(AppLocalizations.t(context, 'No custom roles defined. Tap + to add one.'),
                               style: TextStyle(color: AppColors.textSecondary(context))),
                         ),
                       ),
@@ -489,16 +486,16 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
               ElevatedButton.icon(
                 icon: const Icon(Icons.save, size: 18),
-                label: const Text("Save All"),
+                label: Text(AppLocalizations.t(context, 'Save All')),
                 onPressed: () async {
                   await storeProvider.saveStoreRolesAndPermissions(localRoles, localPerms);
                   if (ctx.mounted) {
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Roles and permissions saved!")),
+                      SnackBar(content: Text(AppLocalizations.t(context, 'Roles and permissions saved!'))),
                     );
                   }
                 },
@@ -515,7 +512,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       {required VoidCallback onDelete}) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: AppColors.primary.withValues(alpha: 0.1),
@@ -555,3 +552,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     );
   }
 }
+
+
+
+
+

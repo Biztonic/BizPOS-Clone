@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../tokens/app_spacing.dart';
 import '../atoms/app_button.dart';
 
@@ -27,9 +27,7 @@ class AppDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.0),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       elevation: 8,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400),
@@ -122,3 +120,7 @@ class AppDialog extends StatelessWidget {
     );
   }
 }
+
+
+
+

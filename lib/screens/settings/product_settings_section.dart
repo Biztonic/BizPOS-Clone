@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/store/providers/store_notifier.dart';
 import 'manage_string_list_screen.dart';
 import '../../widgets/feature_guard.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
-import '../../core/design/density/app_density.dart';
 import '../../core/design/tokens/app_spacing.dart';
 import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/components/atoms/app_card.dart';
 import '../../core/design/tokens/app_colors.dart';
 
 class ProductSettingsSection extends ConsumerStatefulWidget {
-  const ProductSettingsSection({super.key});
+  final bool isSubView;
+  const ProductSettingsSection({super.key, this.isSubView = false});
   @override
   ConsumerState<ProductSettingsSection> createState() => _ProductSettingsSectionState();
 }
@@ -36,7 +38,7 @@ class _ProductSettingsSectionState extends ConsumerState<ProductSettingsSection>
   Widget build(BuildContext context) {
     final storeState = ref.watch(storeNotifierProvider);
     final store = storeState.activeStore;
-    if (store == null) return const SizedBox();
+    if (store == null) return const Center(child: CircularProgressIndicator());
 
     return FutureBuilder<Map<String, dynamic>>(
       future: ref.read(storeNotifierProvider.notifier).fetchStoreTypeConfigs(),
@@ -49,76 +51,81 @@ class _ProductSettingsSectionState extends ConsumerState<ProductSettingsSection>
         final showVariants = config['enableVariants'] == true;
         const showUnits = true;
 
+        final content = ListView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          children: [
+            Text(AppLocalizations.t(context, 'Inventory Tracking'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: AppSpacing.md),
+            AppCard(
+              padding: EdgeInsets.zero,
+              child: FeatureGuard(
+                featureKey: 'settings.products.inventory',
+                lockedChild: Opacity(
+                  opacity: 0.5, 
+                  child: IgnorePointer(
+                    child: SwitchListTile(
+                      title: Text(AppLocalizations.t(context, 'Track Inventory Stock'), style: AppTypography.bodyLarge), 
+                      value: _trackInventory, 
+                      onChanged: (v){}
+                    )
+                  )
+                ), 
+                child: SwitchListTile(
+                  title: Text(AppLocalizations.t(context, 'Track Inventory Stock'), style: AppTypography.bodyLarge),
+                  subtitle: Text(AppLocalizations.t(context, 'Prevent sales when stock is unavailable'), style: AppTypography.bodySmall),
+                  value: _trackInventory,
+                  onChanged: (val) async {
+                     setState(() => _trackInventory = val);
+                     final updatedStore = store.copyWith(trackInventory: val);
+                     await ref.read(storeNotifierProvider.notifier).updateStoreSettings(updatedStore);
+                  },
+                ),
+              ),
+            ),
+
+            const SizedBox(height: AppSpacing.xl),
+            Text(AppLocalizations.t(context, 'Catalog Metadata'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: AppSpacing.md),
+            
+            if (showUnits)
+              FeatureGuard(
+                 featureKey: 'settings.products.units',
+                 lockedChild: const SizedBox.shrink(),
+                 child: _buildConfigTile(context, "Manage Units", Icons.scale, "product_units", "e.g. kg, pcs, ltr")
+              ),
+            if (showUnits) const SizedBox(height: AppSpacing.sm),
+
+            if (showDietary)
+              FeatureGuard(
+                 featureKey: 'settings.products.dietary',
+                 lockedChild: const SizedBox.shrink(),
+                 child: _buildConfigTile(context, "Dietary Types", Icons.restaurant_menu, "dietary_types", "e.g. Veg, Non-Veg, Vegan")
+              ),
+             if (showDietary) const SizedBox(height: AppSpacing.sm),
+             
+             if (showPackaging)
+             FeatureGuard(
+                featureKey: 'settings.products.packaging',
+                lockedChild: const SizedBox.shrink(),
+                child: _buildConfigTile(context, "Packaging Types", Icons.inventory_2_outlined, "packaging_types", "e.g. Box, Pouch, Bottle")
+             ),
+            if (showPackaging) const SizedBox(height: AppSpacing.sm),
+
+            if (showVariants)
+            FeatureGuard(
+               featureKey: 'settings.products.variants',
+               lockedChild: const SizedBox.shrink(),
+               child: _buildConfigTile(context, "Product Categories", Icons.category, "variant_types", "e.g. Snacks, Drinks, Retail")
+            ),
+          ],
+        );
+
+        if (widget.isSubView) return content;
+
         return PosScaffold(
           title: "Product Settings",
-          mainContent: ListView(
-            padding: EdgeInsets.all(AppSpacing.lg),
-            children: [
-              Text('Inventory Tracking', style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: AppSpacing.md),
-              AppCard(
-                padding: EdgeInsets.zero,
-                child: FeatureGuard(
-                  featureKey: 'settings.products.inventory',
-                  lockedChild: Opacity(
-                    opacity: 0.5, 
-                    child: IgnorePointer(
-                      child: SwitchListTile(
-                        title: const Text('Track Inventory Stock', style: AppTypography.bodyLarge), 
-                        value: _trackInventory, 
-                        onChanged: (v){}
-                      )
-                    )
-                  ), 
-                  child: SwitchListTile(
-                    title: const Text('Track Inventory Stock', style: AppTypography.bodyLarge),
-                    subtitle: const Text('Prevent sales when stock is unavailable', style: AppTypography.bodySmall),
-                    value: _trackInventory,
-                    onChanged: (val) async {
-                       setState(() => _trackInventory = val);
-                       final updatedStore = store.copyWith(trackInventory: val);
-                       await ref.read(storeNotifierProvider.notifier).updateStoreSettings(updatedStore);
-                    },
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: AppSpacing.xl),
-              Text("Catalog Metadata", style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: AppSpacing.md),
-              
-              if (showUnits)
-                FeatureGuard(
-                   featureKey: 'settings.products.units',
-                   lockedChild: const SizedBox.shrink(),
-                   child: _buildConfigTile(context, "Manage Units", Icons.scale, "product_units", "e.g. kg, pcs, ltr")
-                ),
-              if (showUnits) const SizedBox(height: AppSpacing.sm),
-
-              if (showDietary)
-                FeatureGuard(
-                   featureKey: 'settings.products.dietary',
-                   lockedChild: const SizedBox.shrink(),
-                   child: _buildConfigTile(context, "Dietary Types", Icons.restaurant_menu, "dietary_types", "e.g. Veg, Non-Veg, Vegan")
-                ),
-               if (showDietary) const SizedBox(height: AppSpacing.sm),
-               
-               if (showPackaging)
-               FeatureGuard(
-                  featureKey: 'settings.products.packaging',
-                  lockedChild: const SizedBox.shrink(),
-                  child: _buildConfigTile(context, "Packaging Types", Icons.inventory_2_outlined, "packaging_types", "e.g. Box, Pouch, Bottle")
-               ),
-              if (showPackaging) const SizedBox(height: AppSpacing.sm),
-
-              if (showVariants)
-              FeatureGuard(
-                 featureKey: 'settings.products.variants',
-                 lockedChild: const SizedBox.shrink(),
-                 child: _buildConfigTile(context, "Product Categories", Icons.category, "variant_types", "e.g. Snacks, Drinks, Retail")
-              ),
-            ],
-          ),
+          showSidebar: false,
+          mainContent: content,
         );
       }
     );
@@ -132,7 +139,7 @@ class _ProductSettingsSectionState extends ConsumerState<ProductSettingsSection>
           padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
+            shape: BoxShape.rectangle,
           ),
           child: Icon(icon, color: AppColors.primary, size: 20),
         ),
@@ -148,3 +155,4 @@ class _ProductSettingsSectionState extends ConsumerState<ProductSettingsSection>
     );
   }
 }
+

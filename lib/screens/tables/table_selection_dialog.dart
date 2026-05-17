@@ -1,4 +1,8 @@
-import '../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import '../../core/design/design_system.dart';
+import '../../core/design/components/atoms/app_button.dart';
+
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -39,9 +43,9 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
+      insetPadding: const EdgeInsets.all(AppSpacing.lg),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: AppRadius.borderLg,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Container(
@@ -49,7 +53,7 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
             height: 700,
             decoration: BoxDecoration(
               color: Colors.white.withAlpha((0.85 * 255).toInt()),
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: AppRadius.borderLg,
               border: Border.all(color: Colors.white.withAlpha((0.3 * 255).toInt()), width: 1.5),
               boxShadow: [
                 BoxShadow(
@@ -63,7 +67,7 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
               children: [
                 // Header
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xxs),
                   decoration: BoxDecoration(
                     border: Border(bottom: BorderSide(color: AppColors.textSecondary(context).withAlpha((0.1 * 255).toInt()))),
                   ),
@@ -73,17 +77,15 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Select Table",
-                            style: TextStyle(
+                          Text(AppLocalizations.t(context, 'Select Table'),
+                            style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF1A1A1A),
                               letterSpacing: -0.5,
                             ),
                           ),
-                          Text(
-                            "Choose an available table to begin",
+                          Text(AppLocalizations.t(context, 'Choose an available table to begin'),
                             style: TextStyle(
                               fontSize: 13,
                               color: AppColors.textSecondary(context),
@@ -117,22 +119,22 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                         child: ListView.separated(
                           padding: const EdgeInsets.all(12),
                           itemCount: floors.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                           itemBuilder: (context, index) {
                             final floor = floors[index];
                             final isSelected = floor.id == _selectedFloorId;
                             return InkWell(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: AppRadius.borderMd,
                               onTap: () => setState(() {
                                 _selectedFloorId = floor.id;
                                 _selectedTableId = null;
                               }),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
                                 decoration: BoxDecoration(
                                   color: isSelected ? AppColors.primaryLight : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: AppRadius.borderMd,
                                   boxShadow: isSelected
                                       ? [
                                           BoxShadow(
@@ -197,7 +199,7 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
 
                 // Footer
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border(top: BorderSide(color: AppColors.textSecondary(context).withAlpha((0.1 * 255).toInt()))),
@@ -205,32 +207,20 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                        ),
+                      AppButton.ghost(
+                        label: AppLocalizations.t(context, 'Cancel'),
                         onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          "Cancel",
-                          style: TextStyle(color: AppColors.textSecondary(context), fontWeight: FontWeight.w600),
-                        ),
+                        foregroundColor: AppColors.textSecondary(context),
                       ),
-                      const SizedBox(width: 16),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E1E1E),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
+                      const SizedBox(width: AppSpacing.md),
+                      AppButton(
+                        label: AppLocalizations.t(context, 'Confirm Selection'),
                         onPressed: _selectedTableId != null
                             ? () {
                                 final table = tableProvider.tables.firstWhere((t) => t.id == _selectedTableId);
                                 Navigator.pop(context, table);
                               }
                             : null,
-                        child: const Text("Confirm Selection", style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
                     ],
                   ),
@@ -284,8 +274,8 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                 ],
               ),
               borderRadius: table.shape == 'rectangular' || table.shape == 'square'
-                  ? BorderRadius.circular(16)
-                  : BorderRadius.circular(100),
+                  ? AppRadius.borderMd
+                  : AppRadius.borderXl,
               boxShadow: [
                 BoxShadow(
                   color: baseColor.withAlpha((0.3 * 255).toInt()),
@@ -324,8 +314,8 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                         ],
                       ),
                       borderRadius: table.shape == 'rectangular' || table.shape == 'square'
-                          ? const BorderRadius.vertical(top: Radius.circular(16))
-                          : const BorderRadius.vertical(top: Radius.circular(100)),
+                          ? const BorderRadius.vertical(top: Radius.circular(AppRadius.md))
+                          : const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
                     ),
                   ),
                 ),
@@ -342,12 +332,12 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                           shadows: [Shadow(color: Colors.black26, offset: Offset(0, 1), blurRadius: 2)],
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.xxs),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
                         decoration: BoxDecoration(
                           color: Colors.black.withAlpha((0.1 * 255).toInt()),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: AppRadius.borderSm,
                         ),
                         child: Text(
                           table.status,
@@ -369,3 +359,7 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
     );
   }
 }
+
+
+
+

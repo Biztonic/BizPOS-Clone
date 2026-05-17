@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/store_provider.dart';
 import '../../models/role_model.dart';
@@ -53,31 +55,33 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
 
     if (rolesToDelete.isEmpty) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Delete Selected Roles"),
+        title: Text(AppLocalizations.t(context, 'Delete Selected Roles')),
         content: Text("Are you sure you want to delete ${rolesToDelete.length} roles? This action cannot be undone."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'Cancel'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text("Delete"),
+            child: Text(AppLocalizations.t(context, 'Delete')),
           ),
         ],
       ),
     );
 
+
     if (confirm == true) {
       for (final id in rolesToDelete) {
          await provider.deleteRole(id);
       }
-      setState(() {
-        _selectedRoleIds.clear();
-      });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        setState(() {
+          _selectedRoleIds.clear();
+        });
+        messenger.showSnackBar(
           SnackBar(content: Text("${rolesToDelete.length} roles deleted successfully"))
         );
       }
@@ -130,10 +134,10 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                   controller: nameController,
                   decoration: const InputDecoration(labelText: 'Role Name'),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 // Permissions UI removed as requested
                 /*
-                const Text('Permissions', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(AppLocalizations.t(context, 'Permissions'), style: TextStyle(fontWeight: FontWeight.bold)),
                 const Divider(),
                 ...permissions.keys.map((key) {
                   return CheckboxListTile(
@@ -153,31 +157,32 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
             if (isEditing && role.id != 'super_admin' && role.name != 'Store Owner')
               TextButton(
                 onPressed: () async {
+                  final provider = Provider.of<StoreProvider>(context, listen: false);
                   final confirm = await showDialog(
                     context: context, 
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Delete Role?'),
-                      content: const Text('This action cannot be undone.'),
+                    builder: (deleteCtx) => AlertDialog(
+                      title: Text(AppLocalizations.t(context, 'Delete Role?')),
+                      content: Text(AppLocalizations.t(context, 'This action cannot be undone.')),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: AppColors.error))),
+                        TextButton(onPressed: () => Navigator.pop(deleteCtx, false), child: Text(AppLocalizations.t(context, 'Cancel'))),
+                        TextButton(onPressed: () => Navigator.pop(deleteCtx, true), child: Text(AppLocalizations.t(context, 'Delete'), style: const TextStyle(color: AppColors.error))),
                       ],
                     )
                   );
                   if (confirm == true) {
-                     final provider = Provider.of<StoreProvider>(context, listen: false);
                      await provider.deleteRole(role.id);
-                     if (mounted) Navigator.pop(ctx); // Close Edit Dialog
+                     if (ctx.mounted) Navigator.pop(ctx); // Close Edit Dialog
                   }
                 },
-                child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+                child: Text(AppLocalizations.t(context, 'Delete'), style: const TextStyle(color: AppColors.error)),
               ),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
             ElevatedButton(
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) return;
 
                 final provider = Provider.of<StoreProvider>(context, listen: false);
+                final messenger = ScaffoldMessenger.of(context);
                 try {
                   final newRole = RoleModel(
                     id: isEditing ? role.id : '', 
@@ -193,9 +198,11 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                     // Default permissions for new roles
                     await provider.addRole(newRole);
                   }
-                  if (mounted) Navigator.pop(ctx);
+                  if (ctx.mounted) Navigator.pop(ctx);
                 } catch (e) {
-                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                   if (mounted) {
+                     messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
+                   }
                 }
               },
               child: Text(isEditing ? 'Save' : 'Create'),
@@ -254,7 +261,7 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: const Icon(Icons.shield, color: AppColors.primary, size: 28),
                     ),
@@ -262,11 +269,10 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "Total Roles",
+                        Text(AppLocalizations.t(context, 'Total Roles'),
                           style: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary(context)),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         Text("$total", style: AppTypography.headlineMedium),
                       ],
                     )
@@ -284,7 +290,7 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: const Icon(Icons.lock, color: AppColors.primary, size: 28),
                     ),
@@ -292,11 +298,10 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "System Roles",
+                        Text(AppLocalizations.t(context, 'System Roles'),
                           style: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary(context)),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         Text("$system", style: AppTypography.headlineMedium),
                       ],
                     )
@@ -314,7 +319,7 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
                         color: AppColors.success.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: const Icon(Icons.person_outline, color: AppColors.success, size: 28),
                     ),
@@ -322,11 +327,10 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "Custom Roles",
+                        Text(AppLocalizations.t(context, 'Custom Roles'),
                           style: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary(context)),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         Text("$custom", style: AppTypography.headlineMedium),
                       ],
                     )
@@ -382,15 +386,15 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                       decoration: BoxDecoration(
                         border: Border.all(color: Theme.of(context).dividerColor),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _filterType,
-                          items: const [
-                            DropdownMenuItem(value: 'All', child: Text("All Types", style: AppTypography.bodyMedium)),
-                            DropdownMenuItem(value: 'System', child: Text("System Only", style: AppTypography.bodyMedium)),
-                            DropdownMenuItem(value: 'Custom', child: Text("Custom Only", style: AppTypography.bodyMedium)),
+                          items: [
+                            DropdownMenuItem(value: 'All', child: Text(AppLocalizations.t(context, 'All Types'), style: AppTypography.bodyMedium)),
+                            DropdownMenuItem(value: 'System', child: Text(AppLocalizations.t(context, 'System Only'), style: AppTypography.bodyMedium)),
+                            DropdownMenuItem(value: 'Custom', child: Text(AppLocalizations.t(context, 'Custom Only'), style: AppTypography.bodyMedium)),
                           ],
                           onChanged: (v) => setState(() => _filterType = v!),
                         ),
@@ -411,9 +415,9 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                         onChanged: (val) => _toggleSelectAll(displayedRoles),
                       ),
                       const SizedBox(width: AppSpacing.md),
-                      Expanded(flex: 3, child: Text("ROLE NAME", style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)))),
-                      Expanded(flex: 4, child: Text("PERMISSIONS", style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)))),
-                      Expanded(flex: 2, child: Text("TYPE", style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)))),
+                      Expanded(flex: 3, child: Text(AppLocalizations.t(context, 'ROLE NAME'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)))),
+                      Expanded(flex: 4, child: Text(AppLocalizations.t(context, 'PERMISSIONS'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)))),
+                      Expanded(flex: 2, child: Text(AppLocalizations.t(context, 'TYPE'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)))),
                       const SizedBox(width: 100),
                     ],
                   ),
@@ -422,7 +426,7 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
               displayedRoles.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.all(AppSpacing.xxl),
-                    child: Center(child: Text("No roles found", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))),
+                    child: Center(child: Text(AppLocalizations.t(context, 'No roles found'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))),
                   )
                 : ListView.separated(
                     shrinkWrap: true,
@@ -496,7 +500,7 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                   width: 40, height: 40,
                   decoration: BoxDecoration(
                     color: (role.isSystem ? AppColors.primary : AppColors.success).withValues(alpha: 0.1), 
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Icon(
                     role.isSystem ? Icons.lock : Icons.person_outline, 
@@ -523,10 +527,10 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
                   color: (role.isSystem ? AppColors.primary : AppColors.success).withValues(alpha: 0.1), 
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.zero,
                 ),
                 child: Text(
                   role.isSystem ? 'SYSTEM' : 'CUSTOM', 
@@ -565,13 +569,13 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
     final confirm = await showDialog<bool>(
       context: context, 
       builder: (ctx) => AlertDialog(
-        title: Text('Delete Role?', style: AppTypography.titleLarge),
+        title: Text(AppLocalizations.t(context, 'Delete Role?'), style: AppTypography.titleLarge),
         content: Text('Are you sure you want to delete "${role.name}"? This action cannot be undone.', style: AppTypography.bodyMedium),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: AppTypography.bodyMedium)),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'Cancel'), style: AppTypography.bodyMedium)),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true), 
-            child: Text('Delete', style: AppTypography.bodyMedium.copyWith(color: AppColors.error)),
+            child: Text(AppLocalizations.t(context, 'Delete'), style: AppTypography.bodyMedium.copyWith(color: AppColors.error)),
           ),
         ],
       ),
@@ -581,3 +585,6 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
     }
   }
 }
+
+
+

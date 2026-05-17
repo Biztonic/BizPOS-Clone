@@ -1,19 +1,18 @@
-// ignore_for_file: dead_null_aware_expression, use_build_context_synchronously
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:provider/provider.dart';
-import '../../providers/dashboard_provider.dart';
-import '../../models/user_profile.dart';
-import '../../models/store.dart';
 import 'package:go_router/go_router.dart';
-import '../../models/franchise.dart';
-import '../../providers/auth_provider.dart';
-import '../../widgets/feature_guard.dart';
-import '../../core/design/layouts/pos_scaffold.dart';
-import '../../core/design/components/atoms/app_button.dart';
-import '../../core/design/tokens/app_spacing.dart';
-import '../../core/design/tokens/app_typography.dart';
-import '../../core/design/tokens/app_colors.dart';
-import '../../core/design/components/atoms/app_card.dart';
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+import 'package:biztonic_pos/core/design/tokens/app_typography.dart';
+import 'package:biztonic_pos/core/design/components/atoms/app_button.dart';
+import 'package:biztonic_pos/core/design/components/atoms/app_card.dart';
+import 'package:biztonic_pos/core/design/layouts/pos_scaffold.dart';
+import 'package:biztonic_pos/core/design/components/organisms/pos_data_table.dart';
+import 'package:biztonic_pos/widgets/feature_guard.dart';
+import '../../providers/dashboard_provider.dart';
+import '../../models/store.dart';
 
 class StoreManagementScreen extends StatefulWidget {
   const StoreManagementScreen({super.key});
@@ -23,20 +22,10 @@ class StoreManagementScreen extends StatefulWidget {
 }
 
 class _StoreManagementScreenState extends State<StoreManagementScreen> {
-  final _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   String _filterStatus = 'All';
   final Set<String> _selectedStoreIds = {};
   bool _isBulkDeleting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Fetch all stores when screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<DashboardProvider>(context, listen: false);
-      provider.fetchStores();
-    });
-  }
 
   @override
   void dispose() {
@@ -50,10 +39,10 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
 
     // Filter Logic
     List<Store> displayedStores = provider.stores.where((s) {
-       bool matchesSearch = s.name.toLowerCase().contains(_searchController.text.toLowerCase()) || 
-                            s.owner.toLowerCase().contains(_searchController.text.toLowerCase());
-       bool matchesStatus = _filterStatus == 'All' || s.status == _filterStatus;
-       return matchesSearch && matchesStatus;
+      bool matchesSearch = s.name.toLowerCase().contains(_searchController.text.toLowerCase()) || 
+                           s.owner.toLowerCase().contains(_searchController.text.toLowerCase());
+      bool matchesStatus = _filterStatus == 'All' || s.status == _filterStatus;
+      return matchesSearch && matchesStatus;
     }).toList();
 
     return PosScaffold(
@@ -90,580 +79,293 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (MediaQuery.of(context).size.width > 800) ...[
-              _buildStatsRow(provider),
-              const SizedBox(height: AppSpacing.xl),
-            ],
-            _buildMainContent(context, provider, displayedStores),
+            _buildStatsRow(provider),
+            const SizedBox(height: AppSpacing.xl),
+            AppCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Toolbar
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: displayedStores.isNotEmpty && _selectedStoreIds.length == displayedStores.length,
+                          tristate: _selectedStoreIds.isNotEmpty && _selectedStoreIds.length < displayedStores.length,
+                          onChanged: (val) {
+                            setState(() {
+                              if (val == true) {
+                                _selectedStoreIds.addAll(displayedStores.map((s) => s.id));
+                              } else {
+                                _selectedStoreIds.clear();
+                              }
+                            });
+                          },
+                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (v) => setState(() {}),
+                            decoration: const InputDecoration(
+                              hintText: "Search by name or owner...",
+                              prefixIcon: Icon(Icons.search),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                              contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Theme.of(context).dividerColor),
+                            borderRadius: BorderRadius.zero,
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _filterStatus,
+                              items: [
+                                DropdownMenuItem(value: 'All', child: Text(AppLocalizations.t(context, 'All Status'))),
+                                DropdownMenuItem(value: 'Active', child: Text(AppLocalizations.t(context, 'Active'))),
+                                DropdownMenuItem(value: 'Inactive', child: Text(AppLocalizations.t(context, 'Inactive'))),
+                              ],
+                              onChanged: (v) => setState(() => _filterStatus = v!),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  if (displayedStores.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      child: Center(child: Text(AppLocalizations.t(context, 'No stores found'))),
+                    )
+                  else
+                    PosDataTable(
+                      columns: const [
+                        PosDataColumn(label: 'Store Name'),
+                        PosDataColumn(label: 'Owner'),
+                        PosDataColumn(label: 'Status', fixedWidth: 120),
+                        PosDataColumn(label: 'Actions', fixedWidth: 120),
+                      ],
+                      rows: displayedStores.map((store) {
+                      return PosDataRow(
+                        selected: _selectedStoreIds.contains(store.id),
+                        onTap: () {
+                          setState(() {
+                            if (_selectedStoreIds.contains(store.id)) {
+                              _selectedStoreIds.remove(store.id);
+                            } else {
+                              _selectedStoreIds.add(store.id);
+                            }
+                          });
+                        },
+                        cells: [
+                          Text(store.name, style: AppTypography.titleSmall),
+                          Text(store.owner, style: AppTypography.bodyMedium),
+                          _buildStatusBadge(context, provider, store),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 20),
+                                onPressed: () => _handleAction(context, provider, store, 'edit'),
+                                tooltip: 'Edit Store',
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete_outline, size: 20, color: AppColors.adaptiveError(context)),
+                                onPressed: () => _confirmDelete(context, provider, store),
+                                tooltip: 'Delete Store',
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-// Header and actions are handled by PosScaffold title and actions parameters
+  Widget _buildStatsRow(DashboardProvider provider) {
+    final total = provider.stores.length;
+    final active = provider.stores.where((s) => s.status == 'Active').length;
+    final inactive = total - active;
 
+    return Row(
+      children: [
+        Expanded(child: _buildStatCard(context, "Total Stores", "$total", Icons.store_outlined, AppColors.adaptivePrimary(context))),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(child: _buildStatCard(context, "Active", "$active", Icons.check_circle_outline, AppColors.adaptiveSuccess(context))),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(child: _buildStatCard(context, "Inactive", "$inactive", Icons.pause_circle_outline, AppColors.adaptiveWarning(context))),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, Color color) {
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.zero,
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppTypography.labelMedium.copyWith(color: AppColors.textSecondary(context))),
+              Text(value, style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(BuildContext context, DashboardProvider provider, Store store) {
+    final status = store.status;
+    Color color;
+    switch (status) {
+      case 'Active':
+        color = AppColors.adaptiveSuccess(context);
+        break;
+      case 'Inactive':
+        color = AppColors.adaptiveWarning(context);
+        break;
+      default:
+        color = AppColors.textSecondary(context);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.zero,
+      ),
+      child: Text(
+        status,
+        style: AppTypography.labelSmall.copyWith(color: color, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  void _handleAction(BuildContext context, DashboardProvider provider, Store store, String action) {
+    if (action == 'edit') {
+      // Implement edit logic or navigate
+    }
+  }
+
+  void _confirmDelete(BuildContext context, DashboardProvider provider, Store store) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.t(context, 'Delete Store')),
+        content: Text("Are you sure you want to delete ${store.name}? This action cannot be undone."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
+          AppButton.danger(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await provider.deleteStore(store.id);
+            },
+            label: "Delete",
+          ),
+        ],
+      ),
+    );
+  }
 
   void _confirmBulkDelete() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text("Bulk Delete (${_selectedStoreIds.length} stores)"),
-        content: const Text("Are you absolutely sure? This will permanently delete all selected stores and their data."),
+        title: Text(AppLocalizations.t(context, 'Bulk Delete')),
+        content: Text("Are you sure you want to delete ${_selectedStoreIds.length} selected stores?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-          ElevatedButton(
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
+          AppButton.danger(
             onPressed: () async {
               Navigator.pop(ctx);
-              await _performBulkDelete();
+              setState(() => _isBulkDeleting = true);
+              final provider = Provider.of<DashboardProvider>(context, listen: false);
+              for (var id in _selectedStoreIds) {
+                await provider.deleteStore(id);
+              }
+              _selectedStoreIds.clear();
+              if (mounted) setState(() => _isBulkDeleting = false);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text("Yes, Delete All"),
+            label: "Delete All",
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _performBulkDelete() async {
-    setState(() => _isBulkDeleting = true);
-    final provider = Provider.of<DashboardProvider>(context, listen: false);
-    
-    try {
-      int count = 0;
-      final idsToDelete = _selectedStoreIds.toList();
-      for (final id in idsToDelete) {
-        await provider.deleteStore(id);
-        count++;
-      }
-      _selectedStoreIds.clear();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Successfully deleted $count stores")));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Bulk Delete Error: $e"), backgroundColor: AppColors.error));
-    } finally {
-      if (mounted) setState(() => _isBulkDeleting = false);
-    }
-  }
-
-  // --- STATS ROW ---
-  Widget _buildStatsRow(DashboardProvider provider) {
-    int total = provider.stores.length;
-    int active = provider.stores.where((s) => s.status == 'Active').length;
-
-    return Row(
-      children: [
-        Expanded(child: _buildStatCard("Total Stores", "$total", Icons.store, AppColors.primary)),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(child: _buildStatCard("Active Stores", "$active", Icons.check_circle, AppColors.success)),
-        const SizedBox(width: 24),
-
-      ],
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = Theme.of(context).cardTheme.color ?? (isDark ? const Color(0xFF1E1E1E) : Colors.white);
-    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87;
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.0 : 0.03), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor)),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  // --- MAIN TABLE CONTENT ---
-  Widget _buildMainContent(BuildContext context, DashboardProvider provider, List<Store> stores) {
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Toolbar
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Row(
-              children: [
-                // Bulk Select Checkbox
-                Checkbox(
-                  value: stores.isNotEmpty && _selectedStoreIds.length == stores.length,
-                  tristate: _selectedStoreIds.isNotEmpty && _selectedStoreIds.length < stores.length,
-                  onChanged: (val) {
-                    setState(() {
-                      if (val == true) {
-                        _selectedStoreIds.addAll(stores.map((s) => s.id));
-                      } else {
-                        _selectedStoreIds.clear();
-                      }
-                    });
-                  },
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (v) => setState(() {}),
-                    decoration: InputDecoration(
-                      hintText: "Search by name or owner...",
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSpacing.sm)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                    borderRadius: BorderRadius.circular(AppSpacing.sm),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _filterStatus,
-                      items: const [
-                        DropdownMenuItem(value: 'All', child: Text("All Status")),
-                        DropdownMenuItem(value: 'Active', child: Text("Active")),
-                        DropdownMenuItem(value: 'Inactive', child: Text("Inactive")),
-                      ],
-                      onChanged: (v) => setState(() => _filterStatus = v!),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-
-
-           // Responsive Table / List
-           stores.isEmpty 
-             ? Padding(padding: EdgeInsets.all(40), child: Center(child: Text("No stores found", style: TextStyle(color: AppColors.textSecondary(context)))))
-             : ListView.separated(
-                 shrinkWrap: true,
-                 physics: const NeverScrollableScrollPhysics(),
-                 itemCount: stores.length,
-                 separatorBuilder: (_, __) => const Divider(height: 1),
-                 itemBuilder: (context, index) {
-                    final store = stores[index];
-                    return _buildStoreRow(context, provider, store);
-                 },
-               ),
-         ],
-       ),
-     );
-  }
-
-  Widget _buildStoreRow(BuildContext context, DashboardProvider provider, Store store) {
-    bool isMobile = MediaQuery.of(context).size.width < 700;
-    Franchise? franchise;
-    try {
-      if (store.franchiseId != null) franchise = provider.franchises.firstWhere((f) => f.id == store.franchiseId);
-    } catch (_) { /* Error ignored */ }
-
-    if (isMobile) {
-      // Mobile - Compact List Tile
-      return ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Checkbox(
-            value: _selectedStoreIds.contains(store.id),
-            onChanged: (val) {
-              setState(() {
-                if (val == true) {
-                  _selectedStoreIds.add(store.id);
-                } else {
-                  _selectedStoreIds.remove(store.id);
-                }
-              });
-            },
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        ),
-        title: Text(store.name, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-             const SizedBox(height: 4),
-             Text(store.owner),
-             const SizedBox(height: 4),
-
-          ],
-        ),
-        trailing: provider.userProfile?.role == 'Super Admin' && provider.isDeveloperMode
-           ? Row(
-               mainAxisSize: MainAxisSize.min,
-               children: [
-                 IconButton(
-                    icon: Icon(Icons.login, size: 20, color: AppColors.primary),
-                    onPressed: () => _handleAction(context, provider, store, 'manage'),
-                 ),
-                 IconButton(
-                    icon: Icon(Icons.delete_outline, size: 20, color: AppColors.error),
-                    onPressed: () => _handleAction(context, provider, store, 'delete'),
-                 ),
-               ],
-             )
-           : null,
-      );
-    }
-
-    // DESKTOP - Custom Row
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-      child: Row(
-        children: [
-          Checkbox(
-            value: _selectedStoreIds.contains(store.id),
-            onChanged: (val) {
-              setState(() {
-                if (val == true) {
-                  _selectedStoreIds.add(store.id);
-                } else {
-                  _selectedStoreIds.remove(store.id);
-                }
-              });
-            },
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            flex: 3,
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppSpacing.sm),
-                  ),
-                  child: Center(
-                    child: Text(
-                      store.name[0].toUpperCase(),
-                      style: AppTypography.titleMedium.copyWith(color: AppColors.primary),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(store.name, style: AppTypography.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(store.storeType ?? 'Retail', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
-                  ],
-                )
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(franchise?.name ?? '—', style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
-          ),
-          Expanded(
-            flex: 2,
-            child: Row(
-              children: [
-                Icon(Icons.person_outline, size: 16, color: AppColors.textSecondary(context)),
-                const SizedBox(width: AppSpacing.xs),
-                Text(store.owner, style: AppTypography.bodyMedium),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: _buildStatusBadge(context, provider, store),
-          ),
-
-          // Actions
-          // Actions (Login/Delete)
-          if (provider.userProfile?.role == 'Super Admin' && provider.isDeveloperMode)
-             Row(
-               mainAxisSize: MainAxisSize.min,
-               children: [
-                 IconButton(
-                    icon: Icon(Icons.login, size: 20, color: AppColors.primary),
-                    tooltip: "Manage Store",
-                    onPressed: () => _handleAction(context, provider, store, 'manage'),
-                 ),
-                 IconButton(
-                    icon: Icon(Icons.delete_outline, size: 20, color: AppColors.error),
-                    tooltip: "Delete Store",
-                    onPressed: () => _handleAction(context, provider, store, 'delete'),
-                 ),
-               ],
-             )
-          else 
-             const SizedBox(width: 48), // Spacer for alignment if not super admin
-        ],
-      ),
-    );
-  }
-
-  // --- HELPERS (Copied & Styled) ---
-  
-
-  Widget _buildStatusBadge(BuildContext context, DashboardProvider provider, Store store) {
-    String status = store.status;
-    bool isActive = status.toLowerCase() == 'active';
-    Color statusColor = isActive ? AppColors.success : AppColors.error;
-
-    Widget badge = Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-      decoration: BoxDecoration(
-        color: statusColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppSpacing.xl),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(width: 6, height: 6, decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle)),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            isActive ? 'Active' : 'Inactive',
-            style: AppTypography.labelSmall.copyWith(color: statusColor, fontWeight: FontWeight.w600),
-          ),
-          if (provider.userProfile?.role == 'Super Admin' && provider.isDeveloperMode) ...[
-            const SizedBox(width: 4),
-            Icon(Icons.arrow_drop_down, size: 12, color: statusColor)
-          ]
-        ],
-      ),
-    );
-
-
-    if (provider.userProfile?.role == 'Super Admin' && provider.isDeveloperMode) {
-       return PopupMenuButton<String>(
-         tooltip: "Change Status",
-         offset: const Offset(0, 30),
-         itemBuilder: (ctx) => [
-            PopupMenuItem(value: 'Active', child: Row(children: [Icon(Icons.check_circle, size: 16, color: AppColors.success), const SizedBox(width: 8), const Text("Active")])),
-            PopupMenuItem(value: 'Inactive', child: Row(children: [Icon(Icons.block, size: 16, color: AppColors.error), const SizedBox(width: 8), const Text("Inactive")])),
-         ],
-         onSelected: (newStatus) async {
-            try {
-               await provider.updateStoreStatus(store.id, newStatus);
-            } catch (e) {
-               if (e.toString().contains("LOCALLY")) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Status updated (Offline Mode)"), backgroundColor: AppColors.warning));
-               } else {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: AppColors.error));
-               }
-            }
-         },
-         child: badge,
-       );
-    }
-    return badge;
-  }
-
-  void _handleAction(BuildContext context, DashboardProvider provider, Store store, dynamic action) {
-    if (action == 'delete') {
-       _confirmDelete(context, provider, store);
-    } else if (action == 'settings') {
-       provider.setActiveStoreId(store.id);
-       context.push('/settings');
-    } else if (action == 'manage') {
-
-       final uid = Provider.of<AuthProvider>(context, listen: false).user?.uid;
-
-       if (uid != null) {
-          // IMPORTANT: Wait for Firestore update to finish 
-          // so that the next sync call has the correct permissions (accessibleStoreIds)
-          _showLoadingOverlay(context);
-
-          // For Super Admin, we don't strictly need to wait for the link to propagate if security rules are correct.
-          // We can optimisticly switch.
-          final isSuperAdmin = provider.activeRole == 'Super Admin';
-          
-          if (isSuperAdmin) {
-              // Fire and Forget linking to ensure context is saved for next reload, but don't block UI
-              provider.linkUserToStore(uid, store.id).catchError((e) { /* Error ignored */ });
-
-              provider.setActiveStoreId(store.id);
-              Navigator.pop(context); // Remove overlay
-              context.go('/dashboard');
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Switched to ${store.name}")));
-          } else {
-              // For regular users, we MUST wait for permission propagation
-              provider.linkUserToStore(uid, store.id).then((_) async {
-
-                 await provider.setActiveStoreId(store.id);
-
-                 if (context.mounted) Navigator.pop(context); // Remove overlay
-
-                 if (context.mounted) context.go('/dashboard');
-                 if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Switched to ${store.name}")));
-              }).catchError((e) {
-
-                 if (context.mounted) Navigator.pop(context);
-                 if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error linking store: $e"), backgroundColor: AppColors.error));
-              });
-          }
-       } else {
-          // Fallback if no uid
-
-          provider.setActiveStoreId(store.id);
-          context.go('/dashboard');
-       }
-    }
-  }
-
-  void _showLoadingOverlay(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => const Center(child: CircularProgressIndicator()),
-    );
-  }
-
-  // --- DIALOGS (Maintained functional logic) ---
-  
-  void _confirmDelete(BuildContext context, DashboardProvider provider, Store store) {
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: const Text("Delete Store"),
-      content: const Text("Are you sure? This is irreversible."),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-        ElevatedButton(onPressed: () async {
-          try {
-             await provider.deleteStore(store.id);
-             Navigator.pop(ctx);
-          } catch (e) {
-             if (e.toString().contains("LOCALLY")) {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Store deleted (Offline Mode)"), backgroundColor: AppColors.warning));
-             } else {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: AppColors.error));
-             }
-          }
-        }, style: ElevatedButton.styleFrom(backgroundColor: AppColors.error), child: const Text("Delete")),
-      ],
-    ));
   }
 
   void _showOnboardStoreDialog(BuildContext context, DashboardProvider provider) {
-     // Reusing basic dialog logic from previous iteration for brevity but updated style
-    final nameCtrl = TextEditingController();
-    String? selectedOwnerEmail;
-    bool isSubmitting = false; // Local state for debounce
-    
-    // Future to fetch users
-    final futureUsers = provider.fetchPotentialStoreOwners();
-    
-    showDialog(context: context, builder: (ctx) => StatefulBuilder(
-      builder: (context, setState) {
-        return AlertDialog(
-           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-           title: const Text("Add New Store"),
-           content: SizedBox(
-             width: 400, // wider for dropdown safety
-             child: FutureBuilder<List<UserProfile>>(
-               future: futureUsers,
-               builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SizedBox(height: 150, child: Center(child: CircularProgressIndicator()));
-                  }
-                  
-                  final users = snapshot.data ?? [];
-                  final hasUsers = users.isNotEmpty;
-                  
-                  return Column(mainAxisSize: MainAxisSize.min, children: [
-                     TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Store Name", border: OutlineInputBorder())),
-                     const SizedBox(height: 12),
-                     
-                     // OWNER SELECTION DROPDOWN
-                     DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: "Assign Owner", 
-                          border: OutlineInputBorder(),
-                          helperText: "Select from unassigned users (excludes Super Admins)"
-                        ),
-                        value: selectedOwnerEmail,
-                        hint: const Text("Select Owner Email"),
-                        onChanged: hasUsers ? (v) => selectedOwnerEmail = v : null,
-                        items: hasUsers 
-                            ? users.map((u) => DropdownMenuItem(
-                                 value: u.email, 
-                                 child: Text("${u.email} (${u.name})", overflow: TextOverflow.ellipsis)
-                              )).toList()
-                            : [],
-                        disabledHint: hasUsers ? null : const Text("No unassigned users found."),
-                     ),
-                     
-                     if (!hasUsers) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.info_outline, size: 16, color: AppColors.warning),
-                            const SizedBox(width: 4),
-                            Expanded(child: Text("Invite a user first if they are not listed here.", style: TextStyle(color: AppColors.warning, fontSize: 12))),
-                          ],
-                        )
-                     ],
-     
-                     const SizedBox(height: 12),
-     
-                  ]);
-               }
-             ),
-           ),
-           actions: [
-             TextButton(onPressed: isSubmitting ? null : () => Navigator.pop(ctx), child: const Text("Cancel")),
-             ElevatedButton(
-                onPressed: isSubmitting ? null : () async {
-                   if (nameCtrl.text.isEmpty || selectedOwnerEmail == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
-                      return;
-                   }
-                   
-                   setState(() => isSubmitting = true); // Lock button
-     
-                   try {
-                      await provider.addStore(nameCtrl.text, selectedOwnerEmail!);
-                      if (context.mounted) Navigator.pop(ctx);
-                   } catch (e) {
-                      setState(() => isSubmitting = false); // Unlock on error
-                      if (context.mounted) {
-                          if (e.toString().contains("LOCALLY")) {
-                             Navigator.pop(ctx);
-                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Store created (Offline Mode)"), backgroundColor: AppColors.warning));
-                          } else {
-                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: AppColors.error));
-                          }
-                      }
-                   }
-                },
-                child: isSubmitting 
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text("Create"),
-             )
-           ],
-        );
-      }
-    ));
-  }
+    final nameController = TextEditingController();
+    final ownerController = TextEditingController();
+    bool isSubmitting = false;
 
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(AppLocalizations.t(context, 'Onboard New Store')),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Store Name", hintText: "e.g. Downtown POS"),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: ownerController,
+                  decoration: const InputDecoration(labelText: "Owner Email", hintText: "owner@example.com"),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
+              AppButton.primary(
+                isLoading: isSubmitting,
+                onPressed: isSubmitting ? null : () async {
+                  if (nameController.text.isEmpty || ownerController.text.isEmpty) return;
+                  setDialogState(() => isSubmitting = true);
+                  try {
+                    await provider.addStore(nameController.text, ownerController.text);
+                    if (context.mounted) Navigator.pop(ctx);
+                  } finally {
+                    if (context.mounted) setDialogState(() => isSubmitting = false);
+                  }
+                },
+                label: "Create Store",
+              ),
+            ],
+          );
+        }
+      ),
+    );
+  }
 }
+
+

@@ -1,4 +1,6 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 import '../core/design/layouts/pos_scaffold.dart';
 import '../core/design/density/app_density.dart';
@@ -21,6 +23,7 @@ class AdminDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final density = AppDensityProvider.configOf(context);
     // Admin Menu Items
     final List<Map<String, dynamic>> adminMenuItems = [
       {
@@ -90,22 +93,28 @@ class AdminDashboardScreen extends StatelessWidget {
       }
     ];
 
-    final density = AppDensityProvider.configOf(context);
+    
 
     return PosScaffold(
-      mainContent: SingleChildScrollView(
-        padding: EdgeInsets.all(density.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // HEADER SECTION
-            _buildModernHeader(context),
-            const SizedBox(height: AppSpacing.lg),
-
-            // ADMIN TOOLS GRID
-            _buildAdminToolsGrid(context, adminMenuItems),
-          ],
-        ),
+      mainContent: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.all(density.cardPadding),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildModernHeader(context),
+                const SizedBox(height: AppSpacing.lg),
+              ]),
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: density.cardPadding),
+            sliver: _buildAdminToolsSliverGrid(context, adminMenuItems),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(height: density.cardPadding),
+          ),
+        ],
       ),
     );
   }
@@ -115,71 +124,66 @@ class AdminDashboardScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Admin Dashboard', style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+        Text(AppLocalizations.t(context, 'Admin Dashboard'), style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold, letterSpacing: -0.5)),
         const SizedBox(height: AppSpacing.xs),
-        Text('Super Admin tools and system configuration.', style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+        Text(AppLocalizations.t(context, 'Super Admin tools and system configuration.'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
       ],
     );
   }
 
   // --- ADMIN TOOLS GRID ---
-  Widget _buildAdminToolsGrid(BuildContext context, List<Map<String, dynamic>> items) {
-    final density = AppDensityProvider.configOf(context);
+  Widget _buildAdminToolsSliverGrid(BuildContext context, List<Map<String, dynamic>> items) {
+    final width = MediaQuery.of(context).size.width;
     
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Responsive grid
-        int crossAxisCount = 2;
-        if (constraints.maxWidth > 1200) {
-          crossAxisCount = 4;
-        } else if (constraints.maxWidth > 800) {
-          crossAxisCount = 3;
-        } else if (constraints.maxWidth < 400) {
-           crossAxisCount = 1; // Strict 1 column for very narrow phones
-        }
+    // Responsive grid
+    int crossAxisCount = 2;
+    if (width > 1200) {
+      crossAxisCount = 4;
+    } else if (width > 800) {
+      crossAxisCount = 3;
+    } else if (width < 400) {
+      crossAxisCount = 1; 
+    }
 
-          
-        // Responsive Aspect Ratio
-        double aspectRatio = 1.2;
-        bool isHorizontal = false;
-        if (crossAxisCount == 1) {
-           aspectRatio = 3.2; // Wider cards for horizontal list style
-           isHorizontal = true;
-        } else if (crossAxisCount <= 2) {
-           aspectRatio = 1.0; // Taller cards for narrow screens
-        }
+    // Responsive Aspect Ratio
+    double aspectRatio = 1.2;
+    bool isHorizontal = false;
+    if (crossAxisCount == 1) {
+      aspectRatio = 3.2; 
+      isHorizontal = true;
+    } else if (crossAxisCount <= 2) {
+      aspectRatio = 1.0; 
+    }
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: AppSpacing.md,
-            mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: aspectRatio,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final item = items[index];
-            return _buildAdminCard(
-              context,
-              icon: item['icon'] as IconData,
-              label: item['label'] as String,
-              description: item['description'] as String,
-              color: item['color'] as Color,
-              horizontal: isHorizontal,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => item['widgetBuilder'](),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
+    return SliverGrid(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: AppSpacing.md,
+        mainAxisSpacing: AppSpacing.md,
+        childAspectRatio: aspectRatio,
+      ),
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final item = items[index];
+          return _buildAdminCard(
+            context,
+            icon: item['icon'] as IconData,
+            label: item['label'] as String,
+            description: item['description'] as String,
+            color: item['color'] as Color,
+            horizontal: isHorizontal,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => item['widgetBuilder'](),
+                ),
+              );
+            },
+          );
+        },
+        childCount: items.length,
+      ),
     );
   }
 
@@ -197,12 +201,12 @@ class AdminDashboardScreen extends StatelessWidget {
     
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(density.cardRadius),
+      borderRadius: BorderRadius.zero,
       child: Container(
         padding: EdgeInsets.all(density.cardPadding),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF2D2D44) : Colors.white,
-          borderRadius: BorderRadius.circular(density.cardRadius),
+          color: AppColors.surface(context),
+          borderRadius: BorderRadius.zero,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03),
@@ -210,7 +214,7 @@ class AdminDashboardScreen extends StatelessWidget {
               offset: const Offset(0, 4),
             )
           ],
-          border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
+          border: Border.all(color: AppColors.outline(context)),
         ),
         child: horizontal 
           ? Row(
@@ -220,7 +224,7 @@ class AdminDashboardScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(density.buttonRadius),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Icon(icon, color: color, size: 28),
                 ),
@@ -239,7 +243,7 @@ class AdminDashboardScreen extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         description,
                         style: AppTypography.bodySmall.copyWith(
@@ -263,7 +267,7 @@ class AdminDashboardScreen extends StatelessWidget {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(density.buttonRadius),
+                borderRadius: BorderRadius.zero,
               ),
               child: Icon(icon, color: color, size: 32),
             ),
@@ -300,3 +304,6 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 }
+
+
+

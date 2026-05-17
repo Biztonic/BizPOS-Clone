@@ -1,4 +1,8 @@
 import '../../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 // ignore_for_file: curly_braces_in_flow_control_structures, deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -238,16 +242,16 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                 child: Row(
                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                    children: [
-                      Text("Tools & Calculator", style: TextStyle(color: textColor, fontSize: 24, fontWeight: FontWeight.bold)),
+                      Text(AppLocalizations.t(context, 'Tools & Calculator'), style: TextStyle(color: textColor, fontSize: 24, fontWeight: FontWeight.bold)),
                       // CLOSE BUTTON
                       InkWell(
                          onTap: () => Navigator.pop(context),
                          child: Container(
                             width: 36, 
                             height: 36,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                                color: AppColors.error,
-                               borderRadius: BorderRadius.circular(8),
+                               borderRadius: BorderRadius.zero,
                             ),
                             child: const Icon(Icons.close, color: Colors.white, size: 20),
                          ),
@@ -265,7 +269,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                       Expanded(
                          flex: 4,
                          child: Container(
-                            padding: const EdgeInsets.only(left: 24, bottom: 24, right: 12),
+                            padding: const EdgeInsets.only(left: AppSpacing.lg, bottom: AppSpacing.lg, right: 12),
                             child: Column(
                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                children: [
@@ -273,10 +277,10 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                   Expanded(
                                      flex: 3,
                                      child: Container(
-                                        padding: const EdgeInsets.all(16),
+                                        padding: const EdgeInsets.all(AppSpacing.md),
                                         decoration: BoxDecoration(
                                            color: isDark ? Colors.black38 : AppColors.textSecondary(context),
-                                           borderRadius: BorderRadius.circular(24),
+                                           borderRadius: BorderRadius.zero,
                                            border: Border.all(color: AppColors.textSecondary(context).withValues(alpha: 0.1))
                                         ),
                                         child: Column(
@@ -296,7 +300,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                         ),
                                      ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: AppSpacing.md),
 
                                   // 2. QUICK DATA (Live)
                                   SizedBox(
@@ -304,23 +308,23 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                      child: Row(
                                         children: [
                                            _buildSmartKey("Last Sale", lastSaleAmount, AppColors.success),
-                                           const SizedBox(width: 8),
+                                           const SizedBox(width: AppSpacing.sm),
                                            _buildSmartKey("Orders", ordersCount, AppColors.warning),
-                                           const SizedBox(width: 8),
+                                           const SizedBox(width: AppSpacing.sm),
                                            _buildSmartKey("Cash", cashDisplay, AppColors.primaryLight),
                                         ],
                                      ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: AppSpacing.md),
 
                                   // 3. CONVERTER (WHEEL PICKER STYLE)
                                   Expanded(
                                      flex: 4,
                                      child: Container(
-                                        padding: const EdgeInsets.all(16),
+                                        padding: const EdgeInsets.all(AppSpacing.md),
                                         decoration: BoxDecoration(
                                            color: panelColor,
-                                           borderRadius: BorderRadius.circular(24),
+                                           borderRadius: BorderRadius.zero,
                                            border: Border.all(color: CarDashboardTheme.borderColor(isDark))
                                         ),
                                         child: Column(
@@ -330,7 +334,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                  scrollDirection: Axis.horizontal,
                                                  child: Row(
                                                     children: _units.keys.map((String cat) => Padding(
-                                                       padding: const EdgeInsets.only(right: 8),
+                                                       padding: const EdgeInsets.only(right: AppSpacing.sm),
                                                        child: ChoiceChip(
                                                           label: Text(cat, style: const TextStyle(fontSize: 12)),
                                                           selected: _selectedCategory == cat,
@@ -356,7 +360,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                     )).toList(),
                                                  ),
                                               ),
-                                              const SizedBox(height: 16),
+                                              const SizedBox(height: AppSpacing.md),
                                               
                                               // WHEEL PICKER UI
                                               Expanded(
@@ -371,7 +375,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                             margin: const EdgeInsets.fromLTRB(8, 0, 4, 0),
                                                             decoration: BoxDecoration(
                                                               color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                                                              borderRadius: BorderRadius.circular(20),
+                                                              borderRadius: BorderRadius.zero,
                                                             ),
                                                             child: Stack(
                                                               children: [
@@ -388,7 +392,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                                 IgnorePointer(
                                                                   child: Container(
                                                                     decoration: BoxDecoration(
-                                                                      borderRadius: BorderRadius.circular(20),
+                                                                      borderRadius: BorderRadius.zero,
                                                                       gradient: LinearGradient(
                                                                         begin: Alignment.topCenter,
                                                                         end: Alignment.bottomCenter,
@@ -428,7 +432,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                                 height: 2, 
                                                                 width: 50, 
                                                                 color: primary.withValues(alpha: 0.4), 
-                                                                margin: const EdgeInsets.symmetric(vertical: 8)
+                                                                margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm)
                                                               ),
                                                               FittedBox(
                                                                 child: Text(
@@ -446,7 +450,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                             margin: const EdgeInsets.fromLTRB(4, 0, 8, 0),
                                                             decoration: BoxDecoration(
                                                               color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                                                              borderRadius: BorderRadius.circular(20),
+                                                              borderRadius: BorderRadius.zero,
                                                             ),
                                                             child: Stack(
                                                               children: [
@@ -463,7 +467,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                                 IgnorePointer(
                                                                   child: Container(
                                                                     decoration: BoxDecoration(
-                                                                      borderRadius: BorderRadius.circular(20),
+                                                                      borderRadius: BorderRadius.zero,
                                                                       gradient: LinearGradient(
                                                                         begin: Alignment.topCenter,
                                                                         end: Alignment.bottomCenter,
@@ -500,7 +504,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                       Expanded(
                          flex: 5,
                          child: Container(
-                            padding: const EdgeInsets.only(right: 24, bottom: 24, top: 0, left: 12),
+                            padding: const EdgeInsets.only(right: AppSpacing.lg, bottom: AppSpacing.lg, top: 0, left: 12),
                             child: Row(
                               children: [
                                  // NUMPAD (Flex 3)
@@ -508,20 +512,20 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                    flex: 3,
                                    child: Column(
                                      children: [
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('C', AppColors.error, AppColors.error)), SizedBox(width: 8), Expanded(child: _buildBtn('⌫', AppColors.warning, AppColors.warning)), SizedBox(width: 8), Expanded(child: _buildBtn('%', isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), textColor)) ])),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('C', AppColors.error, AppColors.error)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('âŒ«', AppColors.warning, AppColors.warning)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('%', isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), textColor)) ])),
                                        const SizedBox(height: 12),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('7', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('8', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('9', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('7', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('8', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('9', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
                                        const SizedBox(height: 12),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('4', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('5', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('6', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('4', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('5', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('6', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
                                        const SizedBox(height: 12),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('1', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('2', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), SizedBox(width: 8), Expanded(child: _buildBtn('3', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('1', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('2', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('3', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
                                        const SizedBox(height: 12),
                                        // ROW 5: 0, ., = (Moved = here)
                                        Expanded(child: Row(children: [ 
                                           Expanded(child: _buildBtn('0', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), 
-                                          const SizedBox(width: 8), 
+                                          const SizedBox(width: AppSpacing.sm), 
                                           Expanded(child: _buildBtn('.', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), 
-                                          const SizedBox(width: 8), 
+                                          const SizedBox(width: AppSpacing.sm), 
                                           Expanded(child: _buildBtn('=', AppColors.success, Colors.white)),
                                        ])),
                                      ],
@@ -565,19 +569,19 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
      return Expanded(
         child: InkWell(
            onTap: () => _insertValue(value.replaceAll(RegExp(r'[^0-9.]'), '')), 
-           borderRadius: BorderRadius.circular(16),
+           borderRadius: BorderRadius.zero,
            child: Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
                  color: color.withValues(alpha: 0.1),
-                 borderRadius: BorderRadius.circular(16),
+                 borderRadius: BorderRadius.zero,
                  border: Border.all(color: color.withValues(alpha: 0.3))
               ),
               child: Column(
                  mainAxisAlignment: MainAxisAlignment.center,
                  children: [
                     Text(label, style: TextStyle(color: color.withValues(alpha: 0.8), fontWeight: FontWeight.bold, fontSize: 12)),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
                  ],
               ),
@@ -627,15 +631,15 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
            onTap: () {
               if (text == 'C') {
                 _clear();
-              } else if (text == '⌫') _delete();
+              } else if (text == 'âŒ«') _delete();
               else if (text == '=') _evaluate();
               else _onBtnTap(text);
            },
-           borderRadius: BorderRadius.circular(20),
+           borderRadius: BorderRadius.zero,
            child: Container(
               decoration: BoxDecoration(
                  color: bg,
-                 borderRadius: BorderRadius.circular(20),
+                 borderRadius: BorderRadius.zero,
               ),
               child: Center(
                  child: Text(text, style: TextStyle(fontSize: fontSize ?? 28, fontWeight: FontWeight.w600, color: txtColor)),
@@ -645,3 +649,4 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
      );
   }
 }
+

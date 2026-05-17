@@ -29,13 +29,11 @@ class SupplierScreen extends StatelessWidget {
           children: [
             Icon(Icons.local_shipping_outlined, size: 80, color: AppColors.textHint(context)),
             const SizedBox(height: AppSpacing.lg),
-            Text(
-              'No Suppliers Found',
+            Text(AppLocalizations.t(context, 'No Suppliers Found'),
               style: AppTypography.titleLarge.copyWith(color: AppColors.textHint(context)),
             ),
             const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Add your first supplier to start tracking purchases.',
+            Text(AppLocalizations.t(context, 'Add your first supplier to start tracking purchases.'),
               style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
             ),
             const SizedBox(height: AppSpacing.xl),

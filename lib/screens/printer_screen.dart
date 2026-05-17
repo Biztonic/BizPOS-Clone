@@ -1,4 +1,8 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -116,8 +120,8 @@ class _PrinterScreenState extends State<PrinterScreen>
       if (statuses.values.any((status) => status.isPermanentlyDenied)) {
          _showPermissionDialog();
       } else {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Bluetooth permissions are required to scan."),
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.t(context, 'Bluetooth permissions are required to scan.')),
             backgroundColor: AppColors.error));
       }
       return;
@@ -142,19 +146,18 @@ class _PrinterScreenState extends State<PrinterScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Permissions Required"),
-        content: const Text(
-            "Bluetooth and Location permissions are required to scan for printers. Please enable them in settings."),
+        title: Text(AppLocalizations.t(context, 'Permissions Required')),
+        content: Text(AppLocalizations.t(context, 'Bluetooth and Location permissions are required to scan for printers. Please enable them in settings.')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("Cancel")),
+              child: Text(AppLocalizations.t(context, 'Cancel'))),
           ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 openAppSettings();
               },
-              child: const Text("Open Settings")),
+              child: Text(AppLocalizations.t(context, 'Open Settings'))),
         ],
       ),
     );
@@ -195,10 +198,10 @@ class _PrinterScreenState extends State<PrinterScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Feature Not Available"),
+        title: Text(AppLocalizations.t(context, 'Feature Not Available')),
         content: Text(message),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'OK')))
         ],
       )
     );
@@ -220,21 +223,21 @@ class _PrinterScreenState extends State<PrinterScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Paper Size",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(AppLocalizations.t(context, 'Paper Size'),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 DropdownButton<PrinterPaperSize>(
                   value: selectedPaperSize,
                   isExpanded: true,
-                  items: const [
+                  items: [
                     DropdownMenuItem(
                         value: PrinterPaperSize.mm58,
-                        child: Text("58mm Thermal")),
+                        child: Text(AppLocalizations.t(context, '58mm Thermal'))),
                     DropdownMenuItem(
                         value: PrinterPaperSize.mm80,
-                        child: Text("80mm Thermal")),
+                        child: Text(AppLocalizations.t(context, '80mm Thermal'))),
                     DropdownMenuItem(
                         value: PrinterPaperSize.isoA4,
-                        child: Text("A4 / Letter")),
+                        child: Text(AppLocalizations.t(context, 'A4 / Letter'))),
                   ],
                   onChanged: (val) {
                     if (val != null) {
@@ -242,10 +245,10 @@ class _PrinterScreenState extends State<PrinterScreen>
                     }
                   },
                 ),
-                const SizedBox(height: 16),
-                const Text("Assign Functions",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.md),
+                Text(AppLocalizations.t(context, 'Assign Functions'),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.sm),
                 ...PrinterPurpose.values.map((purpose) {
                   if (purpose == PrinterPurpose.other) {
                     return const SizedBox.shrink();
@@ -273,14 +276,14 @@ class _PrinterScreenState extends State<PrinterScreen>
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("Cancel")),
+                child: Text(AppLocalizations.t(context, 'Cancel'))),
             ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
                   _saveConfiguration(
                       device, selectedPaperSize, selectedPurposes);
                 },
-                child: const Text("Connect & Save")),
+                child: Text(AppLocalizations.t(context, 'Connect & Save'))),
           ],
         );
       }),
@@ -363,7 +366,7 @@ class _PrinterScreenState extends State<PrinterScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Printer Management'),
+        title: Text(AppLocalizations.t(context, 'Printer Management')),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -396,7 +399,7 @@ class _PrinterScreenState extends State<PrinterScreen>
         final purpose = entry.key;
         final device = entry.value;
         return Card(
-          margin: const EdgeInsets.all(8),
+          margin: const EdgeInsets.all(AppSpacing.sm),
           child: ListTile(
             leading: Icon(_getIconForType(device.type)),
             title: Text("${purpose.name.toUpperCase()}: ${device.name}"),
@@ -421,17 +424,17 @@ class _PrinterScreenState extends State<PrinterScreen>
 
   Widget _buildDiscoverView() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       children: [
         // --- 1. BLUETOOTH SECTION ---
         Card(
           elevation: 2,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           child: ExpansionTile(
             initiallyExpanded: true,
             leading: const Icon(Icons.bluetooth, color: AppColors.primaryLight),
-            title: const Text("Bluetooth Printers"),
+            title: Text(AppLocalizations.t(context, 'Bluetooth Printers')),
             subtitle: Text("${_btDevices.length} devices found"),
             trailing: ElevatedButton(
                 onPressed: _isScanningBt ? null : _scanBluetooth,
@@ -442,12 +445,12 @@ class _PrinterScreenState extends State<PrinterScreen>
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text("Scan")),
+                    : Text(AppLocalizations.t(context, 'Scan'))),
             children: [
               if (_btDevices.isEmpty && !_isScanningBt)
                 Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text("No bluetooth devices found.",
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Text(AppLocalizations.t(context, 'No bluetooth devices found.'),
                         style: TextStyle(color: AppColors.textSecondary(context)))),
               ..._btDevices.map((device) => ListTile(
                     leading: const Icon(Icons.print, color: AppColors.primaryLightGrey),
@@ -455,24 +458,24 @@ class _PrinterScreenState extends State<PrinterScreen>
                     subtitle: Text(device.address ?? "Unknown MAC"),
                     trailing: TextButton(
                       onPressed: () => _connectAndAssign(device),
-                      child: const Text("Connect"),
+                      child: Text(AppLocalizations.t(context, 'Connect')),
                     ),
                   )),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
 
         // --- 2. USB SECTION ---
         Card(
           elevation: 2,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           child: ExpansionTile(
             initiallyExpanded: true,
             leading: const Icon(Icons.usb, color: AppColors.warning),
-            title: const Text("USB Printers"),
+            title: Text(AppLocalizations.t(context, 'USB Printers')),
             subtitle: Text("${_usbDevices.length} devices found"),
             trailing: ElevatedButton(
                 onPressed: _isScanningUsb ? null : _scanUsb,
@@ -483,12 +486,12 @@ class _PrinterScreenState extends State<PrinterScreen>
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text("Scan")),
+                    : Text(AppLocalizations.t(context, 'Scan'))),
             children: [
               if (_usbDevices.isEmpty && !_isScanningUsb)
                 Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text("No USB devices found.",
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Text(AppLocalizations.t(context, 'No USB devices found.'),
                         style: TextStyle(color: AppColors.textSecondary(context)))),
               ..._usbDevices.map((device) => ListTile(
                     leading: const Icon(Icons.print, color: AppColors.primaryLightGrey),
@@ -497,28 +500,28 @@ class _PrinterScreenState extends State<PrinterScreen>
                         Text("VID:${device.vendorId} PID:${device.productId}"),
                     trailing: TextButton(
                       onPressed: () => _connectAndAssign(device),
-                      child: const Text("Connect"),
+                      child: Text(AppLocalizations.t(context, 'Connect')),
                     ),
                   )),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
 
         // --- 3. NETWORK SECTION ---
         Card(
           elevation: 2,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           child: ExpansionTile(
             initiallyExpanded: false,
             leading: const Icon(Icons.wifi, color: AppColors.success),
-            title: const Text("Network Printer"),
-            subtitle: const Text("Connect via IP Address"),
+            title: Text(AppLocalizations.t(context, 'Network Printer')),
+            subtitle: Text(AppLocalizations.t(context, 'Connect via IP Address')),
             children: [
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Row(
                   children: [
                     Expanded(
@@ -531,13 +534,13 @@ class _PrinterScreenState extends State<PrinterScreen>
                             prefixIcon: Icon(Icons.network_check)),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: AppSpacing.md),
                     ElevatedButton.icon(
                       onPressed: _connectNetworkManual,
                       icon: const Icon(Icons.link),
-                      label: const Text("Connect"),
+                      label: Text(AppLocalizations.t(context, 'Connect')),
                       style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.all(16)),
+                          padding: const EdgeInsets.all(AppSpacing.md)),
                     )
                   ],
                 ),
@@ -552,7 +555,7 @@ class _PrinterScreenState extends State<PrinterScreen>
   Widget _buildLogsView() {
     return Container(
       color: Colors.black,
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       child: ListView.builder(
         controller: _logScrollController,
         itemCount: _logs.length,
@@ -575,3 +578,7 @@ class _PrinterScreenState extends State<PrinterScreen>
     }
   }
 }
+
+
+
+

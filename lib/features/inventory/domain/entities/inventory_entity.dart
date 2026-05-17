@@ -10,6 +10,7 @@
 /// The legacy [InventoryItem] in domain/entities/inventory_item.dart
 /// is kept for backward compatibility but violates domain purity
 /// (imports cloud_firestore). This entity is the clean replacement.
+library;
 
 /// Represents the stock status of an inventory item.
 enum StockStatus {

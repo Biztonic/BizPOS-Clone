@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../tokens/app_radius.dart';
 import '../../tokens/app_spacing.dart';
-import '../../density/app_density.dart';
+import '../../tokens/app_radius.dart';
+import '../../tokens/app_shadows.dart';
 
+/// A unified card component for all card-based UI in the application.
+///
+/// Features:
+/// - Consistent rounded corners from AppRadius
+/// - Adaptive shadows (light/dark mode)
+/// - Selection state with primary-tinted background
+/// - Optional outlined variant
+/// - Hover feedback via InkWell
 class AppCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -32,8 +40,8 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final density = AppDensityProvider.configOf(context);
-    
+    final isDark = theme.brightness == Brightness.dark;
+
     Widget content = Padding(
       padding: padding,
       child: child,
@@ -42,7 +50,7 @@ class AppCard extends StatelessWidget {
     if (onTap != null) {
       content = InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(density.cardRadius),
+        borderRadius: AppRadius.borderLg,
         child: content,
       );
     }
@@ -53,17 +61,22 @@ class AppCard extends StatelessWidget {
         : borderColor;
     final showBorder = outlined || isSelected || borderColor != null;
 
+    // Determine shadow
+    final shadow = isSelected
+        ? AppShadows.md
+        : (onTap != null ? AppShadows.sm : AppShadows.none);
+
     Widget card;
     if (showBorder) {
       card = Card(
-        elevation: isSelected ? 2 : 0,
+        elevation: 0, // Using custom shadows via decoration
         color: isSelected
             ? theme.colorScheme.primary.withValues(alpha: 0.05)
-            : (backgroundColor ?? Colors.transparent),
+            : (backgroundColor ?? (isDark ? theme.cardTheme.color : Colors.white)),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(density.cardRadius),
+          borderRadius: AppRadius.borderLg,
           side: BorderSide(
-            color: effectiveBorderColor ?? theme.dividerColor,
+            color: effectiveBorderColor ?? theme.dividerColor.withValues(alpha: 0.15),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -71,13 +84,26 @@ class AppCard extends StatelessWidget {
         child: content,
       );
     } else {
-      card = Card(
-        color: backgroundColor ?? theme.cardTheme.color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(density.cardRadius),
+      card = Container(
+        decoration: BoxDecoration(
+          color: backgroundColor ?? (isDark ? theme.cardTheme.color : Colors.white),
+          borderRadius: AppRadius.borderLg,
+          boxShadow: AppShadows.adaptive(context, light: shadow),
+          border: Border.all(
+            color: isDark 
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.04),
+            width: 1,
+          ),
         ),
         margin: margin ?? EdgeInsets.zero,
-        child: content,
+        child: ClipRRect(
+          borderRadius: AppRadius.borderLg,
+          child: Material(
+            color: Colors.transparent,
+            child: content,
+          ),
+        ),
       );
     }
 
@@ -92,4 +118,3 @@ class AppCard extends StatelessWidget {
     return card;
   }
 }
-

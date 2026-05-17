@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/dashboard_provider.dart';
@@ -57,9 +59,9 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
                     children: [
                       Icon(Icons.mark_email_read_outlined, size: 64, color: AppColors.textSecondary(context).withValues(alpha: 0.3)),
                       const SizedBox(height: AppSpacing.lg),
-                      Text("All caught up!", style: AppTypography.titleLarge.copyWith(color: AppColors.textSecondary(context))),
+                      Text(AppLocalizations.t(context, 'All caught up!'), style: AppTypography.titleLarge.copyWith(color: AppColors.textSecondary(context))),
                       const SizedBox(height: AppSpacing.xs),
-                      Text("No pending subscription requests at the moment.", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+                      Text(AppLocalizations.t(context, 'No pending subscription requests at the moment.'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
                     ],
                   ),
                 )
@@ -98,10 +100,10 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Text(
                     req.planType.toUpperCase(),
@@ -119,19 +121,19 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
             _buildInfoRow(Icons.access_time, "Requested On", df.format(req.createdAt)),
             
             const SizedBox(height: AppSpacing.md),
-            Text("REQUESTED ADD-ONS", style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context), fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.t(context, 'REQUESTED ADD-ONS'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context), fontWeight: FontWeight.bold)),
             const SizedBox(height: AppSpacing.xs),
             if (req.selectedAddons.isEmpty)
-              Text("None (Base Plan Only)", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context), fontStyle: FontStyle.italic))
+              Text(AppLocalizations.t(context, 'None (Base Plan Only)'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context), fontStyle: FontStyle.italic))
             else
               Wrap(
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
                 children: req.selectedAddons.map((addonKey) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: AppColors.secondary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.zero,
                     border: Border.all(color: AppColors.secondary.withValues(alpha: 0.2)),
                   ),
                   child: Text(
@@ -195,7 +197,7 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text("CANCEL", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+            child: Text(AppLocalizations.t(context, 'CANCEL'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
           ),
           AppButton(
             label: approve ? "CONFIRM" : "REJECT",
@@ -236,3 +238,7 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
     }
   }
 }
+
+
+
+

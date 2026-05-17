@@ -1,4 +1,6 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -100,7 +102,7 @@ class UpdateService {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Version $version is required."),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 const Text("This update is mandatory. It is now downloading in the background. Please wait...", style: TextStyle(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w500)),
               ],
             ),
@@ -138,7 +140,7 @@ class UpdateService {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Version $version is available."),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             if (notes.isNotEmpty) ...[
                const Text("What's New:", style: TextStyle(fontWeight: FontWeight.bold)),
                Text(notes),
@@ -186,15 +188,15 @@ class _GlobalDownloadManager {
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         top: MediaQuery.of(context).padding.top + 10,
-        left: 20,
-        right: 20,
+        left: AppSpacing.xxs,
+        right: AppSpacing.xxs,
         child: Material(
           color: Colors.transparent,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.zero,
               boxShadow: [
                  BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4)),
               ],
@@ -202,7 +204,7 @@ class _GlobalDownloadManager {
             child: Row(
               children: [
                 const Icon(Icons.downloading, color: AppColors.primaryLight, size: 28),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,7 +223,7 @@ class _GlobalDownloadManager {
                       ValueListenableBuilder<double>(
                         valueListenable: progressNotifier,
                         builder: (context, prog, _) => ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.zero,
                           child: LinearProgressIndicator(
                             value: prog,
                             minHeight: 4,
@@ -240,7 +242,7 @@ class _GlobalDownloadManager {
                     _removeOverlay();
                   },
                   child: Padding(
-                    padding: EdgeInsets.all(4.0),
+                    padding: const EdgeInsets.all(AppSpacing.xs),
                     child: Icon(Icons.close, color: AppColors.textSecondary(context), size: 20),
                   ),
                 ),
@@ -336,3 +338,6 @@ class _GlobalDownloadManager {
     _isDownloading = false;
   }
 }
+
+
+

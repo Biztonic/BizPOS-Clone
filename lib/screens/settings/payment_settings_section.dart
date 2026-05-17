@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/store/providers/store_notifier.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
-import '../../core/design/density/app_density.dart';
 import '../../core/design/tokens/app_spacing.dart';
 import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/tokens/app_colors.dart';
@@ -11,7 +12,8 @@ import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/components/atoms/app_card.dart';
 
 class PaymentSettingsSection extends ConsumerStatefulWidget {
-  const PaymentSettingsSection({super.key});
+  final bool isSubView;
+  const PaymentSettingsSection({super.key, this.isSubView = false});
 
   @override
   ConsumerState<PaymentSettingsSection> createState() => _PaymentSettingsSectionState();
@@ -61,21 +63,21 @@ class _PaymentSettingsSectionState extends ConsumerState<PaymentSettingsSection>
        await ref.read(storeNotifierProvider.notifier).updateStoreSettings(updatedStore);
        
        if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Settings Saved")));
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Payment Settings Saved'))));
        }
      }
   }
 
   @override
   Widget build(BuildContext context) {
-    final density = AppDensityProvider.configOf(context);
+    final storeState = ref.watch(storeNotifierProvider);
+    final store = storeState.activeStore;
+    if (store == null) return const Center(child: CircularProgressIndicator());
 
-    return PosScaffold(
-      title: "Payment Settings",
-      mainContent: ListView(
-        padding: EdgeInsets.all(AppSpacing.lg),
-        children: [
-          Text("Payment Methods", style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+    final content = ListView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      children: [
+          Text(AppLocalizations.t(context, 'Payment Methods'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           
           AppCard(
@@ -84,28 +86,28 @@ class _PaymentSettingsSectionState extends ConsumerState<PaymentSettingsSection>
               children: [
                 // Cash Toggle
                 SwitchListTile(
-                  title: const Text("Accept Cash", style: AppTypography.bodyLarge),
-                  subtitle: const Text("Enable cash payments at POS", style: AppTypography.bodySmall),
+                  title: Text(AppLocalizations.t(context, 'Accept Cash'), style: AppTypography.bodyLarge),
+                  subtitle: Text(AppLocalizations.t(context, 'Enable cash payments at POS'), style: AppTypography.bodySmall),
                   value: _enableCash,
                   onChanged: (val) => setState(() => _enableCash = val),
-                  secondary: Icon(Icons.money, color: AppColors.success),
+                  secondary: const Icon(Icons.money, color: AppColors.success),
                   contentPadding: EdgeInsets.zero,
                 ),
                 const Divider(),
                 // UPI Toggle
                 SwitchListTile(
-                  title: const Text("Accept UPI", style: AppTypography.bodyLarge),
-                  subtitle: const Text("Enable QR code payments", style: AppTypography.bodySmall),
+                  title: Text(AppLocalizations.t(context, 'Accept UPI'), style: AppTypography.bodyLarge),
+                  subtitle: Text(AppLocalizations.t(context, 'Enable QR code payments'), style: AppTypography.bodySmall),
                   value: _enableUPI,
                   onChanged: (val) => setState(() => _enableUPI = val),
-                  secondary: Icon(Icons.qr_code, color: AppColors.primary),
+                  secondary: const Icon(Icons.qr_code, color: AppColors.primary),
                   contentPadding: EdgeInsets.zero,
                 ),
                 const Divider(),
                 // Card Toggle
                 SwitchListTile(
-                  title: const Text("Accept Card", style: AppTypography.bodyLarge),
-                  subtitle: const Text("Enable card reader integration", style: AppTypography.bodySmall),
+                  title: Text(AppLocalizations.t(context, 'Accept Card'), style: AppTypography.bodyLarge),
+                  subtitle: Text(AppLocalizations.t(context, 'Enable card reader integration'), style: AppTypography.bodySmall),
                   value: _enableCard,
                   onChanged: (val) => setState(() => _enableCard = val),
                   secondary: const Icon(Icons.credit_card, color: AppColors.warning),
@@ -117,7 +119,7 @@ class _PaymentSettingsSectionState extends ConsumerState<PaymentSettingsSection>
 
           if (_enableUPI) ...[
             const SizedBox(height: AppSpacing.xl),
-            Text("UPI Configuration", style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.t(context, 'UPI Configuration'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: AppSpacing.md),
             AppCard(
               child: Column(
@@ -147,7 +149,14 @@ class _PaymentSettingsSectionState extends ConsumerState<PaymentSettingsSection>
             width: double.infinity,
           ),
         ],
-      ),
+      );
+
+    if (widget.isSubView) return content;
+
+    return PosScaffold(
+      title: "Payment Settings",
+      showSidebar: false,
+      mainContent: content,
     );
   }
 }

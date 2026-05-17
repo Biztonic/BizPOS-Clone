@@ -1,4 +1,8 @@
-import '../../core/design/tokens/app_colors.dart';
+﻿import '../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -37,7 +41,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Audit Log"),
+        title: Text(AppLocalizations.t(context, 'Audit Log')),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/reports'),
@@ -59,13 +63,13 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.history_toggle_off, size: 64, color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
-                        const SizedBox(height: 16),
-                        Text("No audit logs found", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 16)),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(AppLocalizations.t(context, 'No audit logs found'), style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 16)),
                       ],
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     itemCount: logs.length,
                     separatorBuilder: (_, __) => const Divider(),
                     itemBuilder: (context, index) {
@@ -89,15 +93,15 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
 
                       return ListTile(
                         leading: Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(AppSpacing.sm),
                           decoration: BoxDecoration(
                             color: iconColor.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
+                            shape: BoxShape.rectangle,
                           ),
                           child: Icon(icon, color: iconColor),
                         ),
                         title: Text("${log['entityType'] ?? 'Unknown'}: $eventType", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text("$timeStr • ID: ${(log['entityId'] ?? '---').toString().substring(0, 8)}..."),
+                        subtitle: Text("$timeStr â€¢ ID: ${(log['entityId'] ?? '---').toString().substring(0, 8)}..."),
                         trailing: (log['amount'] ?? 0) > 0 
                           ? Text("₹${log['amount'].toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w500))
                           : null,
@@ -108,3 +112,5 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     );
   }
 }
+
+

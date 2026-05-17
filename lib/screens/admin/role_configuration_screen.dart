@@ -1,5 +1,7 @@
-// ignore_for_file: use_build_context_synchronously
+﻿// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/store_provider.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
@@ -66,7 +68,7 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
               color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppSpacing.sm),
+              borderRadius: BorderRadius.zero,
             ),
             child: Icon(
               isSystem ? Icons.lock : Icons.badge_outlined,
@@ -87,12 +89,12 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
                     if (isSystem) ...[
                       const SizedBox(width: AppSpacing.sm),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: AppSpacing.xxs),
                         decoration: BoxDecoration(
                           color: AppColors.primaryLight.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.zero,
                         ),
-                        child: Text("SYSTEM", style: TextStyle(fontSize: 9, color: AppColors.primaryLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                        child: Text(AppLocalizations.t(context, 'SYSTEM'), style: const TextStyle(fontSize: 9, color: AppColors.primaryLight, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                       ),
                     ],
                   ],
@@ -158,10 +160,10 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
     }
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
          color: color.withValues(alpha: 0.1),
-         borderRadius: BorderRadius.circular(4),
+         borderRadius: BorderRadius.zero,
          border: Border.all(color: color.withValues(alpha: 0.3))
       ),
       child: Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
@@ -179,7 +181,7 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
        builder: (ctx) => StatefulBuilder(
          builder: (context, setState) {
            return AlertDialog(
-             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
              title: Text(role == null ? "Create Role" : "Edit Role", style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
              content: SizedBox(
                width: 500,
@@ -202,26 +204,26 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
                         prefixIcon: const Icon(Icons.description_outlined),
                       ),
                       const SizedBox(height: AppSpacing.lg),
-                      Text("Store Access Mode", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                      Text(AppLocalizations.t(context, 'Store Access Mode'), style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: AppSpacing.sm),
                       DropdownButtonFormField<String>(
                         value: accessMode,
-                        items: const [
-                          DropdownMenuItem(value: 'single', child: Text("Single Store (Standard)")),
-                          DropdownMenuItem(value: 'multi_full', child: Text("Multi-Store (Full Access)")),
-                          DropdownMenuItem(value: 'franchise', child: Text("Franchise (Primary Write / Secondary Read)")),
+                        items: [
+                          DropdownMenuItem(value: 'single', child: Text(AppLocalizations.t(context, 'Single Store (Standard)'))),
+                          DropdownMenuItem(value: 'multi_full', child: Text(AppLocalizations.t(context, 'Multi-Store (Full Access)'))),
+                          DropdownMenuItem(value: 'franchise', child: Text(AppLocalizations.t(context, 'Franchise (Primary Write / Secondary Read)'))),
                         ],
                         onChanged: (v) => setState(() => accessMode = v!),
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                         ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
-                      Text("Permissions", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                      Text(AppLocalizations.t(context, 'Permissions'), style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
                       const Divider(height: AppSpacing.lg),
                       CheckboxListTile(
-                         title: Text("Full Admin Access (All)", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+                         title: Text(AppLocalizations.t(context, 'Full Admin Access (All)'), style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
                          value: permissions['all'] == true,
                          onChanged: (v) => setState(() {
                            if (v == true) {
@@ -249,7 +251,7 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
              actions: [
                TextButton(
                  onPressed: () => Navigator.pop(ctx),
-                 child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context))),
+                 child: Text(AppLocalizations.t(context, 'Cancel'), style: TextStyle(color: AppColors.textSecondary(context))),
                ),
                AppButton.primary(
                  onPressed: () async {
@@ -306,13 +308,13 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
     showDialog(
        context: context,
        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text("Delete Role?", style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          title: Text(AppLocalizations.t(context, 'Delete Role?'), style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
           content: Text("Delete '${role.name}'? Users with this role may lose access.", style: AppTypography.bodyMedium),
           actions: [
              TextButton(
                onPressed: () => Navigator.pop(ctx),
-               child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context))),
+               child: Text(AppLocalizations.t(context, 'Cancel'), style: TextStyle(color: AppColors.textSecondary(context))),
              ),
              AppButton.danger(
                 onPressed: () async {
@@ -326,3 +328,5 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
     );
   }
 }
+
+

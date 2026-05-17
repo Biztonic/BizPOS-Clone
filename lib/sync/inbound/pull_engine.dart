@@ -49,13 +49,13 @@ class PullEngine {
       final storeId = getActiveStoreId();
       if (storeId == null) return;
 
-      final modules = SyncCollectionRegistry.pullModules;
+      const modules = SyncCollectionRegistry.pullModules;
       int totalPulled = 0;
 
       // Parallelize pulls with individual error handling
       await Future.wait(modules.map((m) =>
-        pullCollection(m, forceFull: forceFull).then((count) {
-          totalPulled += count;
+        pullCollection(m, forceFull: forceFull).then((pulledCount) {
+          totalPulled += pulledCount;
         }).catchError((e) {
           debugPrint('📥 [PullEngine] Error pulling $m: $e');
         })
@@ -101,7 +101,7 @@ class PullEngine {
       }
 
       final repo = getRepository();
-      int count = 0;
+      int pulledCount = 0;
       final Set<String> cloudIds = {};
 
       for (var doc in snapshot.docs) {
@@ -137,7 +137,7 @@ class PullEngine {
             await adapter.insertFromCloud(sanitizedData, doc.id, repo);
             await adapter.reconcileAfterPull(sanitizedData, doc.id, repo);
           }
-          count++;
+          pulledCount++;
         } catch (e) {
           debugPrint('📥 [PullEngine] Error processing $collection/${doc.id}: $e');
         }
@@ -152,7 +152,7 @@ class PullEngine {
       await adapter.onPullComplete(storeId, repo);
 
       await saveLastSyncTime(collection, DateTime.now());
-      return count;
+      return pulledCount;
     } catch (e) {
       debugPrint('📥 [PullEngine] Pull failed for $collection: $e');
       await logEvent('Pull error for $collection: $e', isError: true);

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../models/table_model.dart';
+import '../utils/theme.dart';
 
 // Screens
 import '../screens/splash_screen.dart';
@@ -49,24 +50,20 @@ import '../screens/universal_shell.dart';
 import '../widgets/feature_guard.dart';
 import '../widgets/demo_overlay_widget.dart';
 
-final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+import 'router_notifier.dart';
 
-class RouterNotifier extends ChangeNotifier {
-  void notify() {
-    debugPrint('🔔 RouterNotifier: Notifying listeners...');
-    notifyListeners();
-  }
-}
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 class AppRouter {
   static GoRouter createRouter(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final routerNotifier = Provider.of<RouterNotifier>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
 
     return GoRouter(
       navigatorKey: appNavigatorKey,
       initialLocation: '/splash',
-      refreshListenable: Listenable.merge([authProvider, routerNotifier]),
+      refreshListenable: Listenable.merge([authProvider, routerNotifier, dashboardProvider]),
       redirect: (context, state) => _handleRedirect(context, state, authProvider),
       routes: _routes,
     );
@@ -106,7 +103,8 @@ class AppRouter {
       final isCreateStore = state.uri.path == '/create-store';
       final isSelectStore = state.uri.path == '/select-store';
 
-      if (dashboard.activeStoreId == null && !isCreateStore && !isSelectStore) {
+      final isAdminPath = state.uri.path.startsWith('/admin');
+      if (dashboard.activeStoreId == null && !isCreateStore && !isSelectStore && !isAdminPath) {
         final isSuperAdmin = dashboard.isSuperAdmin;
         final hasStores = dashboard.hasAnyStore;
         final hasChecked = dashboard.hasCheckedStores;

@@ -140,7 +140,10 @@ class OutboundManager {
   Future<bool> _tryBatchCommit(List<dynamic> keys, Map<dynamic, dynamic> queueMap) async {
     try {
       final storeId = getActiveStoreId();
-      if (storeId == null) return false;
+      if (storeId == null || storeId.isEmpty) {
+        debugPrint('📤 [OutboundManager] WARNING: No active storeId, skipping batch commit');
+        return false;
+      }
 
       final batch = FirebaseFirestore.instance.batch();
       final processedKeys = <dynamic>[];
@@ -227,7 +230,7 @@ class OutboundManager {
     final retryCount = (item['retryCount'] ?? 0) as int;
     final storeId = getActiveStoreId();
 
-    if (collection == null || docId == null || type == null || storeId == null) return;
+    if (collection == null || docId == null || type == null || storeId == null || storeId.isEmpty) return;
 
     try {
       // Inject storeId if missing

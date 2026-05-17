@@ -155,9 +155,13 @@ class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, Dashboar
       final ReportPeriod selectedPeriod = params['period'];
       
       int days = 7;
-      if (selectedPeriod == ReportPeriod.today) days = 1;
-      else if (selectedPeriod == ReportPeriod.yesterday) days = 2; 
-      else if (selectedPeriod == ReportPeriod.last30Days) days = 30;
+      if (selectedPeriod == ReportPeriod.today) {
+        days = 1;
+      } else if (selectedPeriod == ReportPeriod.yesterday) {
+        days = 2; 
+      } else if (selectedPeriod == ReportPeriod.last30Days) {
+        days = 30;
+      }
 
       final now = DateTime.now();
       List<Map<String, dynamic>> data = [];
@@ -172,7 +176,9 @@ class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, Dashboar
             o.status != 'Refunded'
           ).toList();
           double sum = 0;
-          for(var o in dayOrders) sum += o.total;
+          for(var o in dayOrders) {
+            sum += o.total;
+          }
           data.add({'day': "${day.day}/${day.month}", 'sales': sum});
       }
       return data;
@@ -211,9 +217,13 @@ class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, Dashboar
       final ReportPeriod selectedPeriod = params['period'];
       
       int days = 7;
-      if (selectedPeriod == ReportPeriod.today) days = 1;
-      else if (selectedPeriod == ReportPeriod.yesterday) days = 2;
-      else if (selectedPeriod == ReportPeriod.last30Days) days = 30;
+      if (selectedPeriod == ReportPeriod.today) {
+        days = 1;
+      } else if (selectedPeriod == ReportPeriod.yesterday) {
+        days = 2;
+      } else if (selectedPeriod == ReportPeriod.last30Days) {
+        days = 30;
+      }
 
       final now = DateTime.now();
       final Map<String, double> salesMap = {};
@@ -253,7 +263,7 @@ class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, Dashboar
          grossSales += o.total;
          
          for (var orderItem in o.items) {
-            final category = orderItem.category ?? orderItem.item.category ?? 'Uncategorized';
+            final category = orderItem.category ?? orderItem.item.category;
             stats[category] = (stats[category] ?? 0.0) + (orderItem.item.price * orderItem.quantity);
          }
       }

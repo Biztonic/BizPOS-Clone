@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:provider/provider.dart';
 import '../models/customer.dart';
 import '../providers/dashboard_provider.dart';
@@ -82,7 +84,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Customer saved successfully'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text(AppLocalizations.t(context, 'Customer saved successfully')), behavior: SnackBarBehavior.floating),
         );
       }
     } catch (e) {
@@ -113,7 +115,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Profile Information", style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                          Text(AppLocalizations.t(context, 'Profile Information'), style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
                           const SizedBox(height: AppSpacing.lg),
                           AppTextField(
                             controller: _nameController,
@@ -145,7 +147,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                           Text("Business Details", style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                           Text(AppLocalizations.t(context, 'Business Details'), style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
                           const SizedBox(height: AppSpacing.lg),
                           AppTextField(
                             controller: _addressController,

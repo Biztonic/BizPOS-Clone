@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/store/providers/store_notifier.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
-import '../../core/design/density/app_density.dart';
 import '../../core/design/tokens/app_spacing.dart';
 import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/components/atoms/app_button.dart';
@@ -10,7 +11,8 @@ import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/components/atoms/app_card.dart';
 
 class TaxSettingsSection extends ConsumerStatefulWidget {
-  const TaxSettingsSection({super.key});
+  final bool isSubView;
+  const TaxSettingsSection({super.key, this.isSubView = false});
   @override
   ConsumerState<TaxSettingsSection> createState() => _TaxSettingsSectionState();
 }
@@ -27,7 +29,7 @@ class _TaxSettingsSectionState extends ConsumerState<TaxSettingsSection> {
       final store = ref.read(storeNotifierProvider).activeStore;
       if (store != null) {
         _taxController.text = (store.taxRate ?? 0).toString();
-        _isTaxEnabled = store.isTaxEnabled ?? false;
+        _isTaxEnabled = store.isTaxEnabled;
       }
       _isInit = false;
     }
@@ -43,23 +45,21 @@ class _TaxSettingsSectionState extends ConsumerState<TaxSettingsSection> {
   Widget build(BuildContext context) {
     final storeState = ref.watch(storeNotifierProvider);
     final store = storeState.activeStore;
-    if (store == null) return const SizedBox();
-    final density = AppDensityProvider.configOf(context);
+    if (store == null) return const Center(child: CircularProgressIndicator());
+    
 
-    return PosScaffold(
-      title: "Tax Settings",
-      mainContent: ListView(
-        padding: EdgeInsets.all(AppSpacing.lg),
-        children: [
-          AppCard(
+    final content = ListView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      children: [
+        AppCard(
             child: Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SwitchListTile(
-                    title: const Text('Enable Tax Calculation', style: AppTypography.titleSmall),
-                    subtitle: Text('Apply tax calculated on bill subtotal', 
+                    title: Text(AppLocalizations.t(context, 'Enable Tax Calculation'), style: AppTypography.titleSmall),
+                    subtitle: Text(AppLocalizations.t(context, 'Apply tax calculated on bill subtotal'), 
                       style: AppTypography.bodySmall.copyWith(color: Theme.of(context).disabledColor)),
                     value: _isTaxEnabled,
                     onChanged: (val) => setState(() => _isTaxEnabled = val),
@@ -86,9 +86,9 @@ class _TaxSettingsSectionState extends ConsumerState<TaxSettingsSection> {
                         isTaxEnabled: _isTaxEnabled,
                       );
                       await ref.read(storeNotifierProvider.notifier).updateStoreSettings(updatedStore);
-                      if (mounted) {
+                      if (context.mounted) {
                          ScaffoldMessenger.of(context).showSnackBar(
-                           const SnackBar(content: Text("Tax Settings Saved"), behavior: SnackBarBehavior.floating)
+                           SnackBar(content: Text(AppLocalizations.t(context, 'Tax Settings Saved')), behavior: SnackBarBehavior.floating)
                          );
                          Navigator.pop(context);
                       }
@@ -99,7 +99,14 @@ class _TaxSettingsSectionState extends ConsumerState<TaxSettingsSection> {
             ),
           ),
         ],
-      ),
+      );
+
+    if (widget.isSubView) return content;
+
+    return PosScaffold(
+      title: "Tax Settings",
+      showSidebar: false,
+      mainContent: content,
     );
   }
 }

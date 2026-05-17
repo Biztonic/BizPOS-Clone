@@ -1,4 +1,8 @@
-import '../../core/design/tokens/app_colors.dart';
+﻿import '../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 // ignore_for_file: unused_field, deprecated_member_use_from_same_package, use_build_context_synchronously, unused_element, dead_null_aware_expression, curly_braces_in_flow_control_structures
 // ignore_for_file: constant_identifier_names
 import 'dart:async';
@@ -220,13 +224,13 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
         builder: (context, setDialogState) {
           return AlertDialog(
             backgroundColor: CarDashboardTheme.bgDark.withValues(alpha: 0.95),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: CarDashboardTheme.neonBlue)),
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero, side: BorderSide(color: CarDashboardTheme.neonBlue)),
             title: Text("CUSTOMIZE CARD: ${item.name}", style: const TextStyle(color: Colors.white, fontSize: 16)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("CARD STYLE", style: TextStyle(color: CarDashboardTheme.neonBlue, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(AppLocalizations.t(context, 'CARD STYLE'), style: const TextStyle(color: CarDashboardTheme.neonBlue, fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -236,22 +240,22 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                   ],
                 ),
                 
-                const SizedBox(height: 24),
-                const Text("CARD SIZE", style: TextStyle(color: CarDashboardTheme.neonBlue, fontSize: 12, fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.lg),
+                Text(AppLocalizations.t(context, 'CARD SIZE'), style: const TextStyle(color: CarDashboardTheme.neonBlue, fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                      _buildStyleOption("SMALL", 'small', selectedSize, (val) => setDialogState(() => selectedSize = val)),
-                     const SizedBox(width: 8),
+                     const SizedBox(width: AppSpacing.sm),
                      _buildStyleOption("MEDIUM", 'medium', selectedSize, (val) => setDialogState(() => selectedSize = val)),
-                     const SizedBox(width: 8),
+                     const SizedBox(width: AppSpacing.sm),
                      _buildStyleOption("LARGE", 'large', selectedSize, (val) => setDialogState(() => selectedSize = val)),
                   ],
                 ),
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text("CANCEL", style: TextStyle(color: AppColors.textSecondary(context)))),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'CANCEL'), style: TextStyle(color: AppColors.textSecondary(context)))),
               NeonButton(
                 label: "SAVE CHANGES",
                 onPressed: () {
@@ -277,7 +281,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
            decoration: BoxDecoration(
              color: isSelected ? CarDashboardTheme.neonBlue.withValues(alpha: 0.2) : Colors.transparent,
              border: Border.all(color: isSelected ? CarDashboardTheme.neonBlue : AppColors.textSecondary(context)),
-             borderRadius: BorderRadius.circular(8)
+             borderRadius: BorderRadius.zero
            ),
            child: Text(label, style: TextStyle(
              color: isSelected ? CarDashboardTheme.neonBlue : AppColors.textSecondary(context), 
@@ -329,7 +333,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                     foregroundColor: Colors.black, // Dark text on bright buttons
                     elevation: 4,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.zero,
                         side: BorderSide(color: color.withValues(alpha: 0.5), width: 1)
                     ),
                     padding: EdgeInsets.zero,
@@ -342,8 +346,8 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
 
           return AlertDialog(
             backgroundColor: CarDashboardTheme.panelColor(isDarkMode), // Theme Aware
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: CarDashboardTheme.borderColor(isDarkMode))),
-            title: Text("CASH PAYMENT", style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontWeight: FontWeight.bold, fontSize: 24)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero, side: BorderSide(color: CarDashboardTheme.borderColor(isDarkMode))),
+            title: Text(AppLocalizations.t(context, 'CASH PAYMENT'), style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontWeight: FontWeight.bold, fontSize: 24)),
             content: SingleChildScrollView( // Fix Overflow
               child: SizedBox(
                 width: 450, 
@@ -352,16 +356,16 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                   children: [
                     // Summary Box
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
                         color: CarDashboardTheme.primaryColor(isDarkMode).withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.zero,
                         border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode))
                       ),
                       child: Column(
                         children: [
                           _buildPaymentSummaryRow("BILL TOTAL", total, CarDashboardTheme.textColor(isDarkMode), isLarge: true),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.sm),
                           _buildPaymentSummaryRow("RECEIVED", receivedAmount, CarDashboardTheme.electricGreen, isLarge: true),
                           Divider(color: CarDashboardTheme.borderColor(isDarkMode), height: 24),
                           _buildPaymentSummaryRow("CHANGE", returnAmount > 0 ? returnAmount : 0, CarDashboardTheme.neonBlue, isExtraLarge: true),
@@ -369,7 +373,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                       ),
                     ),
                     
-                    const SizedBox(height: 16), // Reduced Spacing
+                    const SizedBox(height: AppSpacing.md), // Reduced Spacing
                     
                     // Denom Buttons (Colorful & Simple)
                     Wrap(
@@ -386,19 +390,19 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                       ],
                     ),
                     
-                    const SizedBox(height: 16), // Reduced Spacing
+                    const SizedBox(height: AppSpacing.md), // Reduced Spacing
                     
                     // Reset Button
                      TextButton.icon(
                        onPressed: () => setState(() => receivedAmount = 0),
                        icon: Icon(Icons.refresh, color: CarDashboardTheme.subTextColor(isDarkMode), size: 20),
-                       label: Text("RESET AMOUNT", style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 14)),
+                       label: Text(AppLocalizations.t(context, 'RESET AMOUNT'), style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 14)),
                      )
                   ],
                 ),
               ),
             ),
-            actionsPadding: const EdgeInsets.all(16),
+            actionsPadding: const EdgeInsets.all(AppSpacing.md),
             actions: [
                Row(
                  children: [
@@ -406,11 +410,11 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                      child: TextButton(
                        onPressed: () => Navigator.pop(ctx), 
                        style: TextButton.styleFrom(
-                         padding: const EdgeInsets.symmetric(vertical: 20), // Increased Height
+                         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs), // Increased Height
                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Sharp Corners
                          backgroundColor: AppColors.textSecondary(context).withValues(alpha: 0.1),
                        ),
-                       child: Text("CANCEL", style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 18, fontWeight: FontWeight.bold))
+                       child: Text(AppLocalizations.t(context, 'CANCEL'), style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 18, fontWeight: FontWeight.bold))
                      ),
                    ),
                    const SizedBox(width: 12),
@@ -420,7 +424,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                        style: ElevatedButton.styleFrom(
                          backgroundColor: CarDashboardTheme.electricGreen, 
                          foregroundColor: Colors.black,
-                         padding: const EdgeInsets.symmetric(vertical: 20), // Increased Height
+                         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs), // Increased Height
                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Sharp Corners
                          elevation: 0,
                        ),
@@ -428,7 +432,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                          Navigator.pop(ctx);
                          _finalizeOrder('Cash');
                        },
-                       child: const Text("CONFIRM PAYMENT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                       child: Text(AppLocalizations.t(context, 'CONFIRM PAYMENT'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
                      ),
                    ),
                  ],
@@ -461,30 +465,29 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: CarDashboardTheme.panelColor(isDarkMode),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20), 
-            side: const BorderSide(color: CarDashboardTheme.alertRed, width: 2)
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero, 
+            side: BorderSide(color: CarDashboardTheme.alertRed, width: 2)
         ),
         title: Row(
           children: [
             const Icon(Icons.lock, color: CarDashboardTheme.alertRed),
-            const SizedBox(width: 8),
-            Text("PLAN RESTRICTION", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.alertRed)),
+            const SizedBox(width: AppSpacing.sm),
+            Text(AppLocalizations.t(context, 'PLAN RESTRICTION'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.alertRed)),
           ],
         ),
         content: Column(
            mainAxisSize: MainAxisSize.min,
            children: [
               const Icon(Icons.security, size: 64, color: CarDashboardTheme.warningAmber),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 message, 
                 textAlign: TextAlign.center,
                 style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontSize: 18),
               ),
-              const SizedBox(height: 16),
-              Text(
-                "UPGRADE TO STANDARD PLAN FOR UNLIMITED ACCESS", 
+              const SizedBox(height: AppSpacing.md),
+              Text(AppLocalizations.t(context, 'UPGRADE TO STANDARD PLAN FOR UNLIMITED ACCESS'), 
                 textAlign: TextAlign.center,
                 style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 12, fontWeight: FontWeight.bold),
               ),
@@ -513,19 +516,19 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: CarDashboardTheme.panelColor(isDarkMode),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: CarDashboardTheme.electricGreen, width: 2)),
-        title: Text("UPI PAYMENT", style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontWeight: FontWeight.bold, fontSize: 24)),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero, side: BorderSide(color: CarDashboardTheme.electricGreen, width: 2)),
+        title: Text(AppLocalizations.t(context, 'UPI PAYMENT'), style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontWeight: FontWeight.bold, fontSize: 24)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.qr_code_2, size: 120, color: CarDashboardTheme.textColor(isDarkMode)),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Text("Requesting ₹${total.toStringAsFixed(2)}", style: const TextStyle(color: CarDashboardTheme.electricGreen, fontSize: 32, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            Text("Waiting for payment validation...", style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 16)),
+            Text(AppLocalizations.t(context, 'Waiting for payment validation...'), style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 16)),
           ],
         ),
-        actionsPadding: const EdgeInsets.all(16),
+        actionsPadding: const EdgeInsets.all(AppSpacing.md),
         actions: [
            Row(
              children: [
@@ -533,11 +536,11 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                  child: TextButton(
                    onPressed: () => Navigator.pop(ctx), 
                    style: TextButton.styleFrom(
-                     padding: const EdgeInsets.symmetric(vertical: 20),
+                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                      backgroundColor: AppColors.textSecondary(context).withValues(alpha: 0.1),
                    ),
-                   child: Text("CANCEL", style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 18, fontWeight: FontWeight.bold))
+                   child: Text(AppLocalizations.t(context, 'CANCEL'), style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 18, fontWeight: FontWeight.bold))
                  ),
                ),
                const SizedBox(width: 12),
@@ -547,7 +550,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                    style: ElevatedButton.styleFrom(
                      backgroundColor: CarDashboardTheme.electricGreen,
                      foregroundColor: Colors.black,
-                     padding: const EdgeInsets.symmetric(vertical: 20),
+                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                      elevation: 0,
                    ),
@@ -555,7 +558,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                       Navigator.pop(ctx);
                       _finalizeOrder('UPI');
                    },
-                   child: const Text("PAYMENT RECEIVED", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                   child: Text(AppLocalizations.t(context, 'PAYMENT RECEIVED'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                  ),
                ),
              ],
@@ -607,31 +610,31 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
             backgroundColor: CarDashboardTheme.bgDark.withValues(alpha: 0.95),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16), 
-              side: const BorderSide(color: CarDashboardTheme.alertRed, width: 2)
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero, 
+              side: BorderSide(color: CarDashboardTheme.alertRed, width: 2)
             ),
             title: Row(
               children: [
                 const Icon(Icons.warning_amber_rounded, color: CarDashboardTheme.alertRed),
-                const SizedBox(width: 8),
-                Text("CRITICAL STOCK FAILURE", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.alertRed, fontSize: 16)),
+                const SizedBox(width: AppSpacing.sm),
+                Text(AppLocalizations.t(context, 'CRITICAL STOCK FAILURE'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.alertRed, fontSize: 16)),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("UNABLE TO PROCESS SEQUENCE.", style: TextStyle(color: Colors.white70)),
-                const SizedBox(height: 16),
-                const Text("DEPLETED ASSETS:", style: TextStyle(color: CarDashboardTheme.alertRed, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                Text(AppLocalizations.t(context, 'UNABLE TO PROCESS SEQUENCE.'), style: const TextStyle(color: Colors.white70)),
+                const SizedBox(height: AppSpacing.md),
+                Text(AppLocalizations.t(context, 'DEPLETED ASSETS:'), style: const TextStyle(color: CarDashboardTheme.alertRed, fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.sm),
                 ...outOfStockItems.map((s) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                   child: Row(
                     children: [
                       const Icon(Icons.close, color: CarDashboardTheme.alertRed, size: 14),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       Text(s, style: const TextStyle(color: Colors.white, fontFamily: 'Orbitron')),
                     ],
                   ),
@@ -661,29 +664,29 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
            barrierDismissible: false,
            builder: (ctx) => AlertDialog(
             backgroundColor: CarDashboardTheme.bgDark.withValues(alpha: 0.95),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16), 
-              side: const BorderSide(color: CarDashboardTheme.warningAmber, width: 2)
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero, 
+              side: BorderSide(color: CarDashboardTheme.warningAmber, width: 2)
             ),
             title: Row(
               children: [
                 const Icon(Icons.info_outline, color: CarDashboardTheme.warningAmber),
-                const SizedBox(width: 8),
-                Text("LOW ASSET WARNING", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.warningAmber, fontSize: 16)),
+                const SizedBox(width: AppSpacing.sm),
+                Text(AppLocalizations.t(context, 'LOW ASSET WARNING'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.warningAmber, fontSize: 16)),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("ASSETS REACHING CRITICAL LEVELS:", style: TextStyle(color: CarDashboardTheme.warningAmber, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                Text(AppLocalizations.t(context, 'ASSETS REACHING CRITICAL LEVELS:'), style: const TextStyle(color: CarDashboardTheme.warningAmber, fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.sm),
                 ...lowStockItems.map((s) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                   child: Row(
                     children: [
                       const Icon(Icons.priority_high, color: CarDashboardTheme.warningAmber, size: 14),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       Text(s, style: const TextStyle(color: Colors.white)),
                     ],
                   ),
@@ -693,9 +696,9 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text("CANCEL", style: TextStyle(color: Colors.white54)),
+                child: Text(AppLocalizations.t(context, 'CANCEL'), style: const TextStyle(color: Colors.white54)),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               NeonButton(
                 label: "IGNORE & PROCEED",
                 color: CarDashboardTheme.warningAmber,
@@ -791,8 +794,8 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       }
       
     } catch (e, stackTrace) {
-      debugPrint('❌ _finalizeOrder ERROR: $e');
-      debugPrint('❌ Stack: $stackTrace');
+      debugPrint('âŒ _finalizeOrder ERROR: $e');
+      debugPrint('âŒ Stack: $stackTrace');
       if (mounted) {
          Navigator.of(context, rootNavigator: true).pop(); 
          setState(() => _isProcessing = false);
@@ -910,7 +913,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                     Container(
                       height: 60,
                       color: CarDashboardTheme.panelColor(isDarkMode),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -918,7 +921,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                             icon: Icon(Icons.menu, color: CarDashboardTheme.primaryColor(isDarkMode)),
                             onPressed: () => Scaffold.of(context).openDrawer(),
                           ),
-                          Text("POS Terminal", style: CarDashboardTheme.productTitle.copyWith(fontSize: 18, color: CarDashboardTheme.textColor(isDarkMode))),
+                          Text(AppLocalizations.t(context, 'POS Terminal'), style: CarDashboardTheme.productTitle.copyWith(fontSize: 18, color: CarDashboardTheme.textColor(isDarkMode))),
                           // Printer Status
                           _buildPrinterStatusIndicator(isDarkMode, compact: true),
                           // Cart Toggle
@@ -995,12 +998,12 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                         children: [
                            // Header with Toggle
                            Padding(
-                             padding: const EdgeInsets.all(16.0),
+                             padding: const EdgeInsets.all(AppSpacing.md),
                              child: Row(
                                mainAxisAlignment: (_isCategoryExpanded == true) ? MainAxisAlignment.spaceBetween : MainAxisAlignment.center,
                                children: [
                                  if (_isCategoryExpanded == true)
-                                    Expanded(child: Text("BIZTONIC", style: CarDashboardTheme.priceStyle.copyWith(color: CarDashboardTheme.primaryColor(isDarkMode), fontSize: 18))),
+                                    Expanded(child: Text(AppLocalizations.t(context, 'BIZTONIC'), style: CarDashboardTheme.priceStyle.copyWith(color: CarDashboardTheme.primaryColor(isDarkMode), fontSize: 18))),
                                  
                                  // Toggle Arrow
                                  InkWell(
@@ -1029,7 +1032,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                         // Top Bar
                         Container(
                           height: 60,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                           decoration: BoxDecoration(
                             border: Border(bottom: BorderSide(color: CarDashboardTheme.borderColor(isDarkMode))),
                             color: CarDashboardTheme.panelColor(isDarkMode),
@@ -1037,7 +1040,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                           child: Row(
                             children: [
                               Icon(Icons.search, color: CarDashboardTheme.subTextColor(isDarkMode)),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.sm),
                               Expanded(
                                 child: TextField(
                                   decoration: const InputDecoration(
@@ -1052,9 +1055,9 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                                 icon: Icon(_isEditMode ? Icons.check_circle : Icons.edit, color: _isEditMode ? CarDashboardTheme.accentSuccess : CarDashboardTheme.subTextColor(isDarkMode)),
                                 onPressed: _toggleEditMode,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.sm),
                               _buildPrinterStatusIndicator(isDarkMode),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.sm),
                               // Checkout Toggle
                               IconButton(
                                 icon: Icon((_isRightHanded == _isCartPanelVisible) ? Icons.arrow_forward : Icons.arrow_back, color: CarDashboardTheme.textColor(isDarkMode)),
@@ -1069,7 +1072,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
 
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.all(16.0),
+                            padding: const EdgeInsets.all(AppSpacing.md),
                             child: _buildProductGrid(filteredProducts), 
                           ),
                         ),
@@ -1092,7 +1095,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                         children: [
                            // Header with Toggle
                            Padding(
-                             padding: const EdgeInsets.all(16.0),
+                             padding: const EdgeInsets.all(AppSpacing.md),
                              child: Row(
                                mainAxisAlignment: (_isCategoryExpanded == true) ? MainAxisAlignment.spaceBetween : MainAxisAlignment.center,
                                children: [
@@ -1107,7 +1110,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                                  ),
 
                                  if (_isCategoryExpanded == true)
-                                    Expanded(child: Text("BIZTONIC", textAlign: TextAlign.right, style: CarDashboardTheme.priceStyle.copyWith(color: CarDashboardTheme.primaryColor(isDarkMode), fontSize: 18))),
+                                    Expanded(child: Text(AppLocalizations.t(context, 'BIZTONIC'), textAlign: TextAlign.right, style: CarDashboardTheme.priceStyle.copyWith(color: CarDashboardTheme.primaryColor(isDarkMode), fontSize: 18))),
                                ],
                              ),
                            ),
@@ -1173,7 +1176,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
           // User Name
           if (user != null)
             Padding(
-              padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+              padding: const EdgeInsets.only(top: AppSpacing.md, left: AppSpacing.md, right: AppSpacing.md),
               child: Text(
                 user.name, 
                 style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.accentSuccess, fontSize: 16, fontWeight: FontWeight.bold), // Increased to 16
@@ -1183,7 +1186,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
             
           // Session Timer
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: _buildSessionTimer(isDarkMode),
           ),
           const Divider(),
@@ -1206,12 +1209,12 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(bottom: 8, left: 4, right: 4),
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+                  margin: const EdgeInsets.only(bottom: AppSpacing.sm, left: AppSpacing.xs, right: AppSpacing.xs),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.xs),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSelected ? CarDashboardTheme.neonBlue : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.zero,
                     boxShadow: isSelected ? CarDashboardTheme.neonGlowBlue : [],
                   ),
                   child: Row(
@@ -1240,7 +1243,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                           ),
                         ),
                       ] else if (isExpanded != true) ...[
-                        const SizedBox(width: 4),
+                        const SizedBox(width: AppSpacing.xs),
                         Expanded(
                           child: Text(
                             cat.toUpperCase(),
@@ -1266,7 +1269,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
 
         // Bottom Actions
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: (isExpanded == true) 
           ? Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1285,7 +1288,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
           : Column(
              children: [
               _buildSidebarActionBtn(Icons.calculate, "Calc", CarDashboardTheme.neonBlue, _showCalculator, overrideBg: Colors.black),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               _buildSidebarActionBtn(Icons.power_settings_new, "Exit", CarDashboardTheme.alertRed, () {
                  final router = GoRouter.of(context);
                  final scaffold = Scaffold.maybeOf(effectiveContext);
@@ -1304,7 +1307,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
   Widget _buildSidebarActionBtn(IconData icon, String tooltip, Color color, VoidCallback onTap, {bool isSolid = false, Color? overrideBg}) {
       return InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(50),
+        borderRadius: BorderRadius.zero,
         child: Container(
           width: 48,
           height: 48,
@@ -1327,17 +1330,17 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
      final seconds = twoDigits(_sessionDuration.inSeconds.remainder(60));
      
      return Container(
-       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: 12),
        decoration: BoxDecoration(
          color: CarDashboardTheme.backgroundColor(isDarkMode),
-         borderRadius: BorderRadius.circular(8),
+         borderRadius: BorderRadius.zero,
          border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode)),
        ),
        child: Row(
          mainAxisAlignment: MainAxisAlignment.center,
          children: [
            Icon(Icons.timer, size: 16, color: CarDashboardTheme.primaryColor(isDarkMode)),
-           const SizedBox(width: 8),
+           const SizedBox(width: AppSpacing.sm),
            Text("$hours:$minutes:$seconds", style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontSize: 16, fontWeight: FontWeight.bold)), // Increased to 16
          ],
        ),
@@ -1367,9 +1370,8 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.inventory_2_outlined, size: 64, color: CarDashboardTheme.subTextColor(isDarkMode).withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            Text(
-              "No products found in this category.",
+            const SizedBox(height: AppSpacing.md),
+            Text(AppLocalizations.t(context, 'No products found in this category.'),
               style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontSize: 18),
             ),
           ],
@@ -1386,7 +1388,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
 
         return GridView.builder(
           controller: _gridController,
-          padding: const EdgeInsets.only(bottom: 80),
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: 0.80, // Taller for better fit
@@ -1448,11 +1450,11 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       children: [
         // 1. Header (User Info / Order Type) - Collapsible
         Container(
-          margin: const EdgeInsets.only(bottom: 8), 
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm), 
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: CarDashboardTheme.panelColor(isDarkMode),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.zero,
             border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode)),
           ),
           child: Column(
@@ -1462,11 +1464,11 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
           onTap: () => setState(() => _isHeaderExpanded = !_isHeaderExpanded),
           behavior: HitTestBehavior.translucent, // Capture full width
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8), // Increase touch area
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm), // Increase touch area
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("ORDER DETAILS", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode))),
+                Text(AppLocalizations.t(context, 'ORDER DETAILS'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode))),
                 Icon(
                   _isHeaderExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                   color: CarDashboardTheme.primaryColor(isDarkMode),
@@ -1490,29 +1492,29 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                              Row(
                                children: [
                                  Icon(Icons.person_outline, size: 20, color: CarDashboardTheme.primaryColor(isDarkMode)),
-                                 const SizedBox(width: 8),
-                                 Text("CUSTOMER DETAILS", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.primaryColor(isDarkMode), fontSize: 16, fontWeight: FontWeight.bold)),
+                                 const SizedBox(width: AppSpacing.sm),
+                                 Text(AppLocalizations.t(context, 'CUSTOMER DETAILS'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.primaryColor(isDarkMode), fontSize: 16, fontWeight: FontWeight.bold)),
                                ],
                              ),
                              // Select Button
                              TextButton.icon(
                                onPressed: _showCustomerSelectionDialog,
                                icon: Icon(Icons.list, size: 24, color: CarDashboardTheme.secondaryColor(isDarkMode)),
-                               label: Text("Select", style: TextStyle(color: CarDashboardTheme.secondaryColor(isDarkMode), fontSize: 16, fontWeight: FontWeight.bold)),
+                               label: Text(AppLocalizations.t(context, 'Select'), style: TextStyle(color: CarDashboardTheme.secondaryColor(isDarkMode), fontSize: 16, fontWeight: FontWeight.bold)),
                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                                   minimumSize: const Size(80, 48)
                                ),
                              )
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                       // Name Input
                       Container(
                         height: 50, // Increased height
                         decoration: BoxDecoration(
                           color: CarDashboardTheme.backgroundColor(isDarkMode),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.zero,
                           border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode)),
                         ),
                         child: TextField(
@@ -1527,13 +1529,13 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       // Mobile Input
                       Container(
                         height: 50, // Increased height
                         decoration: BoxDecoration(
                           color: CarDashboardTheme.backgroundColor(isDarkMode),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.zero,
                           border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode)),
                         ),
                         child: TextField(
@@ -1557,9 +1559,9 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildOrderTypeBtn('Dine In', Icons.restaurant),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     _buildOrderTypeBtn('Take Out', Icons.shopping_bag_outlined),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     _buildOrderTypeBtn('Delivery', Icons.delivery_dining),
                   ],
                 ),
@@ -1575,7 +1577,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
           child: Container(
             decoration: BoxDecoration(
               color: CarDashboardTheme.panelColor(isDarkMode),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.zero,
               border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode)),
             ),
             padding: const EdgeInsets.all(12),
@@ -1594,7 +1596,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                 const Divider(),
                 Expanded(
                   child: _cart.isEmpty 
-                  ? Center(child: Text("Cart Empty", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode))))
+                  ? Center(child: Text(AppLocalizations.t(context, 'Cart Empty'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode))))
                   : ListView.builder(
                       itemCount: _cart.length,
                       itemBuilder: (ctx, i) {
@@ -1617,11 +1619,11 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                         ); // Safety
                         
                         return Container(
-                           margin: const EdgeInsets.only(bottom: 8), 
-                           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                           margin: const EdgeInsets.only(bottom: AppSpacing.sm), 
+                           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: 12),
                            decoration: BoxDecoration(
                              color: CarDashboardTheme.backgroundColor(isDarkMode),
-                             borderRadius: BorderRadius.circular(12),
+                             borderRadius: BorderRadius.zero,
                              border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode)),
                            ),
                            child: Column(
@@ -1646,7 +1648,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                                 ],
                               ),
                               
-                              const SizedBox(height: 8), 
+                              const SizedBox(height: AppSpacing.sm), 
                               
                               // ROW 2: Price (Left) + Qty (Right)
                               Row(
@@ -1673,10 +1675,10 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                                         width: 50, // Fixed width
                                         height: 44, 
                                         alignment: Alignment.center,
-                                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                                        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                                         decoration: BoxDecoration(
                                           color: CarDashboardTheme.panelColor(isDarkMode),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.zero,
                                           border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode))
                                         ),
                                         child: Text(
@@ -1711,10 +1713,10 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
         
         // 4. Total & Payment Buttons
         Container(
-          padding: const EdgeInsets.all(16), 
+          padding: const EdgeInsets.all(AppSpacing.md), 
           decoration: BoxDecoration(
               color: CarDashboardTheme.panelColor(isDarkMode),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.zero,
               border: Border.all(color: CarDashboardTheme.borderColor(isDarkMode)),
               boxShadow: CarDashboardTheme.cardShadow(isDarkMode),
           ),
@@ -1723,11 +1725,11 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("TOTAL", style: CarDashboardTheme.labelStyle.copyWith(fontSize: 20, fontWeight: FontWeight.bold, color: CarDashboardTheme.subTextColor(isDarkMode))),
+                  Text(AppLocalizations.t(context, 'TOTAL'), style: CarDashboardTheme.labelStyle.copyWith(fontSize: 20, fontWeight: FontWeight.bold, color: CarDashboardTheme.subTextColor(isDarkMode))),
                   Text("₹${total.toStringAsFixed(2)}", style: CarDashboardTheme.priceStyle.copyWith(fontSize: 36, color: CarDashboardTheme.textColor(isDarkMode))), 
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
                   Expanded(
@@ -1735,12 +1737,12 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: CarDashboardTheme.alertRed, // CASH = RED
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16), // Height adjusted
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md), // Height adjusted
                         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Sharp Corners
                       ),
                       onPressed: _cart.isNotEmpty ? () => _finalizeOrder('Cash') : null,
                       onLongPress: _cart.isNotEmpty ? _handleCashPayment : null,
-                      child: const Text("CASH", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), // Larger Text
+                      child: Text(AppLocalizations.t(context, 'CASH'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), // Larger Text
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1749,12 +1751,12 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: CarDashboardTheme.electricGreen, // UPI = GREEN
                           foregroundColor: Colors.black, // Dark Text for Contrast
-                          padding: const EdgeInsets.symmetric(vertical: 16), // Height adjusted
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md), // Height adjusted
                           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Sharp Corners
                         ),
                         onPressed: _cart.isNotEmpty ? () => _finalizeOrder('UPI') : null,
                         onLongPress: _cart.isNotEmpty ? _handleUPIPayment : null,
-                        child: const Text("UPI", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), // Larger Text
+                        child: Text(AppLocalizations.t(context, 'UPI'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), // Larger Text
                       ),
                   ),
                 ],
@@ -1783,11 +1785,11 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       child: GestureDetector(
         onTap: () => setState(() => _orderType = type),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16), // Increased Padding
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md), // Increased Padding
           decoration: BoxDecoration(
             color: isSelected ? activeColor : Colors.transparent, // Filled BG when selected
             border: Border.all(color: isSelected ? activeColor : CarDashboardTheme.borderColor(isDarkMode)),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.zero,
           ),
           child: Column(
             children: [
@@ -1812,10 +1814,10 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       onTap: onTap,
       child: Container(
         width: 48, height: 44, // Large Touch Target
-        margin: const EdgeInsets.symmetric(horizontal: 4),
+        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
         decoration: BoxDecoration(
           color: CarDashboardTheme.primaryColor(isDarkMode).withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.zero,
           border: Border.all(color: CarDashboardTheme.primaryColor(isDarkMode).withValues(alpha: 0.5))
         ),
         child: Icon(icon, color: CarDashboardTheme.primaryColor(isDarkMode), size: 24),
@@ -1831,13 +1833,13 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
        context: context,
        builder: (ctx) => AlertDialog(
          backgroundColor: CarDashboardTheme.panelColor(provider.isDarkMode),
-         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: CarDashboardTheme.borderColor(provider.isDarkMode))),
-         title: Text("SELECT CUSTOMER", style: TextStyle(color: CarDashboardTheme.textColor(provider.isDarkMode), fontSize: 16)),
+         shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero, side: BorderSide(color: CarDashboardTheme.borderColor(provider.isDarkMode))),
+         title: Text(AppLocalizations.t(context, 'SELECT CUSTOMER'), style: TextStyle(color: CarDashboardTheme.textColor(provider.isDarkMode), fontSize: 16)),
          content: SizedBox(
            width: 300,
            height: 400,
            child: customers.isEmpty 
-             ? Center(child: Text("No customers found", style: TextStyle(color: CarDashboardTheme.subTextColor(provider.isDarkMode))))
+             ? Center(child: Text(AppLocalizations.t(context, 'No customers found'), style: TextStyle(color: CarDashboardTheme.subTextColor(provider.isDarkMode))))
              : ListView.builder(
                  itemCount: customers.length,
                  itemBuilder: (context, index) {
@@ -1882,7 +1884,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
                color: statusColor.withValues(alpha: 0.1),
-               borderRadius: BorderRadius.circular(16),
+               borderRadius: BorderRadius.zero,
                border: Border.all(color: statusColor.withValues(alpha: 0.3)),
             ),
             child: Row(
@@ -1925,7 +1927,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       try {
         await provider.batchUpdateStock(_stockChanges);
         ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text("Stock Updated Successfully"), backgroundColor: CarDashboardTheme.electricGreen)
+           SnackBar(content: Text(AppLocalizations.t(context, 'Stock Updated Successfully')), backgroundColor: CarDashboardTheme.electricGreen)
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1966,7 +1968,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: CarDashboardTheme.panelColor(true),
-        title: Text("Choose Background", style: TextStyle(color: CarDashboardTheme.textColor(true))),
+        title: Text(AppLocalizations.t(context, 'Choose Background'), style: TextStyle(color: CarDashboardTheme.textColor(true))),
         content: SizedBox(
           width: 320,
           child: Column(
@@ -1994,12 +1996,12 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                             height: 50,
                             decoration: BoxDecoration(
                               color: color ?? CarDashboardTheme.backgroundColor(true),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.zero,
                               border: isSelected ? Border.all(color: CarDashboardTheme.electricGreen, width: 2) : Border.all(color: Colors.white24),
                             ),
                             child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(name, style: const TextStyle(color: Colors.white70, fontSize: 10)),
                         ],
                       ),
@@ -2019,13 +2021,13 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                             height: 50,
                             decoration: BoxDecoration(
                               color: AppColors.textSecondary(context),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.zero,
                               border: Border.all(color: Colors.white24),
                             ),
                             child: const Icon(Icons.colorize, color: Colors.white),
                           ),
-                          const SizedBox(height: 4),
-                          const Text("Custom", style: TextStyle(color: Colors.white70, fontSize: 10)),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(AppLocalizations.t(context, 'Custom'), style: const TextStyle(color: Colors.white70, fontSize: 10)),
                         ],
                       ),
                     )
@@ -2044,7 +2046,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
            backgroundColor: CarDashboardTheme.panelColor(true),
-           title: const Text("Enter Hex Color", style: TextStyle(color: Colors.white)),
+           title: Text(AppLocalizations.t(context, 'Enter Hex Color'), style: const TextStyle(color: Colors.white)),
            content: TextField(
              style: const TextStyle(color: Colors.white),
              decoration: const InputDecoration(
@@ -2055,9 +2057,9 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
              onChanged: (val) => hexCode = val,
            ),
            actions: [
-             TextButton(child: const Text("Cancel"), onPressed: () => Navigator.pop(ctx)),
+             TextButton(child: Text(AppLocalizations.t(context, 'Cancel')), onPressed: () => Navigator.pop(ctx)),
              ElevatedButton(
-                child: const Text("Set"), 
+                child: Text(AppLocalizations.t(context, 'Set')), 
                 onPressed: () {
                    try {
                       hexCode = hexCode.replaceAll("#", "");
@@ -2079,11 +2081,11 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
   Widget _buildEditModeControls() {
     final isDarkMode = Provider.of<DashboardProvider>(context, listen: false).isDarkMode;
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: CarDashboardTheme.neonBlue.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: CarDashboardTheme.neonBlue.withValues(alpha: 0.3)),
       ),
       child: SingleChildScrollView(
@@ -2092,12 +2094,12 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.edit, color: CarDashboardTheme.neonBlue),
-            const SizedBox(width: 8),
-            Text("EDIT", style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.neonBlue, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppSpacing.sm),
+            Text(AppLocalizations.t(context, 'EDIT'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.neonBlue, fontWeight: FontWeight.bold)),
+            const SizedBox(width: AppSpacing.md),
             
             // Card Size Slider
-            Text("Size:", style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode))),
+            Text(AppLocalizations.t(context, 'Size:'), style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode))),
             SizedBox(
               width: 100,
               child: Slider(
@@ -2121,7 +2123,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                  color: Colors.white, size: 16
               ),
               label: Text(_globalCardStyle == 'minimal_rect' ? "RECT" : _globalCardStyle.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 10)),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(horizontal: 8)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm)),
               onPressed: () => setState(() {
                  if (_globalCardStyle == 'image') {
                    _globalCardStyle = 'label';
@@ -2129,34 +2131,34 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                  else _globalCardStyle = 'image';
               }),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
 
             // BG Color
             ElevatedButton.icon(
                icon: const Icon(Icons.palette, size: 16, color: Colors.white),
-               label: const Text("BG COLOR", style: TextStyle(color: Colors.white)),
+               label: Text(AppLocalizations.t(context, 'BG COLOR'), style: const TextStyle(color: Colors.white)),
                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                onPressed: _showBackgroundColorPicker,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
 
             // Layout
             ElevatedButton.icon(
                icon: const Icon(Icons.swap_horiz, size: 16, color: Colors.white),
-               label: const Text("LAYOUT", style: TextStyle(color: Colors.white)),
+               label: Text(AppLocalizations.t(context, 'LAYOUT'), style: const TextStyle(color: Colors.white)),
                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryLightGrey),
                onPressed: () => setState(() => _isRightHanded = !_isRightHanded),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             
             // Central Catalog Import
             ElevatedButton.icon(
               icon: const Icon(Icons.cloud_download, size: 16, color: Colors.white),
-              label: const Text("IMPORT", style: TextStyle(color: Colors.white)),
+              label: Text(AppLocalizations.t(context, 'IMPORT'), style: const TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryLight),
               onPressed: _showCentralCatalogPicker,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
 
             // Save
             ElevatedButton.icon(
@@ -2165,12 +2167,12 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: CarDashboardTheme.electricGreen),
               onPressed: _saveStockChanges,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
 
             // Exit
             TextButton(
               onPressed: _exitEditMode,
-              child: const Text("EXIT", style: TextStyle(color: Colors.white54)),
+              child: Text(AppLocalizations.t(context, 'EXIT'), style: const TextStyle(color: Colors.white54)),
             ),
           ],
         ),
@@ -2202,7 +2204,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
 
     return Container(
        width: 280,
-       padding: const EdgeInsets.all(16),
+       padding: const EdgeInsets.all(AppSpacing.md),
        decoration: BoxDecoration(
           color: CarDashboardTheme.panelColor(isDarkMode).withValues(alpha: 0.95),
           borderRadius: BorderRadius.zero,
@@ -2222,8 +2224,8 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                   Row(
                     children: [
                        const Icon(Icons.shopping_cart, color: CarDashboardTheme.neonBlue, size: 20),
-                       const SizedBox(width: 8),
-                       Text("MINI CHECKOUT", style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontWeight: FontWeight.bold, fontSize: 12)),
+                       const SizedBox(width: AppSpacing.sm),
+                       Text(AppLocalizations.t(context, 'MINI CHECKOUT'), style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontWeight: FontWeight.bold, fontSize: 12)),
                     ],
                   ),
                   Icon(Icons.drag_indicator, color: AppColors.textSecondary(context), size: 20),
@@ -2239,7 +2241,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                    Text("₹${total.toStringAsFixed(2)}", style: CarDashboardTheme.priceStyle.copyWith(color: CarDashboardTheme.electricGreen, fontSize: 18)),
                 ],
              ),
-             const SizedBox(height: 16),
+             const SizedBox(height: AppSpacing.md),
              
              // Actions
              Row(
@@ -2253,10 +2255,10 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                       ),
                       onPressed: () => _finalizeOrder('Cash'),
                       onLongPress: _handleCashPayment,
-                      child: const Text("CASH", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: Text(AppLocalizations.t(context, 'CASH'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -2266,7 +2268,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                        ),
                       onPressed: () => _finalizeOrder('UPI'),
                       onLongPress: _handleUPIPayment,
-                      child: const Text("UPI", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                      child: Text(AppLocalizations.t(context, 'UPI'), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                     ),
                   ),
                ],
@@ -2301,9 +2303,9 @@ class _CentralCatalogPickerDialogState extends State<_CentralCatalogPickerDialog
 
     return Dialog(
        backgroundColor: CarDashboardTheme.bgDark.withValues(alpha: 0.95),
-       shape: RoundedRectangleBorder(
-         borderRadius: BorderRadius.circular(16), 
-         side: const BorderSide(color: theme, width: 2)
+       shape: const RoundedRectangleBorder(
+         borderRadius: BorderRadius.zero, 
+         side: BorderSide(color: theme, width: 2)
        ),
        child: SizedBox(
          width: 800,
@@ -2312,7 +2314,7 @@ class _CentralCatalogPickerDialogState extends State<_CentralCatalogPickerDialog
            children: [
              // Header
              Container(
-               padding: const EdgeInsets.all(16),
+               padding: const EdgeInsets.all(AppSpacing.md),
                decoration: BoxDecoration(
                  color: theme.withValues(alpha: 0.1),
                  border: Border(bottom: BorderSide(color: theme.withValues(alpha: 0.3))),
@@ -2320,8 +2322,8 @@ class _CentralCatalogPickerDialogState extends State<_CentralCatalogPickerDialog
                child: Row(
                  children: [
                    const Icon(Icons.cloud_download, color: theme),
-                   const SizedBox(width: 8),
-                   Text("CENTRAL CATALOG", style: CarDashboardTheme.labelStyle.copyWith(color: Colors.white, fontSize: 20)),
+                   const SizedBox(width: AppSpacing.sm),
+                   Text(AppLocalizations.t(context, 'CENTRAL CATALOG'), style: CarDashboardTheme.labelStyle.copyWith(color: Colors.white, fontSize: 20)),
                    const Spacer(),
                    IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context))
                  ],
@@ -2330,24 +2332,24 @@ class _CentralCatalogPickerDialogState extends State<_CentralCatalogPickerDialog
 
              // Search & Filter
              Padding(
-               padding: const EdgeInsets.all(16.0),
+               padding: const EdgeInsets.all(AppSpacing.md),
                child: Row(
                  children: [
                    Expanded(
                      child: TextField(
                        style: const TextStyle(color: Colors.white),
-                       decoration: InputDecoration(
+                       decoration: const InputDecoration(
                          hintText: "Search items...",
-                         hintStyle: const TextStyle(color: Colors.white30),
-                         prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                         hintStyle: TextStyle(color: Colors.white30),
+                         prefixIcon: Icon(Icons.search, color: Colors.white54),
                          filled: true,
                          fillColor: Colors.white10,
-                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                         border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide.none),
                        ),
                        onChanged: (val) => setState(() => _search = val),
                      ),
                    ),
-                   const SizedBox(width: 16),
+                   const SizedBox(width: AppSpacing.md),
                    // Simple Store Type Toggle
                    DropdownButton<String>(
                      value: _selectedStoreType,
@@ -2363,7 +2365,7 @@ class _CentralCatalogPickerDialogState extends State<_CentralCatalogPickerDialog
              // List
              Expanded(
                child: ListView.separated(
-                 padding: const EdgeInsets.all(16),
+                 padding: const EdgeInsets.all(AppSpacing.md),
                  itemCount: filtered.length,
                  separatorBuilder: (_, __) => const Divider(color: Colors.white10),
                  itemBuilder: (ctx, i) {
@@ -2377,7 +2379,7 @@ class _CentralCatalogPickerDialogState extends State<_CentralCatalogPickerDialog
                      title: Text(item.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                      subtitle: Text("SKU: ${item.sku ?? '-'} | ${item.category}", style: const TextStyle(color: Colors.white54)),
                      trailing: isInStore 
-                         ? const Text("Imported", style: TextStyle(color: CarDashboardTheme.electricGreen))
+                         ? Text(AppLocalizations.t(context, 'Imported'), style: const TextStyle(color: CarDashboardTheme.electricGreen))
                          : NeonButton(
                              label: "IMPORT",
                              color: theme,
@@ -2402,4 +2404,6 @@ class _CentralCatalogPickerDialogState extends State<_CentralCatalogPickerDialog
   }
 
 }
+
+
 

@@ -225,11 +225,11 @@ class AuthRepository {
       debugPrint("AuthRepository: Online fetch failed, trying cache: $e");
     }
     
-    // Fallback to cache
-    return await _offlineService.getCachedUserProfile(uid: uid);
+    final cached = await _offlineService.getCachedUserProfile(uid: uid);
+    return cached != null ? Map<String, dynamic>.from(cached) : null;
   }
 
-  Future<void> _isNetworkError(dynamic e) async {
+  Future<bool> _isNetworkError(dynamic e) async {
     if (e is FirebaseAuthException) {
       return (e.code == 'network-request-failed' || e.code == 'unavailable');
     }

@@ -1,4 +1,6 @@
 import '../../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../providers/dashboard_provider.dart';
@@ -175,7 +177,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
           child: Container(
             color: Theme.of(context).cardColor,
             child: ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpacing.xxs),
               children: _buildControlList(),
             ),
           ),
@@ -186,7 +188,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
             color: AppColors.textSecondary(context),
             alignment: Alignment.center,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 40),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
               child: ReceiptPreviewWidget(
                 content: content,
                 config: config,
@@ -213,12 +215,12 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
           Expanded(
             child: TabBarView(
               children: [
-                ListView(padding: const EdgeInsets.all(16), children: _buildControlList()),
+                ListView(padding: const EdgeInsets.all(AppSpacing.md), children: _buildControlList()),
                 Container(
                    color: AppColors.textSecondary(context),
                    alignment: Alignment.topCenter,
                    child: SingleChildScrollView(
-                     padding: const EdgeInsets.all(20),
+                     padding: const EdgeInsets.all(AppSpacing.xxs),
                      child: ReceiptPreviewWidget(
                         content: content,
                         config: config,
@@ -292,7 +294,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
         onChanged: (val) => _updateSetting(_settings.copyWith(showPhone: val)),
       ),
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         child: TextField(
            controller: _headerController,
            decoration: const InputDecoration(labelText: "Custom Header Message"),
@@ -341,7 +343,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       ),
       if (_settings.showFooter)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: TextField(
              controller: _upsellController,
              decoration: const InputDecoration(labelText: "Custom Footer Message"),
@@ -359,7 +361,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       ),
       if (_settings.showQr)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: TextField(
              controller: _qrController,
              decoration: const InputDecoration(labelText: "QR Data / Link"),
@@ -369,7 +371,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
           ),
         ),
       
-      const SizedBox(height: 40),
+      const SizedBox(height: AppSpacing.xs),
     ];
   }
 }

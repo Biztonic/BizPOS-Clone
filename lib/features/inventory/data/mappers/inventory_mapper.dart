@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use, deprecated_member_use_from_same_package
 import 'package:biztonic_pos/models/inventory_item.dart' as legacy;
 import '../../domain/entities/inventory_entity.dart';
 
@@ -10,15 +11,15 @@ class InventoryMapper {
       name: item.name,
       category: item.category,
       price: item.price,
-      cost: item.cost,
+      cost: item.cost ?? 0.0,
       quantity: item.quantity,
-      unit: item.unit,
+      unit: item.unit ?? 'pcs',
       sku: item.sku,
       image: item.image,
       localImage: item.localImage,
       trackStock: item.trackStock,
       featured: item.featured,
-      lowStockThreshold: item.lowStockThreshold,
+      lowStockThreshold: item.lowStockThreshold ?? 10,
       storeId: item.storeId,
       centralItemId: item.centralItemId,
       storeType: item.storeType,
@@ -68,6 +69,7 @@ class InventoryMapper {
       syncStatus: entity.syncStatus,
       deviceId: entity.deviceId,
       version: entity.version,
+      status: entity.stockStatus.value,
     );
   }
 

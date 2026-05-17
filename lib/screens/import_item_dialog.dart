@@ -1,6 +1,5 @@
-import '../core/design/tokens/app_colors.dart';
-import '../core/design/tokens/app_typography.dart';
-import '../core/design/tokens/app_spacing.dart';
+import '../core/design/design_system.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
 import '../core/design/components/atoms/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -44,7 +43,7 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.xl),
         constraints: const BoxConstraints(maxWidth: 500),
@@ -57,7 +56,7 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Add Item to Store', style: AppTypography.titleLarge),
+                  Text(AppLocalizations.t(context, 'Add Item to Store'), style: AppTypography.titleLarge),
                   IconButton(
                     icon: const Icon(Icons.close), 
                     onPressed: () => Navigator.pop(context),
@@ -66,88 +65,88 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
                   )
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 'Set the price and quantity for "${widget.item.name}" in your store.',
                 style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.lg),
               
               // Item Name Display
               Row(
                 children: [
-                  const SizedBox(width: 80, child: Text('Item', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 80, child: Text(AppLocalizations.t(context, 'Item'), style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
+                  const SizedBox(width: AppSpacing.md),
                   Text(widget.item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
               // Price
               Row(
                 children: [
-                   const SizedBox(width: 80, child: Text('Price (₹)', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
-                   const SizedBox(width: 16),
+                   SizedBox(width: 80, child: Text(AppLocalizations.t(context, 'Price (₹)'), style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
+                   const SizedBox(width: AppSpacing.md),
                    Expanded(
                      child: TextFormField(
                        controller: _priceController,
                        keyboardType: TextInputType.number,
-                       decoration: InputDecoration(
-                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                       decoration: const InputDecoration(
+                         border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
+                         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                        ),
                        validator: (v) => v == null || v.isEmpty ? 'Price is required' : null,
                      ),
                    )
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
               // Quantity
               Row(
                 children: [
-                   const SizedBox(width: 80, child: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
-                   const SizedBox(width: 16),
+                   SizedBox(width: 80, child: Text(AppLocalizations.t(context, 'Quantity'), style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
+                   const SizedBox(width: AppSpacing.md),
                    Expanded(
                      child: TextFormField(
                        controller: _qtyController,
                        keyboardType: TextInputType.number,
-                       decoration: InputDecoration(
-                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                       decoration: const InputDecoration(
+                         border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
+                         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                        ),
                        validator: (v) => v == null || v.isEmpty ? 'Quantity is required' : null,
                      ),
                    )
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               
               // Cost
               Row(
                 children: [
-                   const SizedBox(width: 80, child: Text('Cost of Goods (₹)', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
-                   const SizedBox(width: 16),
+                   SizedBox(width: 80, child: Text(AppLocalizations.t(context, 'Cost of Goods (₹)'), style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
+                   const SizedBox(width: AppSpacing.md),
                    Expanded(
                      child: TextFormField(
                        controller: _costController,
                        keyboardType: TextInputType.number,
-                       decoration: InputDecoration(
+                       decoration: const InputDecoration(
                          hintText: 'Optional',
-                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                         border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
+                         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                        ),
                      ),
                    )
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
               // Counter
               Row(
                 children: [
-                   const SizedBox(width: 80, child: Text('Counter', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
-                   const SizedBox(width: 16),
+                   SizedBox(width: 80, child: Text(AppLocalizations.t(context, 'Counter'), style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
+                   const SizedBox(width: AppSpacing.md),
                    Expanded(
                      child: Consumer<StoreProvider>(
                        builder: (context, provider, child) {
@@ -155,22 +154,22 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
                          
                          // If no counters found, show warning or default
                          if (counters.isEmpty) {
-                           return const Padding(
-                             padding: EdgeInsets.only(top: 12),
-                             child: Text("No counters found. Add in Settings.", style: TextStyle(color: AppColors.error, fontSize: 13)),
+                           return Padding(
+                             padding: const EdgeInsets.only(top: 12),
+                             child: Text(AppLocalizations.t(context, 'No counters found. Add in Settings.'), style: const TextStyle(color: AppColors.error, fontSize: 13)),
                            );
                          }
 
                          return DropdownButtonFormField<String>(
                            value: _selectedCounter != 'No specific counter' ? _selectedCounter : null,
-                           hint: const Text("Select Counter"),
+                           hint: Text(AppLocalizations.t(context, 'Select Counter')),
                            items: counters.map<DropdownMenuItem<String>>((c) {
                              return DropdownMenuItem(value: c.id, child: Text(c.name));
                            }).toList(),
                            onChanged: (v) => setState(() => _selectedCounter = v!),
-                           decoration: InputDecoration(
-                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                           decoration: const InputDecoration(
+                             border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
+                             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                            ),
                          );
                        }
@@ -178,7 +177,7 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
                    )
                 ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xl),
               
               // Actions
               Row(
@@ -214,3 +213,5 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
     }
   }
 }
+
+

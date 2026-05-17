@@ -10,6 +10,8 @@ import 'package:biztonic_pos/models/customer.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/models/user_profile.dart';
 
+import 'package:biztonic_pos/services/sync_service.dart';
+
 // Import New Repositories
 import 'package:biztonic_pos/features/billing/data/order_repository.dart';
 import 'package:biztonic_pos/features/inventory/data/inventory_repository.dart';
@@ -28,21 +30,14 @@ class Repository {
   final InventoryMovementRepository movementRepo = InventoryMovementRepository();
 
   // Internal Repositories
-  late final OrderRepository _orders;
-  late final InventoryRepository _inventory;
-  late final CustomerRepository _customers;
-  late final ReportingRepository _reporting;
-  late final StoreRepository _store;
-  late final SyncRepository _sync;
+  late final OrderRepository _orders = OrderRepository(dbHelper: dbHelper, movementRepo: movementRepo);
+  late final InventoryRepository _inventory = InventoryRepository(dbHelper: dbHelper, movementRepo: movementRepo);
+  late final CustomerRepository _customers = CustomerRepository(dbHelper: dbHelper);
+  late final ReportingRepository _reporting = ReportingRepository(dbHelper: dbHelper);
+  late final StoreRepository _store = StoreRepository(SyncService());
+  late final SyncRepository _sync = SyncRepository(dbHelper: dbHelper);
 
-  Repository() {
-    _orders = OrderRepository(dbHelper: dbHelper, movementRepo: movementRepo);
-    _inventory = InventoryRepository(dbHelper: dbHelper, movementRepo: movementRepo);
-    _customers = CustomerRepository(dbHelper: dbHelper);
-    _reporting = ReportingRepository(dbHelper: dbHelper);
-    _store = StoreRepository(dbHelper: dbHelper);
-    _sync = SyncRepository(dbHelper: dbHelper);
-  }
+  Repository();
 
   // Getters for direct access if needed
   OrderRepository get orders => _orders;

@@ -1,8 +1,8 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:biztonic_pos/providers/dashboard_provider.dart';
 import 'package:biztonic_pos/providers/order_provider.dart';
-import 'package:biztonic_pos/providers/inventory_provider.dart';
+import 'package:biztonic_pos/features/inventory/presentation/providers/inventory_provider.dart';
 
 class SmartInsightsProvider with ChangeNotifier {
   final DashboardProvider _dashboardProvider;
@@ -184,19 +184,19 @@ class SmartInsightsProvider with ChangeNotifier {
     
     // 1. Growth
     final growth = _calculateSalesGrowth();
-    if (growth > 10) insights.add("📈 Sales increasing ${growth.toStringAsFixed(1)}% vs yesterday");
+    if (growth > 10) insights.add("ðŸ“ˆ Sales increasing ${growth.toStringAsFixed(1)}% vs yesterday");
     
     // 2. Dead Stock (Mock logic for now, relies on 'lastSold' tracking which might not be in Item yet)
     // We can infer it by checking items NOT in recent orders
     // expensive check, maybe simplify?
-    // insights.add("⚠️ 5 products not sold in 30 days"); 
+    // insights.add("âš ï¸ 5 products not sold in 30 days"); 
 
     // 3. High Value
-    // insights.add("💰 3 items generating 60% revenue");
+    // insights.add("ðŸ’° 3 items generating 60% revenue");
 
     // 4. Credit Risk
     final credit = _calculateCreditOutstanding();
-    if (credit > 1000) insights.add("💳 High credit outstanding: ₹${credit.toStringAsFixed(0)}");
+    if (credit > 1000) insights.add("ðŸ’³ High credit outstanding: ₹${credit.toStringAsFixed(0)}");
 
     return insights;
   }
@@ -210,3 +210,4 @@ class SmartInsightsProvider with ChangeNotifier {
     super.dispose();
   }
 }
+

@@ -4,6 +4,7 @@
 /// It defines the "contract" — the DATA layer provides the implementation.
 ///
 /// No infrastructure imports allowed here.
+library;
 
 import '../entities/inventory_entity.dart';
 

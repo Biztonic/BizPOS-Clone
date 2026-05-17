@@ -1,11 +1,14 @@
-
+﻿
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/design/tokens/app_colors.dart';
-import '../../core/design/tokens/app_typography.dart';
 
 class CreateStoreScreen extends StatefulWidget {
   const CreateStoreScreen({super.key});
@@ -27,7 +30,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dashboard = Provider.of<DashboardProvider>(context, listen: false);
       if (dashboard.hasAnyStore && dashboard.activeStoreId == null) {
-        debugPrint('🆕 CreateStoreScreen: Stores exist but none active, redirecting to /select-store');
+        debugPrint('ðŸ†• CreateStoreScreen: Stores exist but none active, redirecting to /select-store');
         context.go('/select-store');
       }
     });
@@ -109,7 +112,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
     return Scaffold(
       backgroundColor: AppColors.background(context),
       appBar: AppBar(
-        title: const Text("Setup Your Store"),
+        title: Text(AppLocalizations.t(context, 'Setup Your Store')),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
@@ -118,19 +121,19 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                Provider.of<AuthProvider>(context, listen: false).signOut();
             },
             icon: const Icon(Icons.logout),
-            label: const Text("Logout"),
+            label: Text(AppLocalizations.t(context, 'Logout')),
           )
         ],
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Container(
             width: isDesktop ? 500 : double.infinity,
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(AppSpacing.xl),
             decoration: BoxDecoration(
               color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.zero,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
@@ -145,20 +148,18 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                   Icon(Icons.store_rounded, size: 64, color: AppColors.primary),
-                   const SizedBox(height: 24),
-                   const Text(
-                     "Welcome to BizPOS!",
+                   const Icon(Icons.store_rounded, size: 64, color: AppColors.primary),
+                   const SizedBox(height: AppSpacing.lg),
+                   Text(AppLocalizations.t(context, 'Welcome to BizPOS!'),
                      textAlign: TextAlign.center,
-                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                    ),
-                   const SizedBox(height: 8),
-                   Text(
-                     "To get started, please create your first store.",
+                   const SizedBox(height: AppSpacing.sm),
+                   Text(AppLocalizations.t(context, 'To get started, please create your first store.'),
                      textAlign: TextAlign.center,
                      style: TextStyle(color: AppColors.textSecondary(context)),
                    ),
-                   const SizedBox(height: 32),
+                   const SizedBox(height: AppSpacing.xl),
 
                    TextFormField(
                      controller: _nameController,
@@ -175,7 +176,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                        return null;
                      },
                    ),
-                   const SizedBox(height: 16),
+                   const SizedBox(height: AppSpacing.md),
                    
                    TextFormField(
                      controller: _addressController,
@@ -186,7 +187,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                        prefixIcon: Icon(Icons.location_on_outlined),
                      ),
                    ),
-                   const SizedBox(height: 16),
+                   const SizedBox(height: AppSpacing.md),
                    
                    TextFormField(
                      controller: _phoneController,
@@ -197,7 +198,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                        prefixIcon: Icon(Icons.phone),
                      ),
                    ),
-                   const SizedBox(height: 32),
+                   const SizedBox(height: AppSpacing.xl),
 
                    SizedBox(
                      height: 50,
@@ -206,11 +207,11 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                        style: ElevatedButton.styleFrom(
                          backgroundColor: AppColors.primary,
                          foregroundColor: Colors.white,
-                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                        ),
                        child: _isSubmitting 
                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                         : const Text("Create Store", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                         : Text(AppLocalizations.t(context, 'Create Store'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                      ),
                    ),
 
@@ -223,3 +224,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
     );
   }
 }
+
+
+
+

@@ -107,4 +107,30 @@ class AppColors {
   static Color adaptiveInfo(BuildContext context) {
     return info;
   }
+
+  static Color adaptiveSecondary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.light
+        ? secondary
+        : const Color(0xFFA8A8A8); // Lighter grey for dark mode
+  }
+
+  static bool isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
+  static Color get transparent => Colors.transparent;
+
+  static LinearGradient authGradient(BuildContext context) {
+    final dark = isDark(context);
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: dark
+          ? [const Color(0xFF0D1B2A), const Color(0xFF1B2838), const Color(0xFF0D1B2A)]
+          : [const Color(0xFF0F62FE), const Color(0xFF4589FF)],
+    );
+  }
+
+  static Color outline(BuildContext context) {
+    return isDark(context)
+        ? Colors.white.withValues(alpha: 0.1)
+        : Colors.black.withValues(alpha: 0.05);
+  }
 }

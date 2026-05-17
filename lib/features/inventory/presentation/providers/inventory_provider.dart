@@ -3,6 +3,9 @@ import 'package:uuid/uuid.dart';
 
 import 'package:biztonic_pos/providers/store_provider.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
+import 'package:biztonic_pos/models/inventory_item.dart' as legacy;
+import '../../data/mappers/inventory_mapper.dart';
+import 'dart:io';
 
 import '../../domain/entities/inventory_entity.dart';
 import '../../domain/repositories/inventory_repository_interface.dart';
@@ -29,6 +32,11 @@ class InventoryProvider extends ChangeNotifier {
         _syncService = syncService {
     // Listen to store changes to reload data
     _storeProvider.addListener(_onStoreChanged);
+    
+    // Initial load if store is already selected
+    if (_storeProvider.activeStore != null) {
+      loadInventory();
+    }
   }
 
   // ─── State ───────────────────────────────────────────────
@@ -51,6 +59,29 @@ class InventoryProvider extends ChangeNotifier {
   String get selectedCategory => _selectedCategory;
   List<String> get categories => _categories;
   InventoryStats? get stats => _stats;
+
+  // ─── Legacy Bridge Getters ────────────────────────────────
+
+  /// Backward compatibility for legacy modules expecting [InventoryItem].
+  List<legacy.InventoryItem> get storeInventory => _items.map<legacy.InventoryItem>(InventoryMapper.toLegacy).toList();
+
+  /// Gets the quantity of a specific item.
+  int getItemStock(String itemId) {
+    try {
+      return _items.firstWhere((e) => e.id == itemId).quantity;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// Gets the cost of a specific item.
+  double getItemCost(String itemId) {
+    try {
+      return _items.firstWhere((e) => e.id == itemId).cost;
+    } catch (_) {
+      return 0.0;
+    }
+  }
 
   /// Returns items filtered by category and search query.
   List<InventoryEntity> get filteredItems {
@@ -224,4 +255,26 @@ class InventoryProvider extends ChangeNotifier {
     _selectedCategory = 'All';
     notifyListeners();
   }
+
+  // ─── Legacy Bridge Methods ────────────────────────────────
+
+  /// Backward compatibility for legacy fetch requests.
+  Future<void> fetchInventory(String uid, {bool refresh = false}) => loadInventory();
+
+  /// Clears the current inventory state.
+  void clearInventory() {
+    _items = [];
+    notifyListeners();
+  }
+
+  /// Bridge for legacy add operations.
+  Future<void> addInventoryItem(legacy.InventoryItem item, String storeId, {File? imageFile}) => 
+    saveItem(InventoryMapper.fromLegacy(item));
+
+  /// Bridge for legacy update operations.
+  Future<void> updateInventoryItem(legacy.InventoryItem item, {File? imageFile}) => 
+    saveItem(InventoryMapper.fromLegacy(item));
+
+  /// Bridge for legacy delete operations.
+  Future<void> deleteInventoryItem(String id) => deleteItem(id);
 }

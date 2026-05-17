@@ -9,6 +9,7 @@
 /// ─── FORBIDDEN IMPORTS ───────────────────────────────────
 ///   import 'package:biztonic_pos/features/inventory/data/...';
 ///   import 'package:biztonic_pos/features/inventory/application/...';
+library;
 
 // ─── Domain: Entities ────────────────────────────────────
 export 'domain/entities/inventory_entity.dart';

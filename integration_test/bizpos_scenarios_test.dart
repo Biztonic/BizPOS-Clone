@@ -8,7 +8,7 @@ void main() {
     'BizPOS Full Flow: Onboarding -> Inventory -> POS -> Orders',
     ($) async {
       // 1. Start the app
-      await app.main();
+      app.main();
       await $.pumpAndSettle();
 
       // Note: In a real test environment, we might need to handle Login/Store Selection.

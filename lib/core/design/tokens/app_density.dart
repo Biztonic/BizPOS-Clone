@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 /// Defines UI density levels, primarily used to adapt layouts for POS systems.
 enum AppDensity {

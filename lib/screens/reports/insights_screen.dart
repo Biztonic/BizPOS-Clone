@@ -1,4 +1,8 @@
-import '../../core/design/tokens/app_colors.dart';
+﻿import '../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/smart_insights_provider.dart';
@@ -13,7 +17,7 @@ class InsightsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Smart Insights'),
+        title: Text(AppLocalizations.t(context, 'Smart Insights')),
       ),
       body: list.isEmpty
           ? Center(
@@ -21,25 +25,25 @@ class InsightsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                    Icon(Icons.lightbulb_outline, size: 64, color: AppColors.textSecondary(context)),
-                   const SizedBox(height: 16),
-                   Text("No insights available yet.", style: TextStyle(color: AppColors.textSecondary(context))),
-                   Text("Keep selling to generate data!", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12)),
+                   const SizedBox(height: AppSpacing.md),
+                   Text(AppLocalizations.t(context, 'No insights available yet.'), style: TextStyle(color: AppColors.textSecondary(context))),
+                   Text(AppLocalizations.t(context, 'Keep selling to generate data!'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12)),
                 ],
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: list.length,
               itemBuilder: (context, index) {
                 final text = list[index];
                 // Simple parsing for better UI (optional, but nice)
-                // Strings are like "📈 Message"
+                // Strings are like "ðŸ“ˆ Message"
                 return Card(
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                   margin: const EdgeInsets.only(bottom: 12),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -54,3 +58,7 @@ class InsightsScreen extends StatelessWidget {
     );
   }
 }
+
+
+
+

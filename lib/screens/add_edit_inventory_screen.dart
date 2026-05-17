@@ -1,4 +1,6 @@
 import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 // ignore_for_file: deprecated_member_use_from_same_package, use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +9,7 @@ import '../providers/dashboard_provider.dart';
 import '../providers/store_provider.dart';
 import '../widgets/inventory_image_widget.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import '../core/design/layouts/pos_scaffold.dart';
 import '../core/design/density/app_density.dart';
@@ -47,6 +50,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
   final ImagePicker _picker = ImagePicker();
 
   bool _isLoading = true;
+  bool _isSaving = false;
   
   // Metadata lists
   List<String> _dietaryOptions = [];
@@ -90,9 +94,9 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
        final storeProvider = Provider.of<StoreProvider>(context, listen: false);
        
        // 1. Fetch Metadata
-       final dietary = await provider.fetchMetadata('dietary_types');
-       final packaging = await provider.fetchMetadata('packaging_types');
-       final variants = await provider.fetchMetadata('variant_types'); // This is now used for CATEGORY
+       final dietary = await provider.fetchMetadata('dietary_types').timeout(const Duration(seconds: 5), onTimeout: () => []);
+       final packaging = await provider.fetchMetadata('packaging_types').timeout(const Duration(seconds: 5), onTimeout: () => []);
+       final variants = await provider.fetchMetadata('variant_types').timeout(const Duration(seconds: 5), onTimeout: () => []); // This is now used for CATEGORY
        
        // Ensure current category is in the list
        if (widget.item?.category != null && widget.item!.category.isNotEmpty) {
@@ -107,7 +111,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
        bool showD = false, showP = false;
        
        if (store != null) {
-          final allConfigs = await storeProvider.fetchStoreTypeConfigs();
+          final allConfigs = await storeProvider.fetchStoreTypeConfigs().timeout(const Duration(seconds: 5), onTimeout: () => {});
           final config = allConfigs[store.storeType] as Map<String, dynamic>? ?? {};
           showD = config['enableDietary'] == true;
           showP = config['enablePackaging'] == true;
@@ -115,16 +119,16 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
 
        if (mounted) {
           setState(() {
-             _dietaryOptions = dietary;
-             _packagingOptions = packaging;
-             _variantOptions = variants;
+             _dietaryOptions = dietary.toSet().toList();
+             _packagingOptions = packaging.toSet().toList();
+             _variantOptions = variants.toSet().toList();
              _showDietary = showD;
              _showPackaging = showP;
              _isLoading = false;
           });
        }
      } catch (e) {
-       debugPrint("❌ AddEditInventoryScreen: Error loading data: $e");
+       debugPrint("âŒ AddEditInventoryScreen: Error loading data: $e");
        if (mounted) {
          setState(() => _isLoading = false);
        }
@@ -136,17 +140,17 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
     final newCategory = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add New Category'),
+        title: Text(AppLocalizations.t(context, 'Add New Category')),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(labelText: 'Category Name', hintText: 'e.g. Beverages'),
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'Cancel'))),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Add'),
+            child: Text(AppLocalizations.t(context, 'Add')),
           ),
         ],
       ),
@@ -184,9 +188,9 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
         });
       }
     } catch (e) {
-      debugPrint("❌ Error picking image: $e");
+      debugPrint("âŒ Error picking image: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error selecting image")),
+        SnackBar(content: Text(AppLocalizations.t(context, 'Error selecting image'))),
       );
     }
   }
@@ -206,64 +210,64 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
 
   Future<void> _saveItem() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_isLoading) return;
-
-    setState(() => _isLoading = true);
-
+    
+    setState(() => _isSaving = true);
+    
     try {
       final provider = Provider.of<DashboardProvider>(context, listen: false);
       
       final newItem = InventoryItem(
         id: widget.item?.id ?? '', 
         name: _nameController.text.trim(),
-        category: _selectedCategory ?? '', // Use Dropdown Value
+        category: _selectedCategory ?? 'General',
         price: double.tryParse(_priceController.text) ?? 0.0,
-        quantity: int.tryParse(_quantityController.text) ?? 0,
-        lowStockThreshold: int.tryParse(_lowStockController.text) ?? 10,
-        status: (int.tryParse(_quantityController.text) ?? 0) > 0 ? 'In Stock' : 'Out of Stock',
-        image: _imageController.text.isNotEmpty ? _imageController.text : null,
-        sku: _skuController.text.trim(),
         cost: double.tryParse(_costController.text) ?? 0.0,
+        sku: _skuController.text.trim(),
+        image: _imageController.text,
+        localImage: _pickedImage?.path,
+        quantity: int.tryParse(_quantityController.text) ?? 0,
+        status: (int.tryParse(_quantityController.text) ?? 0) > 0 ? 'In Stock' : 'Out of Stock',
         trackStock: true,
-        expiryDate: widget.item?.expiryDate, 
-        storeId: provider.activeStoreId,
+        lowStockThreshold: int.tryParse(_lowStockController.text) ?? 10,
+        dietaryType: _selectedDietary,
+        packagingType: _selectedPackaging,
         counterId: _selectedCounterId,
-        dietaryType: _showDietary ? _selectedDietary : null,
-        packagingType: _showPackaging ? _selectedPackaging : null,
-        // variantCategory: _showVariants ? _selectedVariant : null, // REMOVED/MERGED -> Just use category
-        variantCategory: null, // REDUNDANT NOW
       );
 
       if (widget.item == null) {
-        await provider.addInventoryItem(newItem, imageFile: _pickedImage);
+        await provider.addItem(newItem);
       } else {
-        await provider.updateInventoryItem(newItem, imageFile: _pickedImage);
+        await provider.updateItem(newItem);
       }
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Item saved successfully')),
+          SnackBar(content: Text(AppLocalizations.t(context, 'Item saved successfully'))),
         );
       }
     } catch (e) {
+      debugPrint("âŒ Error saving item: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving item: $e')),
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
-  }  @override
+  }
+  @override
   Widget build(BuildContext context) {
     final density = AppDensityProvider.configOf(context);
 
-    return PosScaffold(
+    return Scaffold(
       appBar: AppBar(
         title: Text(widget.item == null ? 'Add Item' : 'Edit Item'),
       ),
-      mainContent: _isLoading 
+      body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
             padding: EdgeInsets.all(density.cardPadding),
@@ -332,25 +336,26 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                    // Category Dropdown
                   Row(
                     children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
-                            labelText: 'Category', 
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
-                          value: (_selectedCategory != null && _variantOptions.contains(_selectedCategory)) 
-                                    ? _selectedCategory 
-                                    : null,
-                          items: _variantOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                          onChanged: (v) => setState(() => _selectedCategory = v),
-                          hint: const Text('Select Category'),
-                        ),
+                       Expanded(
+                         child: DropdownButtonFormField<String>(
+                           decoration: const InputDecoration(
+                             labelText: 'Category', 
+                             border: OutlineInputBorder(),
+                             contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+                           ),
+                           value: (_selectedCategory != null && _variantOptions.contains(_selectedCategory)) 
+                                     ? _selectedCategory 
+                                     : null,
+                           items: _variantOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                           onChanged: (v) => setState(() => _selectedCategory = v),
+                           hint: Text(AppLocalizations.t(context, 'Select Category')),
+                           validator: (value) => (value == null || value.isEmpty) ? 'Please select a category' : null,
+                         ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       IconButton(
                         onPressed: _addCategoryDialog,
-                        icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryLight, size: 32),
+                        icon: Icon(Icons.add_circle_outline, color: AppColors.adaptivePrimary(context), size: 32),
                         tooltip: "Add New Category",
                       ),
                     ],
@@ -362,10 +367,10 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
                        child: TextButton.icon(
                          onPressed: () {
-                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please add categories in Settings > Products")));
+                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Please add categories in Settings > Products'))));
                          },
                          icon: const Icon(Icons.settings, size: 16),
-                         label: const Text("Manage Categories in Settings"),
+                         label: Text(AppLocalizations.t(context, 'Manage Categories in Settings')),
                        ),
                      ),
                   
@@ -375,11 +380,11 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Dietary Type', 
                           border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                         ),
                         value: _selectedDietary != null && _dietaryOptions.contains(_selectedDietary) ? _selectedDietary : null,
                         items: [
-                           const DropdownMenuItem(value: null, child: Text("None")),
+                           DropdownMenuItem(value: null, child: Text(AppLocalizations.t(context, 'None'))),
                            ..._dietaryOptions.map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         ],
                         onChanged: (v) => setState(() => _selectedDietary = v),
@@ -392,11 +397,11 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Packaging Type', 
                           border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                         ),
                         value: _selectedPackaging != null && _packagingOptions.contains(_selectedPackaging) ? _selectedPackaging : null,
                         items: [
-                           const DropdownMenuItem(value: null, child: Text("None")),
+                           DropdownMenuItem(value: null, child: Text(AppLocalizations.t(context, 'None'))),
                            ..._packagingOptions.map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         ],
                         onChanged: (v) => setState(() => _selectedPackaging = v),
@@ -428,17 +433,14 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                     Center(
                       child: Column(
                         children: [
-                          Text('Preview:', style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
+                          Text(AppLocalizations.t(context, 'Preview:'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
                           const SizedBox(height: AppSpacing.xs),
                           if (_pickedImage != null)
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.file(
-                                _pickedImage!,
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.cover,
-                              ),
+                              borderRadius: BorderRadius.zero,
+                              child: kIsWeb 
+                                  ? Image.network(_pickedImage!.path, width: 120, height: 120, fit: BoxFit.cover)
+                                  : Image.file(_pickedImage!, width: 120, height: 120, fit: BoxFit.cover),
                             )
                           else
                             InventoryImageWidget(
@@ -473,11 +475,11 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Assign to Counter (KDS)', 
                           border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                         ),
                         value: _selectedCounterId,
                         items: [
-                          const DropdownMenuItem<String?>(value: null, child: Text('Default / Kitchen')),
+                          DropdownMenuItem<String?>(value: null, child: Text(AppLocalizations.t(context, 'Default / Kitchen'))),
                           ...counters.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))),
                         ],
                         onChanged: (val) => setState(() => _selectedCounterId = val),
@@ -488,7 +490,8 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                   
                   AppButton.primary(
                     key: const Key('save_item_button'),
-                    onPressed: _saveItem,
+                    onPressed: _isSaving ? null : _saveItem,
+                    isLoading: _isSaving,
                     label: widget.item == null ? 'Create Item' : 'Update Item',
                     width: double.infinity,
                     size: AppButtonSize.large,
@@ -501,11 +504,11 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                          final confirm = await showDialog<bool>(
                            context: context,
                            builder: (ctx) => AlertDialog(
-                             title: const Text('Delete Item?'),
-                             content: const Text('This action cannot be undone.'),
+                             title: Text(AppLocalizations.t(context, 'Delete Item?')),
+                             content: Text(AppLocalizations.t(context, 'This action cannot be undone.')),
                              actions: [
-                               TextButton(onPressed: ()=>Navigator.pop(ctx, false), child: const Text('Cancel')),
-                               TextButton(onPressed: ()=>Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: AppColors.error))),
+                               TextButton(onPressed: ()=>Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'Cancel'))),
+                               TextButton(onPressed: ()=>Navigator.pop(ctx, true), child: Text(AppLocalizations.t(context, 'Delete'), style: TextStyle(color: AppColors.adaptiveError(context)))),
                              ],
                            )
                          );
@@ -521,7 +524,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                          }
                        },
                        label: 'Delete Item',
-                       foregroundColor: AppColors.error,
+                       foregroundColor: AppColors.adaptiveError(context),
                        width: double.infinity,
                      )
                   ]
@@ -532,3 +535,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
     );
   }
 }
+
+
+
+

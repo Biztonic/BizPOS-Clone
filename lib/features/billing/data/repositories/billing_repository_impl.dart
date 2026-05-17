@@ -6,12 +6,14 @@
 ///
 /// Over time, the legacy Repository can be retired and this class
 /// can call SQLite/Hive/Firestore data sources directly.
+library;
 
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/models/order_model.dart';
+import 'package:biztonic_pos/features/inventory/domain/entities/inventory_item.dart';
 
 import '../../domain/entities/order_entity.dart';
 import '../../domain/repositories/billing_repository.dart';
@@ -269,11 +271,11 @@ class BillingRepositoryImpl implements BillingRepository {
         sgst: item.sgst ?? 0.0,
       )).toList(),
       total: model.total,
-      subtotal: model.subtotal ?? 0.0,
-      discount: model.discount ?? 0.0,
-      cgst: model.cgst ?? 0.0,
-      sgst: model.sgst ?? 0.0,
-      taxRateSnapshot: model.taxRateSnapshot ?? 0.0,
+      subtotal: model.subtotal,
+      discount: model.discount,
+      cgst: model.cgst,
+      sgst: model.sgst,
+      taxRateSnapshot: model.taxRateSnapshot,
       date: model.date,
       status: OrderStatus.fromString(model.status),
       type: OrderType.fromString(model.type),
@@ -284,20 +286,21 @@ class BillingRepositoryImpl implements BillingRepository {
       syncStatus: model.syncStatus,
       deviceId: model.deviceId,
       businessDayId: model.businessDayId,
-      version: model.version ?? 1,
+      version: model.version,
     );
   }
 
   /// Creates a minimal InventoryItem stub for legacy OrderItem compat.
-  dynamic _createMinimalItem(OrderItemDto dto) {
-    // Import avoided — using dynamic to prevent circular dependency.
-    // The legacy OrderItem.toSqlMap() only needs id, name, price, cost, category.
-    return _MinimalItem(
+  InventoryItem _createMinimalItem(OrderItemDto dto) {
+    return InventoryItem(
       id: dto.itemId,
       name: dto.name,
       price: dto.price,
       cost: dto.cost,
       category: dto.category ?? '',
+      quantity: 0,
+      status: 'Active',
+      trackStock: false,
     );
   }
 
@@ -368,7 +371,9 @@ class BillingRepositoryImpl implements BillingRepository {
       if (paymentMethod != null && pm != paymentMethod) continue;
       if (start != null && orderDate.isBefore(start)) continue;
       if (end != null &&
-          orderDate.isAfter(end.add(const Duration(days: 1)))) continue;
+          orderDate.isAfter(end.add(const Duration(days: 1)))) {
+        continue;
+      }
 
       final isRefunded = orderStatus == 'Refunded';
       final orderTotal = (val['total'] ?? 0).toDouble();
@@ -415,25 +420,4 @@ class BillingRepositoryImpl implements BillingRepository {
       return MapEntry(key.toString(), value);
     });
   }
-}
-
-/// Minimal item stub to satisfy legacy OrderItem constructor
-/// without importing InventoryItem (avoids circular dependency).
-class _MinimalItem {
-  final String id;
-  final String name;
-  final double price;
-  final double cost;
-  final String category;
-  final int quantity = 0;
-  final String status = 'Active';
-  final bool trackStock = false;
-
-  _MinimalItem({
-    required this.id,
-    required this.name,
-    required this.price,
-    required this.cost,
-    required this.category,
-  });
 }

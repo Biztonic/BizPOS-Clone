@@ -8,10 +8,7 @@ import '../core/design/components/atoms/app_button.dart';
 import '../core/design/components/atoms/app_card.dart';
 import '../core/design/components/atoms/app_text_field.dart';
 import '../core/design/components/organisms/pos_data_table.dart';
-import '../core/design/tokens/app_spacing.dart';
-import '../core/design/tokens/app_typography.dart';
-import '../core/design/tokens/app_colors.dart';
-import '../core/design/density/app_density.dart';
+import '../core/design/design_system.dart';
 
 class EmployeesScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -32,7 +29,6 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
     });
   }
 
-  // --- CORE UTILS ---
   void _showEmployeeDialog(BuildContext context, {UserProfile? employee}) {
     final nameController = TextEditingController(text: employee?.name ?? '');
     final roleController = TextEditingController(text: employee?.role ?? 'Cashier');
@@ -51,11 +47,12 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
             }
 
             return AlertDialog(
+              backgroundColor: AppColors.surface(context),
               title: Text(
                 employee == null ? 'Create Employee' : 'Edit Role',
                 style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
               ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -85,10 +82,20 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                             roleController.text = v!;
                          });
                       },
+                      dropdownColor: AppColors.surface(context),
+                      style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary(context)),
                       decoration: InputDecoration(
                         labelText: 'Role',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        prefixIcon: const Icon(Icons.badge_outlined),
+                        labelStyle: TextStyle(color: AppColors.textSecondary(context)),
+                        border: OutlineInputBorder(
+                          borderRadius: AppRadius.borderMd,
+                          borderSide: BorderSide(color: AppColors.border(context)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: AppRadius.borderMd,
+                          borderSide: BorderSide(color: AppColors.border(context)),
+                        ),
+                        prefixIcon: Icon(Icons.badge_outlined, color: AppColors.adaptivePrimary(context)),
                       ),
                     ),
                   ],
@@ -97,7 +104,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context))),
+                  child: Text(AppLocalizations.t(context, 'Cancel'), style: TextStyle(color: AppColors.textSecondary(context))),
                 ),
                 AppButton.primary(
                   onPressed: () async {
@@ -137,44 +144,52 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
       ],
       mainContent: provider.isLoading 
           ? const Center(child: CircularProgressIndicator())
-          : isDesktop 
-              ? _buildTableView(context, provider)
-              : _buildListView(context, provider),
-    );
-  }
-
-  Widget _buildListView(BuildContext context, DashboardProvider provider) {
-    final employees = provider.employees;
-    if (employees.isEmpty) return _buildEmptyState();
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      itemCount: employees.length,
-      separatorBuilder: (ctx, i) => const SizedBox(height: AppSpacing.md),
-      itemBuilder: (ctx, i) => _buildEmployeeCard(context, employees[i], provider),
+          : CustomScrollView(
+              slivers: [
+                if (provider.employees.isEmpty)
+                  SliverFillRemaining(child: _buildEmptyState())
+                else if (isDesktop)
+                  SliverPadding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    sliver: SliverToBoxAdapter(child: _buildTableView(context, provider)),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (ctx, i) => Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                          child: _buildEmployeeCard(context, provider.employees[i], provider),
+                        ),
+                        childCount: provider.employees.length,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 
   Widget _buildTableView(BuildContext context, DashboardProvider provider) {
     final employees = provider.employees;
-    if (employees.isEmpty) return _buildEmptyState();
 
     return PosDataTable(
-      columns: [
-        const PosDataColumn(label: 'Employee', fixedWidth: 300),
-        const PosDataColumn(label: 'Role', fixedWidth: 150),
-        const PosDataColumn(label: 'ID', fixedWidth: 150),
-        const PosDataColumn(label: 'Actions', fixedWidth: 200),
+      columns: const [
+        PosDataColumn(label: 'Employee', fixedWidth: 300),
+        PosDataColumn(label: 'Role', fixedWidth: 150),
+        PosDataColumn(label: 'ID', fixedWidth: 150),
+        PosDataColumn(label: 'Actions', fixedWidth: 200),
       ],
       rows: employees.map((emp) => PosDataRow(
         cells: [
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                backgroundColor: AppColors.adaptivePrimary(context).withValues(alpha: 0.1),
                 child: Text(
                   emp.name.isNotEmpty ? emp.name[0] : '?',
-                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: AppColors.adaptivePrimary(context), fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -182,12 +197,12 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
             ],
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.adaptivePrimary(context).withValues(alpha: 0.1),
+              borderRadius: AppRadius.borderSm,
             ),
-            child: Text(emp.role, style: AppTypography.labelSmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+            child: Text(emp.role, style: AppTypography.labelSmall.copyWith(color: AppColors.adaptivePrimary(context), fontWeight: FontWeight.bold)),
           ),
           Text(emp.employeeId ?? 'N/A', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context), fontFamily: 'monospace')),
           Row(
@@ -215,13 +230,11 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
         children: [
           Icon(Icons.people_outline, size: 80, color: AppColors.border(context)),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            "No employees found",
+          Text(AppLocalizations.t(context, 'No employees found'),
             style: AppTypography.titleLarge.copyWith(color: AppColors.textSecondary(context)),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(
-            "Tap + to add your first staff member.",
+          Text(AppLocalizations.t(context, 'Tap + to add your first staff member.'),
             style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
           ),
         ],
@@ -236,15 +249,15 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          backgroundColor: AppColors.adaptivePrimary(context).withValues(alpha: 0.1),
           child: Text(
             emp.name.isNotEmpty ? emp.name[0] : '?',
-            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+            style: TextStyle(color: AppColors.adaptivePrimary(context), fontWeight: FontWeight.bold),
           ),
         ),
         title: Text(emp.name, style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
         subtitle: Text(
-          "${emp.role} • ID: ${emp.employeeId ?? 'N/A'}",
+          "${emp.role} â€¢ ID: ${emp.employeeId ?? 'N/A'}",
           style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
         ),
         trailing: Row(
@@ -269,16 +282,17 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: Text("Delete Employee", style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.surface(context),
+        title: Text(AppLocalizations.t(context, 'Delete Employee'), style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
         content: Text(
           "Are you sure you want to remove ${emp.name}? This action is permanent.",
           style: AppTypography.bodyMedium,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),
-            child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary(context))),
+            child: Text(AppLocalizations.t(context, 'Cancel'), style: TextStyle(color: AppColors.textSecondary(context))),
           ),
           AppButton.danger(
             onPressed: () => Navigator.pop(c, true),
@@ -301,3 +315,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
     }
   }
 }
+
+
+
+

@@ -371,7 +371,7 @@ class StoreProvider with ChangeNotifier {
               
           // Filter 'PENDING' locally to avoid requiring composite Firestore indexes
           final pendingDocs = q.docs.where((doc) {
-             final data = doc.data() as Map<String, dynamic>;
+             final data = doc.data();
              return data['status'] == 'PENDING';
           }).toList();
           
@@ -426,7 +426,7 @@ class StoreProvider with ChangeNotifier {
         // 2. FALLBACK: Check user profile directly (Legacy or pre-synced data)
         if (expiry == null) {
           debugPrint('🔍 StoreProvider: No pending requests. Checking user profiles...');
-          var userData;
+          Map<String, dynamic>? userData;
           
           if (user != null) {
             final userDoc = await _db.collection('users').doc(user.uid).get();

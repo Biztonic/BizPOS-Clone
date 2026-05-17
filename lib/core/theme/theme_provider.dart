@@ -40,6 +40,11 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     _loadFromHive();
   }
 
+  bool get isDarkMode => state.isDarkMode;
+  AppColorTheme get currentTheme => state.currentTheme;
+  UIStyle get uiStyle => state.uiStyle;
+  int? get customThemeColor => state.customThemeColor;
+
   void _loadFromHive() {
     final box = Hive.box('settings');
     final uiStyleIndex = box.get('uiStyle', defaultValue: UIStyle.standard.index);
@@ -72,8 +77,8 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   }
 
   void setCustomThemeColor(Color color) {
-    state = state.copyWith(customThemeColor: color.value);
-    Hive.box('settings').put('customThemeColor', color.value);
+    state = state.copyWith(customThemeColor: color.toARGB32());
+    Hive.box('settings').put('customThemeColor', color.toARGB32());
   }
 }
 

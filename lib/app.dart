@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' as legacy_provider;
-import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'providers/dashboard_provider.dart';
 import 'providers/locale_provider.dart';
 import 'routing/app_router.dart';
 import 'utils/theme.dart';
@@ -41,7 +39,7 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
   Widget build(BuildContext context) {
     final themeData = ref.watch(themeProvider);
     
-    return Consumer<LocaleProvider>(
+    return legacy_provider.Consumer<LocaleProvider>(
       builder: (context, localeProvider, _) {
         final appDensity = themeData.uiStyle == UIStyle.car_dashboard 
             ? AppDensity.touch 
@@ -85,29 +83,4 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
   }
 }
 
-class _RootThemeData {
-  final UIStyle uiStyle;
-  final bool isDarkMode;
-  final AppColorTheme currentTheme;
-  final int? customThemeColor;
 
-  _RootThemeData({
-    required this.uiStyle,
-    required this.isDarkMode,
-    required this.currentTheme,
-    this.customThemeColor,
-  });
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _RootThemeData &&
-          runtimeType == other.runtimeType &&
-          uiStyle == other.uiStyle &&
-          isDarkMode == other.isDarkMode &&
-          currentTheme == other.currentTheme &&
-          customThemeColor == other.customThemeColor;
-
-  @override
-  int get hashCode => Object.hash(uiStyle, isDarkMode, currentTheme, customThemeColor);
-}

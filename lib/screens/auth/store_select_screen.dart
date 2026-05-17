@@ -1,9 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import '../../core/design/tokens/app_colors.dart';
-import '../../core/design/tokens/app_typography.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/design/tokens/app_typography.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/store.dart';
@@ -127,10 +130,9 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   Widget build(BuildContext context) {
     final dashboard = Provider.of<DashboardProvider>(context);
     final auth = Provider.of<AuthProvider>(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    final isDark = AppColors.isDark(context);
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background(context),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -138,35 +140,26 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
             floating: false,
             pinned: true,
             elevation: 0,
-            backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+            backgroundColor: AppColors.surface(context),
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
-              title: Text(
-                "Select Your Store",
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : ColorSlate.slate(900),
-                  fontSize: 20,
+              titlePadding: const EdgeInsets.only(left: AppSpacing.lg, bottom: AppSpacing.md),
+              title: Text(AppLocalizations.t(context, 'Select Your Store'),
+                style: AppTypography.titleLarge.copyWith(
+                  color: AppColors.textPrimary(context),
                 ),
               ),
               background: Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isDark 
-                      ? [const Color(0xFF1E293B), const Color(0xFF0F172A)] 
-                      : [Colors.white, const Color(0xFFF1F5F9)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
+                  gradient: AppColors.authGradient(context),
                 ),
               ),
             ),
             actions: [
               Container(
-                margin: const EdgeInsets.only(right: 16),
+                margin: const EdgeInsets.only(right: AppSpacing.md),
                 decoration: BoxDecoration(
                   color: AppColors.error.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+                  shape: BoxShape.rectangle,
                 ),
                 child: IconButton(
                   icon: const Icon(Icons.logout, color: AppColors.error, size: 20),
@@ -183,9 +176,9 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 24),
-                    Text("Syncing your stores...", style: TextStyle(color: AppColors.textSecondary(context), fontWeight: FontWeight.w500)),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(AppLocalizations.t(context, 'Syncing your stores...'), style: TextStyle(color: AppColors.textSecondary(context), fontWeight: FontWeight.w500)),
                   ],
                 )
               )
@@ -213,14 +206,12 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
         child: Column(
            crossAxisAlignment: CrossAxisAlignment.start,
            children: [
-              Text(
-                "Welcome back!",
-                style: GoogleFonts.outfit(fontSize: 14, color: ColorSlate.slate(500), fontWeight: FontWeight.w500),
+              Text(AppLocalizations.t(context, 'Welcome back!'),
+                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context), fontWeight: FontWeight.w500),
               ),
-              const SizedBox(height: 4),
-              Text(
-                "Choose a store to manage",
-                style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : ColorSlate.slate(900)),
+              const SizedBox(height: AppSpacing.xs),
+              Text(AppLocalizations.t(context, 'Choose a store to manage'),
+                style: AppTypography.headlineSmall.copyWith(color: AppColors.textPrimary(context)),
               ),
            ],
         ),
@@ -238,16 +229,15 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
              crossAxisAlignment: CrossAxisAlignment.start,
              children: [
                 if (isStatsLoading) const LinearProgressIndicator(minHeight: 2),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 if (stats.isNotEmpty) ...[
                   _buildInsightsGrid(stats, isDark),
                   _buildFilterSection(stats, isDark),
                 ],
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                  child: Text(
-                    "All Active Stores",
-                    style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : ColorSlate.slate(800)),
+                  child: Text(AppLocalizations.t(context, 'All Active Stores'),
+                    style: AppTypography.titleLarge.copyWith(color: AppColors.textPrimary(context)),
                   ),
                 ),
              ],
@@ -287,7 +277,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                 ],
               ),
               if (constraints.maxWidth > 700) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.lg),
                 _buildPlanDistributionCard(planDistribution, totalStores, isDark),
               ],
             ],
@@ -300,12 +290,12 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   Widget _buildInsightCard(String title, String value, IconData icon, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark ? const Color(0xFF1E293B) : Theme.of(context).colorScheme.onPrimary,
+        borderRadius: BorderRadius.zero,
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05), blurRadius: 20, offset: const Offset(0, 8))
+          BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: isDark ? 0.2 : 0.05), blurRadius: 20, offset: const Offset(0, 8))
         ],
         border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
       ),
@@ -314,16 +304,16 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
            Container(
-             padding: const EdgeInsets.all(8),
+             padding: const EdgeInsets.all(AppSpacing.sm),
              decoration: BoxDecoration(
                color: color.withValues(alpha: 0.1),
-               borderRadius: BorderRadius.circular(12),
+               borderRadius: BorderRadius.zero,
              ),
              child: Icon(icon, color: color, size: 24),
            ),
            const Spacer(),
-           Text(value, style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : ColorSlate.slate(900))),
-           Text(title, style: GoogleFonts.outfit(fontSize: 12, color: ColorSlate.slate(500), fontWeight: FontWeight.w600)),
+           Text(value, style: AppTypography.headlineMedium.copyWith(color: AppColors.textPrimary(context))),
+           Text(title, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
         ]
       ),
     );
@@ -348,10 +338,10 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
     });
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.zero,
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 8))],
       ),
       child: Row(
@@ -360,10 +350,10 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Plan Overview", style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text("Distribution of active subscriptions across all stores", style: GoogleFonts.outfit(fontSize: 14, color: ColorSlate.slate(500))),
-                const SizedBox(height: 24),
+                Text(AppLocalizations.t(context, 'Plan Overview'), style: AppTypography.titleLarge),
+                const SizedBox(height: AppSpacing.sm),
+                Text(AppLocalizations.t(context, 'Distribution of active subscriptions across all stores'), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+                const SizedBox(height: AppSpacing.lg),
                 Wrap(
                   spacing: 16,
                   children: distribution.entries.map((e) {
@@ -371,8 +361,8 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                      return Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                           Container(width: 12, height: 12, decoration: BoxDecoration(color: colors[idx % colors.length], shape: BoxShape.circle)),
-                           const SizedBox(width: 8),
+                           Container(width: 12, height: 12, decoration: BoxDecoration(color: colors[idx % colors.length], shape: BoxShape.rectangle)),
+                           const SizedBox(width: AppSpacing.sm),
                            Text("${e.key}: ${e.value}", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                         ],
                      );
@@ -387,7 +377,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
               alignment: Alignment.center,
               children: [
                 PieChart(PieChartData(sectionsSpace: 4, centerSpaceRadius: 35, sections: pieSections)),
-                Text("$total", style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text("$total", style: AppTypography.headlineSmall),
               ],
             ),
           ),
@@ -406,7 +396,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildFilterRow("Active Plan", ['All', 'Standard', 'Basic'], _selectedPlanFilter, (v) => setState(() => _selectedPlanFilter = v), isDark),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           _buildFilterRow("Add-on Feature", addonList, _selectedAddonFilter, (v) => setState(() => _selectedAddonFilter = v), isDark),
           const Divider(height: 48),
         ],
@@ -418,7 +408,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: ColorSlate.slate(500), letterSpacing: 0.5)),
+        Text(title, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context), letterSpacing: 0.5)),
         const SizedBox(height: 12),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -426,23 +416,22 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
             children: options.map((opt) {
               final isSelected = current == opt;
               return Padding(
-                padding: const EdgeInsets.only(right: 8.0),
+                padding: const EdgeInsets.only(right: AppSpacing.sm),
                 child: InkWell(
                   onTap: () => onSelect(opt),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.zero,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : (isDark ? const Color(0xFF1E293B) : Colors.white),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isSelected ? AppColors.primary : (isDark ? ColorSlate.slate(800) : ColorSlate.slate(200))),
+                      color: isSelected ? AppColors.primary : AppColors.surface(context),
+                      borderRadius: BorderRadius.zero,
+                      border: Border.all(color: isSelected ? AppColors.primary : AppColors.border(context)),
                       boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))] : null,
                     ),
                     child: Text(
                       opt.replaceAll('_', ' ').toUpperCase(),
-                      style: GoogleFonts.outfit(
-                        fontSize: 11, fontWeight: FontWeight.bold, 
-                        color: isSelected ? Colors.white : (isDark ? ColorSlate.slate(300) : ColorSlate.slate(700))
+                      style: AppTypography.labelSmall.copyWith(
+                        color: isSelected ? Theme.of(context).colorScheme.onPrimary : AppColors.textSecondary(context)
                       ),
                     ),
                   ),
@@ -460,25 +449,25 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.storefront_outlined, size: 80, color: ColorSlate.slate(300)),
-          const SizedBox(height: 24),
-          Text("No stores found", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: ColorSlate.slate(400))),
-          const SizedBox(height: 8),
-          Text("Get started by creating your first store", style: GoogleFonts.outfit(color: ColorSlate.slate(500))),
-          const SizedBox(height: 32),
+          Icon(Icons.storefront_outlined, size: 80, color: AppColors.textHint(context)),
+          const SizedBox(height: AppSpacing.lg),
+          Text(AppLocalizations.t(context, 'No stores found'), style: AppTypography.titleLarge.copyWith(color: AppColors.textHint(context))),
+          const SizedBox(height: AppSpacing.sm),
+          Text(AppLocalizations.t(context, 'Get started by creating your first store'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+          const SizedBox(height: AppSpacing.xl),
           if (dashboard.activeRole == 'Store Owner')
             ElevatedButton(
               onPressed: () => context.go('/create-store'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                 elevation: 0,
               ),
-              child: Text("Create Store", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              child: Text(AppLocalizations.t(context, 'Create Store'), style: AppTypography.labelLarge.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold)),
             ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           TextButton.icon(
              onPressed: () async {
                 setState(() => _isInitSyncing = true);
@@ -489,7 +478,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                 }
              }, 
              icon: const Icon(Icons.refresh, size: 18), 
-             label: const Text("Refresh Stores")
+             label: Text(AppLocalizations.t(context, 'Refresh Stores'))
           ),
         ],
       ),
@@ -515,10 +504,10 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
           
           return AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.only(bottom: 20),
+            margin: const EdgeInsets.only(bottom: AppSpacing.xxs),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              color: AppColors.surface(context),
+              borderRadius: BorderRadius.zero,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: isExpanded ? 0.1 : 0.05),
@@ -531,16 +520,16 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
             child: Column(
               children: [
                 ListTile(
-                  contentPadding: const EdgeInsets.all(20),
+                  contentPadding: const EdgeInsets.all(AppSpacing.xxs),
                   leading: Container(
                     width: 60, height: 60,
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.zero,
                     ),
                     child: store.image != null 
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.zero,
                           child: CachedNetworkImage(imageUrl: store.image!, fit: BoxFit.cover, placeholder: (_, __) => const Icon(Icons.store, color: AppColors.primary)),
                         )
                       : const Icon(Icons.store, color: AppColors.primary, size: 30),
@@ -548,16 +537,16 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                   title: Row(
                     children: [
                       Expanded(
-                         child: Text(store.name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
+                         child: Text(store.name, style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
                       ),
                       _buildPlanBadge(store.subscriptionPlan),
                     ],
                   ),
                   subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.only(top: AppSpacing.xs),
                     child: Text(
-                      "Owner ID: ${store.owner.substring(0, 8)}... � ${store.storeType}",
-                      style: GoogleFonts.outfit(fontSize: 13, color: ColorSlate.slate(500)),
+                      "Owner ID: ${store.owner.substring(0, 8)}... ï¿½ ${store.storeType}",
+                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
                     ),
                   ),
                   trailing: Row(
@@ -565,8 +554,8 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                     children: [
                       if (dashboard.activeRole == 'Super Admin')
                         _buildActionButton(Icons.login_rounded, "ENTER", () => _enterStoreDirectly(store, dashboard), AppColors.primary),
-                      const SizedBox(width: 8),
-                      Icon(isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: ColorSlate.slate(400)),
+                      const SizedBox(width: AppSpacing.sm),
+                      Icon(isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: AppColors.textHint(context)),
                     ],
                   ),
                   onTap: () => _handleStoreClick(store, dashboard),
@@ -584,14 +573,14 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   Widget _buildPlanBadge(String plan) {
      final color = plan == 'Standard' ? AppColors.warning : AppColors.success;
      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.zero,
         ),
         child: Text(
           plan.toUpperCase(),
-          style: GoogleFonts.outfit(fontSize: 10, color: color, fontWeight: FontWeight.bold, letterSpacing: 0.5)
+          style: AppTypography.labelSmall.copyWith(color: color, fontWeight: FontWeight.bold, letterSpacing: 0.5)
         ),
      );
   }
@@ -599,18 +588,18 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   Widget _buildActionButton(IconData icon, String label, VoidCallback onTap, Color color) {
      return InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.zero,
         child: Container(
-           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.sm),
            decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.zero,
            ),
            child: Row(
               children: [
                  Icon(icon, size: 16, color: color),
                  const SizedBox(width: 6),
-                 Text(label, style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
+                 Text(label, style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.bold, color: color)),
               ],
            ),
         ),
@@ -619,7 +608,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
 
   Widget _buildEmployeeSection(Store store) {
     if (_isLoadingEmployees) {
-      return const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+      return const Padding(padding: EdgeInsets.all(AppSpacing.xl), child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
     }
 
     final employees = _storeEmployees[store.id] ?? [];
@@ -629,25 +618,25 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       decoration: const BoxDecoration(
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
+        borderRadius: BorderRadius.only(bottomLeft: Radius.zero, bottomRight: Radius.zero),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Divider(height: 1),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("EMPLOYEE PROFILES", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: ColorSlate.slate(400), letterSpacing: 1)),
+                Text(AppLocalizations.t(context, 'EMPLOYEE PROFILES'), style: AppTypography.labelSmall.copyWith(color: AppColors.textHint(context), letterSpacing: 1)),
                 if (dashboard.activeRole != 'Employee')
-                  _buildActionButton(Icons.admin_panel_settings_rounded, "Enter as Admin", () => _enterStoreDirectly(store, dashboard), ColorSlate.slate(600)),
+                  _buildActionButton(Icons.admin_panel_settings_rounded, "Enter as Admin", () => _enterStoreDirectly(store, dashboard), AppColors.textSecondary(context)),
               ],
             ),
           ),
           if (employees.isEmpty)
-            Text("No employee profiles found.", style: GoogleFonts.outfit(color: ColorSlate.slate(500), fontSize: 13))
+            Text(AppLocalizations.t(context, 'No employee profiles found.'), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)))
           else
             Wrap(
               spacing: 16,
@@ -656,25 +645,25 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                 final name = emp['name'] ?? 'Employee';
                 return InkWell(
                   onTap: () => _navigateToEmployeeLogin(store, emp),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.zero,
                   child: Container(
                     width: 110,
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: ColorSlate.slate(500).withValues(alpha: 0.03),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: ColorSlate.slate(500).withValues(alpha: 0.05)),
+                      color: AppColors.textSecondary(context).withValues(alpha: 0.03),
+                      borderRadius: BorderRadius.zero,
+                      border: Border.all(color: AppColors.textSecondary(context).withValues(alpha: 0.05)),
                     ),
                     child: Column(
                       children: [
                         CircleAvatar(
                           radius: 28,
                           backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                          child: Text(name[0].toUpperCase(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 20)),
+                          child: Text(name[0].toUpperCase(), style: AppTypography.titleLarge.copyWith(color: AppColors.primary)),
                         ),
                         const SizedBox(height: 12),
-                        Text(name, style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
-                        Text(emp['role'] ?? 'Staff', style: GoogleFonts.outfit(fontSize: 11, color: ColorSlate.slate(500))),
+                        Text(name, style: AppTypography.labelLarge, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                        Text(emp['role'] ?? 'Staff', style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
                       ],
                     ),
                   ),
@@ -687,21 +676,9 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   }
 }
 
-extension ColorSlate on Colors {
-  static Color slate(int weight) {
-     final map = {
-       50: const Color(0xFFF8FAFC),
-       100: const Color(0xFFF1F5F9),
-       200: const Color(0xFFE2E8F0),
-       300: const Color(0xFFCBD5E1),
-       400: const Color(0xFF94A3B8),
-       500: const Color(0xFF64748B),
-       600: const Color(0xFF475569),
-       700: const Color(0xFF334155),
-       800: const Color(0xFF1E293B),
-       900: const Color(0xFF0F172A),
-     };
-     return map[weight] ?? AppColors.textSecondaryLight;
-  }
-}
+
+
+
+
+
 

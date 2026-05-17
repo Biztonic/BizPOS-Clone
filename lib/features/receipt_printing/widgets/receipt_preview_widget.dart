@@ -1,4 +1,6 @@
 import '../../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../models/settings.dart'; // Import Settings
@@ -28,7 +30,7 @@ class ReceiptPreviewWidget extends StatelessWidget {
       child: IntrinsicWidth(
         child: Container(
           // width: previewWidth, // REMOVED
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
           decoration: BoxDecoration(
             color: Colors.white,
             boxShadow: [
@@ -69,7 +71,7 @@ class ReceiptPreviewWidget extends StatelessWidget {
                  _buildFooter(content.footer!, context),
               ],
               
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xxs),
               Center(child: Icon(Icons.cut, color: AppColors.textSecondary(context).withValues(alpha: 0.5), size: 16)),
             ],
           ),
@@ -82,7 +84,7 @@ class ReceiptPreviewWidget extends StatelessWidget {
     return Column(
       children: [
          if (header.customMessage != null) Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Text(header.customMessage!, textAlign: TextAlign.center, style: _styleFrom(settings.prominentStyle)),
         ),
         Text(header.storeName, textAlign: TextAlign.center, style: _styleFrom(settings.prominentStyle)),
@@ -205,14 +207,14 @@ class ReceiptPreviewWidget extends StatelessWidget {
       children: [
         Text(footer.message, textAlign: TextAlign.center, style: _styleFrom(settings.regularStyle)),
         if (footer.poweredBy != null) ...[
-           const SizedBox(height: 4),
+           const SizedBox(height: AppSpacing.xs),
            Text(footer.poweredBy!, textAlign: TextAlign.center, style: _styleFrom(settings.regularStyle, sizeOverride: 10).copyWith(color: AppColors.textSecondary(context))),
         ],
         if (footer.qrData != null && footer.qrData!.isNotEmpty) ...[
-           const SizedBox(height: 8),
+           const SizedBox(height: AppSpacing.sm),
            // Placeholder for QR Code (Mock visual)
            Container(
-             padding: const EdgeInsets.all(4),
+             padding: const EdgeInsets.all(AppSpacing.xs),
              decoration: BoxDecoration(border: Border.all(color: Colors.black)),
              child: const Column(
                children: [

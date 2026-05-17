@@ -1,4 +1,8 @@
-import '../../core/design/tokens/app_colors.dart';
+﻿import '../../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -44,7 +48,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
         context: context,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export successful')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Export successful'))));
       }
     } catch (e) {
       if (mounted) {
@@ -97,7 +101,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
               icon: const Icon(Icons.arrow_back),
               onPressed: () => context.go('/reports'),
             ),
-            title: const Text('Customer Reports', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(AppLocalizations.t(context, 'Customer Reports'), style: const TextStyle(fontWeight: FontWeight.bold)),
             actions: [
               IconButton(
                 icon: const Icon(Icons.file_download),
@@ -110,7 +114,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
           // SUMMARY CARDS
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
                   ReportStatCard(
@@ -119,7 +123,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                     icon: Icons.people,
                     baseColor: AppColors.primaryLight
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.md),
                   ReportStatCard(
                     title: "Active this Month", 
                     value: "$activeThisMonth", 
@@ -135,11 +139,11 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
           if (maxVisits > 0)
             SliverToBoxAdapter(
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.textSecondary(context) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.zero,
                   boxShadow: [
                     BoxShadow(
                       color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03), 
@@ -151,15 +155,14 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Customer Visits (Last 7 Days)", 
+                    Text(AppLocalizations.t(context, 'Customer Visits (Last 7 Days)'), 
                       style: TextStyle(
                         fontSize: 16, 
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : Colors.black87,
                       )
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.xl),
                     SizedBox(
                       height: 200,
                       child: BarChart(
@@ -235,7 +238,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                    toY: count, 
                                    color: isToday ? AppColors.primaryLight : AppColors.primaryLight, 
                                    width: 20, 
-                                   borderRadius: BorderRadius.circular(4)
+                                   borderRadius: BorderRadius.zero
                                  )
                                ]
                              );
@@ -250,13 +253,12 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
           
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
                   Icon(Icons.history, color: isDark ? Colors.white54 : AppColors.textSecondary(context), size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Recent Activity", 
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(AppLocalizations.t(context, 'Recent Activity'), 
                     style: TextStyle(
                       fontWeight: FontWeight.bold, 
                       fontSize: 16, 
@@ -277,9 +279,8 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.person_off, size: 64, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
-                    const SizedBox(height: 16),
-                    Text(
-                      "No customers found.", 
+                    const SizedBox(height: AppSpacing.md),
+                    Text(AppLocalizations.t(context, 'No customers found.'), 
                       style: TextStyle(
                         color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), 
                         fontSize: 16
@@ -291,7 +292,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -301,11 +302,11 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                       color: isDark ? AppColors.textSecondary(context) : Colors.white,
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.zero,
                         side: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(AppSpacing.md),
                         child: Row(
                           children: [
                             CircleAvatar(
@@ -320,7 +321,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                 )
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: AppSpacing.md),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,24 +334,24 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                       color: isDark ? Colors.white : Colors.black87,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: AppSpacing.xs),
                                   Row(
                                     children: [
                                       Icon(Icons.phone, size: 14, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
-                                      const SizedBox(width: 4),
+                                      const SizedBox(width: AppSpacing.xs),
                                       Text(
                                         customer.phone ?? 'N/A',
                                         style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 13),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: AppSpacing.xs),
                                   Row(
                                     children: [
                                       Icon(Icons.access_time, size: 14, color: AppColors.textSecondary(context)),
-                                      const SizedBox(width: 4),
+                                      const SizedBox(width: AppSpacing.xs),
                                       Text(
-                                        customer.lastVisit != null ? DateFormat('MMM dd, yyyy • HH:mm').format(customer.lastVisit!) : 'Never visited',
+                                        customer.lastVisit != null ? DateFormat('MMM dd, yyyy â€¢ HH:mm').format(customer.lastVisit!) : 'Never visited',
                                         style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
                                       ),
                                     ],
@@ -365,16 +366,16 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: isDark ? AppColors.warning.withValues(alpha: 0.1) : AppColors.warning,
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.zero,
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.star, size: 14, color: AppColors.warning),
-                                      const SizedBox(width: 4),
+                                      const Icon(Icons.star, size: 14, color: AppColors.warning),
+                                      const SizedBox(width: AppSpacing.xs),
                                       Text(
                                         "${customer.loyaltyPoints} Pts", 
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 13, 
                                           color: AppColors.warning, 
                                           fontWeight: FontWeight.bold
@@ -399,3 +400,6 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
     );
   }
 }
+
+
+

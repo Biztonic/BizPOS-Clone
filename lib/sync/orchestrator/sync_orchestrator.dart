@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:biztonic_pos/sync/inbound/pull_engine.dart';
 import 'package:biztonic_pos/sync/outbound/outbound_manager.dart';
-import 'package:biztonic_pos/sync/policy/plan_sync_policy.dart';
 import 'package:biztonic_pos/sync/limits/limits_engine.dart';
 
 /// The central brain of the sync system.
@@ -13,7 +12,7 @@ import 'package:biztonic_pos/sync/limits/limits_engine.dart';
 class SyncOrchestrator {
   final PullEngine _pullEngine;
   final OutboundManager _outboundManager;
-  final PlanSyncPolicy _planPolicy;
+  
   final LimitsEngine _limitsEngine;
 
   // Callbacks to SyncService for UI/State updates
@@ -31,7 +30,7 @@ class SyncOrchestrator {
   SyncOrchestrator({
     required PullEngine pullEngine,
     required OutboundManager outboundManager,
-    required PlanSyncPolicy planPolicy,
+    
     required LimitsEngine limitsEngine,
     required this.setStatus,
     required this.setLastError,
@@ -42,7 +41,7 @@ class SyncOrchestrator {
     required this.notifyListeners,
   })  : _pullEngine = pullEngine,
         _outboundManager = outboundManager,
-        _planPolicy = planPolicy,
+        
         _limitsEngine = limitsEngine;
 
   /// Executes a full synchronization cycle.

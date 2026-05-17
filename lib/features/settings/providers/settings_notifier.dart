@@ -50,11 +50,10 @@ class SettingsState {
 
 @riverpod
 class SettingsNotifier extends _$SettingsNotifier {
-  late final SettingsRepository _repository;
+  final SettingsRepository _repository = SettingsRepository();
 
   @override
   SettingsState build() {
-    _repository = SettingsRepository();
     // Start with defaults, will be updated by loadSettings
     return SettingsState(
       isDarkMode: false,

@@ -36,6 +36,7 @@ class WidgetbookApp extends StatelessWidget {
             );
           },
         ),
+        // ignore: deprecated_member_use
         DeviceFrameAddon(
           devices: [
             Devices.ios.iPhone13,
@@ -45,7 +46,8 @@ class WidgetbookApp extends StatelessWidget {
           ],
         ),
         TextScaleAddon(
-          scales: [1.0, 1.25, 1.5, 2.0],
+          min: 1.0,
+          max: 2.0,
         ),
       ],
     );

@@ -1,6 +1,4 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:biztonic_pos/utils/theme.dart';
-import 'package:biztonic_pos/models/settings.dart';
 
 class SettingsRepository {
   static const String _settingsBoxName = 'settings';

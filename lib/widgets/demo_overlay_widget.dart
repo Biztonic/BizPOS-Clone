@@ -1,5 +1,7 @@
-// ignore_for_file: unused_local_variable
+﻿// ignore_for_file: unused_local_variable
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 import 'package:provider/provider.dart';
 import '../providers/dashboard_provider.dart';
 // Import SpotlightPainter
@@ -26,18 +28,18 @@ class DemoOverlayWidget extends StatelessWidget {
                
                // Close Button (Top Right)
                Positioned(
-                 top: 40, // Safe area equivalent
-                 right: 16,
+                 top: AppSpacing.xs, // Safe area equivalent
+                 right: AppSpacing.md,
                  child: Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () => provider.exitDemoMode(),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.zero,
                       child: Container(
-                         padding: const EdgeInsets.all(8),
+                         padding: const EdgeInsets.all(AppSpacing.sm),
                          decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.5),
-                            shape: BoxShape.circle,
+                            shape: BoxShape.rectangle,
                             border: Border.all(color: Colors.white, width: 2)
                          ),
                          child: const Icon(Icons.close, color: Colors.white, size: 24),
@@ -55,3 +57,6 @@ class DemoOverlayWidget extends StatelessWidget {
 
   // Helper removed as requested to hide text badges
 }
+
+
+

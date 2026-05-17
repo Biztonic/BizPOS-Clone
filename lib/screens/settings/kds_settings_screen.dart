@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/store_provider.dart';
 import '../../models/settings.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
-import '../../core/design/density/app_density.dart';
 import '../../core/design/tokens/app_spacing.dart';
 import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/components/atoms/app_button.dart';
@@ -66,7 +67,7 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
       await provider.updateSettingsConfig(newSettings);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("KDS Settings Saved")),
+          SnackBar(content: Text(AppLocalizations.t(context, 'KDS Settings Saved'))),
         );
       }
     } catch (e) {
@@ -80,29 +81,29 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final density = AppDensityProvider.configOf(context);
+    
 
     return PosScaffold(
       title: "KDS Settings",
       mainContent: ListView(
-        padding: EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          Text("Interface Options", style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Interface Options'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             child: Column(
               children: [
                 SwitchListTile(
-                  title: const Text("Sound Notifications", style: AppTypography.bodyLarge),
-                  subtitle: const Text("Play sound when a new order arrives", style: AppTypography.bodySmall),
+                  title: Text(AppLocalizations.t(context, 'Sound Notifications'), style: AppTypography.bodyLarge),
+                  subtitle: Text(AppLocalizations.t(context, 'Play sound when a new order arrives'), style: AppTypography.bodySmall),
                   value: _soundEnabled,
                   onChanged: (v) => setState(() => _soundEnabled = v),
                   contentPadding: EdgeInsets.zero,
                 ),
                 const Divider(),
                 ListTile(
-                  title: const Text("Font Size", style: AppTypography.bodyLarge),
+                  title: Text(AppLocalizations.t(context, 'Font Size'), style: AppTypography.bodyLarge),
                   subtitle: Text("${_fontSize.toInt()} px", style: AppTypography.bodySmall),
                   contentPadding: EdgeInsets.zero,
                   trailing: SizedBox(
@@ -118,7 +119,7 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
                 ),
                 const Divider(),
                 ListTile(
-                  title: const Text("Layout Style", style: AppTypography.bodyLarge),
+                  title: Text(AppLocalizations.t(context, 'Layout Style'), style: AppTypography.bodyLarge),
                   contentPadding: EdgeInsets.zero,
                   trailing: DropdownButton<String>(
                     value: _layout,
@@ -132,9 +133,9 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
           ),
 
           const SizedBox(height: AppSpacing.xl),
-          Text("Filter Categories", style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Filter Categories'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.xs),
-          Text("Only show orders containing items from these categories:", style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+          Text(AppLocalizations.t(context, 'Only show orders containing items from these categories:'), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
           const SizedBox(height: AppSpacing.md),
           _buildCategoryFilters(),
 

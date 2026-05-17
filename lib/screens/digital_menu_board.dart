@@ -1,4 +1,8 @@
-import '../core/design/tokens/app_colors.dart';
+﻿import '../core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
+
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+
 // ignore_for_file: deprecated_member_use_from_same_package
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +20,7 @@ class DigitalMenuBoard extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("Digital Menu"),
+        title: Text(AppLocalizations.t(context, 'Digital Menu')),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
@@ -29,11 +33,11 @@ class DigitalMenuBoard extends StatelessWidget {
               color: AppColors.textSecondary(context),
               child: Column(
                 children: [
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.xxs),
                   const CircleAvatar(radius: 40, backgroundColor: AppColors.warning, child: Icon(Icons.restaurant, size: 40, color: Colors.black)),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.xxs),
                   Text(provider.activeStore?.name ?? "Menu", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: AppSpacing.xs),
                   // Categories can go here
                   _buildCategoryItem("All Items", true),
                   _buildCategoryItem("Burgers", false),
@@ -46,7 +50,7 @@ class DigitalMenuBoard extends StatelessWidget {
           Expanded(
             flex: 8,
             child: GridView.builder(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: 300,
                 childAspectRatio: 0.8,
@@ -59,7 +63,7 @@ class DigitalMenuBoard extends StatelessWidget {
                 return Container(
                   decoration: BoxDecoration(
                     color: AppColors.textSecondary(context),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.zero,
                     image: DecorationImage(
                       image: InventoryImageWidget.getImageProvider(item),
                       fit: BoxFit.cover,
@@ -70,7 +74,7 @@ class DigitalMenuBoard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(colors: [Colors.black, Colors.black.withValues(alpha: 0.0)], begin: Alignment.bottomCenter, end: Alignment.topCenter)
                         ),
@@ -84,7 +88,7 @@ class DigitalMenuBoard extends StatelessWidget {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppSpacing.sm),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -96,7 +100,7 @@ class DigitalMenuBoard extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: AppSpacing.sm),
                                 Text(
                                   "₹${item.price}", 
                                   style: const TextStyle(color: AppColors.warning, fontSize: 24, fontWeight: FontWeight.bold)
@@ -120,7 +124,7 @@ class DigitalMenuBoard extends StatelessWidget {
   Widget _buildCategoryItem(String title, bool isSelected) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.lg),
       color: isSelected ? AppColors.warning : Colors.transparent,
       child: Text(
         title, 
@@ -133,3 +137,7 @@ class DigitalMenuBoard extends StatelessWidget {
     );
   }
 }
+
+
+
+
