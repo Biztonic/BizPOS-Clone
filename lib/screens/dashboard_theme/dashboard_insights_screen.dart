@@ -2,6 +2,7 @@
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+import 'package:biztonic_pos/core/design/tokens/app_typography.dart';
 
 import 'dart:math' as math;
 // ignore_for_file: unused_local_variable, unused_element
@@ -497,8 +498,8 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                     final order = recentOrders[index];
                     return ListTile(
                        leading: const Icon(Icons.receipt_long),
-                       title: Text("₹${order.total}"),
-                       subtitle: Text("#${order.id.substring(0,6)} â€¢ ${DateFormat('HH:mm').format(order.date)}"),
+                       title: Text("â‚¹${order.total}"),
+                       subtitle: Text("#${order.id.substring(0,6)} Ã¢â‚¬Â¢ ${DateFormat('HH:mm').format(order.date)}"),
                        trailing: const Icon(Icons.chevron_right),
                        onTap: () {
                           Navigator.pop(ctx);
@@ -555,7 +556,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
 
      return Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
            color: CarDashboardTheme.backgroundColor(isDark),
            borderRadius: BorderRadius.zero,
@@ -750,8 +751,8 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                                decoration: BoxDecoration(color: CarDashboardTheme.backgroundColor(isDarkMode), borderRadius: BorderRadius.zero),
                                child: Icon(Icons.receipt, color: CarDashboardTheme.primaryColor(isDarkMode)),
                             ),
-                            title: Text("₹${order.total.toStringAsFixed(0)}", style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontWeight: FontWeight.bold, fontSize: 18)),
-                            subtitle: Text("#${order.id.substring(0,6)} â€¢ ${DateFormat('HH:mm').format(order.date)}", style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 14)),
+                            title: Text("â‚¹${order.total.toStringAsFixed(0)}", style: TextStyle(color: CarDashboardTheme.textColor(isDarkMode), fontWeight: FontWeight.bold, fontSize: 18)),
+                            subtitle: Text("#${order.id.substring(0,6)} Ã¢â‚¬Â¢ ${DateFormat('HH:mm').format(order.date)}", style: TextStyle(color: CarDashboardTheme.subTextColor(isDarkMode), fontSize: 14)),
                             trailing: isRefund 
                                ? Builder(
                                    builder: (context) {
@@ -764,7 +765,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                                             borderRadius: BorderRadius.zero,
                                             gradient: isRefunded 
                                                ? LinearGradient(colors: [AppColors.textSecondary(context), AppColors.textSecondary(context)])
-                                               : const LinearGradient(colors: [Color(0xFFFF5252), Color(0xFFFF1744)])
+                                               : const LinearGradient(colors: [AppColors.error, Color(0xFFFF1744)])
                                          ),
                                          child: ElevatedButton(
                                            style: ElevatedButton.styleFrom(
@@ -781,7 +782,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                                                  context: context,
                                                  builder: (ctx) => AlertDialog(
                                                     title: Text(AppLocalizations.t(context, 'Confirm Refund')),
-                                                    content: Text("Refund ₹${order.total.toStringAsFixed(0)}? This action cannot be undone."),
+                                                    content: Text("Refund â‚¹${order.total.toStringAsFixed(0)}? This action cannot be undone."),
                                                     actions: [
                                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'Cancel'))),
                                                        ElevatedButton(
@@ -799,7 +800,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                                                   await provider.refundOrder(order.id);
                                               }
                                            }, 
-                                           child: Text(isRefunded ? "Refunded" : "Refund", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white))
+                                           child: Text(isRefunded ? "Refunded" : "Refund", style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold, color: Colors.white))
                                          ),
                                        );
                                    }
@@ -899,7 +900,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A), // Dark mode for automotive theme
+        backgroundColor: CarDashboardTheme.bgDark, // Dark mode for automotive theme
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: Row(
           children: [
@@ -1009,7 +1010,7 @@ class _InteractiveKpiCardState extends State<_InteractiveKpiCard> {
               children: [
                  AnimatedContainer(
                    duration: const Duration(milliseconds: 300),
-                   padding: const EdgeInsets.all(12),
+                   padding: const EdgeInsets.all(AppSpacing.md),
                    decoration: BoxDecoration(
                      color: activeColor.withValues(alpha: 0.1),
                      borderRadius: BorderRadius.zero
@@ -1024,7 +1025,7 @@ class _InteractiveKpiCardState extends State<_InteractiveKpiCard> {
                       child: Text(
                         value, 
                         key: ValueKey(value),
-                        style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: CarDashboardTheme.textColor(widget.isDarkMode))
+                        style: AppTypography.headlineLarge.copyWith(fontWeight: FontWeight.bold, color: CarDashboardTheme.textColor(widget.isDarkMode))
                       ),
                    )
                  ),
@@ -1128,15 +1129,15 @@ class _AnimatedBillingButtonState extends State<_AnimatedBillingButton> with Sin
                                       const SizedBox(height: AppSpacing.sm),
                                       Text("Welcome ${widget.userName}", 
                                           textAlign: TextAlign.center,
-                                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)
+                                          style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold, color: Colors.white)
                                       ),
                                       Text(AppLocalizations.t(context, 'to Biztonic Automation'), 
                                           textAlign: TextAlign.center,
-                                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)
+                                          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w600, color: Colors.white)
                                       ),
                                       Text(AppLocalizations.t(context, 'The Smart Billing Solution'), 
                                           textAlign: TextAlign.center,
-                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: Colors.white70)
+                                          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w400, color: Colors.white70)
                                       ),
                                    ],
                                  ),
@@ -1220,73 +1221,83 @@ class _PerformanceIndexCard extends StatelessWidget {
             Positioned(
               bottom: -40, right: -20,
               child: Opacity(
-                opacity: isDarkMode ? 0.05 : 0.1,
-                child: Icon(Icons.speed, size: 180, color: performanceColor),
+                opacity: isDarkMode ? 0.05 : 0.08,
+                child: Icon(Icons.speed, size: 120, color: performanceColor),
               ),
             ),
             
             Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(14.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(AppLocalizations.t(context, 'PERFORMANCE'), 
-                        style: CarDashboardTheme.labelStyle.copyWith(
-                          fontSize: 12, 
-                          fontWeight: FontWeight.w900, 
-                          letterSpacing: 1.5,
-                          color: CarDashboardTheme.subTextColor(isDarkMode)
-                        )
+                      Flexible(
+                        child: Text(AppLocalizations.t(context, 'PERFORMANCE'), 
+                          overflow: TextOverflow.ellipsis,
+                          style: CarDashboardTheme.labelStyle.copyWith(
+                            fontSize: 10, 
+                            fontWeight: FontWeight.w900, 
+                            letterSpacing: 1.2,
+                            color: CarDashboardTheme.subTextColor(isDarkMode)
+                          )
+                        ),
                       ),
-                      Icon(Icons.trending_up, color: performanceColor, size: 20),
+                      Icon(Icons.trending_up, color: performanceColor, size: 16),
                     ],
                   ),
                   const Spacer(),
                   Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Gauge Ring
-                        SizedBox(
-                          height: 100, width: 100,
-                          child: CircularProgressIndicator(
-                            value: displayProgress,
-                            strokeWidth: 10,
-                            strokeCap: StrokeCap.round,
-                            backgroundColor: isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                            valueColor: AlwaysStoppedAnimation<Color>(performanceColor),
-                          ),
-                        ),
-                        // Inner Text
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final gaugeSize = (constraints.maxWidth * 0.45).clamp(50.0, 80.0);
+                        return Stack(
+                          alignment: Alignment.center,
                           children: [
-                            Text("${displayIndex.toStringAsFixed(0)}%", 
-                              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: CarDashboardTheme.textColor(isDarkMode))
+                            SizedBox(
+                              height: gaugeSize, width: gaugeSize,
+                              child: CircularProgressIndicator(
+                                value: displayProgress,
+                                strokeWidth: 8,
+                                strokeCap: StrokeCap.round,
+                                backgroundColor: isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                                valueColor: AlwaysStoppedAnimation<Color>(performanceColor),
+                              ),
                             ),
-                            Text(AppLocalizations.t(context, 'GOAL'), 
-                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: CarDashboardTheme.subTextColor(isDarkMode).withValues(alpha: 0.7))
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text("${displayIndex.toStringAsFixed(0)}%", 
+                                  style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w900, color: CarDashboardTheme.textColor(isDarkMode))
+                                ),
+                                Text(AppLocalizations.t(context, 'GOAL'), 
+                                  style: AppTypography.labelSmall.copyWith(fontSize: 8, fontWeight: FontWeight.bold, color: CarDashboardTheme.subTextColor(isDarkMode).withValues(alpha: 0.7))
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                      ],
+                        );
+                      },
                     ),
                   ),
                   const Spacer(),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(vertical: 4),
                     decoration: BoxDecoration(
                       color: performanceColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.zero,
                     ),
                     alignment: Alignment.center,
-                    child: Text(
-                      rawIndex >= 100 ? "EXCEEDING TARGET" : (rawIndex >= 85 ? "OPTIMAL" : "BELOW TARGET"),
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: performanceColor, letterSpacing: 0.5)
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        rawIndex >= 100 ? "EXCEEDING TARGET" : (rawIndex >= 85 ? "OPTIMAL" : "BELOW TARGET"),
+                        style: AppTypography.labelSmall.copyWith(fontSize: 10, fontWeight: FontWeight.w900, color: performanceColor, letterSpacing: 0.5)
+                      ),
                     ),
                   ),
                 ],
@@ -1350,7 +1361,7 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
         },
         child: Container(
           key: ValueKey(_showFreeHours),
-          padding: const EdgeInsets.all(AppSpacing.xxs),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: CarDashboardTheme.cardColor(widget.isDarkMode),
             borderRadius: BorderRadius.zero,
@@ -1363,15 +1374,18 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(_showFreeHours ? "OPPORTUNITY TIME" : "PEAK TRAFFIC", 
-                    style: CarDashboardTheme.labelStyle.copyWith(
-                      fontSize: 10, 
-                      fontWeight: FontWeight.w900, 
-                      letterSpacing: 1.2,
-                      color: _showFreeHours ? AppColors.primaryLightAccent : AppColors.warning
-                    )
+                  Flexible(
+                    child: Text(_showFreeHours ? "OPPORTUNITY TIME" : "PEAK TRAFFIC", 
+                      overflow: TextOverflow.ellipsis,
+                      style: CarDashboardTheme.labelStyle.copyWith(
+                        fontSize: 10, 
+                        fontWeight: FontWeight.w900, 
+                        letterSpacing: 1.0,
+                        color: _showFreeHours ? AppColors.primaryLightAccent : AppColors.warning
+                      )
+                    ),
                   ),
-                  Icon(_showFreeHours ? Icons.eco : Icons.speed, color: _showFreeHours ? AppColors.primaryLightAccent : AppColors.warning, size: 18),
+                  Icon(_showFreeHours ? Icons.eco : Icons.speed, color: _showFreeHours ? AppColors.primaryLightAccent : AppColors.warning, size: 16),
                 ],
               ),
               const Spacer(),
@@ -1379,14 +1393,14 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(_showFreeHours ? "QUIETEST HOUR" : "RUSHED HOUR", 
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: CarDashboardTheme.subTextColor(widget.isDarkMode).withValues(alpha: 0.6))
+                    style: AppTypography.labelSmall.copyWith(fontSize: 9, fontWeight: FontWeight.bold, color: CarDashboardTheme.subTextColor(widget.isDarkMode).withValues(alpha: 0.6))
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
                       widget.hasOrders ? formatHour(_showFreeHours ? leastHour : peakHour) : "--", 
-                      style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: CarDashboardTheme.textColor(widget.isDarkMode), letterSpacing: -1)
+                      style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.w900, color: CarDashboardTheme.textColor(widget.isDarkMode), letterSpacing: -1)
                     ),
                   ),
                 ],
@@ -1394,9 +1408,9 @@ class _RushedHoursCardState extends State<_RushedHoursCard> {
               const Spacer(),
               Row(
                 children: [
-                  Icon(Icons.touch_app, size: 12, color: CarDashboardTheme.subTextColor(widget.isDarkMode).withValues(alpha: 0.4)),
+                  Icon(Icons.touch_app, size: 10, color: CarDashboardTheme.subTextColor(widget.isDarkMode).withValues(alpha: 0.4)),
                   const SizedBox(width: AppSpacing.xs),
-                  Text(AppLocalizations.t(context, 'TAP TO FLIP'), style: TextStyle(fontSize: 9, color: CarDashboardTheme.subTextColor(widget.isDarkMode).withValues(alpha: 0.4), fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.t(context, 'TAP TO FLIP'), style: AppTypography.labelSmall.copyWith(fontSize: 8, color: CarDashboardTheme.subTextColor(widget.isDarkMode).withValues(alpha: 0.4), fontWeight: FontWeight.bold)),
                 ],
               ),
             ],
@@ -1419,7 +1433,7 @@ class _TopSellingProductsCard extends StatelessWidget {
     var topDisplay = topProducts.take(4).toList();
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: CarDashboardTheme.cardColor(isDarkMode),
         borderRadius: BorderRadius.zero,
@@ -1432,11 +1446,15 @@ class _TopSellingProductsCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(AppLocalizations.t(context, 'TOP SELLING'), style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode), fontWeight: FontWeight.bold)),
-              const Icon(Icons.auto_awesome, color: AppColors.warning, size: 20),
+              Flexible(
+                child: Text(AppLocalizations.t(context, 'TOP SELLING'), 
+                  overflow: TextOverflow.ellipsis,
+                  style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.subTextColor(isDarkMode), fontWeight: FontWeight.bold, fontSize: 10)),
+              ),
+              const Icon(Icons.auto_awesome, color: AppColors.warning, size: 16),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.sm),
           if (topDisplay.isEmpty)
             Expanded(child: Center(child: Text(AppLocalizations.t(context, 'Waiting for sales...'), style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context)))))
           else
@@ -1464,7 +1482,7 @@ class _TopSellingProductsCard extends StatelessWidget {
                         Expanded(
                           child: Text(item['name'] ?? "", 
                             maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: CarDashboardTheme.textColor(isDarkMode))),
+                            style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold, color: CarDashboardTheme.textColor(isDarkMode))),
                         ),
                         Text("${item['quantity'] ?? 0}", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: CarDashboardTheme.primaryColor(isDarkMode))),
                       ],
@@ -1495,7 +1513,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
     final total = paymentStats.values.fold(0.0, (sum, val) => sum + val);
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.xxs),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: CarDashboardTheme.cardColor(isDarkMode),
         borderRadius: BorderRadius.zero,
@@ -1516,22 +1534,27 @@ class _PaymentBreakdownCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(AppLocalizations.t(context, 'PAYMENT DISTRIBUTION'), style: CarDashboardTheme.labelStyle.copyWith(
-                    color: CarDashboardTheme.subTextColor(isDarkMode), 
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                    letterSpacing: 1.5
-                  )),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(AppLocalizations.t(context, 'Revenue Share'), style: TextStyle(
-                    color: CarDashboardTheme.textColor(isDarkMode),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                  )),
-                ],
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(AppLocalizations.t(context, 'PAYMENT DISTRIBUTION'), 
+                      overflow: TextOverflow.ellipsis,
+                      style: CarDashboardTheme.labelStyle.copyWith(
+                        color: CarDashboardTheme.subTextColor(isDarkMode), 
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                        letterSpacing: 1.2
+                      )
+                    ),
+                    const SizedBox(height: 2),
+                    Text(AppLocalizations.t(context, 'Revenue Share'), style: TextStyle(
+                      color: CarDashboardTheme.textColor(isDarkMode),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    )),
+                  ],
+                ),
               ),
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
@@ -1540,7 +1563,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
                   shape: BoxShape.rectangle,
                 ),
                 child: Icon(Icons.account_balance_wallet_rounded, 
-                  color: CarDashboardTheme.primaryColor(isDarkMode), size: 18),
+                  color: CarDashboardTheme.primaryColor(isDarkMode), size: 16),
               ),
             ],
           ),
@@ -1582,10 +1605,10 @@ class _PaymentBreakdownCard extends StatelessWidget {
                   
                   // Premium Color selection
                   final Color primaryColor = entry.key.toUpperCase().contains('CASH') 
-                    ? const Color(0xFF00E676) // Vibrant Green
+                    ? AppColors.success // Vibrant Green
                     : (entry.key.toUpperCase().contains('UPI') 
-                        ? const Color(0xFF2979FF) // Vibrant Blue
-                        : const Color(0xFFFF9100)); // Vibrant Orange
+                        ? AppColors.info // Vibrant Blue
+                        : AppColors.warning); // Vibrant Orange
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1614,7 +1637,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
                               )),
                             ],
                           ),
-                          Text("₹${entry.value.toStringAsFixed(0)}", style: TextStyle(
+                          Text("â‚¹${entry.value.toStringAsFixed(0)}", style: TextStyle(
                             fontSize: 13, 
                             fontWeight: FontWeight.w900, 
                             color: CarDashboardTheme.textColor(isDarkMode)
@@ -1671,6 +1694,8 @@ class _PaymentBreakdownCard extends StatelessWidget {
     );
   }
 }
+
+
 
 
 

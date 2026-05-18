@@ -1,9 +1,10 @@
-﻿import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import 'package:flutter/material.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
 import 'package:provider/provider.dart';
 import '../../providers/smart_insights_provider.dart';
 
@@ -15,11 +16,11 @@ class InsightsScreen extends StatelessWidget {
     final insights = Provider.of<SmartInsightsProvider>(context);
     final list = insights.smartInsights;
 
-    return Scaffold(
+    return PosScaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.t(context, 'Smart Insights')),
       ),
-      body: list.isEmpty
+      mainContent: list.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

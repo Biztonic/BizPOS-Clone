@@ -12,8 +12,9 @@ import '../tokens/app_colors.dart';
 import '../tokens/app_radius.dart';
 import '../tokens/app_iconography.dart';
 import '../tokens/app_typography.dart';
+import '../../registry/registry.dart';
 
-class PosSidebar extends StatelessWidget {
+class PosSidebar extends StatefulWidget {
   final bool isDrawer;
 
   const PosSidebar({
@@ -21,6 +22,11 @@ class PosSidebar extends StatelessWidget {
     this.isDrawer = false,
   });
 
+  @override
+  State<PosSidebar> createState() => _PosSidebarState();
+}
+
+class _PosSidebarState extends State<PosSidebar> {
   @override
   Widget build(BuildContext context) {
     // Use selective watches to prevent redundant rebuilds
@@ -47,26 +53,24 @@ class PosSidebar extends StatelessWidget {
     // ignore: unused_local_variable
     final subscriptionPlan = context.select<DashboardProvider, String?>((p) => p.activeStore?.subscriptionPlan);
 
-    // 1. Generate Menu Items (Consolidated logic from DashboardScreen)
+    // 1. Generate Core Menu Items (always present)
     final List<Map<String, dynamic>> allMenuItems = [
       {'icon': Icons.dashboard, 'label': AppLocalizations.t(context, 'dashboard'), 'route': '/dashboard', 'key': 'dashboard', 'color': AppColors.primary},
       {'icon': Icons.point_of_sale, 'label': AppLocalizations.t(context, 'pos'), 'route': '/pos', 'key': 'pos', 'color': AppColors.success}, 
       {'icon': Icons.inventory, 'label': AppLocalizations.t(context, 'inventory'), 'route': '/inventory', 'key': 'inventory', 'color': AppColors.warning},
       {'icon': Icons.shopping_cart, 'label': AppLocalizations.t(context, 'sales'), 'route': '/sales', 'key': 'reports', 'color': AppColors.primaryLight}, 
       {'icon': Icons.bar_chart, 'label': AppLocalizations.t(context, 'Reports'), 'route': '/reports', 'key': 'reports', 'color': AppColors.primary},
-      {'icon': Icons.people, 'label': AppLocalizations.t(context, 'customers'), 'route': '/customers', 'key': 'customer_management', 'enabled': (role == 'Store Owner' || role == 'Admin' || dashboardProvider.userProfile?.role == 'Super Admin') && dashboardProvider.hasAddon('customer_management'), 'color': AppColors.primary},
-      {'icon': Icons.store, 'label': AppLocalizations.t(context, 'franchises'), 'route': '/franchises', 'key': 'franchises', 'enabled': role == 'Franchise Owner' || dashboardProvider.hasAddon('franchise_management'), 'color': AppColors.primary},
-      {'icon': Icons.badge, 'label': AppLocalizations.t(context, 'employees'), 'route': '/employees', 'key': 'employees', 'color': AppColors.primary},
-      {'icon': Icons.table_restaurant, 'label': AppLocalizations.t(context, 'Tables'), 'route': '/tables', 'key': 'table_reservation', 'color': AppColors.primary},
-      {'icon': Icons.local_shipping, 'label': AppLocalizations.t(context, 'Suppliers'), 'route': '/suppliers', 'key': 'supplier_management', 'color': AppColors.warning},
-      {'icon': Icons.tv, 'label': AppLocalizations.t(context, 'Display'), 'route': '/display', 'key': 'kds_management', 'color': AppColors.primary},
-      {'icon': Icons.sync_alt, 'label': AppLocalizations.t(context, 'Data Center'), 'route': '/data-sync', 'key': 'data_center', 'color': AppColors.primary},
-      {'icon': Icons.hub, 'label': AppLocalizations.t(context, 'Integrations'), 'route': '/integrations', 'key': 'integration_hub', 'color': AppColors.warning},
+      // --- Dynamic addon entries injected below ---
+      // --- System items (always at bottom) ---
       {'icon': Icons.settings, 'label': AppLocalizations.t(context, 'setting'), 'route': '/settings', 'key': 'settings', 'color': AppColors.textSecondary(context)},
       {'icon': Icons.admin_panel_settings, 'label': AppLocalizations.t(context, 'admin'), 'route': '/admin', 'key': 'admin', 'enabled': isSuperAdmin && isDeveloperMode, 'color': AppColors.textPrimary(context)},
       {'icon': Icons.extension, 'label': 'BizStore', 'route': '/biz-store', 'key': 'biz_store', 'enabled': role != 'Super Admin', 'color': AppColors.primary},
       {'icon': Icons.translate, 'label': AppLocalizations.t(context, 'languages'), 'route': '/languages', 'key': 'admin', 'enabled': isSuperAdmin && isDeveloperMode, 'color': AppColors.primaryLight},
     ];
+
+    // --- Inject Dynamic Module Sidebar Entries (after core, before system items) ---
+    final dynamicEntries = POSCoreRegistry.getSidebarEntries(context);
+    allMenuItems.insertAll(5, dynamicEntries); // Insert after Reports
 
     final menuItems = allMenuItems.where((item) {
       // 1. Check explicit enabled flag (e.g. Admin menu gated by dev mode)
@@ -96,14 +100,14 @@ class PosSidebar extends StatelessWidget {
     }).toList();
 
     final sidebarContent = Container(
-      width: isDrawer ? null : (isCollapsed ? 80 : 280),
+      width: widget.isDrawer ? null : (isCollapsed ? 80 : 280),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        border: isDrawer ? null : Border(right: BorderSide(color: Theme.of(context).dividerColor, width: 0.5)),
+        border: widget.isDrawer ? null : Border(right: BorderSide(color: Theme.of(context).dividerColor, width: 0.5)),
       ),
       child: Column(
         children: [
-          if (isDrawer)
+          if (widget.isDrawer)
             _buildDrawerHeader(context, userName, userEmail, activeStoreName, userPhoto, authProvider)
           else
             _buildSidebarHeader(context, activeStoreName, userName, isOnline, isCollapsed, dashboardProvider),
@@ -120,7 +124,7 @@ class PosSidebar extends StatelessWidget {
       ),
     );
 
-    return isDrawer ? Drawer(child: sidebarContent) : sidebarContent;
+    return widget.isDrawer ? Drawer(child: sidebarContent) : sidebarContent;
   }
 
   Widget _buildSidebarHeader(BuildContext context, String? storeName, String? userName, bool isOnline, bool isCollapsed, DashboardProvider provider) {
@@ -246,7 +250,7 @@ class PosSidebar extends StatelessWidget {
              if (val != null) {
                dashboardProvider.setActiveStoreId(val);
                dashboardProvider.linkUserToStore(authProvider.user!.uid, val);
-               if (isDrawer) Navigator.pop(context); 
+               if (widget.isDrawer) Navigator.pop(context); 
              }
           },
         ),
@@ -257,7 +261,7 @@ class PosSidebar extends StatelessWidget {
   Widget _buildMenuList(BuildContext context, List<Map<String, dynamic>> menuItems, DashboardProvider dashboardProvider, bool isCollapsed) {
     return ListView.builder(
       itemCount: menuItems.length,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      padding: EdgeInsets.symmetric(vertical: 10, horizontal: isCollapsed ? 8 : 12),
       itemBuilder: (context, index) {
         final item = menuItems[index];
         // Safely get current URI from GoRouter or fallback to empty
@@ -273,12 +277,12 @@ class PosSidebar extends StatelessWidget {
         final color = item['color'] as Color? ?? AppColors.textSecondary(context);
         final isRestricted = item.containsKey('key') && !dashboardProvider.isFeatureEnabled(item['key'] as String);
         
+        bool isHovered = false;
         return DemoTarget(
           step: item['key'] == 'pos' ? 'nav_pos' : (item['key'] == 'reports' ? 'nav_reports' : 'none'),
           instruction: item['key'] == 'pos' ? "Click POS to start selling" : "Check Reports here",
           child: StatefulBuilder(
             builder: (context, setState) {
-              bool isHovered = false;
               return MouseRegion(
                 onEnter: (_) => setState(() => isHovered = true),
                 onExit: (_) => setState(() => isHovered = false),
@@ -298,7 +302,7 @@ class PosSidebar extends StatelessWidget {
                         if (item['key'] == 'pos') dashboardProvider.nextDemoStep();
                         
                         final route = item['route'] as String;
-                        if (isDrawer) {
+                        if (widget.isDrawer) {
                           // Safely close the drawer before navigating to prevent hangs
                           Navigator.pop(context);
                           // Short delay to allow drawer animation to start closing before navigation

@@ -1,0 +1,13 @@
+{
+  "module_id": "franchise_management",
+  "name": "Franchise Management",
+  "version": "1.0.0",
+  "description": "Multi-store franchise management, central catalog, and chain-level reporting.",
+  "author": "BizPOS Core Team",
+  "icon": "store",
+  "category": "Enterprise",
+  "min_app_version": "1.0.0",
+  "entry_point": "franchise_module.dart",
+  "dependencies": ["core_pos"],
+  "permissions": ["firestore_franchises"]
+}

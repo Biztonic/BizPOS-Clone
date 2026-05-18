@@ -1,9 +1,10 @@
-﻿import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import 'package:flutter/material.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
@@ -39,7 +40,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     final provider = Provider.of<DashboardProvider>(context);
     final logs = provider.auditLogs;
 
-    return Scaffold(
+    return PosScaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.t(context, 'Audit Log')),
         leading: IconButton(
@@ -53,7 +54,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
           )
         ],
       ),
-      body: RefreshIndicator(
+      mainContent: RefreshIndicator(
         onRefresh: _loadLogs,
         child: _isLoading && logs.isEmpty
             ? const Center(child: CircularProgressIndicator())
@@ -62,9 +63,9 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.history_toggle_off, size: 64, color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
+                        Icon(Icons.history_toggle_off, size: 64, color: AppColors.textSecondary(context)),
                         const SizedBox(height: AppSpacing.md),
-                        Text(AppLocalizations.t(context, 'No audit logs found'), style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 16)),
+                        Text(AppLocalizations.t(context, 'No audit logs found'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 16)),
                       ],
                     ),
                   )

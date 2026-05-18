@@ -1,0 +1,13 @@
+{
+  "module_id": "integration_hub",
+  "name": "Integration Hub",
+  "version": "1.0.0",
+  "description": "Connect with third-party services: payment gateways, accounting software, delivery platforms.",
+  "author": "BizPOS Core Team",
+  "icon": "hub",
+  "category": "Connectivity",
+  "min_app_version": "1.0.0",
+  "entry_point": "integrations_module.dart",
+  "dependencies": ["core_pos"],
+  "permissions": ["api_external"]
+}

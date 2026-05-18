@@ -1,0 +1,13 @@
+{
+  "module_id": "customer_management",
+  "name": "Customer Management (CRM)",
+  "version": "1.0.0",
+  "description": "Customer database, loyalty tracking, and relationship management.",
+  "author": "BizPOS Core Team",
+  "icon": "people",
+  "category": "CRM",
+  "min_app_version": "1.0.0",
+  "entry_point": "crm_module.dart",
+  "dependencies": ["core_pos"],
+  "permissions": ["firestore_customers"]
+}

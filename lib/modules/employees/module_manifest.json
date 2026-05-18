@@ -1,0 +1,13 @@
+{
+  "module_id": "employee_management",
+  "name": "Employee Management",
+  "version": "1.0.0",
+  "description": "Staff scheduling, attendance tracking, payroll management, and role-based access.",
+  "author": "BizPOS Core Team",
+  "icon": "badge",
+  "category": "HR",
+  "min_app_version": "1.0.0",
+  "entry_point": "employees_module.dart",
+  "dependencies": ["core_pos"],
+  "permissions": ["firestore_employees"]
+}

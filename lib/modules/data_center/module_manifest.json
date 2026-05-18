@@ -1,0 +1,13 @@
+{
+  "module_id": "data_center",
+  "name": "Data Center & Cloud Sync",
+  "version": "1.0.0",
+  "description": "Manual and automatic cloud sync, conflict resolution, and real-time monitoring.",
+  "author": "BizPOS Core Team",
+  "icon": "sync_alt",
+  "category": "Infrastructure",
+  "min_app_version": "1.0.0",
+  "entry_point": "data_center_module.dart",
+  "dependencies": ["core_pos"],
+  "permissions": ["firestore_sync"]
+}

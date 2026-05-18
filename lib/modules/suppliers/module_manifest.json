@@ -1,0 +1,13 @@
+{
+  "module_id": "supplier_management",
+  "name": "Supplier Management",
+  "version": "1.0.0",
+  "description": "Manage suppliers, purchase orders, and vendor relationships.",
+  "author": "BizPOS Core Team",
+  "icon": "local_shipping",
+  "category": "Supply Chain",
+  "min_app_version": "1.0.0",
+  "entry_point": "suppliers_module.dart",
+  "dependencies": ["core_pos", "inventory"],
+  "permissions": ["firestore_suppliers"]
+}

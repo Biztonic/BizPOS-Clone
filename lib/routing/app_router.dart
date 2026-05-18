@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../models/table_model.dart';
 import '../utils/theme.dart';
+import '../core/registry/registry.dart';
 
 // Screens
 import '../screens/splash_screen.dart';
@@ -21,30 +22,22 @@ import '../screens/dashboard_theme/car_dashboard_pos_screen.dart';
 import '../screens/inventory_screen.dart';
 import '../screens/printer_screen.dart';
 import '../screens/sales_screen.dart';
-import '../screens/customers_screen.dart';
-import '../screens/staff/staff_dashboard_screen.dart';
 import '../screens/employees_screen.dart';
 import '../screens/user_management_screen.dart';
 import '../screens/reports_screen.dart';
-import '../screens/supplier_screen.dart';
 import '../screens/kitchen_display_screen.dart';
-import '../screens/display_management_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/admin/store_management_screen.dart';
 import '../screens/admin/user_role_management_screen.dart';
-import '../screens/settings/data_sync_control_screen.dart';
-import '../screens/admin/franchise_screen.dart';
 import '../screens/admin_dashboard_screen.dart';
 import '../screens/admin/basic_plan_settings_screen.dart';
 import '../screens/language_screen.dart';
-import '../screens/integration/integration_hub_screen.dart';
 import '../screens/settings/biz_store_screen.dart';
 import '../screens/reports/unified_sales_report_screen.dart';
 import '../screens/reports/inventory_reports_screen.dart';
 import '../screens/reports/customer_reports_screen.dart';
 import '../screens/reports/financial_reports_screen.dart';
 import '../screens/reports/audit_log_screen.dart';
-import '../screens/tables/table_management_screen.dart';
 
 import '../screens/universal_shell.dart';
 import '../widgets/feature_guard.dart';
@@ -214,14 +207,6 @@ class AppRouter {
               builder: (context, state) => const FeatureGuard(featureKey: 'reports', child: SalesScreen()),
             ),
             GoRoute(
-              path: '/customers',
-              builder: (context, state) => const FeatureGuard(featureKey: 'crm', child: CustomersScreen()),
-            ),
-            GoRoute(
-              path: '/employees',
-              builder: (context, state) => const FeatureGuard(featureKey: 'employees', child: StaffDashboardScreen()),
-            ),
-            GoRoute(
               path: '/staff-list',
               builder: (context, state) {
                 int tabIndex = 0;
@@ -237,16 +222,8 @@ class AppRouter {
               builder: (context, state) => const FeatureGuard(featureKey: 'reports', child: ReportsScreen()),
             ),
             GoRoute(
-              path: '/suppliers',
-              builder: (context, state) => const FeatureGuard(featureKey: 'inventory', child: SupplierScreen()),
-            ),
-            GoRoute(
               path: '/kds',
               builder: (context, state) => const FeatureGuard(featureKey: 'kds_management', child: KitchenDisplayScreen()),
-            ),
-            GoRoute(
-              path: '/display',
-              builder: (context, state) => const FeatureGuard(featureKey: 'kds_management', child: DisplayManagementScreen()),
             ),
             GoRoute(
               path: '/settings',
@@ -261,14 +238,6 @@ class AppRouter {
               builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: UserRoleManagementScreen()),
             ),
             GoRoute(
-              path: '/data-sync',
-              builder: (context, state) => const FeatureGuard(featureKey: 'settings', child: DataSyncControlScreen()),
-            ),
-            GoRoute(
-              path: '/franchises',
-              builder: (context, state) => const FeatureGuard(featureKey: 'franchises', child: FranchiseScreen()),
-            ),
-            GoRoute(
               path: '/admin',
               builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: AdminDashboardScreen()),
             ),
@@ -279,10 +248,6 @@ class AppRouter {
             GoRoute(
               path: '/languages',
               builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: LanguageScreen()),
-            ),
-            GoRoute(
-              path: '/integrations',
-              builder: (context, state) => const FeatureGuard(featureKey: 'integration_hub', child: IntegrationHubScreen()),
             ),
             GoRoute(
               path: '/biz-store',
@@ -296,10 +261,14 @@ class AppRouter {
               builder: (context, state) => const FeatureGuard(featureKey: 'reports', child: FinancialReportsScreen()),
             ),
             GoRoute(path: '/reports/audit', builder: (context, state) => const AuditLogScreen()),
-            GoRoute(
-              path: '/tables',
-              builder: (context, state) => const FeatureGuard(featureKey: 'pos', child: TableManagementScreen()),
-            ),
+            
+            // --- Inject Dynamic Module Routes Here ---
+            ...POSCoreRegistry.getGlobalRoutes().entries.map((entry) {
+              return GoRoute(
+                path: entry.key,
+                builder: (context, state) => entry.value(context),
+              );
+            }),
           ],
         ),
       ];

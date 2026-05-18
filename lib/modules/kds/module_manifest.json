@@ -1,0 +1,13 @@
+{
+  "module_id": "kds_management",
+  "name": "Kitchen Display System",
+  "version": "1.0.0",
+  "description": "Kitchen display screens for order management and preparation tracking.",
+  "author": "BizPOS Core Team",
+  "icon": "tv",
+  "category": "Restaurant",
+  "min_app_version": "1.0.0",
+  "entry_point": "kds_module.dart",
+  "dependencies": ["core_pos", "table_reservation"],
+  "permissions": ["firestore_kds"]
+}

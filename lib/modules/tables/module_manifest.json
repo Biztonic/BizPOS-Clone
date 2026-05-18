@@ -1,0 +1,13 @@
+{
+  "module_id": "table_reservation",
+  "name": "Tables & Floor Plan",
+  "version": "1.0.0",
+  "description": "Manage restaurant tables, floor plans, reservations, and per-seat billing.",
+  "author": "BizPOS Core Team",
+  "icon": "table_restaurant",
+  "category": "Restaurant",
+  "min_app_version": "1.0.0",
+  "entry_point": "tables_module.dart",
+  "dependencies": ["core_pos"],
+  "permissions": ["firestore_tables", "firestore_floors"]
+}

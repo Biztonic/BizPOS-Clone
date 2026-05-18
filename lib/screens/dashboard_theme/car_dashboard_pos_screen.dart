@@ -1,4 +1,4 @@
-﻿import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -1164,7 +1164,6 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
   // --- Helper Widgets ---
 
   Widget _buildVerticalCategoryBar(List<String> categories, {bool isExpanded = false, BuildContext? drawerContext}) {
-    // Simplified Category Bar without Glass/Blur
     final effectiveContext = drawerContext ?? context;
     final provider = Provider.of<DashboardProvider>(effectiveContext);
     final isDarkMode = provider.isDarkMode;
@@ -1179,7 +1178,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
               padding: const EdgeInsets.only(top: AppSpacing.md, left: AppSpacing.md, right: AppSpacing.md),
               child: Text(
                 user.name, 
-                style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.accentSuccess, fontSize: 16, fontWeight: FontWeight.bold), // Increased to 16
+                style: CarDashboardTheme.labelStyle.copyWith(color: CarDashboardTheme.accentSuccess, fontSize: 16, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -1189,16 +1188,21 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: _buildSessionTimer(isDarkMode),
           ),
-          const Divider(),
+          Divider(color: AppColors.border(effectiveContext).withValues(alpha: 0.3), height: 1),
         ],
         
         Expanded(
           child: ListView.builder(
             controller: _categoryScrollController,
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final cat = categories[index];
               final isSelected = _selectedCategory == cat;
+              final catColor = _getCategoryColor(cat);
+              final catIcon = _getCategoryIcon(cat);
+              final isAllCategory = cat.toUpperCase() == 'ALL';
+              
               return GestureDetector(
                 onTap: () {
                    setState(() => _selectedCategory = cat);
@@ -1208,59 +1212,115 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                    }
                 },
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(bottom: AppSpacing.sm, left: AppSpacing.xs, right: AppSpacing.xs),
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.xs),
-                  alignment: Alignment.center,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  margin: EdgeInsets.symmetric(
+                    horizontal: isExpanded ? AppSpacing.sm : 6,
+                    vertical: 3,
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    vertical: isExpanded ? 12 : 10,
+                    horizontal: isExpanded ? 14 : 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? CarDashboardTheme.neonBlue : Colors.transparent,
-                    borderRadius: BorderRadius.zero,
-                    boxShadow: isSelected ? CarDashboardTheme.neonGlowBlue : [],
+                    color: isSelected 
+                      ? catColor.withValues(alpha: isDarkMode ? 0.2 : 0.12)
+                      : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    border: isSelected 
+                      ? Border.all(color: catColor.withValues(alpha: 0.5), width: 1.5)
+                      : null,
                   ),
-                  child: Row(
-                    mainAxisAlignment: (isExpanded == true) ? MainAxisAlignment.start : MainAxisAlignment.center,
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.only(left: (isExpanded == true) ? 12 : 0),
-                        child: Icon(
-                          _getCategoryIcon(cat), 
-                          color: isSelected ? (isDarkMode ? Colors.black : Colors.white) : CarDashboardTheme.subTextColor(isDarkMode),
-                          size: 24,
-                        ),
-                      ),
-                      if (isExpanded == true) ...[
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            cat.toUpperCase(),
-                            style: CarDashboardTheme.labelStyle.copyWith(
-                              color: isSelected ? (isDarkMode ? Colors.black : Colors.white) : CarDashboardTheme.subTextColor(isDarkMode),
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              fontSize: isSelected ? 14 : 12,
-                              letterSpacing: 1.0,
+                  child: isExpanded
+                    ? Row(
+                        children: [
+                          // Icon with colored background
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: isSelected 
+                                ? catColor.withValues(alpha: 0.25)
+                                : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            child: Center(
+                              child: Icon(
+                                catIcon, 
+                                color: isSelected ? catColor : CarDashboardTheme.subTextColor(isDarkMode),
+                                size: 20,
+                              ),
+                            ),
                           ),
-                        ),
-                      ] else if (isExpanded != true) ...[
-                        const SizedBox(width: AppSpacing.xs),
-                        Expanded(
-                          child: Text(
-                            cat.toUpperCase(),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              cat.toUpperCase(),
+                              style: TextStyle(
+                                color: isSelected 
+                                  ? catColor
+                                  : CarDashboardTheme.textColor(isDarkMode).withValues(alpha: 0.7),
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                fontSize: 13,
+                                letterSpacing: 0.5,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isSelected)
+                            Container(
+                              width: 4,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: catColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Icon with colored background
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: isSelected 
+                                ? catColor.withValues(alpha: 0.25)
+                                : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                              borderRadius: BorderRadius.circular(10),
+                              border: isSelected 
+                                ? null
+                                : Border.all(
+                                    color: isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
+                                  ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                catIcon, 
+                                color: isSelected ? catColor : CarDashboardTheme.subTextColor(isDarkMode),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            cat.length > 6 ? '${cat.substring(0, 6)}..' : cat.toUpperCase(),
                             textAlign: TextAlign.center,
-                            style: CarDashboardTheme.labelStyle.copyWith(
-                              color: isSelected ? (isDarkMode ? Colors.black : Colors.white) : CarDashboardTheme.subTextColor(isDarkMode),
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              fontSize: isSelected ? 10 : 8, // Smaller for unexpanded
-                              letterSpacing: 0.5,
+                            style: TextStyle(
+                              color: isSelected 
+                                ? catColor 
+                                : CarDashboardTheme.subTextColor(isDarkMode),
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              fontSize: 9,
+                              letterSpacing: 0.3,
                             ),
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ]
-                    ],
-                  ),
+                        ],
+                      ),
                 ),
               );
             },
@@ -2181,14 +2241,180 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
   }
 
   IconData _getCategoryIcon(String category) {
-    switch (category.toUpperCase()) {
-      case 'BURGER': return Icons.lunch_dining;
-      case 'PIZZA': return Icons.local_pizza;
-      case 'DRINKS': return Icons.local_drink;
-      case 'DESSERT': return Icons.icecream;
-      case 'SIDES': return Icons.fastfood;
-      default: return Icons.category;
+    final key = category.toUpperCase().trim();
+    // Primary exact matches
+    const Map<String, IconData> iconMap = {
+      'ALL': Icons.grid_view_rounded,
+      'BURGER': Icons.lunch_dining,
+      'BURGERS': Icons.lunch_dining,
+      'PIZZA': Icons.local_pizza,
+      'DRINKS': Icons.local_cafe,
+      'BEVERAGES': Icons.local_cafe,
+      'BEVERAGE': Icons.local_cafe,
+      'COFFEE': Icons.coffee_rounded,
+      'TEA': Icons.emoji_food_beverage,
+      'JUICE': Icons.local_bar,
+      'SMOOTHIE': Icons.blender,
+      'SMOOTHIES': Icons.blender,
+      'DESSERT': Icons.icecream,
+      'DESSERTS': Icons.icecream,
+      'ICE CREAM': Icons.icecream,
+      'CAKE': Icons.cake,
+      'CAKES': Icons.cake,
+      'BAKERY': Icons.bakery_dining,
+      'BREAD': Icons.bakery_dining,
+      'SIDES': Icons.tapas,
+      'SNACKS': Icons.tapas,
+      'SNACK': Icons.tapas,
+      'STARTERS': Icons.restaurant,
+      'APPETIZER': Icons.restaurant,
+      'APPETIZERS': Icons.restaurant,
+      'MAIN COURSE': Icons.dinner_dining,
+      'MAINS': Icons.dinner_dining,
+      'RICE': Icons.rice_bowl,
+      'BIRYANI': Icons.rice_bowl,
+      'NOODLES': Icons.ramen_dining,
+      'PASTA': Icons.ramen_dining,
+      'SOUP': Icons.soup_kitchen,
+      'SOUPS': Icons.soup_kitchen,
+      'SALAD': Icons.eco,
+      'SALADS': Icons.eco,
+      'VEG': Icons.spa,
+      'VEGETARIAN': Icons.spa,
+      'NON VEG': Icons.set_meal,
+      'NON-VEG': Icons.set_meal,
+      'MEAT': Icons.set_meal,
+      'SEAFOOD': Icons.set_meal,
+      'CHICKEN': Icons.set_meal,
+      'FISH': Icons.set_meal,
+      'CHINESE': Icons.ramen_dining,
+      'INDIAN': Icons.dinner_dining,
+      'ITALIAN': Icons.local_pizza,
+      'MEXICAN': Icons.restaurant,
+      'FAST FOOD': Icons.fastfood,
+      'FASTFOOD': Icons.fastfood,
+      'COMBO': Icons.takeout_dining,
+      'COMBOS': Icons.takeout_dining,
+      'THALI': Icons.takeout_dining,
+      'BREAKFAST': Icons.free_breakfast,
+      'BRUNCH': Icons.brunch_dining,
+      'LUNCH': Icons.lunch_dining,
+      'DINNER': Icons.dinner_dining,
+      'SANDWICH': Icons.lunch_dining,
+      'SANDWICHES': Icons.lunch_dining,
+      'WRAPS': Icons.kebab_dining,
+      'WRAP': Icons.kebab_dining,
+      'KEBAB': Icons.kebab_dining,
+      'GROCERY': Icons.shopping_basket,
+      'GROCERIES': Icons.shopping_basket,
+      'DAIRY': Icons.egg_alt,
+      'EGGS': Icons.egg,
+      'FRUITS': Icons.apple,
+      'VEGETABLES': Icons.grass,
+      'ORGANIC': Icons.eco,
+      'SWEETS': Icons.cookie,
+      'CHOCOLATE': Icons.cookie,
+      'PAAN': Icons.spa,
+      'TOBACCO': Icons.smoking_rooms,
+      'EXTRAS': Icons.add_circle_outline,
+      'ADD-ONS': Icons.add_circle_outline,
+      'TOPPINGS': Icons.add_circle_outline,
+      'SPECIALS': Icons.star_rounded,
+      'SPECIAL': Icons.star_rounded,
+      'TODAY\'S SPECIAL': Icons.star_rounded,
+      'NEW': Icons.fiber_new,
+      'POPULAR': Icons.trending_up,
+      'BESTSELLER': Icons.emoji_events,
+      'FAVOURITES': Icons.favorite,
+      'FAVORITES': Icons.favorite,
+    };
+    
+    if (iconMap.containsKey(key)) return iconMap[key]!;
+    
+    // Fuzzy match: check if category contains a known keyword
+    for (final entry in iconMap.entries) {
+      if (key.contains(entry.key) || entry.key.contains(key)) {
+        return entry.value;
+      }
     }
+    
+    return Icons.restaurant_menu;
+  }
+
+  Color _getCategoryColor(String category) {
+    final key = category.toUpperCase().trim();
+    
+    const Map<String, Color> colorMap = {
+      'ALL': Color(0xFF6366F1),           // Indigo
+      'BURGER': Color(0xFFFF6B35),        // Vibrant Orange
+      'BURGERS': Color(0xFFFF6B35),
+      'PIZZA': Color(0xFFEF4444),         // Red
+      'DRINKS': Color(0xFF06B6D4),        // Cyan
+      'BEVERAGES': Color(0xFF06B6D4),
+      'BEVERAGE': Color(0xFF06B6D4),
+      'COFFEE': Color(0xFF92400E),        // Coffee Brown
+      'TEA': Color(0xFF059669),           // Emerald
+      'JUICE': Color(0xFFF59E0B),         // Amber
+      'DESSERT': Color(0xFFEC4899),       // Pink
+      'DESSERTS': Color(0xFFEC4899),
+      'ICE CREAM': Color(0xFFEC4899),
+      'CAKE': Color(0xFFDB2777),          // Deep Pink
+      'CAKES': Color(0xFFDB2777),
+      'BAKERY': Color(0xFFD97706),        // Warm Amber
+      'SIDES': Color(0xFF8B5CF6),         // Purple
+      'SNACKS': Color(0xFF8B5CF6),
+      'STARTERS': Color(0xFF10B981),      // Green
+      'MAIN COURSE': Color(0xFFDC2626),   // Red
+      'MAINS': Color(0xFFDC2626),
+      'RICE': Color(0xFFF59E0B),          // Amber
+      'BIRYANI': Color(0xFFF97316),       // Orange
+      'NOODLES': Color(0xFFEAB308),       // Yellow
+      'PASTA': Color(0xFFEAB308),
+      'SOUP': Color(0xFF14B8A6),          // Teal
+      'SALAD': Color(0xFF22C55E),         // Light Green
+      'VEG': Color(0xFF16A34A),           // Green
+      'NON VEG': Color(0xFFDC2626),       // Red
+      'NON-VEG': Color(0xFFDC2626),
+      'CHINESE': Color(0xFFEF4444),       // Red
+      'INDIAN': Color(0xFFF97316),        // Orange
+      'FAST FOOD': Color(0xFFEAB308),     // Yellow
+      'COMBO': Color(0xFF7C3AED),         // Violet
+      'COMBOS': Color(0xFF7C3AED),
+      'BREAKFAST': Color(0xFFFB923C),     // Light Orange
+      'SANDWICH': Color(0xFF0EA5E9),      // Sky
+      'WRAPS': Color(0xFF0D9488),         // Teal
+      'GROCERY': Color(0xFF059669),       // Emerald
+      'SPECIALS': Color(0xFFF59E0B),      // Amber
+      'SPECIAL': Color(0xFFF59E0B),
+      'POPULAR': Color(0xFFEF4444),       // Red
+      'BESTSELLER': Color(0xFFD97706),    // Gold
+      'FAVOURITES': Color(0xFFEC4899),    // Pink
+    };
+    
+    if (colorMap.containsKey(key)) return colorMap[key]!;
+    
+    // Fuzzy match
+    for (final entry in colorMap.entries) {
+      if (key.contains(entry.key) || entry.key.contains(key)) {
+        return entry.value;
+      }
+    }
+    
+    // Generate a consistent color from the category name hash
+    final List<Color> fallbackPalette = [
+      const Color(0xFF6366F1), // Indigo
+      const Color(0xFF8B5CF6), // Purple
+      const Color(0xFFEC4899), // Pink
+      const Color(0xFFEF4444), // Red
+      const Color(0xFFF97316), // Orange
+      const Color(0xFFF59E0B), // Amber
+      const Color(0xFF22C55E), // Green
+      const Color(0xFF14B8A6), // Teal
+      const Color(0xFF06B6D4), // Cyan
+      const Color(0xFF3B82F6), // Blue
+    ];
+    
+    return fallbackPalette[category.hashCode.abs() % fallbackPalette.length];
   }
   Widget _buildMiniCartContent(List<InventoryItem> inventory) {
     final provider = Provider.of<DashboardProvider>(context);

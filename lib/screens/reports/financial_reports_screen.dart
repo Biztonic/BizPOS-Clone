@@ -1,9 +1,10 @@
-﻿import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import 'package:flutter/material.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/order_provider.dart';
@@ -67,7 +68,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
               ? ColorScheme.dark(
                   primary: Theme.of(context).primaryColor,
                   onPrimary: Colors.white,
-                  surface: AppColors.textSecondary(context),
+                  surface: AppColors.surface(context),
                   onSurface: Colors.white,
                 )
               : ColorScheme.light(
@@ -125,7 +126,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _stats == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const PosScaffold(showGlobalActions: false, mainContent: Center(child: CircularProgressIndicator()));
     }
 
     final totalRevenue = _stats?['totalSales'] ?? 0.0;
@@ -136,9 +137,11 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : AppColors.textSecondary(context),
-      body: CustomScrollView(
+    return PosScaffold(
+      showGlobalActions: false,
+      mainContent: Container(
+        color: AppColors.background(context),
+        child: CustomScrollView(
         slivers: [
           // APP BAR
           SliverAppBar(
@@ -166,9 +169,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.textSecondary(context) : Colors.white,
+                    color: AppColors.surface(context),
                     borderRadius: BorderRadius.zero,
-                    border: Border.all(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
+                    border: Border.all(color: AppColors.border(context)),
                   ),
                   child: Row(
                     children: [
@@ -237,7 +240,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.textSecondary(context) : Colors.white,
+                  color: AppColors.surface(context),
                   borderRadius: BorderRadius.zero,
                   boxShadow: [
                     BoxShadow(
@@ -324,7 +327,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.textSecondary(context) : Colors.white,
+                      color: AppColors.surface(context),
                       borderRadius: BorderRadius.zero,
                       boxShadow: [
                         BoxShadow(
@@ -357,6 +360,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
           ),
         ],
       ),
+      )
     );
   }
 

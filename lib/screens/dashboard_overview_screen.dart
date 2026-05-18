@@ -230,7 +230,7 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: AppSpacing.md,
         mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: crossAxisCount == 1 ? 2.5 : 2.0,
+        mainAxisExtent: 160,
       ),
       delegate: SliverChildBuilderDelegate(
         (context, index) => _PremiumKpiCard(data: cards[index], index: index),
@@ -496,7 +496,6 @@ class _EnhancedTrendChart extends StatelessWidget {
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
-            horizontalInterval: 1,
             getDrawingHorizontalLine: (value) => FlLine(
               color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
               strokeWidth: 1,
@@ -532,7 +531,6 @@ class _EnhancedTrendChart extends StatelessWidget {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                interval: 500, // Adjust based on data scale
                 reservedSize: 42,
                 getTitlesWidget: (value, meta) {
                   return SideTitleWidget(

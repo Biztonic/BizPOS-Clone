@@ -1,9 +1,10 @@
-﻿import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import 'package:flutter/material.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/order_provider.dart';
@@ -158,9 +159,11 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : AppColors.textSecondary(context),
-      body: CustomScrollView(
+    return PosScaffold(
+      showGlobalActions: false,
+      mainContent: Container(
+        color: AppColors.background(context),
+        child: CustomScrollView(
         slivers: [
           // APP BAR
           SliverAppBar(
@@ -189,7 +192,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
               duration: const Duration(milliseconds: 300),
               height: _showFilters ? 160 : 0,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              color: isDark ? AppColors.textSecondary(context) : Colors.white,
+              color: AppColors.surface(context),
               child: SingleChildScrollView(
                 physics: const NeverScrollableScrollPhysics(),
                 child: Column(
@@ -216,7 +219,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.black26 : Colors.white,
-                          border: Border.all(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
+                          border: Border.all(color: AppColors.border(context)),
                           borderRadius: BorderRadius.zero,
                         ),
                         child: Row(
@@ -253,7 +256,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                               border: const OutlineInputBorder(borderRadius: BorderRadius.zero), 
                               contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                             ),
-                            dropdownColor: isDark ? AppColors.textSecondary(context) : Colors.white,
+                            dropdownColor: AppColors.surface(context),
                             items: [
                                DropdownMenuItem(value: null, child: Text(AppLocalizations.t(context, 'All Statuses'))),
                                DropdownMenuItem(value: 'Completed', child: Text(AppLocalizations.t(context, 'Completed'))),
@@ -278,7 +281,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                               border: const OutlineInputBorder(borderRadius: BorderRadius.zero), 
                               contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                             ),
-                            dropdownColor: isDark ? AppColors.textSecondary(context) : Colors.white,
+                            dropdownColor: AppColors.surface(context),
                             items: [
                                DropdownMenuItem(value: null, child: Text(AppLocalizations.t(context, 'All Methods'))),
                                DropdownMenuItem(value: 'Cash', child: Text(AppLocalizations.t(context, 'Cash'))),
@@ -300,7 +303,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
           ),
           
           if (_showFilters)
-            SliverToBoxAdapter(child: Divider(height: 1, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context))),
+            SliverToBoxAdapter(child: Divider(height: 1, color: AppColors.textSecondary(context))),
 
           // SUMMARY CARDS
           SliverToBoxAdapter(
@@ -340,7 +343,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.textSecondary(context) : Colors.white,
+                  color: AppColors.surface(context),
                   borderRadius: BorderRadius.zero,
                   boxShadow: [
                     BoxShadow(
@@ -422,7 +425,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.textSecondary(context) : Colors.white,
+                  color: AppColors.surface(context),
                   borderRadius: BorderRadius.zero,
                   boxShadow: [
                     BoxShadow(
@@ -518,11 +521,11 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.search_off, size: 64, color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
+                    Icon(Icons.search_off, size: 64, color: AppColors.textSecondary(context)),
                     const SizedBox(height: AppSpacing.md),
                     Text(AppLocalizations.t(context, 'No orders found matching criteria.'), 
                       style: TextStyle(
-                        color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), 
+                        color: AppColors.textSecondary(context), 
                         fontSize: 16
                       )
                     ),
@@ -539,11 +542,11 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                     final order = filteredOrders[index];
                     return Card(
                       elevation: 0,
-                      color: isDark ? AppColors.textSecondary(context) : Colors.white,
+                      color: AppColors.surface(context),
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.zero,
-                        side: BorderSide(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context)),
+                        side: BorderSide(color: AppColors.border(context)),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(AppSpacing.md),
@@ -573,7 +576,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                   const SizedBox(height: AppSpacing.xs),
                                   Text(
                                     DateFormat('MMM dd, yyyy â€¢ HH:mm').format(order.date),
-                                    style: TextStyle(color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), fontSize: 13),
+                                    style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
                                   ),
                                 ],
                               ),
@@ -603,13 +606,13 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                       order.paymentMethod == 'Cash' ? Icons.money : 
                                       (order.paymentMethod == 'UPI' ? Icons.qr_code : Icons.credit_card),
                                       size: 14,
-                                      color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context),
+                                      color: AppColors.textSecondary(context),
                                     ),
                                     const SizedBox(width: AppSpacing.xs),
                                     Text(
                                       order.paymentMethod,
                                       style: TextStyle(
-                                        color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), 
+                                        color: AppColors.textSecondary(context), 
                                         fontSize: 12, 
                                         fontWeight: FontWeight.w600
                                       ),
@@ -629,6 +632,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
             ),
         ],
       ),
+      )
     );
   }
 }
