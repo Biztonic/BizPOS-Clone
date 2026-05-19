@@ -1,6 +1,3 @@
-import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
-import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
-import 'package:biztonic_pos/core/design/tokens/app_radius.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dashboard_provider.dart';

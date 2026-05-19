@@ -1202,7 +1202,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
               final isSelected = _selectedCategory == cat;
               final catColor = _getCategoryColor(cat);
               final catIcon = _getCategoryIcon(cat);
-              final isAllCategory = cat.toUpperCase() == 'ALL';
+//               final isAllCategory = cat.toUpperCase() == 'ALL';
               
               return GestureDetector(
                 onTap: () {
@@ -2631,6 +2631,5 @@ class _CentralCatalogPickerDialogState extends State<_CentralCatalogPickerDialog
   }
 
 }
-
 
 

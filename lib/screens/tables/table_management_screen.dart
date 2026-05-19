@@ -1,6 +1,3 @@
-import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
-import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
-import 'package:biztonic_pos/core/design/tokens/app_radius.dart';
 import '../../core/design/design_system.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
@@ -843,7 +840,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                 elevation: 0,
                                                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                                                                 minimumSize: const Size(0, 36),
-                                                                shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg)
+                                                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg)
                                                               ),
                                                             ),
                                                           ),
@@ -885,7 +882,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                color: selectedSeatIndex == -1 ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).textTheme.bodyLarge?.color,
                                                                fontWeight: selectedSeatIndex == -1 ? FontWeight.bold : FontWeight.w500,
                                                              ),
-                                                             shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+                                                             shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
                                                              side: BorderSide(color: selectedSeatIndex == -1 ? AppColors.transparent : Theme.of(context).dividerColor),
                                                              showCheckmark: false,
                                                            ),
@@ -929,7 +926,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                  color: isSel ? Theme.of(context).colorScheme.onPrimary : (isBillSelected ? Theme.of(context).primaryColor : Theme.of(context).textTheme.bodyLarge?.color),
                                                                  fontWeight: (isBillSelected || isSel) ? FontWeight.bold : FontWeight.w500,
                                                                ),
-                                                               shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+                                                               shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
                                                                side: BorderSide(color: isSel || isBillSelected ? AppColors.transparent : Theme.of(context).dividerColor),
                                                                showCheckmark: false,
                                                              ),
@@ -1149,7 +1146,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                           },
                                                                         icon: const Icon(Icons.money),
                                                                         label: Text(AppLocalizations.t(context, 'CASH'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                                                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: AppColors.surfaceLight, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm), elevation: 0),
+                                                                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: AppColors.surfaceLight, padding: const EdgeInsets.symmetric(vertical: 16), shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm), elevation: 0),
                                                                      ),
                                                                   ),
                                                                   const SizedBox(width: AppSpacing.sm),
@@ -1238,7 +1235,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                         },
                                                                         icon: const Icon(Icons.qr_code_scanner),
                                                                         label: Text(AppLocalizations.t(context, 'UPI'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                                                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryLight, foregroundColor: AppColors.surfaceLight, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm), elevation: 0),
+                                                                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryLight, foregroundColor: AppColors.surfaceLight, padding: const EdgeInsets.symmetric(vertical: 16), shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm), elevation: 0),
                                                                      ),
                                                                   ),
                                                                ],
@@ -1287,7 +1284,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                          },
                                                                         icon: const Icon(Icons.print),
                                                                         label: Text(AppLocalizations.t(context, 'PRINT KOT'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                                                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm))
+                                                                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm))
                                                                      ),
                                                                   ),
                                                                   const SizedBox(width: AppSpacing.md),
@@ -1359,7 +1356,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                            Navigator.pop(ctx);
                                                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Order Saved & Updated'))));
                                                                         },
-                                                                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: AppColors.surfaceLight, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm), elevation: 0),
+                                                                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: AppColors.surfaceLight, padding: const EdgeInsets.symmetric(vertical: 16), shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm), elevation: 0),
                                                                         icon: const Icon(Icons.save),
                                                                         label: Text(AppLocalizations.t(context, 'SAVE & KOT'), style: const TextStyle(fontWeight: FontWeight.bold)),
                                                                      ),
@@ -1441,7 +1438,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                 selectedColor: Theme.of(context).primaryColor,
                                                 showCheckmark: false,
                                                 labelStyle: TextStyle(color: isSel ? AppColors.surfaceLight : Theme.of(context).textTheme.bodyMedium?.color, fontWeight: isSel ? FontWeight.bold : FontWeight.w500),
-                                                shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+                                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
                                                 side: BorderSide(color: isSel ? AppColors.transparent : Theme.of(context).dividerColor),
                                              );
                                           },
