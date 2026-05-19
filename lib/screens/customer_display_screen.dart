@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -28,11 +28,11 @@ class CustomerDisplayScreen extends StatelessWidget {
         .snapshots();
 
     return Scaffold(
-      backgroundColor: Colors.black, // High contrast for TV/Display
+      backgroundColor: AppColors.textPrimaryLight, // High contrast for TV/Display
       appBar: AppBar(
         title: Text(AppLocalizations.t(context, 'Order Status')),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.textPrimaryLight,
+        foregroundColor: AppColors.surfaceLight,
         centerTitle: true,
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -40,7 +40,7 @@ class CustomerDisplayScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
              // Often index error initially
-             return Center(child: Text('Waiting for system... (${snapshot.error})', style: const TextStyle(color: Colors.white)));
+             return Center(child: Text('Waiting for system... (${snapshot.error})', style: const TextStyle(color: AppColors.surfaceLight)));
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -96,7 +96,7 @@ class CustomerDisplayScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(AppSpacing.md),
                           color: AppColors.warning,
                           width: double.infinity,
-                          child: Text(AppLocalizations.t(context, 'PREPARING'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                          child: Text(AppLocalizations.t(context, 'PREPARING'), textAlign: TextAlign.center, style: const TextStyle(color: AppColors.surfaceLight, fontSize: 24, fontWeight: FontWeight.bold)),
                         ),
                         Expanded(
                           child: GridView.builder(
@@ -117,8 +117,8 @@ class CustomerDisplayScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (!isMobile) const VerticalDivider(color: Colors.white, width: 2),
-                  if (isMobile) const Divider(color: Colors.white, height: 2),
+                  if (!isMobile) const VerticalDivider(color: AppColors.surfaceLight, width: 2),
+                  if (isMobile) const Divider(color: AppColors.surfaceLight, height: 2),
                   // Ready Column
                   Expanded(
                     flex: 1,
@@ -128,7 +128,7 @@ class CustomerDisplayScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(AppSpacing.md),
                           color: AppColors.success,
                           width: double.infinity,
-                          child: Text(AppLocalizations.t(context, 'READY FOR PICKUP'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                          child: Text(AppLocalizations.t(context, 'READY FOR PICKUP'), textAlign: TextAlign.center, style: const TextStyle(color: AppColors.surfaceLight, fontSize: 24, fontWeight: FontWeight.bold)),
                         ),
                         Expanded(
                           child: GridView.builder(
@@ -179,7 +179,7 @@ class CustomerDisplayScreen extends StatelessWidget {
           style: TextStyle(
             fontSize: isReady ? 32 : 24, 
             fontWeight: FontWeight.bold,
-            color: Colors.black
+            color: AppColors.textPrimaryLight
           )
         ),
       ),

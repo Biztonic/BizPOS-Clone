@@ -1,3 +1,6 @@
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+import 'package:biztonic_pos/core/design/tokens/app_radius.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import '../../core/design/design_system.dart';
@@ -42,7 +45,7 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
     final floorTables = tableProvider.tables.where((t) => t.floorId == _selectedFloorId).toList();
 
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       insetPadding: const EdgeInsets.all(AppSpacing.lg),
       child: ClipRRect(
         borderRadius: AppRadius.borderLg,
@@ -52,12 +55,12 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
             width: 900,
             height: 700,
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha((0.85 * 255).toInt()),
+              color: AppColors.surfaceLight.withAlpha((0.85 * 255).toInt()),
               borderRadius: AppRadius.borderLg,
-              border: Border.all(color: Colors.white.withAlpha((0.3 * 255).toInt()), width: 1.5),
+              border: Border.all(color: AppColors.surfaceLight.withAlpha((0.3 * 255).toInt()), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha((0.15 * 255).toInt()),
+                  color: AppColors.textPrimaryLight.withAlpha((0.15 * 255).toInt()),
                   blurRadius: 30,
                   offset: const Offset(0, 15),
                 ),
@@ -97,7 +100,7 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                       IconButton(
                         style: IconButton.styleFrom(
                           backgroundColor: AppColors.textSecondary(context),
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(AppSpacing.md),
                         ),
                         icon: const Icon(Icons.close, size: 20),
                         onPressed: () => Navigator.pop(context),
@@ -117,7 +120,7 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                           border: Border(right: BorderSide(color: AppColors.textSecondary(context).withAlpha((0.1 * 255).toInt()))),
                         ),
                         child: ListView.separated(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(AppSpacing.md),
                           itemCount: floors.length,
                           separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                           itemBuilder: (context, index) {
@@ -133,7 +136,7 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                                 duration: const Duration(milliseconds: 200),
                                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? AppColors.primaryLight : Colors.transparent,
+                                  color: isSelected ? AppColors.primaryLight : AppColors.transparent,
                                   borderRadius: AppRadius.borderMd,
                                   boxShadow: isSelected
                                       ? [
@@ -150,14 +153,14 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                                     Icon(
                                       Icons.layers_outlined,
                                       size: 18,
-                                      color: isSelected ? Colors.white : AppColors.textSecondary(context),
+                                      color: isSelected ? AppColors.surfaceLight : AppColors.textSecondary(context),
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: AppSpacing.md),
                                     Text(
                                       floor.name,
                                       style: TextStyle(
                                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                        color: isSelected ? Colors.white : AppColors.textSecondary(context),
+                                        color: isSelected ? AppColors.surfaceLight : AppColors.textSecondary(context),
                                       ),
                                     ),
                                   ],
@@ -177,14 +180,14 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                               center: Alignment.center,
                               radius: 1.2,
                               colors: [
-                                Colors.white,
+                                AppColors.surfaceLight,
                                 AppColors.textSecondary(context),
                                 AppColors.textSecondary(context),
                               ],
                             ),
                           ),
                           child: InteractiveViewer(
-                            boundaryMargin: const EdgeInsets.all(100),
+                            boundaryMargin: const EdgeInsets.all(AppSpacing.xl),
                             minScale: 0.5,
                             maxScale: 2.0,
                             child: Stack(
@@ -201,7 +204,7 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surfaceLight,
                     border: Border(top: BorderSide(color: AppColors.textSecondary(context).withAlpha((0.1 * 255).toInt()))),
                   ),
                   child: Row(
@@ -291,7 +294,7 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                   ),
               ],
               border: Border.all(
-                color: isSelected ? Colors.white : baseColor.withAlpha((0.2 * 255).toInt()),
+                color: isSelected ? AppColors.surfaceLight : baseColor.withAlpha((0.2 * 255).toInt()),
                 width: isSelected ? 3 : 1,
               ),
             ),
@@ -309,8 +312,8 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.white.withAlpha((0.2 * 255).toInt()),
-                          Colors.white.withAlpha(0),
+                          AppColors.surfaceLight.withAlpha((0.2 * 255).toInt()),
+                          AppColors.surfaceLight.withAlpha(0),
                         ],
                       ),
                       borderRadius: table.shape == 'rectangular' || table.shape == 'square'
@@ -326,7 +329,7 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                       Text(
                         table.name,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.surfaceLight,
                           fontWeight: FontWeight.w800,
                           fontSize: 16,
                           shadows: [Shadow(color: Colors.black26, offset: Offset(0, 1), blurRadius: 2)],
@@ -336,13 +339,13 @@ class _TableSelectionDialogState extends State<TableSelectionDialog> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
                         decoration: BoxDecoration(
-                          color: Colors.black.withAlpha((0.1 * 255).toInt()),
+                          color: AppColors.textPrimaryLight.withAlpha((0.1 * 255).toInt()),
                           borderRadius: AppRadius.borderSm,
                         ),
                         child: Text(
                           table.status,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.surfaceLight,
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),

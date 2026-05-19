@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:provider/provider.dart';
@@ -64,7 +64,7 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'Cancel'))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: AppColors.surfaceLight),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(AppLocalizations.t(context, 'Delete')),
           ),
@@ -418,7 +418,7 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                       Expanded(flex: 3, child: Text(AppLocalizations.t(context, 'ROLE NAME'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)))),
                       Expanded(flex: 4, child: Text(AppLocalizations.t(context, 'PERMISSIONS'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)))),
                       Expanded(flex: 2, child: Text(AppLocalizations.t(context, 'TYPE'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)))),
-                      const SizedBox(width: 100),
+                      const SizedBox(width: AppSpacing.xl),
                     ],
                   ),
                 ),

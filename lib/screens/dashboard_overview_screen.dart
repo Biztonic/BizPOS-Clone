@@ -158,9 +158,9 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
         height: 40,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: (iconColor ?? Colors.black).withValues(alpha: 0.05),
+          color: (iconColor ?? AppColors.textPrimaryLight).withValues(alpha: 0.05),
           borderRadius: AppRadius.borderMd,
-          border: Border.all(color: (iconColor ?? Colors.black).withValues(alpha: 0.1)),
+          border: Border.all(color: (iconColor ?? AppColors.textPrimaryLight).withValues(alpha: 0.1)),
         ),
         child: PopupMenuButton<ReportPeriod>(
           icon: Icon(Icons.calendar_today_rounded, size: AppIconography.md, color: iconColor),
@@ -437,7 +437,7 @@ class _PremiumKpiCard extends StatelessWidget {
                         ),
                         borderRadius: AppRadius.borderMd,
                       ),
-                      child: Icon(data.icon, color: Colors.white, size: AppIconography.md),
+                      child: Icon(data.icon, color: AppColors.surfaceLight, size: AppIconography.md),
                     ),
                   ],
                 ),
@@ -554,7 +554,7 @@ class _EnhancedTrendChart extends StatelessWidget {
           lineTouchData: LineTouchData(
             handleBuiltInTouches: true,
             touchTooltipData: LineTouchTooltipData(
-              tooltipBgColor: isDark ? AppColors.surfaceVariant(context) : Colors.white,
+              tooltipBgColor: isDark ? AppColors.surfaceVariant(context) : AppColors.surfaceLight,
               getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                 return touchedBarSpots.map((barSpot) {
                   final flSpot = barSpot;
@@ -589,7 +589,7 @@ class _EnhancedTrendChart extends StatelessWidget {
                 show: true,
                 getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
                   radius: 4,
-                  color: Colors.white,
+                  color: AppColors.surfaceLight,
                   strokeWidth: 3,
                   strokeColor: primaryColor,
                 ),

@@ -1,4 +1,4 @@
-﻿import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:flutter/material.dart';
@@ -145,7 +145,7 @@ class _BasicPlanSettingsScreenState extends State<BasicPlanSettingsScreen> {
               decoration: InputDecoration(labelText: isSetup ? "New Password" : "Enter Password"),
             ),
             if (isSetup) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: ctrl2,
                 obscureText: true,

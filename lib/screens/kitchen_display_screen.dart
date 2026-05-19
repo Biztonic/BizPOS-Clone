@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -155,7 +155,7 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
 
     return Card(
       elevation: 4,
-      color: Colors.white,
+      color: AppColors.surfaceLight,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
         side: BorderSide(
@@ -167,7 +167,7 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             color: isLate ? AppColors.error : (order.status == 'New' ? AppColors.primaryLight : AppColors.warning),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -180,7 +180,7 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
                       Text(order.tableName ?? order.tableId!, style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context), fontWeight: FontWeight.w500)),
                   ],
                 ),
-                Text("${duration.inMinutes}m ago", style: TextStyle(color: isLate ? AppColors.error : Colors.black, fontWeight: FontWeight.bold)),
+                Text("${duration.inMinutes}m ago", style: TextStyle(color: isLate ? AppColors.error : AppColors.textPrimaryLight, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -188,7 +188,7 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
           // Items List
           Expanded(
             child: ListView.separated(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: order.items.length,
               separatorBuilder: (_, __) => const Divider(),
               itemBuilder: (context, index) {
@@ -201,7 +201,7 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text("${item.quantity}x", style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize)),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(child: Text(item.item.name, style: TextStyle(fontSize: fontSize))),
                   ],
                 );
@@ -211,7 +211,7 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
 
           // Actions
           Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: SizedBox(
               width: double.infinity,
               height: 50,
@@ -221,10 +221,10 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
                 ),
                 onPressed: _isLoading ? null : _advanceOrderStatus,
                 child: _isLoading 
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppColors.surfaceLight, strokeWidth: 2))
                   : Text(
                       order.status == 'New' ? 'Start Preparing' : 'Mark Ready', 
-                      style: const TextStyle(fontSize: 18, color: Colors.white)
+                      style: const TextStyle(fontSize: 18, color: AppColors.surfaceLight)
                     ),
               ),
             ),

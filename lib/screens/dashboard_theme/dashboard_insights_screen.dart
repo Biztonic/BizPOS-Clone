@@ -1,4 +1,4 @@
-﻿import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -569,7 +569,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                   color: type == 'reminder' ? AppColors.primaryLight : AppColors.warning, 
                   size: 20
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                    crossAxisAlignment: CrossAxisAlignment.start,
@@ -769,8 +769,8 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                                          ),
                                          child: ElevatedButton(
                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.transparent, 
-                                              shadowColor: Colors.transparent,
+                                              backgroundColor: AppColors.transparent, 
+                                              shadowColor: AppColors.transparent,
                                               minimumSize: const Size(100, 45),
                                               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero)
                                            ),
@@ -800,7 +800,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                                                   await provider.refundOrder(order.id);
                                               }
                                            }, 
-                                           child: Text(isRefunded ? "Refunded" : "Refund", style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold, color: Colors.white))
+                                           child: Text(isRefunded ? "Refunded" : "Refund", style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold, color: AppColors.surfaceLight))
                                          ),
                                        );
                                    }
@@ -905,13 +905,13 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
         title: Row(
           children: [
             const Icon(Icons.print, color: AppColors.primaryLightAccent),
-            const SizedBox(width: 12),
-            Text(AppLocalizations.t(context, 'Printer Setup'), style: const TextStyle(color: Colors.white)),
+            const SizedBox(width: AppSpacing.md),
+            Text(AppLocalizations.t(context, 'Printer Setup'), style: const TextStyle(color: AppColors.surfaceLight)),
           ],
         ),
         content: const Text(
           "No printer is assigned to this store. To print receipts or KDS orders, please connect a printer in settings.\n\nWould you like to set it up now?",
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppColors.textSecondaryDark),
         ),
         actions: [
           TextButton(
@@ -929,7 +929,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryLightAccent,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.surfaceLight,
               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
             child: Text(AppLocalizations.t(context, 'Connect Now')),
@@ -1129,15 +1129,15 @@ class _AnimatedBillingButtonState extends State<_AnimatedBillingButton> with Sin
                                       const SizedBox(height: AppSpacing.sm),
                                       Text("Welcome ${widget.userName}", 
                                           textAlign: TextAlign.center,
-                                          style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold, color: Colors.white)
+                                          style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.surfaceLight)
                                       ),
                                       Text(AppLocalizations.t(context, 'to Biztonic Automation'), 
                                           textAlign: TextAlign.center,
-                                          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w600, color: Colors.white)
+                                          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w600, color: AppColors.surfaceLight)
                                       ),
                                       Text(AppLocalizations.t(context, 'The Smart Billing Solution'), 
                                           textAlign: TextAlign.center,
-                                          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w400, color: Colors.white70)
+                                          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w400, color: AppColors.textSecondaryDark)
                                       ),
                                    ],
                                  ),
@@ -1145,13 +1145,13 @@ class _AnimatedBillingButtonState extends State<_AnimatedBillingButton> with Sin
                              : Row(
                                  mainAxisAlignment: MainAxisAlignment.center,
                                  children: [
-                                   const Icon(Icons.play_circle_fill, size: 48, color: Colors.white),
+                                   const Icon(Icons.play_circle_fill, size: 48, color: AppColors.surfaceLight),
                                    const SizedBox(width: AppSpacing.md),
                                    Text(AppLocalizations.t(context, 'START BILLING'),
                                        style: const TextStyle(
                                            fontSize: 32,
                                            fontWeight: FontWeight.bold,
-                                           color: Colors.white,
+                                           color: AppColors.surfaceLight,
                                            letterSpacing: 1.5)),
                                  ],
                                ),
@@ -1162,7 +1162,7 @@ class _AnimatedBillingButtonState extends State<_AnimatedBillingButton> with Sin
                  },
                  child: Transform.scale(
                     scaleX: 1, 
-                    child: Icon(Icons.shopping_cart, size: 150, color: Colors.white.withValues(alpha: 0.15)),
+                    child: Icon(Icons.shopping_cart, size: 150, color: AppColors.surfaceLight.withValues(alpha: 0.15)),
                  ),
                );
              }
@@ -1227,7 +1227,7 @@ class _PerformanceIndexCard extends StatelessWidget {
             ),
             
             Padding(
-              padding: const EdgeInsets.all(14.0),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -1263,7 +1263,7 @@ class _PerformanceIndexCard extends StatelessWidget {
                                 value: displayProgress,
                                 strokeWidth: 8,
                                 strokeCap: StrokeCap.round,
-                                backgroundColor: isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                                backgroundColor: isDarkMode ? AppColors.surfaceLight.withValues(alpha: 0.05) : AppColors.textPrimaryLight.withValues(alpha: 0.05),
                                 valueColor: AlwaysStoppedAnimation<Color>(performanceColor),
                               ),
                             ),
@@ -1547,7 +1547,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
                         letterSpacing: 1.2
                       )
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(AppLocalizations.t(context, 'Revenue Share'), style: TextStyle(
                       color: CarDashboardTheme.textColor(isDarkMode),
                       fontSize: 14,
@@ -1582,7 +1582,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
                         valueColor: AlwaysStoppedAnimation<Color>(CarDashboardTheme.primaryColor(isDarkMode)),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     Text(AppLocalizations.t(context, 'Calculating stats...'), style: TextStyle(
                       fontSize: 12, 
                       color: CarDashboardTheme.subTextColor(isDarkMode),
@@ -1651,7 +1651,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
                             height: 6,
                             width: double.infinity,
                             decoration: BoxDecoration(
-                              color: isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                              color: isDarkMode ? AppColors.surfaceLight.withValues(alpha: 0.05) : AppColors.textPrimaryLight.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.zero,
                             ),
                           ),

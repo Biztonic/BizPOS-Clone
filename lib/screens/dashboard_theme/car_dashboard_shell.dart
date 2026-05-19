@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -117,7 +118,7 @@ class _CarDashboardShellState extends State<CarDashboardShell> with SingleTicker
                              child: Container(
                                width: 300, // Much wider touch area
                                height: 60, // Taller touch area
-                               color: Colors.transparent, // Ensure hit test works
+                               color: AppColors.transparent, // Ensure hit test works
                                alignment: Alignment.center,
                                child: AnimatedBuilder(
                                  animation: _bounceController,
@@ -129,7 +130,7 @@ class _CarDashboardShellState extends State<CarDashboardShell> with SingleTicker
                                  },
                                  child: Icon(
                                     _isMenuVisible ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up, 
-                                    color: isDarkMode ? Colors.white : const Color(0xFF0D47A1), // White (Dark Mode) vs Dark Blue (Light Mode)
+                                    color: isDarkMode ? AppColors.surfaceLight : const Color(0xFF0D47A1), // White (Dark Mode) vs Dark Blue (Light Mode)
                                     size: 40, // Larger Icon
                                  ),
                                ),

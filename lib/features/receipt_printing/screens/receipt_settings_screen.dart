@@ -239,7 +239,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
   List<Widget> _buildControlList() {
     return [
       const Text('Layout & Dimensions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
-      const SizedBox(height: 10),
+      const SizedBox(height: AppSpacing.md),
       ListTile(
         title: const Text("Printer Width"),
         trailing: DropdownButton<int>(
@@ -256,7 +256,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       
       const Divider(height: 30),
       const Text('Print Configuration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
-      const SizedBox(height: 10),
+      const SizedBox(height: AppSpacing.md),
       ListTile(
         title: const Text("Print Action"),
         subtitle: const Text("Choose which receipts to print automatically"),
@@ -277,7 +277,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
 
       const Divider(height: 30),
       const Text('Header & Branding', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
-      const SizedBox(height: 10),
+      const SizedBox(height: AppSpacing.md),
       SwitchListTile(
         title: const Text("Show Store Name"),
         value: _settings.showStoreName,
@@ -306,7 +306,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
 
       const Divider(height: 30),
       const Text('Order Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
-      const SizedBox(height: 10),
+      const SizedBox(height: AppSpacing.md),
       SwitchListTile(
         title: const Text("Show Bill/Order Number"),
         value: _settings.showOrderNo,
@@ -321,7 +321,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       
       const Divider(height: 30),
       const Text('Financials', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
-      const SizedBox(height: 10),
+      const SizedBox(height: AppSpacing.md),
       SwitchListTile(
         title: const Text("Show Tax Breakdown"),
         value: _settings.showTaxDetails,
@@ -335,7 +335,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
 
       const Divider(height: 30),
       const Text('Footer & Marketing', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
-      const SizedBox(height: 10),
+      const SizedBox(height: AppSpacing.md),
       SwitchListTile(
         title: const Text("Show Footer Message"),
         value: _settings.showFooter,

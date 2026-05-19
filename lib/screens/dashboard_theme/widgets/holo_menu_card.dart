@@ -1,4 +1,5 @@
 
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
@@ -56,7 +57,7 @@ class _HoloMenuCardState extends State<HoloMenuCard> {
                  widget.label.toUpperCase(),
                  style: CarDashboardTheme.labelStyle.copyWith(
                    fontSize: widget.isLarge ? 18 : 14,
-                   color: Colors.white,
+                   color: AppColors.surfaceLight,
                    fontWeight: FontWeight.bold,
                    letterSpacing: 1.2
                  ),

@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -18,11 +18,11 @@ class DigitalMenuBoard extends StatelessWidget {
     final inventory = provider.storeInventory.where((i) => i.status == 'In Stock' && (!i.trackStock || provider.getItemStock(i.id) > 0)).toList();
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.textPrimaryLight,
       appBar: AppBar(
         title: Text(AppLocalizations.t(context, 'Digital Menu')),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.textPrimaryLight,
+        foregroundColor: AppColors.surfaceLight,
       ),
       body: Row(
         children: [
@@ -34,9 +34,9 @@ class DigitalMenuBoard extends StatelessWidget {
               child: Column(
                 children: [
                   const SizedBox(height: AppSpacing.xxs),
-                  const CircleAvatar(radius: 40, backgroundColor: AppColors.warning, child: Icon(Icons.restaurant, size: 40, color: Colors.black)),
+                  const CircleAvatar(radius: 40, backgroundColor: AppColors.warning, child: Icon(Icons.restaurant, size: 40, color: AppColors.textPrimaryLight)),
                   const SizedBox(height: AppSpacing.xxs),
-                  Text(provider.activeStore?.name ?? "Menu", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  Text(provider.activeStore?.name ?? "Menu", style: const TextStyle(color: AppColors.surfaceLight, fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                   const SizedBox(height: AppSpacing.xs),
                   // Categories can go here
                   _buildCategoryItem("All Items", true),
@@ -76,7 +76,7 @@ class DigitalMenuBoard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [Colors.black, Colors.black.withValues(alpha: 0.0)], begin: Alignment.bottomCenter, end: Alignment.topCenter)
+                          gradient: LinearGradient(colors: [AppColors.textPrimaryLight, AppColors.textPrimaryLight.withValues(alpha: 0.0)], begin: Alignment.bottomCenter, end: Alignment.topCenter)
                         ),
                         width: double.infinity,
                         child: Column(
@@ -84,7 +84,7 @@ class DigitalMenuBoard extends StatelessWidget {
                           children: [
                             Text(
                               item.name, 
-                              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                              style: const TextStyle(color: AppColors.surfaceLight, fontSize: 20, fontWeight: FontWeight.bold),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -125,11 +125,11 @@ class DigitalMenuBoard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.lg),
-      color: isSelected ? AppColors.warning : Colors.transparent,
+      color: isSelected ? AppColors.warning : AppColors.transparent,
       child: Text(
         title, 
         style: TextStyle(
-          color: isSelected ? Colors.black : Colors.white, 
+          color: isSelected ? AppColors.textPrimaryLight : AppColors.surfaceLight, 
           fontWeight: FontWeight.bold, 
           fontSize: 18
         )

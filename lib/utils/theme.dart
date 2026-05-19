@@ -13,13 +13,13 @@ class AppTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: seedColor,
       primary: seedColor,
-      onPrimary: Colors.white,
+      onPrimary: AppColors.surfaceLight,
       secondary: seedColor.withValues(alpha: 0.8),
-      onSecondary: Colors.white,
+      onSecondary: AppColors.surfaceLight,
       surface: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
       onSurface: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
       error: AppColors.error,
-      onError: Colors.white,
+      onError: AppColors.surfaceLight,
       brightness: brightness,
     );
 
@@ -86,9 +86,9 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: seedColor,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.surfaceLight,
           elevation: 0,
-          shadowColor: Colors.transparent,
+          shadowColor: AppColors.transparent,
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
           textStyle: AppTypography.labelLarge,
@@ -170,13 +170,13 @@ class AppTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: seedColor,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.surfaceLight,
         elevation: 2,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.textPrimaryLight,
-        contentTextStyle: AppTypography.bodyMedium.copyWith(color: Colors.white),
+        contentTextStyle: AppTypography.bodyMedium.copyWith(color: AppColors.surfaceLight),
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
         behavior: SnackBarBehavior.floating,
         elevation: 0,
@@ -199,7 +199,7 @@ class AppTheme {
           color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           borderRadius: AppRadius.borderSm,
         ),
-        textStyle: AppTypography.bodySmall.copyWith(color: isDark ? AppColors.textPrimaryLight : Colors.white),
+        textStyle: AppTypography.bodySmall.copyWith(color: isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight),
       ),
     );
   }

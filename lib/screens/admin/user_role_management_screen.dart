@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:provider/provider.dart';
@@ -216,7 +216,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
               return Padding(
                 padding: const EdgeInsets.only(right: AppSpacing.sm),
                 child: ChoiceChip(
-                  label: Text(role, style: AppTypography.labelSmall.copyWith(color: isSelected ? Colors.white : AppColors.textSecondary(context))),
+                  label: Text(role, style: AppTypography.labelSmall.copyWith(color: isSelected ? AppColors.surfaceLight : AppColors.textSecondary(context))),
                   selected: isSelected,
                   selectedColor: AppColors.primary,
                   onSelected: (val) {

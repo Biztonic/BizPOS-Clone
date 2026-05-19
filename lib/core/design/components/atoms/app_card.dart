@@ -1,3 +1,4 @@
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../tokens/app_spacing.dart';
 import '../../tokens/app_radius.dart';
@@ -72,7 +73,7 @@ class AppCard extends StatelessWidget {
         elevation: 0, // Using custom shadows via decoration
         color: isSelected
             ? theme.colorScheme.primary.withValues(alpha: 0.05)
-            : (backgroundColor ?? (isDark ? theme.cardTheme.color : Colors.white)),
+            : (backgroundColor ?? (isDark ? theme.cardTheme.color : AppColors.surfaceLight)),
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.borderLg,
           side: BorderSide(
@@ -86,13 +87,13 @@ class AppCard extends StatelessWidget {
     } else {
       card = Container(
         decoration: BoxDecoration(
-          color: backgroundColor ?? (isDark ? theme.cardTheme.color : Colors.white),
+          color: backgroundColor ?? (isDark ? theme.cardTheme.color : AppColors.surfaceLight),
           borderRadius: AppRadius.borderLg,
           boxShadow: AppShadows.adaptive(context, light: shadow),
           border: Border.all(
             color: isDark 
-                ? Colors.white.withValues(alpha: 0.06)
-                : Colors.black.withValues(alpha: 0.04),
+                ? AppColors.surfaceLight.withValues(alpha: 0.06)
+                : AppColors.textPrimaryLight.withValues(alpha: 0.04),
             width: 1,
           ),
         ),
@@ -100,7 +101,7 @@ class AppCard extends StatelessWidget {
         child: ClipRRect(
           borderRadius: AppRadius.borderLg,
           child: Material(
-            color: Colors.transparent,
+            color: AppColors.transparent,
             child: content,
           ),
         ),

@@ -67,15 +67,15 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
             colorScheme: isDark 
               ? ColorScheme.dark(
                   primary: Theme.of(context).primaryColor,
-                  onPrimary: Colors.white,
+                  onPrimary: AppColors.surfaceLight,
                   surface: AppColors.surface(context),
-                  onSurface: Colors.white,
+                  onSurface: AppColors.surfaceLight,
                 )
               : ColorScheme.light(
                   primary: Theme.of(context).primaryColor,
-                  onPrimary: Colors.white,
-                  surface: Colors.white,
-                  onSurface: Colors.black,
+                  onPrimary: AppColors.surfaceLight,
+                  surface: AppColors.surfaceLight,
+                  onSurface: AppColors.textPrimaryLight,
                 ),
           ),
           child: child!,
@@ -176,16 +176,16 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                   child: Row(
                     children: [
                       Icon(Icons.calendar_today, size: 18, color: Theme.of(context).primaryColor),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppSpacing.md),
                       Text(
                         "${DateFormat('MMM dd, yyyy').format(_dateRange.start)} - ${DateFormat('MMM dd, yyyy').format(_dateRange.end)}",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : Colors.black87,
+                          color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                         ),
                       ),
                       const Spacer(),
-                      Icon(Icons.arrow_drop_down, color: isDark ? Colors.white54 : AppColors.textSecondary(context)),
+                      Icon(Icons.arrow_drop_down, color: isDark ? AppColors.textHintDark : AppColors.textSecondary(context)),
                     ],
                   ),
                 ),
@@ -244,7 +244,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                   borderRadius: BorderRadius.zero,
                   boxShadow: [
                     BoxShadow(
-                      color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03), 
+                      color: isDark ? Colors.black26 : AppColors.textPrimaryLight.withValues(alpha: 0.03), 
                       blurRadius: 10, 
                       offset: const Offset(0, 4)
                     ),
@@ -257,7 +257,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                       style: TextStyle(
                         fontSize: 16, 
                         fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black87,
+                        color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                       )
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -275,7 +275,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                                 showTitles: true,
                                   getTitlesWidget: (double value, TitleMeta meta) {
                                     final style = TextStyle(
-                                      color: isDark ? Colors.white70 : Colors.black, 
+                                      color: isDark ? AppColors.textSecondaryDark : AppColors.textPrimaryLight, 
                                       fontWeight: FontWeight.bold, 
                                       fontSize: 12
                                     );
@@ -320,7 +320,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                     style: TextStyle(
                       fontSize: 18, 
                       fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,
+                      color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                     )
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -331,7 +331,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                       borderRadius: BorderRadius.zero,
                       boxShadow: [
                         BoxShadow(
-                          color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.05), 
+                          color: isDark ? Colors.black26 : AppColors.textPrimaryLight.withValues(alpha: 0.05), 
                           blurRadius: 10, 
                           offset: const Offset(0, 4)
                         ),
@@ -344,7 +344,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                         _buildRowItem("Cost of Goods Sold", cogs, isPositive: false),
                         const Divider(height: 24),
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(AppSpacing.md),
                           decoration: const BoxDecoration(
                             color: AppColors.success,
                             borderRadius: BorderRadius.zero,
@@ -375,8 +375,8 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
             fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
             fontSize: isBold ? 16 : 14,
             color: isBold 
-              ? (isDark ? Colors.white : Colors.black87) 
-              : (isDark ? Colors.white70 : AppColors.textSecondary(context)),
+              ? (isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight) 
+              : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary(context)),
           )
         ),
         Text(

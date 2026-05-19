@@ -115,7 +115,7 @@ class AppColors {
   }
 
   static bool isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
-  static Color get transparent => Colors.transparent;
+  static const Color transparent = Colors.transparent;
 
   static LinearGradient authGradient(BuildContext context) {
     final dark = isDark(context);

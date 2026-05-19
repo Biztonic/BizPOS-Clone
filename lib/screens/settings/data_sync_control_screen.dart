@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:provider/provider.dart';
@@ -210,7 +210,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                  duration: const Duration(seconds: 10),
                  action: indexUrl != null ? SnackBarAction(
                     label: "FIX INDEX", 
-                    textColor: Colors.white,
+                    textColor: AppColors.surfaceLight,
                     onPressed: () async {
                        if (await canLaunchUrl(Uri.parse(indexUrl))) {
                           await launchUrl(Uri.parse(indexUrl), mode: LaunchMode.externalApplication);

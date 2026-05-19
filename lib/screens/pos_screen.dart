@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import '../core/design/tokens/app_colors.dart';
@@ -85,7 +85,7 @@ class _POSScreenState extends State<POSScreen> {
           title: Row(
             children: [
               Icon(Icons.print, color: AppColors.adaptivePrimary(context)),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.md),
               Text(AppLocalizations.t(context, 'Connect Printer')),
             ],
           ),
@@ -582,7 +582,7 @@ class _POSScreenState extends State<POSScreen> {
                   Text("₹${billingProvider.calculateCartTotal(inventory).toStringAsFixed(2)}", style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               
               if (activeStore?.isTaxEnabled == true) ...[
                  Row(
@@ -592,7 +592,7 @@ class _POSScreenState extends State<POSScreen> {
                     Text("₹${(billingProvider.calculateCartTotal(inventory) * ((activeStore?.taxRate ?? 0) / 100)).toStringAsFixed(2)}", style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
               ],
               
               Padding(
@@ -716,7 +716,7 @@ class _POSScreenState extends State<POSScreen> {
             title: Row(
               children: [
                 Icon(Icons.warning_amber_rounded, color: AppColors.adaptiveError(context)),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Text(AppLocalizations.t(context, 'Stock Alert')),
               ],
             ),
@@ -727,7 +727,7 @@ class _POSScreenState extends State<POSScreen> {
                 Text(AppLocalizations.t(context, 'Some items in your cart have insufficient stock to fulfill this order:'), style: AppTypography.bodyMedium),
                 const SizedBox(height: AppSpacing.md),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.adaptiveError(context).withValues(alpha: 0.05),
                     borderRadius: BorderRadius.zero,
@@ -774,7 +774,7 @@ class _POSScreenState extends State<POSScreen> {
       builder: (_) => const PopScope(
         canPop: false,
         child: Dialog(
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppColors.transparent,
           elevation: 0,
           child: Center(child: CircularProgressIndicator()),
         ),
@@ -933,7 +933,7 @@ class _POSScreenState extends State<POSScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.85,
         decoration: BoxDecoration(
@@ -969,9 +969,9 @@ class _POSScreenState extends State<POSScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.zero,
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: isPrimary ? AppColors.adaptivePrimary(context) : Colors.transparent,
+          color: isPrimary ? AppColors.adaptivePrimary(context) : AppColors.transparent,
           borderRadius: BorderRadius.zero,
         ),
         child: Icon(
@@ -1002,7 +1002,7 @@ class _POSScreenState extends State<POSScreen> {
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(AppLocalizations.t(context, 'Success!'), style: AppTypography.h4.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(message, textAlign: TextAlign.center, style: AppTypography.bodyLarge),
             const SizedBox(height: AppSpacing.lg),
             AppButton.primary(

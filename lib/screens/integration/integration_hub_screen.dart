@@ -1,4 +1,4 @@
-﻿import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -118,7 +118,7 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
                   ),
                   child: Icon(icon, color: color, size: 28),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
                     name,
@@ -145,7 +145,7 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
                 )
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               description,
               style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),

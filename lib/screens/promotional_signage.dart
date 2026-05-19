@@ -48,18 +48,18 @@ class _PromotionalSignageState extends State<PromotionalSignage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.textPrimaryLight,
       appBar: AppBar(
         title: Text(AppLocalizations.t(context, 'Promotional Screen')),
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.transparent,
+        foregroundColor: AppColors.surfaceLight,
         elevation: 0,
       ),
       body: AnimatedContainer(
         duration: const Duration(seconds: 1),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-              colors: [_colors[_currentIndex].withValues(alpha: 0.8), Colors.black],
+              colors: [_colors[_currentIndex].withValues(alpha: 0.8), AppColors.textPrimaryLight],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight),
         ),
@@ -67,7 +67,7 @@ class _PromotionalSignageState extends State<PromotionalSignage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-               Icon(Icons.local_offer, size: 100, color: Colors.white.withValues(alpha: 0.8)),
+               Icon(Icons.local_offer, size: 100, color: AppColors.surfaceLight.withValues(alpha: 0.8)),
                const SizedBox(height: AppSpacing.xxl),
                Padding(
                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
@@ -75,7 +75,7 @@ class _PromotionalSignageState extends State<PromotionalSignage> {
                    _promos[_currentIndex],
                    textAlign: TextAlign.center,
                    style: const TextStyle(
-                       color: Colors.white,
+                       color: AppColors.surfaceLight,
                        fontSize: 64,
                        fontWeight: FontWeight.bold,
                        letterSpacing: 2,
@@ -84,7 +84,7 @@ class _PromotionalSignageState extends State<PromotionalSignage> {
                  ),
                ),
                const SizedBox(height: AppSpacing.lg),
-               Text(AppLocalizations.t(context, 'Visit Counter for details'), style: const TextStyle(color: Colors.white70, fontSize: 24))
+               Text(AppLocalizations.t(context, 'Visit Counter for details'), style: const TextStyle(color: AppColors.textSecondaryDark, fontSize: 24))
             ],
           ),
         ),

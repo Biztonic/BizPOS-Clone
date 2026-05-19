@@ -133,7 +133,7 @@ class AppTextField extends StatelessWidget {
         filled: variant == AppTextFieldVariant.filled,
         fillColor: enabled 
             ? (isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3) : AppColors.secondary.withValues(alpha: 0.15)) 
-            : (isDark ? Colors.transparent : AppColors.secondary.withValues(alpha: 0.08)),
+            : (isDark ? AppColors.transparent : AppColors.secondary.withValues(alpha: 0.08)),
         contentPadding: contentPadding,
         border: buildBorder(theme.dividerColor),
         enabledBorder: buildBorder(theme.dividerColor),

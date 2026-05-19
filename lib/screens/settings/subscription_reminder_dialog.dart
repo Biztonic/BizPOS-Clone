@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import '../../core/design/tokens/app_colors.dart';
@@ -21,7 +22,7 @@ class SubscriptionReminderDialog extends StatelessWidget {
       title: Row(
         children: [
           const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 28),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Text(AppLocalizations.t(context, 'Subscription Expiring')),
         ],
       ),
@@ -35,7 +36,7 @@ class SubscriptionReminderDialog extends StatelessWidget {
               : "Your Standard subscription is expiring in $daysRemaining days.",
             style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Text(AppLocalizations.t(context, 'Renew now to continue enjoying unlimited features, cloud sync, and priority support without any interruption.'),
             style: TextStyle(color: AppColors.textSecondary(context), fontSize: 14),
           ),
@@ -53,7 +54,7 @@ class SubscriptionReminderDialog extends StatelessWidget {
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.warning,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.surfaceLight,
             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           ),
           child: Text(AppLocalizations.t(context, 'RENEW / PURCHASE')),

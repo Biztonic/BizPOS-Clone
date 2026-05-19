@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import 'package:flutter/material.dart';
@@ -26,7 +26,7 @@ class DisplayManagementScreen extends StatelessWidget {
           Text(AppLocalizations.t(context, 'External Displays'),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
             
            _buildGrid(context),
         ],
@@ -123,7 +123,7 @@ class DisplayManagementScreen extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   shape: BoxShape.rectangle,
@@ -180,7 +180,7 @@ class DisplayManagementScreen extends StatelessWidget {
               child: Row(
                 children: [
                   const Icon(Icons.tv, color: AppColors.primaryLight),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Text(AppLocalizations.t(context, 'Digital Display Mode (View Only)'), style: const TextStyle(fontSize: 16)),
                 ],
               ),
@@ -196,7 +196,7 @@ class DisplayManagementScreen extends StatelessWidget {
               child: Row(
                 children: [
                   const Icon(Icons.touch_app, color: AppColors.success),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Text(AppLocalizations.t(context, 'Self-Ordering Kiosk (Interactive)'), style: const TextStyle(fontSize: 16)),
                 ],
               ),

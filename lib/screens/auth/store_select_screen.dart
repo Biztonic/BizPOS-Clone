@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -331,7 +331,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
           value: count.toDouble(),
           title: '$count',
           radius: 40,
-          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
         ));
         colorIndex++;
       }
@@ -342,7 +342,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: BorderRadius.zero,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 8))],
+        boxShadow: [BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 8))],
       ),
       child: Row(
         children: [
@@ -409,7 +409,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context), letterSpacing: 0.5)),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -510,7 +510,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
               borderRadius: BorderRadius.zero,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isExpanded ? 0.1 : 0.05),
+                  color: AppColors.textPrimaryLight.withValues(alpha: isExpanded ? 0.1 : 0.05),
                   blurRadius: isExpanded ? 30 : 15,
                   offset: isExpanded ? const Offset(0, 12) : const Offset(0, 6)
                 )
@@ -598,7 +598,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
            child: Row(
               children: [
                  Icon(icon, size: 16, color: color),
-                 const SizedBox(width: 6),
+                 const SizedBox(width: AppSpacing.sm),
                  Text(label, style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.bold, color: color)),
               ],
            ),
@@ -661,7 +661,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                           backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                           child: Text(name[0].toUpperCase(), style: AppTypography.titleLarge.copyWith(color: AppColors.primary)),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         Text(name, style: AppTypography.labelLarge, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
                         Text(emp['role'] ?? 'Staff', style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
                       ],

@@ -146,7 +146,7 @@ class _PosSidebarState extends State<PosSidebar> {
             decoration: BoxDecoration(color: Theme.of(context).primaryColor.withValues(alpha: 0.1), borderRadius: AppRadius.borderMd),
             child: Icon(Icons.storefront, color: Theme.of(context).primaryColor, size: 28),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,7 +190,7 @@ class _PosSidebarState extends State<PosSidebar> {
           if (storeName != null)
             Text(
               storeName,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Colors.white70),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: AppColors.textSecondaryDark),
             ),
         ],
       ),
@@ -201,7 +201,7 @@ class _PosSidebarState extends State<PosSidebar> {
             ? MemoryImage(base64Decode(userPhoto))
             : null,
         child: (userPhoto == null || userPhoto.isEmpty)
-            ? const Icon(Icons.person, size: 40, color: Colors.white)
+            ? const Icon(Icons.person, size: 40, color: AppColors.surfaceLight)
             : null,
       ),
       decoration: BoxDecoration(color: Theme.of(context).primaryColor),
@@ -290,12 +290,12 @@ class _PosSidebarState extends State<PosSidebar> {
                   duration: const Duration(milliseconds: 200),
                   margin: const EdgeInsets.only(bottom: AppSpacing.xs),
                   decoration: BoxDecoration(
-                    color: isSelected ? color.withValues(alpha: 0.1) : (isHovered ? color.withValues(alpha: 0.05) : Colors.transparent),
+                    color: isSelected ? color.withValues(alpha: 0.1) : (isHovered ? color.withValues(alpha: 0.05) : AppColors.transparent),
                     borderRadius: AppRadius.borderMd,
-                    border: Border(left: BorderSide(color: isSelected ? color : (isHovered ? color.withValues(alpha: 0.5) : Colors.transparent), width: 4)),
+                    border: Border(left: BorderSide(color: isSelected ? color : (isHovered ? color.withValues(alpha: 0.5) : AppColors.transparent), width: 4)),
                   ),
                   child: Material(
-                    color: Colors.transparent,
+                    color: AppColors.transparent,
                     child: InkWell(
                       borderRadius: AppRadius.borderMd,
                       onTap: () {
@@ -328,13 +328,13 @@ class _PosSidebarState extends State<PosSidebar> {
                               borderRadius: AppRadius.md,
                             ),
                             if (!isCollapsed) ...[
-                              const SizedBox(width: 12),
+                              const SizedBox(width: AppSpacing.md),
                               Expanded(
                                 child: Text(
                                   item['label'],
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTypography.bodyMedium.copyWith(
-                                    color: isRestricted ? AppColors.textSecondary(context) : (isSelected ? color : (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary(context))),
+                                    color: isRestricted ? AppColors.textSecondary(context) : (isSelected ? color : (Theme.of(context).brightness == Brightness.dark ? AppColors.surfaceLight : AppColors.textPrimary(context))),
                                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                   ),
                                 ),

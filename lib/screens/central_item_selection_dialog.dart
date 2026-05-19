@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -172,7 +172,7 @@ class _CentralItemSelectionDialogState extends State<CentralItemSelectionDialog>
                                          radius: 20,
                                          child: Text(item.name.isNotEmpty ? item.name[0] : '?'),
                                        ),
-                                     const SizedBox(width: 12),
+                                     const SizedBox(width: AppSpacing.md),
                                      
                                      // Title and Subtitle
                                      Expanded(

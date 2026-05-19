@@ -1,3 +1,6 @@
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+import 'package:biztonic_pos/core/design/tokens/app_radius.dart';
 import '../core/design/design_system.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 import '../core/design/components/atoms/app_button.dart';
@@ -187,7 +190,7 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
                     label: 'Back to Search',
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   AppButton.primary(
                     label: 'Add to Store',
                     onPressed: _submit,

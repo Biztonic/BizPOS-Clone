@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import 'package:go_router/go_router.dart';
@@ -171,7 +171,7 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
             ),
             child: Icon(item['icon'], color: itemColor, size: 36), // Increased Size from 28 to 36
           ),
-          const SizedBox(height: 10), 
+          const SizedBox(height: AppSpacing.md), 
           Text(
             item['label'],
             textAlign: TextAlign.center,

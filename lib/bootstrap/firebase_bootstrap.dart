@@ -38,7 +38,7 @@ class FirebaseBootstrap {
       return Directionality(
         textDirection: TextDirection.ltr,
         child: Material(
-          color: Colors.white,
+          color: AppColors.surfaceLight,
           child: Center(
             child: Card(
               color: AppColors.error,
@@ -50,10 +50,10 @@ class FirebaseBootstrap {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(Icons.error_outline, color: AppColors.error, size: 50),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: AppSpacing.md),
                     const Text("Something went wrong!",
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.error)),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(details.exception.toString(), textAlign: TextAlign.center, maxLines: 3),
                   ],
                 ),

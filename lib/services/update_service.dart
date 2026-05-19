@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
@@ -93,7 +93,7 @@ class UpdateService {
             title: const Row(
                children: [
                  Icon(Icons.system_update, color: AppColors.primaryLight),
-                 SizedBox(width: 10),
+                 SizedBox(width: AppSpacing.md),
                  Text("Critical Update"),
                ]
             ),
@@ -131,7 +131,7 @@ class UpdateService {
         title: const Row(
            children: [
              Icon(Icons.system_update, color: AppColors.primaryLight),
-             SizedBox(width: 10),
+             SizedBox(width: AppSpacing.md),
              Text("Update Available"),
            ]
         ),
@@ -144,7 +144,7 @@ class UpdateService {
             if (notes.isNotEmpty) ...[
                const Text("What's New:", style: TextStyle(fontWeight: FontWeight.bold)),
                Text(notes),
-               const SizedBox(height: 12),
+               const SizedBox(height: AppSpacing.md),
             ],
           ],
         ),
@@ -191,14 +191,14 @@ class _GlobalDownloadManager {
         left: AppSpacing.xxs,
         right: AppSpacing.xxs,
         child: Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.zero,
               boxShadow: [
-                 BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4)),
+                 BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4)),
               ],
             ),
             child: Row(
@@ -219,7 +219,7 @@ class _GlobalDownloadManager {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: AppSpacing.sm),
                       ValueListenableBuilder<double>(
                         valueListenable: progressNotifier,
                         builder: (context, prog, _) => ClipRRect(
@@ -235,7 +235,7 @@ class _GlobalDownloadManager {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 InkWell(
                   onTap: () {
                     _cancelToken.cancel();

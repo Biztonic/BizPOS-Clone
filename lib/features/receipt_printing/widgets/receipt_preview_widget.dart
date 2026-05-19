@@ -32,9 +32,9 @@ class ReceiptPreviewWidget extends StatelessWidget {
           // width: previewWidth, // REMOVED
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surfaceLight,
             boxShadow: [
-               BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4)),
+               BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4)),
             ],
             border: Border.all(color: AppColors.textSecondary(context), width: 1.5),
           ),
@@ -46,28 +46,28 @@ class ReceiptPreviewWidget extends StatelessWidget {
               _buildHeader(content.header),
               
               // 2. Bill Info
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.md),
               _buildBillInfo(content.billInfo),
               
               // 3. Items
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.md),
               _buildItems(content.items),
               
               // 4. Summary
               if (content.summary != null) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: AppSpacing.md),
                 _buildSummary(content.summary!),
               ],
               
               // 5. Payment
               if (content.payment != null) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: AppSpacing.md),
                 _buildPayment(content.payment!),
               ],
               
               // 6. Footer
               if (content.footer != null) ...[
-                 const SizedBox(height: 12),
+                 const SizedBox(height: AppSpacing.md),
                  _buildFooter(content.footer!, context),
               ],
               
@@ -215,7 +215,7 @@ class ReceiptPreviewWidget extends StatelessWidget {
            // Placeholder for QR Code (Mock visual)
            Container(
              padding: const EdgeInsets.all(AppSpacing.xs),
-             decoration: BoxDecoration(border: Border.all(color: Colors.black)),
+             decoration: BoxDecoration(border: Border.all(color: AppColors.textPrimaryLight)),
              child: const Column(
                children: [
                  Icon(Icons.qr_code_2, size: 48),
@@ -253,7 +253,7 @@ class ReceiptPreviewWidget extends StatelessWidget {
        fontSize: baseSize,
        fontWeight: style.isBold ? FontWeight.bold : FontWeight.normal,
        // fontStyle: style.isItalic ? FontStyle.italic : FontStyle.normal, // Removed
-       color: color ?? Colors.black,
+       color: color ?? AppColors.textPrimaryLight,
        height: 1.1,
      );
   }
@@ -264,7 +264,7 @@ class DashedLinePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     double dashWidth = 3, dashSpace = 3, startX = 0;
     final paint = Paint()
-      ..color = Colors.black
+      ..color = AppColors.textPrimaryLight
       ..strokeWidth = 1;
     while (startX < size.width) {
       canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);

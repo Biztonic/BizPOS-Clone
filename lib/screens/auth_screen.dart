@@ -418,7 +418,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.1)),
           ),
           child: Material(
-            color: Colors.transparent,
+            color: AppColors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.zero,
               onTap: () => context.push('/employee-login'),
@@ -427,7 +427,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.15), borderRadius: BorderRadius.zero),
                       child: Icon(Icons.badge_outlined, color: Theme.of(context).colorScheme.onPrimary, size: 24),
                     ),

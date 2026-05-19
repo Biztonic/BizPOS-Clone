@@ -162,7 +162,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                  color: AppColors.error,
                                  borderRadius: BorderRadius.zero,
                               ),
-                              child: const Icon(Icons.close, color: Colors.white, size: 20),
+                              child: const Icon(Icons.close, color: AppColors.surfaceLight, size: 20),
                            ),
                         )
                      ],
@@ -225,19 +225,19 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                   weekendTextStyle: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600, fontSize: 20),
                                   outsideTextStyle: TextStyle(color: textColor.withValues(alpha: 0.3), fontSize: 20),
                                   cellMargin: const EdgeInsets.all(AppSpacing.xs),
-                                  cellPadding: const EdgeInsets.all(0),
+                                  cellPadding: const EdgeInsets.all(AppSpacing.xs),
                                   cellAlignment: Alignment.center,
                                   selectedDecoration: BoxDecoration(
                                      color: AppColors.primaryLight,
                                      shape: BoxShape.circle,
                                      boxShadow: [BoxShadow(color: AppColors.primaryLight.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 4))]
                                   ),
-                                  selectedTextStyle: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                                  selectedTextStyle: const TextStyle(color: AppColors.surfaceLight, fontSize: 22, fontWeight: FontWeight.bold),
                                   todayDecoration: BoxDecoration(
                                      color: AppColors.warning.withValues(alpha: 0.8),
                                      shape: BoxShape.circle,
                                   ),
-                                  todayTextStyle: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                                  todayTextStyle: const TextStyle(color: AppColors.surfaceLight, fontSize: 22, fontWeight: FontWeight.bold),
                                   markerDecoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
                                   markersMaxCount: 3,
                                   markerSize: 8,
@@ -258,7 +258,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                             margin: const EdgeInsets.fromLTRB(0, 0, 16, 16),
                             padding: const EdgeInsets.all(AppSpacing.lg),
                             decoration: BoxDecoration(
-                               color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                               color: isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight,
                                borderRadius: BorderRadius.zero,
                                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2)),
                                boxShadow: CarDashboardTheme.cardShadow(isDark),
@@ -304,7 +304,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
                                               return Container(
                                                  margin: const EdgeInsets.only(bottom: 12),
-                                                 padding: const EdgeInsets.all(12),
+                                                 padding: const EdgeInsets.all(AppSpacing.md),
                                                  decoration: BoxDecoration(
                                                     color: itemColor.withValues(alpha: 0.1),
                                                     borderRadius: BorderRadius.zero,
@@ -313,7 +313,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                                  child: Row(
                                                     children: [
                                                        Icon(itemIcon, size: 24, color: itemColor),
-                                                       const SizedBox(width: 12),
+                                                       const SizedBox(width: AppSpacing.md),
                                                        Expanded(child: Text(event['text']!, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: textColor))),
                                                        
                                                        // DELETE BUTTON (If not holiday)
@@ -340,7 +340,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                               label: Text(AppLocalizations.t(context, 'Note'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                               style: ElevatedButton.styleFrom(
                                                  backgroundColor: AppColors.primaryLight,
-                                                 foregroundColor: Colors.white,
+                                                 foregroundColor: AppColors.surfaceLight,
                                                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
                                                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                                  elevation: 2
@@ -348,14 +348,14 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                               onPressed: () => _addEvent("Note"),
                                            ),
                                         ),
-                                        const SizedBox(width: 12),
+                                        const SizedBox(width: AppSpacing.md),
                                         Expanded(
                                            child: ElevatedButton.icon(
                                               icon: const Icon(Icons.alarm_add, size: 20),
                                               label: Text(AppLocalizations.t(context, 'Reminder'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                               style: ElevatedButton.styleFrom(
                                                  backgroundColor: AppColors.primary, // Different color for reminder
-                                                 foregroundColor: Colors.white,
+                                                 foregroundColor: AppColors.surfaceLight,
                                                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
                                                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                                  elevation: 2

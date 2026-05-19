@@ -218,7 +218,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.black26 : Colors.white,
+                          color: isDark ? Colors.black26 : AppColors.surfaceLight,
                           border: Border.all(color: AppColors.border(context)),
                           borderRadius: BorderRadius.zero,
                         ),
@@ -226,13 +226,13 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.calendar_today, size: 18, color: AppColors.primaryLight),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: AppSpacing.md),
                             Text(_dateRange == null 
                               ? "Select Date Range" 
                               : "${DateFormat('MMM dd, yyyy').format(_dateRange!.start)} - ${DateFormat('MMM dd, yyyy').format(_dateRange!.end)}",
                               style: TextStyle(
                                 fontWeight: FontWeight.w500,
-                                color: isDark ? Colors.white : Colors.black87,
+                                color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                               ),
                             ),
                           ],
@@ -252,7 +252,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                             decoration: InputDecoration(
                               labelText: "Status", 
                               filled: true,
-                              fillColor: isDark ? Colors.black26 : Colors.transparent,
+                              fillColor: isDark ? Colors.black26 : AppColors.transparent,
                               border: const OutlineInputBorder(borderRadius: BorderRadius.zero), 
                               contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                             ),
@@ -277,7 +277,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                             decoration: InputDecoration(
                               labelText: "Payment", 
                               filled: true,
-                              fillColor: isDark ? Colors.black26 : Colors.transparent,
+                              fillColor: isDark ? Colors.black26 : AppColors.transparent,
                               border: const OutlineInputBorder(borderRadius: BorderRadius.zero), 
                               contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                             ),
@@ -347,7 +347,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                   borderRadius: BorderRadius.zero,
                   boxShadow: [
                     BoxShadow(
-                      color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03), 
+                      color: isDark ? Colors.black26 : AppColors.textPrimaryLight.withValues(alpha: 0.03), 
                       blurRadius: 10, 
                       offset: const Offset(0, 4)
                     ),
@@ -360,7 +360,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                       style: TextStyle(
                         fontSize: 16, 
                         fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black87,
+                        color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                       )
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -379,21 +379,21 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                     value: cashSales,
                                     title: '${(cashSales / totalSales * 100).toStringAsFixed(0)}%',
                                     radius: 50,
-                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
                                   ),
                                   if (cardSales > 0) PieChartSectionData(
                                     color: AppColors.primaryLight,
                                     value: cardSales,
                                     title: '${(cardSales / totalSales * 100).toStringAsFixed(0)}%',
                                     radius: 50,
-                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
                                   ),
                                   if (upiSales > 0) PieChartSectionData(
                                     color: AppColors.primaryLight,
                                     value: upiSales,
                                     title: '${(upiSales / totalSales * 100).toStringAsFixed(0)}%',
                                     radius: 50,
-                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
                                   ),
                                 ],
                               ),
@@ -429,7 +429,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                   borderRadius: BorderRadius.zero,
                   boxShadow: [
                     BoxShadow(
-                      color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03), 
+                      color: isDark ? Colors.black26 : AppColors.textPrimaryLight.withValues(alpha: 0.03), 
                       blurRadius: 10, 
                       offset: const Offset(0, 4)
                     ),
@@ -442,7 +442,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                       style: TextStyle(
                         fontSize: 16, 
                         fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black87,
+                        color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                       )
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -461,21 +461,21 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                     value: completedSales,
                                     title: '${(completedSales / (completedSales + refundedSales + cancelledSales) * 100).toStringAsFixed(0)}%',
                                     radius: 50,
-                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
                                   ),
                                   if (refundedSales > 0) PieChartSectionData(
                                     color: AppColors.warning,
                                     value: refundedSales,
                                     title: '${(refundedSales / (completedSales + refundedSales + cancelledSales) * 100).toStringAsFixed(0)}%',
                                     radius: 50,
-                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
                                   ),
                                   if (cancelledSales > 0) PieChartSectionData(
                                     color: AppColors.error,
                                     value: cancelledSales,
                                     title: '${(cancelledSales / (completedSales + refundedSales + cancelledSales) * 100).toStringAsFixed(0)}%',
                                     radius: 50,
-                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                                    titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
                                   ),
                                 ],
                               ),
@@ -507,7 +507,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold, 
                   fontSize: 16, 
-                  color: isDark ? Colors.white70 : AppColors.textSecondary(context)
+                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary(context)
                 )
               ),
             ),
@@ -553,7 +553,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                         child: Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(AppSpacing.md),
                               decoration: BoxDecoration(
                                 color: isDark ? AppColors.primaryLight.withValues(alpha: 0.1) : AppColors.primaryLight,
                                 borderRadius: BorderRadius.zero,
@@ -570,7 +570,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold, 
                                       fontSize: 16,
-                                      color: isDark ? Colors.white : Colors.black87,
+                                      color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                                     ),
                                   ),
                                   const SizedBox(height: AppSpacing.xs),
@@ -667,7 +667,7 @@ class _Indicator extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87,
+            color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textPrimaryLight,
           ),
         )
       ],

@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 
@@ -361,10 +361,10 @@ class MockFeatureScreen extends StatelessWidget {
       itemBuilder: (context, index) {
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surfaceLight,
             borderRadius: BorderRadius.zero,
             border: Border.all(color: AppColors.textSecondary(context)),
-            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+            boxShadow: const [BoxShadow(color: AppColors.borderLight, blurRadius: 4)],
           ),
           child: Column(
             children: [
@@ -420,7 +420,7 @@ class MockFeatureScreen extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryLight),
                       child: const Text("Done",
-                          style: TextStyle(color: Colors.white))),
+                          style: TextStyle(color: AppColors.surfaceLight))),
                 ),
               )
             ],
@@ -452,7 +452,7 @@ class MockFeatureScreen extends StatelessWidget {
                 width: 2),
             boxShadow: const [
               BoxShadow(
-                  color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))
+                  color: AppColors.borderLight, blurRadius: 8, offset: Offset(0, 4))
             ],
           ),
           child: Column(
@@ -492,7 +492,7 @@ class MockFeatureScreen extends StatelessWidget {
                     child: const Text("PREPARING",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.surfaceLight,
                             fontWeight: FontWeight.bold,
                             fontSize: 24))),
                 Expanded(
@@ -506,7 +506,7 @@ class MockFeatureScreen extends StatelessWidget {
                           style: const TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.w500,
-                              color: Colors.black54)),
+                              color: AppColors.textSecondaryLight)),
                     ),
                   ),
                 )
@@ -527,7 +527,7 @@ class MockFeatureScreen extends StatelessWidget {
                     child: const Text("READY",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.surfaceLight,
                             fontWeight: FontWeight.bold,
                             fontSize: 24))),
                 Expanded(
@@ -559,7 +559,7 @@ class MockFeatureScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surfaceLight,
           borderRadius: BorderRadius.zero,
           border: Border.all(color: AppColors.textSecondary(context)),
           boxShadow: [
@@ -602,7 +602,7 @@ class _MockChartPainter extends CustomPainter {
     // Fill
     final fillPaint = Paint()
       ..shader = LinearGradient(
-              colors: [AppColors.primaryLight.withValues(alpha: 0.3), Colors.transparent],
+              colors: [AppColors.primaryLight.withValues(alpha: 0.3), AppColors.transparent],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter)
           .createShader(Rect.fromLTWH(0, 0, size.width, size.height))

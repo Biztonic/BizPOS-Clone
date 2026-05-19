@@ -43,7 +43,7 @@ class DisplaySettingsSection extends ConsumerWidget {
                       color: color,
                       shape: BoxShape.rectangle,
                       border: isSelected
-                          ? Border.all(color: themeState.isDarkMode ? Colors.white : Colors.black, width: 3)
+                          ? Border.all(color: themeState.isDarkMode ? AppColors.surfaceLight : AppColors.textPrimaryLight, width: 3)
                           : null,
                       boxShadow: [
                         if (isSelected)
@@ -54,7 +54,7 @@ class DisplaySettingsSection extends ConsumerWidget {
                           )
                       ],
                     ),
-                    child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
+                    child: isSelected ? const Icon(Icons.check, color: AppColors.surfaceLight) : null,
                   ),
                 );
               }).toList(),

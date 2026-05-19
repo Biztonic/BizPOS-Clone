@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -31,15 +31,15 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
       backgroundColor: AppColors.textSecondary(context),
       appBar: AppBar(
         title: Text(AppLocalizations.t(context, 'Self-Ordering Kiosk')),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: AppColors.surfaceLight,
+        foregroundColor: AppColors.textPrimaryLight,
         elevation: 1,
         actions: [
            if (_kioskCart.isNotEmpty)
              Container(
                margin: const EdgeInsets.only(right: AppSpacing.md),
                child: ElevatedButton.icon(
-                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white),
+                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: AppColors.surfaceLight),
                  icon: const Icon(Icons.shopping_cart),
                  label: Text("Checkout (${_kioskCart.length})"),
                  onPressed: () => _showCheckoutDialog(context, provider, inventory),
@@ -53,12 +53,12 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
           Expanded(
             flex: 2,
             child: Container(
-              color: Colors.white,
+              color: AppColors.surfaceLight,
               child: ListView(
                 children: [
                    const SizedBox(height: AppSpacing.xxs),
                    const Icon(Icons.fastfood, size: 60, color: AppColors.warning),
-                   const SizedBox(height: 10),
+                   const SizedBox(height: AppSpacing.md),
                    Text(AppLocalizations.t(context, 'Yummy Burger'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                    const Divider(),
                    _buildCategoryItem("All Items", true),
@@ -95,7 +95,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surfaceLight,
                       borderRadius: BorderRadius.zero,
                       boxShadow: [BoxShadow(color: AppColors.textSecondary(context), blurRadius: 5)],
                       border: qty > 0 ? Border.all(color: AppColors.success, width: 2) : null
@@ -123,7 +123,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.all(12.0),
+                          padding: const EdgeInsets.all(AppSpacing.md),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -137,7 +137,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
                                     CircleAvatar(
                                       radius: 12, 
                                       backgroundColor: AppColors.success, 
-                                      child: Text("$qty", style: const TextStyle(fontSize: 12, color: Colors.white))
+                                      child: Text("$qty", style: const TextStyle(fontSize: 12, color: AppColors.surfaceLight))
                                     )
                                   else 
                                     const Icon(Icons.add_circle_outline, color: AppColors.warning)
@@ -160,7 +160,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
 
   Widget _buildCategoryItem(String title, bool isSelected) {
     return ListTile(
-      title: Text(title, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppColors.warning : Colors.black)),
+      title: Text(title, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppColors.warning : AppColors.textPrimaryLight)),
       leading: isSelected ? const Icon(Icons.arrow_right, color: AppColors.warning) : null,
       onTap: () {},
     );
@@ -200,7 +200,7 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.t(context, 'Cancel'))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: AppColors.surfaceLight),
             onPressed: () => _placeOrder(context, provider, inventory), 
             child: Text(AppLocalizations.t(context, 'Place Order'))
           ),

@@ -1,3 +1,6 @@
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+import 'package:biztonic_pos/core/design/tokens/app_radius.dart';
 import '../../core/design/design_system.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
@@ -155,7 +158,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                             duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                             decoration: BoxDecoration(
-                              color: isSelected ? AppColors.primaryLight : Colors.transparent,
+                              color: isSelected ? AppColors.primaryLight : AppColors.transparent,
                               borderRadius: AppRadius.borderMd,
                               boxShadow: isSelected 
                                 ? [BoxShadow(color: AppColors.primaryLight.withAlpha((0.3 * 255).toInt()), blurRadius: 4, offset: const Offset(0, 2))]
@@ -265,7 +268,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
               // DROP AREA - InteractiveViewer for scroll + zoom
               InteractiveViewer(
                 constrained: false,
-                boundaryMargin: const EdgeInsets.all(200),
+                boundaryMargin: const EdgeInsets.all(AppSpacing.xl),
                 minScale: 0.3,
                 maxScale: 2.0,
                 child: DragTarget<String>(
@@ -316,8 +319,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                           decoration: BoxDecoration(
                              color: Theme.of(context).cardColor.withValues(alpha: 0.7),
                              borderRadius: AppRadius.borderLg,
-                             border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4))]
+                             border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.2)),
+                             boxShadow: [BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4))]
                           ),
                           child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -343,7 +346,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                            decoration: BoxDecoration(
                              color: Theme.of(context).cardColor.withValues(alpha: 0.85),
                              borderRadius: AppRadius.borderLg,
-                             border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                             border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.2)),
                               boxShadow: [
                                 BoxShadow(
                                   color: Theme.of(context).shadowColor.withValues(alpha: 0.2),
@@ -434,8 +437,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
          statusTextColor = isDark ? AppColors.warning : const Color(0xFFE65100);
      } else {
          bgColor = Theme.of(context).cardColor;
-         borderColor = isDark ? Colors.white24 : Colors.grey.shade300;
-         statusTextColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87;
+         borderColor = isDark ? Colors.white24 : AppColors.textSecondaryLight;
+         statusTextColor = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textPrimaryLight;
      }
 
      if (isSelected) {
@@ -491,7 +494,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                       color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                       color: AppColors.textPrimaryLight.withValues(alpha: isDark ? 0.3 : 0.05),
                       blurRadius: isSelected ? 16 : 8, 
                       offset: Offset(0, isSelected ? 8 : 4),
                     )
@@ -516,7 +519,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                          decoration: BoxDecoration(
                             color: AppColors.error.withValues(alpha: 0.1),
                             border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-                           borderRadius: BorderRadius.circular(12),
+                           borderRadius: AppRadius.borderSm,
                          ),
                          child: Text(AppLocalizations.t(context, 'ACTIVE'), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.error))
                        )
@@ -529,7 +532,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                               decoration: BoxDecoration(
                                 color: AppColors.warning.withValues(alpha: 0.1), 
                                 border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: AppRadius.borderSm,
                               ),
                               child: Text(AppLocalizations.t(context, 'BOOKED'), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.warning))
                            ),
@@ -836,11 +839,11 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                               label: Text(AppLocalizations.t(context, 'MERGE'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                                               style: ElevatedButton.styleFrom(
                                                                 backgroundColor: AppColors.warning,
-                                                                 foregroundColor: Colors.white,
+                                                                 foregroundColor: AppColors.surfaceLight,
                                                                 elevation: 0,
                                                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                                                                 minimumSize: const Size(0, 36),
-                                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
+                                                                shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg)
                                                               ),
                                                             ),
                                                           ),
@@ -848,7 +851,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                                            decoration: BoxDecoration(
                                                               color: table.status == 'Occupied' ? AppColors.error.withValues(alpha: 0.1) : AppColors.success.withValues(alpha: 0.1),
-                                                              borderRadius: BorderRadius.circular(20),
+                                                              borderRadius: AppRadius.borderLg,
                                                               border: Border.all(color: table.status == 'Occupied' ? AppColors.error.withValues(alpha: 0.3) : AppColors.success.withValues(alpha: 0.3))
                                                            ),
                                                            child: Text(table.status, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: table.status == 'Occupied' ? AppColors.error : AppColors.success))
@@ -882,8 +885,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                color: selectedSeatIndex == -1 ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).textTheme.bodyLarge?.color,
                                                                fontWeight: selectedSeatIndex == -1 ? FontWeight.bold : FontWeight.w500,
                                                              ),
-                                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                                             side: BorderSide(color: selectedSeatIndex == -1 ? Colors.transparent : Theme.of(context).dividerColor),
+                                                             shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+                                                             side: BorderSide(color: selectedSeatIndex == -1 ? AppColors.transparent : Theme.of(context).dividerColor),
                                                              showCheckmark: false,
                                                            ),
                                                          ),
@@ -926,8 +929,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                  color: isSel ? Theme.of(context).colorScheme.onPrimary : (isBillSelected ? Theme.of(context).primaryColor : Theme.of(context).textTheme.bodyLarge?.color),
                                                                  fontWeight: (isBillSelected || isSel) ? FontWeight.bold : FontWeight.w500,
                                                                ),
-                                                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                                               side: BorderSide(color: isSel || isBillSelected ? Colors.transparent : Theme.of(context).dividerColor),
+                                                               shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+                                                               side: BorderSide(color: isSel || isBillSelected ? AppColors.transparent : Theme.of(context).dividerColor),
                                                                showCheckmark: false,
                                                              ),
                                                            );
@@ -938,7 +941,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                    const SizedBox(height: AppSpacing.md),
                                                    Container(
                                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                                     decoration: BoxDecoration(color: Theme.of(context).primaryColor.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8)),
+                                                     decoration: BoxDecoration(color: Theme.of(context).primaryColor.withValues(alpha: 0.05), borderRadius: AppRadius.borderSm),
                                                      child: Row(
                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                        children: [
@@ -967,7 +970,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                       mainAxisSize: MainAxisSize.min,
                                                       children: [
                                                         Container(
-                                                            padding: const EdgeInsets.all(24),
+                                                            padding: const EdgeInsets.all(AppSpacing.lg),
                                                             decoration: BoxDecoration(color: Theme.of(context).cardColor, shape: BoxShape.circle),
                                                             child: Icon(Icons.shopping_basket_outlined, size: 48, color: Theme.of(context).dividerColor),
                                                         ),
@@ -988,9 +991,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                                                          decoration: BoxDecoration(
                                                             color: Theme.of(context).cardColor,
-                                                            borderRadius: BorderRadius.circular(12),
+                                                            borderRadius: AppRadius.borderSm,
                                                             border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
-                                                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))]
+                                                            boxShadow: [BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))]
                                                          ),
                                                          child: ListTile(
                                                             contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
@@ -1005,7 +1008,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                        Container(
                                                                           margin: const EdgeInsets.only(top: AppSpacing.xs),
                                                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                                          decoration: BoxDecoration(color: Theme.of(context).primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                                                                          decoration: BoxDecoration(color: Theme.of(context).primaryColor.withValues(alpha: 0.1), borderRadius: AppRadius.borderXs),
                                                                           child: Text("Seat ${table.seats[orderItem.seatIndex!].number}", style: TextStyle(fontSize: 11, color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold))
                                                                        )
                                                                  ],
@@ -1041,7 +1044,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                     // Footer Actions
                                     Container(
                                        padding: const EdgeInsets.all(AppSpacing.lg),
-                                       decoration: BoxDecoration(color: Theme.of(context).cardColor, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -4))]),
+                                       decoration: BoxDecoration(color: Theme.of(context).cardColor, boxShadow: [BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -4))]),
                                        child: Column(
                                           children: [
                                              Row(
@@ -1146,7 +1149,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                           },
                                                                         icon: const Icon(Icons.money),
                                                                         label: Text(AppLocalizations.t(context, 'CASH'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                                                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
+                                                                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: AppColors.surfaceLight, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm), elevation: 0),
                                                                      ),
                                                                   ),
                                                                   const SizedBox(width: AppSpacing.sm),
@@ -1235,12 +1238,12 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                         },
                                                                         icon: const Icon(Icons.qr_code_scanner),
                                                                         label: Text(AppLocalizations.t(context, 'UPI'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                                                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryLight, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
+                                                                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryLight, foregroundColor: AppColors.surfaceLight, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm), elevation: 0),
                                                                      ),
                                                                   ),
                                                                ],
                                                             ),
-                                                            const SizedBox(height: 12),
+                                                            const SizedBox(height: AppSpacing.md),
                                                             Row(
                                                                children: [
                                                                   Expanded(
@@ -1284,7 +1287,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                          },
                                                                         icon: const Icon(Icons.print),
                                                                         label: Text(AppLocalizations.t(context, 'PRINT KOT'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                                                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)))
+                                                                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm))
                                                                      ),
                                                                   ),
                                                                   const SizedBox(width: AppSpacing.md),
@@ -1356,7 +1359,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                            Navigator.pop(ctx);
                                                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Order Saved & Updated'))));
                                                                         },
-                                                                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
+                                                                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: AppColors.surfaceLight, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm), elevation: 0),
                                                                         icon: const Icon(Icons.save),
                                                                         label: Text(AppLocalizations.t(context, 'SAVE & KOT'), style: const TextStyle(fontWeight: FontWeight.bold)),
                                                                      ),
@@ -1409,7 +1412,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                           prefixIcon: const Icon(Icons.search),
                                           filled: true,
                                           fillColor: Theme.of(context).scaffoldBackgroundColor,
-                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                          border: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: BorderSide.none),
                                           contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14)
                                        ),
                                        onChanged: (val) => setDialogState(() => searchQuery = val),
@@ -1437,9 +1440,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                 onSelected: (val) => setDialogState(() => selectedCategory = cat),
                                                 selectedColor: Theme.of(context).primaryColor,
                                                 showCheckmark: false,
-                                                labelStyle: TextStyle(color: isSel ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color, fontWeight: isSel ? FontWeight.bold : FontWeight.w500),
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                                side: BorderSide(color: isSel ? Colors.transparent : Theme.of(context).dividerColor),
+                                                labelStyle: TextStyle(color: isSel ? AppColors.surfaceLight : Theme.of(context).textTheme.bodyMedium?.color, fontWeight: isSel ? FontWeight.bold : FontWeight.w500),
+                                                shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+                                                side: BorderSide(color: isSel ? AppColors.transparent : Theme.of(context).dividerColor),
                                              );
                                           },
                                        ),
@@ -1488,9 +1491,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                              child: Container(
                                                 decoration: BoxDecoration(
                                                    color: Theme.of(context).cardColor,
-                                                   borderRadius: BorderRadius.circular(16),
+                                                   borderRadius: AppRadius.borderMd,
                                                    border: Border.all(color: inCartCount > 0 ? Theme.of(context).primaryColor : Theme.of(context).dividerColor.withValues(alpha: 0.5), width: inCartCount > 0 ? 2 : 1),
-                                                   boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 4))]
+                                                   boxShadow: [BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 4))]
                                                 ),
                                                 child: Column(
                                                    crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1516,7 +1519,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                                   children: [
                                                                      Text("₹${item.price.toStringAsFixed(2)}", style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
                                                                      if (inCartCount > 0) 
-                                                                        CircleAvatar(radius: 12, backgroundColor: Theme.of(context).primaryColor, child: Text("$inCartCount", style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)))
+                                                                        CircleAvatar(radius: 12, backgroundColor: Theme.of(context).primaryColor, child: Text("$inCartCount", style: const TextStyle(color: AppColors.surfaceLight, fontSize: 11, fontWeight: FontWeight.bold)))
                                                                   ],
                                                                )
                                                             ],
@@ -2063,7 +2066,7 @@ class _PulsingChairState extends State<_PulsingChair> with SingleTickerProviderS
              border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2.5),
              boxShadow: [
                BoxShadow(
-                 color: Colors.black.withValues(alpha: 0.05),
+                 color: AppColors.textPrimaryLight.withValues(alpha: 0.05),
                  blurRadius: 4,
                  offset: const Offset(0, 2),
                )
@@ -2093,7 +2096,7 @@ class _PulsingChairState extends State<_PulsingChair> with SingleTickerProviderS
                   decoration: BoxDecoration(
                      color: _colorAnimation.value,
                      shape: BoxShape.circle,
-                     border: Border.all(color: Colors.white, width: 2.0),
+                     border: Border.all(color: AppColors.surfaceLight, width: 2.0),
                      boxShadow: [
                        BoxShadow(
                          color: (_colorAnimation.value ?? AppColors.error).withValues(alpha: 0.5), 

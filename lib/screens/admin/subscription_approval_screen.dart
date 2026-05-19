@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:provider/provider.dart';
@@ -220,13 +220,13 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
         
         if (!mounted) return;
         messenger.showSnackBar(SnackBar(
-          content: Text(approve ? "Subscription Approved!" : "Subscription Rejected", style: const TextStyle(color: Colors.white)), 
+          content: Text(approve ? "Subscription Approved!" : "Subscription Rejected", style: const TextStyle(color: AppColors.surfaceLight)), 
           backgroundColor: approve ? AppColors.success : AppColors.error,
         ));
       } catch (e) {
         if (mounted) {
           messenger.showSnackBar(SnackBar(
-            content: Text("Error: $e", style: const TextStyle(color: Colors.white)),
+            content: Text("Error: $e", style: const TextStyle(color: AppColors.surfaceLight)),
             backgroundColor: AppColors.error,
           ));
         }

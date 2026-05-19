@@ -113,7 +113,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   ),
                   child: _isLoading 
-                      ? const CircularProgressIndicator(color: Colors.white) 
+                      ? const CircularProgressIndicator(color: AppColors.surfaceLight) 
                       : Text(AppLocalizations.t(context, 'Save & Continue')),
                 ),
               ],

@@ -253,7 +253,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                color: AppColors.error,
                                borderRadius: BorderRadius.zero,
                             ),
-                            child: const Icon(Icons.close, color: Colors.white, size: 20),
+                            child: const Icon(Icons.close, color: AppColors.surfaceLight, size: 20),
                          ),
                       )
                    ],
@@ -279,7 +279,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                      child: Container(
                                         padding: const EdgeInsets.all(AppSpacing.md),
                                         decoration: BoxDecoration(
-                                           color: isDark ? Colors.black38 : AppColors.textSecondary(context),
+                                           color: isDark ? AppColors.textHintLight : AppColors.textSecondary(context),
                                            borderRadius: BorderRadius.zero,
                                            border: Border.all(color: AppColors.textSecondary(context).withValues(alpha: 0.1))
                                         ),
@@ -352,7 +352,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                              }
                                                           },
                                                           selectedColor: primary,
-                                                          labelStyle: TextStyle(color: _selectedCategory == cat ? Colors.white : textColor),
+                                                          labelStyle: TextStyle(color: _selectedCategory == cat ? AppColors.surfaceLight : textColor),
                                                           backgroundColor: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context),
                                                           side: BorderSide.none,
                                                           visualDensity: VisualDensity.compact,
@@ -374,7 +374,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                           child: Container(
                                                             margin: const EdgeInsets.fromLTRB(8, 0, 4, 0),
                                                             decoration: BoxDecoration(
-                                                              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                                              color: isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight,
                                                               borderRadius: BorderRadius.zero,
                                                             ),
                                                             child: Stack(
@@ -397,10 +397,10 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                                         begin: Alignment.topCenter,
                                                                         end: Alignment.bottomCenter,
                                                                         colors: [
-                                                                           (isDark ? Colors.black : Colors.white).withValues(alpha: 0.9), 
-                                                                           (isDark ? Colors.black : Colors.white).withValues(alpha: 0.0), 
-                                                                           (isDark ? Colors.black : Colors.white).withValues(alpha: 0.0), 
-                                                                           (isDark ? Colors.black : Colors.white).withValues(alpha: 0.9)
+                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.9), 
+                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.0), 
+                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.0), 
+                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.9)
                                                                         ],
                                                                         stops: const [0.0, 0.3, 0.7, 1.0],
                                                                       ),
@@ -449,7 +449,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                           child: Container(
                                                             margin: const EdgeInsets.fromLTRB(4, 0, 8, 0),
                                                             decoration: BoxDecoration(
-                                                              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                                              color: isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight,
                                                               borderRadius: BorderRadius.zero,
                                                             ),
                                                             child: Stack(
@@ -472,10 +472,10 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                                         begin: Alignment.topCenter,
                                                                         end: Alignment.bottomCenter,
                                                                         colors: [
-                                                                           (isDark ? Colors.black : Colors.white).withValues(alpha: 0.9), 
-                                                                           (isDark ? Colors.black : Colors.white).withValues(alpha: 0.0), 
-                                                                           (isDark ? Colors.black : Colors.white).withValues(alpha: 0.0), 
-                                                                           (isDark ? Colors.black : Colors.white).withValues(alpha: 0.9)
+                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.9), 
+                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.0), 
+                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.0), 
+                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.9)
                                                                         ],
                                                                         stops: const [0.0, 0.3, 0.7, 1.0],
                                                                       ),
@@ -513,36 +513,36 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                    child: Column(
                                      children: [
                                        Expanded(child: Row(children: [ Expanded(child: _buildBtn('C', AppColors.error, AppColors.error)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('âŒ«', AppColors.warning, AppColors.warning)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('%', isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), textColor)) ])),
-                                       const SizedBox(height: 12),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('7', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('8', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('9', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
-                                       const SizedBox(height: 12),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('4', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('5', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('6', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
-                                       const SizedBox(height: 12),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('1', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('2', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('3', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)) ])),
-                                       const SizedBox(height: 12),
+                                       const SizedBox(height: AppSpacing.md),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('7', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('8', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('9', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)) ])),
+                                       const SizedBox(height: AppSpacing.md),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('4', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('5', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('6', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)) ])),
+                                       const SizedBox(height: AppSpacing.md),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('1', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('2', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('3', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)) ])),
+                                       const SizedBox(height: AppSpacing.md),
                                        // ROW 5: 0, ., = (Moved = here)
                                        Expanded(child: Row(children: [ 
-                                          Expanded(child: _buildBtn('0', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), 
+                                          Expanded(child: _buildBtn('0', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), 
                                           const SizedBox(width: AppSpacing.sm), 
-                                          Expanded(child: _buildBtn('.', isDark ? AppColors.textSecondary(context) : Colors.white, textColor)), 
+                                          Expanded(child: _buildBtn('.', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), 
                                           const SizedBox(width: AppSpacing.sm), 
-                                          Expanded(child: _buildBtn('=', AppColors.success, Colors.white)),
+                                          Expanded(child: _buildBtn('=', AppColors.success, AppColors.surfaceLight)),
                                        ])),
                                      ],
                                    ),
                                  ),
-                                 const SizedBox(width: 12),
+                                 const SizedBox(width: AppSpacing.md),
                                  // OPERATORS (Flex 1)
                                  Expanded(
                                    flex: 1,
                                    child: Column(
                                      children: [
                                        Expanded(child: _buildBtn('÷', primary.withValues(alpha: 0.2), primary)),
-                                       const SizedBox(height: 12),
+                                       const SizedBox(height: AppSpacing.md),
                                        Expanded(child: _buildBtn('x', primary.withValues(alpha: 0.2), primary)),
-                                       const SizedBox(height: 12),
+                                       const SizedBox(height: AppSpacing.md),
                                        Expanded(child: _buildBtn('-', primary.withValues(alpha: 0.2), primary)),
-                                       const SizedBox(height: 12),
+                                       const SizedBox(height: AppSpacing.md),
                                        // TALL PLUS BUTTON
                                        Expanded(
                                          flex: 2, 
@@ -626,7 +626,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
 
   Widget _buildBtn(String text, Color bg, Color txtColor, {double? fontSize}) {
      return Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: InkWell(
            onTap: () {
               if (text == 'C') {

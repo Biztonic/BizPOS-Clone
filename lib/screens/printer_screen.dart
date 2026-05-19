@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -554,7 +554,7 @@ class _PrinterScreenState extends State<PrinterScreen>
 
   Widget _buildLogsView() {
     return Container(
-      color: Colors.black,
+      color: AppColors.textPrimaryLight,
       padding: const EdgeInsets.all(AppSpacing.sm),
       child: ListView.builder(
         controller: _logScrollController,

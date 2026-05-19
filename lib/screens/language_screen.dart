@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 // ignore_for_file: deprecated_member_use
@@ -33,8 +33,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
       appBar: AppBar(
         title: Text(AppLocalizations.t(context, 'language_settings')),
         elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: isDark ? Colors.white : Colors.black,
+        backgroundColor: AppColors.transparent,
+        foregroundColor: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
       ),
       body: Column(
         children: [
@@ -101,7 +101,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                                  color: isSelected ? AppColors.surfaceLight : (isDark ? AppColors.textSecondaryDark : AppColors.textPrimaryLight),
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.xs),
@@ -111,7 +111,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                  color: isSelected ? Colors.white : (isDark ? Colors.white60 : Colors.black54),
+                                  color: isSelected ? AppColors.surfaceLight : (isDark ? Colors.white60 : AppColors.textSecondaryLight),
                                 ),
                               ),
                             ],
@@ -121,7 +121,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                           const Positioned(
                             top: AppSpacing.sm,
                             right: AppSpacing.sm,
-                            child: Icon(Icons.check_circle, color: Colors.white, size: 20),
+                            child: Icon(Icons.check_circle, color: AppColors.surfaceLight, size: 20),
                           ),
                       ],
                     ),

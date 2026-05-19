@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -65,7 +65,7 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
               if (widget.selectedAddons.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.md),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLightGrey.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.zero,
@@ -87,7 +87,7 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surfaceLight,
                   borderRadius: BorderRadius.zero,
                   border: Border.all(color: AppColors.border(context)),
                 ),
@@ -129,7 +129,7 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.success,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.surfaceLight,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: _isSubmitting ? null : () async {
@@ -162,7 +162,7 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
                           ? const SizedBox(
                               height: 16,
                               width: 16,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              child: CircularProgressIndicator(color: AppColors.surfaceLight, strokeWidth: 2),
                             )
                           : Text(AppLocalizations.t(context, 'I HAVE PAID')),
                     ),

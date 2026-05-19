@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -115,7 +115,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
       appBar: AppBar(
         title: Text(AppLocalizations.t(context, 'Activate Account')),
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
       ),
       extendBodyBehindAppBar: true,
       body: Container(
@@ -139,11 +139,11 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.xl),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                    color: isDark ? const Color(0xFF1E293B) : AppColors.surfaceLight,
                     borderRadius: BorderRadius.zero,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
+                        color: AppColors.textPrimaryLight.withValues(alpha: 0.2),
                         blurRadius: 40,
                         offset: const Offset(0, 20),
                       ),
@@ -161,7 +161,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : AppColors.textSecondary(context),
+                            color: isDark ? AppColors.surfaceLight : AppColors.textSecondary(context),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -215,7 +215,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                             onPressed: _isLoading ? null : _handleSetPassword,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF667eea),
-                              foregroundColor: Colors.white,
+                              foregroundColor: AppColors.surfaceLight,
                               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                               elevation: 8,
                             ),
@@ -224,7 +224,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                                     width: 24,
                                     height: 24,
                                     child: CircularProgressIndicator(
-                                      color: Colors.white,
+                                      color: AppColors.surfaceLight,
                                       strokeWidth: 2,
                                     ),
                                   )

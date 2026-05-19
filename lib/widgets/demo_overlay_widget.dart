@@ -1,4 +1,5 @@
-﻿// ignore_for_file: unused_local_variable
+// ignore_for_file: unused_local_variable
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
@@ -31,18 +32,18 @@ class DemoOverlayWidget extends StatelessWidget {
                  top: AppSpacing.xs, // Safe area equivalent
                  right: AppSpacing.md,
                  child: Material(
-                    color: Colors.transparent,
+                    color: AppColors.transparent,
                     child: InkWell(
                       onTap: () => provider.exitDemoMode(),
                       borderRadius: BorderRadius.zero,
                       child: Container(
                          padding: const EdgeInsets.all(AppSpacing.sm),
                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
+                            color: AppColors.textPrimaryLight.withValues(alpha: 0.5),
                             shape: BoxShape.rectangle,
-                            border: Border.all(color: Colors.white, width: 2)
+                            border: Border.all(color: AppColors.surfaceLight, width: 2)
                          ),
-                         child: const Icon(Icons.close, color: Colors.white, size: 24),
+                         child: const Icon(Icons.close, color: AppColors.surfaceLight, size: 24),
                       ),
                     ),
                  ),

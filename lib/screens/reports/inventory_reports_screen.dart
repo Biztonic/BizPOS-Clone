@@ -108,7 +108,7 @@ class _InventoryReportsScreenState extends State<InventoryReportsScreen> with Si
               labelStyle: const TextStyle(fontWeight: FontWeight.bold),
               unselectedLabelColor: AppColors.textSecondary(context),
               indicatorColor: Theme.of(context).primaryColor,
-              labelColor: isDark ? Colors.white : Colors.black87,
+              labelColor: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
               tabs: const [
                 Tab(text: 'All Stock'),
                 Tab(text: 'Low Stock Alerts'),
@@ -205,7 +205,7 @@ class _StockList extends StatelessWidget {
                 borderRadius: BorderRadius.zero,
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).brightness == Brightness.dark ? Colors.black26 : Colors.black.withValues(alpha: 0.03), 
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.black26 : AppColors.textPrimaryLight.withValues(alpha: 0.03), 
                     blurRadius: 10, 
                     offset: const Offset(0, 4)
                   ),
@@ -218,7 +218,7 @@ class _StockList extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16, 
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
+                      color: Theme.of(context).brightness == Brightness.dark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                     )
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -240,7 +240,7 @@ class _StockList extends StatelessWidget {
                                     value: cat.value,
                                     title: '${(cat.value / totalValue * 100).toStringAsFixed(0)}%',
                                     radius: 50,
-                                    titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                    titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
                                   );
                                 }
                               )
@@ -290,7 +290,7 @@ class _StockList extends StatelessWidget {
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(AppSpacing.md),
                           decoration: BoxDecoration(
                             color: inventoryProvider.getItemStock(item.id) <= 10 
                               ? (Theme.of(context).brightness == Brightness.dark ? AppColors.warning.withValues(alpha: 0.1) : AppColors.warning) 
@@ -314,7 +314,7 @@ class _StockList extends StatelessWidget {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold, 
                                   fontSize: 16,
-                                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
+                                  color: Theme.of(context).brightness == Brightness.dark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.xs),
@@ -403,7 +403,7 @@ class _Indicator extends StatelessWidget {
           style: TextStyle(
             fontSize: 12, 
             fontWeight: FontWeight.w500,
-            color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87,
+            color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textPrimaryLight,
           )
         )
       ],

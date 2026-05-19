@@ -1,4 +1,4 @@
-﻿import '../../../core/design/tokens/app_colors.dart';
+import '../../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 // ignore_for_file: deprecated_member_use_from_same_package, curly_braces_in_flow_control_structures
@@ -103,7 +103,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
         aspectRatio: 2.2, // Consistent Wide Ratio
         child: Container(
           decoration: BoxDecoration(
-            color: widget.isEditMode ? Colors.white : _getDeterminsticColor(widget.item.name, isDarkMode), // Colored BG
+            color: widget.isEditMode ? AppColors.surfaceLight : _getDeterminsticColor(widget.item.name, isDarkMode), // Colored BG
             borderRadius: BorderRadius.zero, // Sharp Corners
             border: Border(
                 bottom: BorderSide(color: stockColor, width: 4), // Status Stripe
@@ -186,7 +186,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
             width: 1.0,
           ),
           boxShadow: [
-             BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))
+             BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))
           ]
         ),
         child: Column(
@@ -250,7 +250,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
                 Positioned(
                   bottom: 0, left: 0, right: 0,
                   child: Container(
-                    color: isDarkMode ? Colors.black.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.9),
+                    color: isDarkMode ? AppColors.textPrimaryLight.withValues(alpha: 0.8) : AppColors.surfaceLight.withValues(alpha: 0.9),
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
@@ -328,7 +328,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
               child: Text(
                 widget.item.name,
                 textAlign: TextAlign.center,
-                style: CarDashboardTheme.productTitle.copyWith(color: Colors.white),
+                style: CarDashboardTheme.productTitle.copyWith(color: AppColors.surfaceLight),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -342,7 +342,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
                   }),
                   Text(
                     qty.toString(),
-                    style: CarDashboardTheme.priceStyle.copyWith(color: Colors.white),
+                    style: CarDashboardTheme.priceStyle.copyWith(color: AppColors.surfaceLight),
                   ),
                   _buildStockBtn(Icons.add, () {
                     if (widget.onStockChanged != null) widget.onStockChanged!(1);
@@ -356,7 +356,7 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
 
   Widget _buildNormalOverlay(bool isDarkMode) {
      return Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start, 
           mainAxisAlignment: MainAxisAlignment.spaceBetween, 
@@ -390,14 +390,14 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
           decoration: BoxDecoration(
             color: color, 
             shape: BoxShape.rectangle,
-            border: Border.all(color: Colors.white, width: 1.0),
+            border: Border.all(color: AppColors.surfaceLight, width: 1.0),
           ),
           alignment: Alignment.center,
           child: trackStock && qty > 0
               ? Text(
                   qty > 99 ? "99+" : qty.toString(),
                   style: CarDashboardTheme.quantityStyle.copyWith(
-                    color: Colors.white, 
+                    color: AppColors.surfaceLight, 
                     fontSize: 10,
                   ),
                 )
@@ -411,11 +411,11 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
       child: Container(
         width: 36, height: 36,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
+          color: AppColors.surfaceLight.withValues(alpha: 0.2),
           shape: BoxShape.rectangle,
-          border: Border.all(color: Colors.white54),
+          border: Border.all(color: AppColors.textHintDark),
         ),
-        child: Icon(icon, color: Colors.white, size: 18),
+        child: Icon(icon, color: AppColors.surfaceLight, size: 18),
       ),
     );
   }

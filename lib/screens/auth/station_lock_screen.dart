@@ -1,4 +1,4 @@
-﻿// ignore_for_file: unused_field, use_build_context_synchronously
+// ignore_for_file: unused_field, use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
@@ -41,10 +41,10 @@ class _StationLockScreenState extends State<StationLockScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.lock_outline, size: 80, color: Colors.white54),
+            const Icon(Icons.lock_outline, size: 80, color: AppColors.textHintDark),
             const SizedBox(height: AppSpacing.lg),
-            Text(AppLocalizations.t(context, 'Station Locked'), style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white)),
-            Text(provider.activeStore?.name ?? "Store Handover", style: const TextStyle(color: Colors.white70)),
+            Text(AppLocalizations.t(context, 'Station Locked'), style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.surfaceLight)),
+            Text(provider.activeStore?.name ?? "Store Handover", style: const TextStyle(color: AppColors.textSecondaryDark)),
             const SizedBox(height: AppSpacing.xxl),
             
             // OPTION 1: OWNER RESUME
@@ -81,8 +81,8 @@ class _StationLockScreenState extends State<StationLockScreen> {
                  provider.logout();
                  context.go('/login'); 
               }, 
-              icon: const Icon(Icons.logout, color: Colors.white54),
-              label: Text(AppLocalizations.t(context, 'Exit to Main Login'), style: const TextStyle(color: Colors.white54))
+              icon: const Icon(Icons.logout, color: AppColors.textHintDark),
+              label: Text(AppLocalizations.t(context, 'Exit to Main Login'), style: const TextStyle(color: AppColors.textHintDark))
             )
 
           ],
@@ -99,9 +99,9 @@ class _StationLockScreenState extends State<StationLockScreen> {
          width: 320,
          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
          decoration: BoxDecoration(
-           color: Colors.white,
+           color: AppColors.surfaceLight,
            borderRadius: BorderRadius.zero,
-           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))]
+           boxShadow: [BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))]
          ),
          child: Row(
            children: [
@@ -115,7 +115,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight)),
                     Text(role, style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context))),
                   ],
                ),

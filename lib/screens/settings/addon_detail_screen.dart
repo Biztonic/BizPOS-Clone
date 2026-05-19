@@ -1,4 +1,4 @@
-﻿import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -218,7 +218,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
     _reviewController.clear();
 
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [const Icon(Icons.check_circle, color: Colors.white, size: 18), const SizedBox(width: AppSpacing.sm), Text(AppLocalizations.t(context, 'Review submitted!'))]),
+      content: Row(children: [const Icon(Icons.check_circle, color: AppColors.surfaceLight, size: 18), const SizedBox(width: AppSpacing.sm), Text(AppLocalizations.t(context, 'Review submitted!'))]),
       backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     ));
 
@@ -341,9 +341,9 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildPlanOption(ctx, 'Monthly', (widget.price).toDouble(), Icons.calendar_view_month),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               _buildPlanOption(ctx, 'Yearly', (widget.price * 10).toDouble(), Icons.calendar_today, isBestValue: true),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(AppLocalizations.t(context, 'Yearly plans include 2 months free!'), style: const TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.bold)),
             ],
           ),
@@ -387,7 +387,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'CANCEL'))),
         ElevatedButton.icon(onPressed: () => Navigator.pop(ctx, true), icon: const Icon(Icons.download_rounded, size: 18), label: Text(AppLocalizations.t(context, 'INSTALL')),
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: Colors.white, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero))),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: AppColors.surfaceLight, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero))),
       ],
     ));
     if (confirm != true) return;
@@ -406,7 +406,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       if (mounted) {
         setState(() { _isInstalled = true; _isProcessing = false; });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Row(children: [const Icon(Icons.check_circle, color: Colors.white, size: 20), const SizedBox(width: AppSpacing.sm), Text("$title installed!")]),
+          content: Row(children: [const Icon(Icons.check_circle, color: AppColors.surfaceLight, size: 20), const SizedBox(width: AppSpacing.sm), Text("$title installed!")]),
           backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ));
       }
@@ -442,7 +442,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                 decoration: const BoxDecoration(color: AppColors.warning, borderRadius: BorderRadius.zero),
-                child: Text(AppLocalizations.t(context, 'BEST VALUE'), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                child: Text(AppLocalizations.t(context, 'BEST VALUE'), style: const TextStyle(color: AppColors.surfaceLight, fontSize: 10, fontWeight: FontWeight.bold)),
               ),
           ],
         ),
@@ -463,7 +463,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'CANCEL'))),
         ElevatedButton.icon(onPressed: () => Navigator.pop(ctx, true), icon: const Icon(Icons.delete_outline, size: 18), label: Text(AppLocalizations.t(context, 'UNINSTALL')),
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero))),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: AppColors.surfaceLight, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero))),
       ],
     ));
     if (confirm != true) return;
@@ -482,7 +482,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       if (mounted) {
         setState(() { _isInstalled = false; _isProcessing = false; });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Row(children: [const Icon(Icons.delete_outline, color: Colors.white, size: 20), const SizedBox(width: AppSpacing.sm), Text("$title uninstalled.")]),
+          content: Row(children: [const Icon(Icons.delete_outline, color: AppColors.surfaceLight, size: 20), const SizedBox(width: AppSpacing.sm), Text("$title uninstalled.")]),
           backgroundColor: AppColors.textSecondary(context), behavior: SnackBarBehavior.floating, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ));
       }
@@ -510,7 +510,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
             expandedHeight: isMobile ? 160 : 180,
             pinned: true,
             backgroundColor: addonColor,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.surfaceLight,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
@@ -524,12 +524,12 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                         const SizedBox(height: AppSpacing.xxs),
                         Container(
                           width: isMobile ? 56 : 72, height: isMobile ? 56 : 72,
-                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.zero),
-                          child: Icon(addon['icon'] as IconData, color: Colors.white, size: isMobile ? 30 : 40),
+                          decoration: BoxDecoration(color: AppColors.surfaceLight.withValues(alpha: 0.2), borderRadius: BorderRadius.zero),
+                          child: Icon(addon['icon'] as IconData, color: AppColors.surfaceLight, size: isMobile ? 30 : 40),
                         ),
                         const SizedBox(height: AppSpacing.sm),
-                        Text(addon['title'] as String, style: TextStyle(color: Colors.white, fontSize: isMobile ? 17 : 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-                        Text(AppLocalizations.t(context, 'Biztonic Labs'), style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+                        Text(addon['title'] as String, style: TextStyle(color: AppColors.surfaceLight, fontSize: isMobile ? 17 : 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                        Text(AppLocalizations.t(context, 'Biztonic Labs'), style: TextStyle(color: AppColors.surfaceLight.withValues(alpha: 0.8), fontSize: 12)),
                       ],
                     ),
                   ),
@@ -574,7 +574,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                       padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16),
                       child: Text(addon['description'] as String, style: TextStyle(fontSize: compact ? 13 : 14, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.75))),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: AppSpacing.md),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16),
                       child: Wrap(spacing: 6, runSpacing: 6, children: [
@@ -583,7 +583,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                         _chip(Icons.download, addon['size'] as String, isDark, compact),
                       ]),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: AppSpacing.md),
                     const Divider(height: 1),
 
                     // FEATURES
@@ -596,7 +596,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                         Expanded(child: Text(f, style: TextStyle(fontSize: compact ? 12 : 13))),
                       ]),
                     )),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: AppSpacing.md),
                     const Divider(height: 1),
 
                     // RATINGS & REVIEWS
@@ -640,7 +640,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                               ],
                             ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
 
                       // Quick Rate (tap stars) â€” only if user hasn't reviewed
                       if (!_hasUserReview)
@@ -649,7 +649,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
-                              color: isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.textSecondary(context),
+                              color: isDark ? AppColors.surfaceLight.withValues(alpha: 0.04) : AppColors.textSecondary(context),
                               borderRadius: BorderRadius.zero,
                               border: Border.all(color: Theme.of(context).dividerColor),
                             ),
@@ -661,7 +661,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(AppLocalizations.t(context, 'Rate this module'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: compact ? 13 : 14, color: isDark ? Colors.white : Colors.black87)),
+                                      Text(AppLocalizations.t(context, 'Rate this module'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: compact ? 13 : 14, color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight)),
                                       const SizedBox(height: AppSpacing.xs),
                                       Text(AppLocalizations.t(context, 'Tap a star to rate'), style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondary(context) : Theme.of(context).textTheme.bodySmall?.color)),
                                     ],
@@ -734,12 +734,12 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
           onPressed: null,
           style: ElevatedButton.styleFrom(
             backgroundColor: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context),
-            foregroundColor: isDark ? Colors.white : Colors.black87,
+            foregroundColor: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           ),
           child: Text(_isInstalled ? "Uninstalling... ${(_progress * 100).toInt()}%" : "Installing... ${(_progress * 100).toInt()}%"),
         )),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.sm),
         ClipRRect(borderRadius: BorderRadius.zero, child: LinearProgressIndicator(
           value: _progress, minHeight: 4,
           backgroundColor: isDark ? Colors.white24 : AppColors.textSecondary(context),
@@ -765,7 +765,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       label: Text(isPurchased ? "Install Purchased Module" : "Install", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
       style: ElevatedButton.styleFrom(
         backgroundColor: isPurchased ? AppColors.primary : AppColors.success,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.surfaceLight,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         elevation: 0,
       ),
@@ -777,7 +777,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       margin: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: AppSpacing.sm),
       padding: EdgeInsets.all(compact ? 12 : 16),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.textSecondary(context),
+        color: isDark ? AppColors.surfaceLight.withValues(alpha: 0.04) : AppColors.textSecondary(context),
         borderRadius: BorderRadius.zero,
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
@@ -790,7 +790,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
               IconButton(icon: const Icon(Icons.close, size: 18), onPressed: () => setState(() => _showReviewForm = false), visualDensity: VisualDensity.compact),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
               Text(AppLocalizations.t(context, 'Your rating: '), style: TextStyle(fontSize: compact ? 12 : 13)),
@@ -812,8 +812,8 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
               hintText: "Share your experience...",
               border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
               filled: true,
-              fillColor: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
-              contentPadding: const EdgeInsets.all(10),
+              fillColor: isDark ? AppColors.surfaceLight.withValues(alpha: 0.04) : AppColors.surfaceLight,
+              contentPadding: const EdgeInsets.all(AppSpacing.md),
               isDense: true,
             ),
           ),
@@ -822,8 +822,8 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
             alignment: Alignment.centerRight,
             child: ElevatedButton(
               onPressed: _submittingReview ? null : _submitReview,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs, vertical: AppSpacing.sm)),
-              child: _submittingReview ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(AppLocalizations.t(context, 'Submit'), style: const TextStyle(fontSize: 13)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.surfaceLight, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs, vertical: AppSpacing.sm)),
+              child: _submittingReview ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.surfaceLight)) : Text(AppLocalizations.t(context, 'Submit'), style: const TextStyle(fontSize: 13)),
             ),
           ),
         ],
@@ -847,7 +847,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
       child: Container(
         padding: EdgeInsets.all(compact ? 10 : 12),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.03) : AppColors.textSecondary(context),
+          color: isDark ? AppColors.surfaceLight.withValues(alpha: 0.03) : AppColors.textSecondary(context),
           borderRadius: BorderRadius.zero,
           border: Border.all(color: isOwn ? AppColors.primary.withValues(alpha: 0.3) : Theme.of(context).dividerColor),
         ),
@@ -882,7 +882,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
                 IconButton(icon: Icon(Icons.delete_outline, size: compact ? 14 : 16, color: AppColors.error), onPressed: () => _deleteReview(review['id']), visualDensity: VisualDensity.compact, padding: const EdgeInsets.only(left: AppSpacing.xs)),
             ]),
             if (comment.isNotEmpty) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.sm),
               Text(comment, style: TextStyle(fontSize: compact ? 12 : 13, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8))),
             ],
           ],
@@ -906,7 +906,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
   Widget _chip(IconData icon, String label, bool isDark, bool compact) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10, vertical: compact ? 4 : 5),
-      decoration: BoxDecoration(color: isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.textSecondary(context), borderRadius: BorderRadius.zero),
+      decoration: BoxDecoration(color: isDark ? AppColors.surfaceLight.withValues(alpha: 0.08) : AppColors.textSecondary(context), borderRadius: BorderRadius.zero),
       child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: compact ? 11 : 13, color: AppColors.textSecondary(context)), SizedBox(width: compact ? 4 : 5), Text(label, style: TextStyle(fontSize: compact ? 10 : 12))]),
     );
   }

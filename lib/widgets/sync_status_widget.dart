@@ -59,7 +59,7 @@ class SyncStatusWidget extends StatelessWidget {
                    Icon(statusIcon, color: statusColor, size: 16),
                  
                  if (pending > 0) ...[
-                    const SizedBox(width: 6),
+                    const SizedBox(width: AppSpacing.sm),
                     Text(
                       "$pending", 
                       style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)

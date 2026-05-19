@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import '../core/design/tokens/app_typography.dart';
@@ -50,17 +51,17 @@ class ReportStatCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: AppColors.surfaceLight.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.zero,
                   ),
-                  child: Icon(icon, color: Colors.white, size: 24),
+                  child: Icon(icon, color: AppColors.surfaceLight, size: 24),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
                     title,
                     style: AppTypography.titleSmall.copyWith(
-                      color: Colors.white,
+                      color: AppColors.surfaceLight,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
                     ),
@@ -73,7 +74,7 @@ class ReportStatCard extends StatelessWidget {
             Text(
               value,
               style: AppTypography.displaySmall.copyWith(
-                color: Colors.white,
+                color: AppColors.surfaceLight,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -82,7 +83,7 @@ class ReportStatCard extends StatelessWidget {
               Text(
                 subtitle!,
                 style: AppTypography.bodySmall.copyWith(
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: AppColors.surfaceLight.withValues(alpha: 0.8),
                   fontWeight: FontWeight.w500,
                 ),
               ),

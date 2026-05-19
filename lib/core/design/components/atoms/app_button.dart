@@ -1,3 +1,4 @@
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../tokens/app_radius.dart';
 import '../../tokens/app_spacing.dart';
@@ -150,13 +151,13 @@ class AppButton extends StatelessWidget {
         fgColor = colorScheme.onError;
         break;
       case AppButtonVariant.outline:
-        bgColor = Colors.transparent;
+        bgColor = AppColors.transparent;
         fgColor = colorScheme.primary;
         border = BorderSide(color: colorScheme.primary, width: 1.5);
         break;
       case AppButtonVariant.ghost:
       case AppButtonVariant.text:
-        bgColor = Colors.transparent;
+        bgColor = AppColors.transparent;
         fgColor = colorScheme.primary;
         break;
     }
@@ -172,13 +173,13 @@ class AppButton extends StatelessWidget {
     final buttonStyle = ButtonStyle(
       backgroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
-          if (isGhost || variant == AppButtonVariant.outline) return Colors.transparent;
+          if (isGhost || variant == AppButtonVariant.outline) return AppColors.transparent;
           return colorScheme.onSurface.withValues(alpha: 0.12);
         }
         if (isGhost) {
           if (states.contains(WidgetState.pressed)) return fgColor.withValues(alpha: 0.12);
           if (states.contains(WidgetState.hovered)) return fgColor.withValues(alpha: 0.08);
-          return Colors.transparent;
+          return AppColors.transparent;
         }
         return bgColor;
       }),
@@ -189,7 +190,7 @@ class AppButton extends StatelessWidget {
         return fgColor;
       }),
       overlayColor: WidgetStateProperty.resolveWith((states) {
-        if (isGhost) return Colors.transparent; // Handled in backgroundColor
+        if (isGhost) return AppColors.transparent; // Handled in backgroundColor
         return fgColor.withValues(alpha: 0.1);
       }),
       elevation: WidgetStateProperty.resolveWith((states) {

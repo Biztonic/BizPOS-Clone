@@ -179,7 +179,7 @@ class _PosScaffoldState extends State<PosScaffold> {
       ),
       centerTitle: layoutType == PosLayoutType.mobile,
       elevation: 0,
-      backgroundColor: layoutType == PosLayoutType.desktop ? Colors.transparent : null,
+      backgroundColor: layoutType == PosLayoutType.desktop ? AppColors.transparent : null,
       foregroundColor: layoutType == PosLayoutType.desktop ? Theme.of(context).textTheme.bodyLarge?.color : null,
       actions: [
         if (widget.actions != null) ...widget.actions!,
@@ -252,9 +252,9 @@ class _PosScaffoldState extends State<PosScaffold> {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: (iconColor ?? Colors.black).withValues(alpha: 0.05),
+              color: (iconColor ?? AppColors.textPrimaryLight).withValues(alpha: 0.05),
               borderRadius: BorderRadius.zero,
-              border: Border.all(color: (iconColor ?? Colors.black).withValues(alpha: 0.1)),
+              border: Border.all(color: (iconColor ?? AppColors.textPrimaryLight).withValues(alpha: 0.1)),
             ),
             child: Icon(icon, size: 20, color: iconColor),
           ),

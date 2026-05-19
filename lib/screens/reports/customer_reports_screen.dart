@@ -149,7 +149,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                   borderRadius: BorderRadius.zero,
                   boxShadow: [
                     BoxShadow(
-                      color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03), 
+                      color: isDark ? Colors.black26 : AppColors.textPrimaryLight.withValues(alpha: 0.03), 
                       blurRadius: 10, 
                       offset: const Offset(0, 4)
                     ),
@@ -162,7 +162,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                       style: TextStyle(
                         fontSize: 16, 
                         fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black87,
+                        color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                       )
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -179,7 +179,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                                 return BarTooltipItem(
                                   '${rod.toY.toInt()} visits',
-                                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  const TextStyle(color: AppColors.surfaceLight, fontWeight: FontWeight.bold),
                                 );
                               },
                             ),
@@ -197,7 +197,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                     child: Text(
                                       DateFormat('E').format(date), 
                                       style: TextStyle(
-                                        color: isDark ? Colors.white54 : Colors.black54, 
+                                        color: isDark ? AppColors.textHintDark : AppColors.textSecondaryLight, 
                                         fontWeight: FontWeight.bold, 
                                         fontSize: 12
                                       )
@@ -214,7 +214,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                   getTitlesWidget: (value, meta) => Text(
                                     value.toInt().toString(), 
                                     style: TextStyle(
-                                      color: isDark ? Colors.white54 : Colors.black54, 
+                                      color: isDark ? AppColors.textHintDark : AppColors.textSecondaryLight, 
                                       fontSize: 10
                                     )
                                   ),
@@ -259,13 +259,13 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
-                  Icon(Icons.history, color: isDark ? Colors.white54 : AppColors.textSecondary(context), size: 20),
+                  Icon(Icons.history, color: isDark ? AppColors.textHintDark : AppColors.textSecondary(context), size: 20),
                   const SizedBox(width: AppSpacing.sm),
                   Text(AppLocalizations.t(context, 'Recent Activity'), 
                     style: TextStyle(
                       fontWeight: FontWeight.bold, 
                       fontSize: 16, 
-                      color: isDark ? Colors.white70 : AppColors.textSecondary(context)
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary(context)
                     )
                   ),
                 ],
@@ -334,7 +334,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold, 
                                       fontSize: 16,
-                                      color: isDark ? Colors.white : Colors.black87,
+                                      color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                                     ),
                                   ),
                                   const SizedBox(height: AppSpacing.xs),

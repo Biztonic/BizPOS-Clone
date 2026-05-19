@@ -1,4 +1,4 @@
-﻿
+
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
@@ -113,7 +113,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
       backgroundColor: AppColors.background(context),
       appBar: AppBar(
         title: Text(AppLocalizations.t(context, 'Setup Your Store')),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         actions: [
           TextButton.icon(
@@ -136,7 +136,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
               borderRadius: BorderRadius.zero,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: AppColors.textPrimaryLight.withValues(alpha: 0.05),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 )
@@ -206,11 +206,11 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                        onPressed: _isSubmitting ? null : _submit,
                        style: ElevatedButton.styleFrom(
                          backgroundColor: AppColors.primary,
-                         foregroundColor: Colors.white,
+                         foregroundColor: AppColors.surfaceLight,
                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                        ),
                        child: _isSubmitting 
-                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppColors.surfaceLight, strokeWidth: 2))
                          : Text(AppLocalizations.t(context, 'Create Store'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                      ),
                    ),

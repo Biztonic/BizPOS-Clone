@@ -1,3 +1,6 @@
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+import 'package:biztonic_pos/core/design/tokens/app_radius.dart';
 import '../../core/design/design_system.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
@@ -143,10 +146,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     return Container(
       padding: EdgeInsets.all(density.cardPadding),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surface(context) : Colors.white,
+        color: isDark ? AppColors.surface(context) : AppColors.surfaceLight,
         borderRadius: AppRadius.borderLg,
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10,
+          BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.05), blurRadius: 10,
               offset: const Offset(0, 4)),
         ],
       ),
@@ -161,7 +164,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           ]),
           const SizedBox(height: AppSpacing.sm),
           Text(value, style: AppTypography.headlineMedium.copyWith(
-              color: isDark ? Colors.white : Colors.black,
+              color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
               fontWeight: FontWeight.bold)),
         ],
       ),
@@ -220,7 +223,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
             const SizedBox(height: AppSpacing.md),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: AppColors.primaryLight.withValues(alpha: 0.05),
                 borderRadius: AppRadius.borderMd,
@@ -298,12 +301,12 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   if (employee == null)
                     TextField(controller: nameController,
                         decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder())),
-                  if (employee == null) const SizedBox(height: 12),
+                  if (employee == null) const SizedBox(height: AppSpacing.md),
                   if (employee == null)
                     TextField(controller: pinController,
                       decoration: const InputDecoration(labelText: "4-Digit PIN", border: OutlineInputBorder()),
                       keyboardType: TextInputType.number, maxLength: 4),
-                  if (employee == null) const SizedBox(height: 12),
+                  if (employee == null) const SizedBox(height: AppSpacing.md),
                   DropdownButtonFormField<String>(
                     value: validSelection,
                     items: storeRoles.map((role) =>
@@ -347,7 +350,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   }
                   if (context.mounted) Navigator.pop(ctx);
                 },
-                child: isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(AppLocalizations.t(context, 'Save')),
+                child: isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.surfaceLight)) : Text(AppLocalizations.t(context, 'Save')),
               ),
             ],
           );

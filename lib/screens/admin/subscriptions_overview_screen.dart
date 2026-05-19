@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:provider/provider.dart';
@@ -162,7 +162,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
         value: planCount.toDouble(),
         title: '$planCount',
         radius: 60,
-        titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+        titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
       ));
       i++;
     });
@@ -333,7 +333,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
         value: addonCount.toDouble(),
         title: '$addonCount',
         radius: 60,
-        titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+        titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
       ));
       i++;
     });

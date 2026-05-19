@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -29,7 +29,7 @@ class WaiterCallingSystem extends StatelessWidget {
           final isUrgent = call['type'] == 'Bill';
           return Card(
             elevation: 4,
-            color: isUrgent ? AppColors.warning : Colors.white,
+            color: isUrgent ? AppColors.warning : AppColors.surfaceLight,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero, side: isUrgent ? const BorderSide(color: AppColors.warning, width: 2) : BorderSide.none),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
@@ -40,7 +40,7 @@ class WaiterCallingSystem extends StatelessWidget {
                     backgroundColor: isUrgent ? AppColors.warning : AppColors.primaryLight,
                     child: Text(
                       call['table']!,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: AppColors.surfaceLight, fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.lg),

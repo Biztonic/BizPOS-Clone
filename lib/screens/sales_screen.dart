@@ -1,3 +1,6 @@
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
+import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+import 'package:biztonic_pos/core/design/tokens/app_radius.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dashboard_provider.dart';
@@ -459,7 +462,7 @@ class _SalesScreenState extends State<SalesScreen> {
                     if (index == _orders.length) {
                       return _hasMore 
                           ? const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.md), child: CircularProgressIndicator())) 
-                          : const SizedBox(height: 100); // Bottom padding
+                          : const SizedBox(height: AppSpacing.xl); // Bottom padding
                     }
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -529,7 +532,7 @@ class _SalesScreenState extends State<SalesScreen> {
           decoration: BoxDecoration(
              color: isSelected 
                 ? primaryColor.withValues(alpha: 0.1) 
-                : Colors.transparent, 
+                : AppColors.transparent, 
              borderRadius: AppRadius.borderMd
           ),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xs),
@@ -685,7 +688,7 @@ class _SalesScreenState extends State<SalesScreen> {
     const TextStyle monoStyle = TextStyle(
       fontFamily: 'Courier', 
       fontSize: 12, 
-      color: Colors.black, // Receipts are usually white background anyway
+      color: AppColors.textPrimaryLight, // Receipts are usually white background anyway
       height: 1.2
     );
     final TextStyle boldMonoStyle = monoStyle.copyWith(fontWeight: FontWeight.bold);
@@ -694,7 +697,7 @@ class _SalesScreenState extends State<SalesScreen> {
       context: context, 
       builder: (ctx) => Dialog(
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
-        backgroundColor: Colors.white, // Keep receipt paper white
+        backgroundColor: AppColors.surfaceLight, // Keep receipt paper white
         child: Container(
           width: 380, // Approximate width of a receipt
           constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
@@ -849,8 +852,8 @@ class _SalesScreenState extends State<SalesScreen> {
                mainAxisAlignment: MainAxisAlignment.center,
                children: [
                   TextButton.icon(
-                    icon: const Icon(Icons.print, size: 16, color: Colors.black),
-                    label: Text(AppLocalizations.t(context, 'PRINT'), style: const TextStyle(color: Colors.black)),
+                    icon: const Icon(Icons.print, size: 16, color: AppColors.textPrimaryLight),
+                    label: Text(AppLocalizations.t(context, 'PRINT'), style: const TextStyle(color: AppColors.textPrimaryLight)),
                     onPressed: () {
                        PrinterManagerService().printOrderReceipt(order, provider.activeStore, cashierName: provider.userProfile?.name ?? "Cashier");
                     },

@@ -1,4 +1,4 @@
-﻿import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -37,7 +37,7 @@ class CFDScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.textPrimaryLight,
       body: Row(
         children: [
           // --- LEFT PANEL: HERO VIEW (60%) ---
@@ -54,8 +54,8 @@ class CFDScreen extends StatelessWidget {
              flex: 4,
              child: Container(
                 decoration: const BoxDecoration(
-                   color: Colors.white,
-                   boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 20, spreadRadius: 5)]
+                   color: AppColors.surfaceLight,
+                   boxShadow: [BoxShadow(color: AppColors.textSecondaryLight, blurRadius: 20, spreadRadius: 5)]
                 ),
                 child: Column(
                    children: [
@@ -65,9 +65,9 @@ class CFDScreen extends StatelessWidget {
                          color: AppColors.textSecondary(context),
                          child: Row(
                             children: [
-                               const Icon(Icons.shopping_bag_outlined, size: 32, color: Colors.black87),
+                               const Icon(Icons.shopping_bag_outlined, size: 32, color: AppColors.textPrimaryLight),
                                const SizedBox(width: AppSpacing.md),
-                               Text(AppLocalizations.t(context, 'Your Order'), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
+                               Text(AppLocalizations.t(context, 'Your Order'), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight)),
                             ],
                          ),
                       ),
@@ -111,7 +111,7 @@ class CFDScreen extends StatelessWidget {
         // IDLE STATE
         return Container(
            key: const ValueKey('idle'),
-           color: Colors.black,
+           color: AppColors.textPrimaryLight,
            child: Stack(
               fit: StackFit.expand,
               children: [
@@ -131,16 +131,16 @@ class CFDScreen extends StatelessWidget {
                     child: Column(
                        mainAxisSize: MainAxisSize.min,
                        children: [
-                          Icon(Icons.storefront, size: 100, color: Colors.white.withValues(alpha: 0.9)),
+                          Icon(Icons.storefront, size: 100, color: AppColors.surfaceLight.withValues(alpha: 0.9)),
                           const SizedBox(height: AppSpacing.lg),
                           Text(
                              storeName ?? "Welcome", 
-                             style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                             style: const TextStyle(color: AppColors.surfaceLight, fontSize: 56, fontWeight: FontWeight.bold, letterSpacing: 1.5),
                              textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           Text(AppLocalizations.t(context, 'Next Customer Please'),
-                             style: const TextStyle(color: Colors.white70, fontSize: 24, fontStyle: FontStyle.italic),
+                             style: const TextStyle(color: AppColors.textSecondaryDark, fontSize: 24, fontStyle: FontStyle.italic),
                           ),
                        ],
                     ),
@@ -152,7 +152,7 @@ class CFDScreen extends StatelessWidget {
         // ACTIVE HERO STATE
         return Container(
            key: ValueKey('hero_${heroItem.id}'), // Animate when item changes
-           color: Colors.white,
+           color: AppColors.surfaceLight,
            child: Stack(
              children: [
                // Store Name (Top Left)
@@ -182,9 +182,9 @@ class CFDScreen extends StatelessWidget {
                           flex: 4, // Give image more space
                           child: Container(
                              decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: AppColors.surfaceLight,
                                 borderRadius: BorderRadius.zero,
-                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 40, offset: const Offset(0, 10))],
+                                boxShadow: [BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.05), blurRadius: 40, offset: const Offset(0, 10))],
                              ),
                              clipBehavior: Clip.antiAlias,
                               child: InventoryImageWidget(
@@ -205,7 +205,7 @@ class CFDScreen extends StatelessWidget {
                                   fit: BoxFit.scaleDown,
                                   child: Text(
                                      heroItem.name, 
-                                     style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.black87),
+                                     style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: AppColors.textPrimaryLight),
                                      textAlign: TextAlign.center,
                                      maxLines: 2,
                                   ),
@@ -216,12 +216,12 @@ class CFDScreen extends StatelessWidget {
                                   child: Container(
                                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: 12),
                                      decoration: const BoxDecoration(
-                                        color: Colors.black,
+                                        color: AppColors.textPrimaryLight,
                                         borderRadius: BorderRadius.zero
                                      ),
                                      child: Text(
                                         "₹${heroItem.price.toStringAsFixed(2)}",
-                                        style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
+                                        style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
                                      ),
                                   ),
                                 )
@@ -246,20 +246,20 @@ class CFDScreen extends StatelessWidget {
            Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(color: AppColors.textSecondary(context), borderRadius: BorderRadius.zero),
-              child: Text("${qty}x", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+              child: Text("${qty}x", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight)),
            ),
            const SizedBox(width: AppSpacing.md),
            Expanded(
               child: Column(
                  crossAxisAlignment: CrossAxisAlignment.start,
                  children: [
-                    Text(item.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black87)),
+                    Text(item.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.textPrimaryLight)),
                     if (item.category.isNotEmpty)
                       Text(item.category, style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context))),
                  ],
               ),
            ),
-           Text("₹${(item.price * qty).toStringAsFixed(2)}", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+           Text("₹${(item.price * qty).toStringAsFixed(2)}", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight)),
         ],
      );
   }
@@ -286,7 +286,7 @@ Widget _buildFooter(BuildContext context, DashboardProvider provider, List<Inven
               Row(
                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                  children: [
-                    Text(AppLocalizations.t(context, 'TOTAL'), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.black)),
+                    Text(AppLocalizations.t(context, 'TOTAL'), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: AppColors.textPrimaryLight)),
                     Text("₹${total.toStringAsFixed(2)}", style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: AppColors.success)),
                  ],
               )
@@ -299,8 +299,8 @@ Widget _buildFooter(BuildContext context, DashboardProvider provider, List<Inven
      return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-           Text(label, style: const TextStyle(fontSize: 18, color: Colors.black54)),
-           Text("₹${val.toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+           Text(label, style: const TextStyle(fontSize: 18, color: AppColors.textSecondaryLight)),
+           Text("₹${val.toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight)),
         ],
      );
   }

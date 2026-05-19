@@ -1,4 +1,5 @@
-﻿// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
@@ -46,11 +47,11 @@ class GlassPanel extends StatelessWidget {
         decoration: BoxDecoration(
           color: color ?? CarDashboardTheme.overlayLight.withValues(alpha: opacity ?? 0.05), 
           borderRadius: BorderRadius.zero,
-          border: border ?? Border.all(color: borderColor ?? Colors.white.withValues(alpha: 0.1), width: 1.0),
+          border: border ?? Border.all(color: borderColor ?? AppColors.surfaceLight.withValues(alpha: 0.1), width: 1.0),
           gradient: gradient ?? (color != null ? null : CarDashboardTheme.glassGradient),
           boxShadow: withGlow ? [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: AppColors.textPrimaryLight.withValues(alpha: 0.2),
               blurRadius: 10, // Reduced from 20
               offset: const Offset(0, 5), // Reduced from 10
             ) 
