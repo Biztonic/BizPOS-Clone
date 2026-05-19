@@ -25,9 +25,11 @@ migrate_working_dir/
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
+build/
+ephemeral/
+.plugin_symlinks/
 .pub-cache/
 .pub/
-/build/
 
 # Web related
 
@@ -73,7 +75,6 @@ android/app/.cxx/
 **/ios/Runner.xcodeproj/project.xcworkspace/
 
 # Packages
-packages/
 node_modules/
 
 # Crashlytics
