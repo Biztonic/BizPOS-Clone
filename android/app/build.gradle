@@ -30,8 +30,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace "com.bizpos.clone"
-    compileSdkVersion 36 // Restore to 36 now that NDK 26 shim is ready
-    ndkVersion "28.2.13676358" // Satisfy integration_test with shimmed NDK 26
+    compileSdkVersion 36
+    ndkVersion "28.2.13676358"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
