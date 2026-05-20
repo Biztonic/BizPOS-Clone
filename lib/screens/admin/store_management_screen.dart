@@ -74,126 +74,132 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
           ),
         const SizedBox(width: AppSpacing.md),
       ],
-      mainContent: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStatsRow(provider),
-            const SizedBox(height: AppSpacing.xl),
-            AppCard(
-              padding: EdgeInsets.zero,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Toolbar
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Row(
-                      children: [
-                        Checkbox(
-                          value: displayedStores.isNotEmpty && _selectedStoreIds.length == displayedStores.length,
-                          tristate: _selectedStoreIds.isNotEmpty && _selectedStoreIds.length < displayedStores.length,
-                          onChanged: (val) {
-                            setState(() {
-                              if (val == true) {
-                                _selectedStoreIds.addAll(displayedStores.map((s) => s.id));
-                              } else {
-                                _selectedStoreIds.clear();
-                              }
-                            });
-                          },
-                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (v) => setState(() {}),
-                            decoration: const InputDecoration(
-                              hintText: "Search by name or owner...",
-                              prefixIcon: Icon(Icons.search),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
-                              contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Theme.of(context).dividerColor),
-                            borderRadius: BorderRadius.zero,
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _filterStatus,
-                              items: [
-                                DropdownMenuItem(value: 'All', child: Text(AppLocalizations.t(context, 'All Status'))),
-                                DropdownMenuItem(value: 'Active', child: Text(AppLocalizations.t(context, 'Active'))),
-                                DropdownMenuItem(value: 'Inactive', child: Text(AppLocalizations.t(context, 'Inactive'))),
-                              ],
-                              onChanged: (v) => setState(() => _filterStatus = v!),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  if (displayedStores.isEmpty)
+      mainContent: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+            child: _buildStatsRow(provider),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: AppCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Toolbar
                     Padding(
-                      padding: const EdgeInsets.all(AppSpacing.xl),
-                      child: Center(child: Text(AppLocalizations.t(context, 'No stores found'))),
-                    )
-                  else
-                    PosDataTable(
-                      columns: const [
-                        PosDataColumn(label: 'Store Name'),
-                        PosDataColumn(label: 'Owner'),
-                        PosDataColumn(label: 'Status', fixedWidth: 120),
-                        PosDataColumn(label: 'Actions', fixedWidth: 120),
-                      ],
-                      rows: displayedStores.map((store) {
-                      return PosDataRow(
-                        selected: _selectedStoreIds.contains(store.id),
-                        onTap: () {
-                          setState(() {
-                            if (_selectedStoreIds.contains(store.id)) {
-                              _selectedStoreIds.remove(store.id);
-                            } else {
-                              _selectedStoreIds.add(store.id);
-                            }
-                          });
-                        },
-                        cells: [
-                          Text(store.name, style: AppTypography.titleSmall),
-                          Text(store.owner, style: AppTypography.bodyMedium),
-                          _buildStatusBadge(context, provider, store),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit_outlined, size: 20),
-                                onPressed: () => _handleAction(context, provider, store, 'edit'),
-                                tooltip: 'Edit Store',
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: displayedStores.isNotEmpty && _selectedStoreIds.length == displayedStores.length,
+                            tristate: _selectedStoreIds.isNotEmpty && _selectedStoreIds.length < displayedStores.length,
+                            onChanged: (val) {
+                              setState(() {
+                                if (val == true) {
+                                  _selectedStoreIds.addAll(displayedStores.map((s) => s.id));
+                                } else {
+                                  _selectedStoreIds.clear();
+                                }
+                              });
+                            },
+                            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (v) => setState(() {}),
+                              decoration: const InputDecoration(
+                                hintText: "Search by name or owner...",
+                                prefixIcon: Icon(Icons.search),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                                contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
                               ),
-                              IconButton(
-                                icon: Icon(Icons.delete_outline, size: 20, color: AppColors.adaptiveError(context)),
-                                onPressed: () => _confirmDelete(context, provider, store),
-                                tooltip: 'Delete Store',
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Theme.of(context).dividerColor),
+                              borderRadius: BorderRadius.zero,
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _filterStatus,
+                                items: [
+                                  DropdownMenuItem(value: 'All', child: Text(AppLocalizations.t(context, 'All Status'))),
+                                  DropdownMenuItem(value: 'Active', child: Text(AppLocalizations.t(context, 'Active'))),
+                                  DropdownMenuItem(value: 'Inactive', child: Text(AppLocalizations.t(context, 'Inactive'))),
+                                ],
+                                onChanged: (v) => setState(() => _filterStatus = v!),
                               ),
-                            ],
+                            ),
                           ),
                         ],
-                      );
-                    }).toList(),
+                      ),
                     ),
-                ],
+                    const Divider(height: 1),
+                    if (displayedStores.isEmpty)
+                      Expanded(
+                        child: Center(child: Text(AppLocalizations.t(context, 'No stores found'))),
+                      )
+                    else
+                      Expanded(
+                        child: PosDataTable(
+                          columns: const [
+                            PosDataColumn(label: 'Store Name'),
+                            PosDataColumn(label: 'Owner'),
+                            PosDataColumn(label: 'Status', fixedWidth: 120),
+                            PosDataColumn(label: 'Actions', fixedWidth: 120),
+                          ],
+                          rows: displayedStores.map((store) {
+                          return PosDataRow(
+                            selected: _selectedStoreIds.contains(store.id),
+                            onTap: () {
+                              setState(() {
+                                if (_selectedStoreIds.contains(store.id)) {
+                                  _selectedStoreIds.remove(store.id);
+                                } else {
+                                  _selectedStoreIds.add(store.id);
+                                }
+                              });
+                            },
+                            cells: [
+                              Text(store.name, style: AppTypography.titleSmall),
+                              Text(store.owner, style: AppTypography.bodyMedium),
+                              _buildStatusBadge(context, provider, store),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined, size: 20),
+                                    onPressed: () => _handleAction(context, provider, store, 'edit'),
+                                    tooltip: 'Edit Store',
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.delete_outline, size: 20, color: AppColors.adaptiveError(context)),
+                                    onPressed: () => _confirmDelete(context, provider, store),
+                                    tooltip: 'Delete Store',
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
       ),
     );
   }
