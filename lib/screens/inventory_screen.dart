@@ -1,4 +1,4 @@
-﻿// ignore_for_file: deprecated_member_use_from_same_package
+// ignore_for_file: deprecated_member_use_from_same_package
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -71,7 +71,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           label: isDesktop ? AppLocalizations.t(context, 'add_item') : null,
           icon: Icons.add,
           onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditInventoryScreen()));
+            AddEditInventoryScreen.showAsDialog(context);
           },
         ),
       ],
@@ -192,9 +192,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
         return PosDataRow(
           onTap: () {
-            Navigator.push(context, MaterialPageRoute(
-              builder: (_) => AddEditInventoryScreen(item: InventoryMapper.toLegacy(item))
-            ));
+            AddEditInventoryScreen.showAsDialog(context, item: InventoryMapper.toLegacy(item));
           },
           cells: [
             Row(
@@ -254,9 +252,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return AppCard(
       key: Key('inventory_item_${item.id}'),
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => AddEditInventoryScreen(item: InventoryMapper.toLegacy(item))
-        ));
+        AddEditInventoryScreen.showAsDialog(context, item: InventoryMapper.toLegacy(item));
       },
       child: Row(
         children: [

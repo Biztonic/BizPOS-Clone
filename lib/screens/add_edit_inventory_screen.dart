@@ -10,10 +10,8 @@ import '../widgets/inventory_image_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
-import '../core/design/density/app_density.dart';
 import '../core/design/tokens/app_spacing.dart';
 import '../core/design/tokens/app_typography.dart';
-import '../core/design/components/atoms/app_button.dart';
 import '../core/design/components/atoms/app_text_field.dart';
 
 
@@ -21,6 +19,19 @@ class AddEditInventoryScreen extends StatefulWidget {
   final InventoryItem? item;
 
   const AddEditInventoryScreen({super.key, this.item});
+
+  /// Show this screen as a popup dialog
+  static Future<void> showAsDialog(BuildContext context, {InventoryItem? item}) {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: AddEditInventoryScreen(item: item),
+      ),
+    );
+  }
 
   @override
   State<AddEditInventoryScreen> createState() => _AddEditInventoryScreenState();
@@ -31,18 +42,15 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
   late TextEditingController _nameController;
   late TextEditingController _priceController;
   late TextEditingController _quantityController;
-  // late TextEditingController _categoryController; // REMOVED
   late TextEditingController _skuController;
   late TextEditingController _imageController;
-  late TextEditingController _lowStockController; // NEW
-  late TextEditingController _costController; // NEW
+  late TextEditingController _lowStockController;
+  late TextEditingController _costController;
   String? _selectedCounterId;
   
-  // New Fields
-  String? _selectedCategory; // NEW: Replaces Controller & Variant Dropdown
+  String? _selectedCategory;
   String? _selectedDietary;
   String? _selectedPackaging;
-  // String? _selectedVariant; // REMOVED
   
   File? _pickedImage;
   final ImagePicker _picker = ImagePicker();
@@ -50,12 +58,10 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   
-  // Metadata lists
   List<String> _dietaryOptions = [];
   List<String> _packagingOptions = [];
   List<String> _variantOptions = [];
   
-  // Config flags
   bool _showDietary = false;
   bool _showPackaging = false;
 
@@ -66,22 +72,18 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
     _nameController = TextEditingController(text: widget.item?.name ?? '');
     _priceController = TextEditingController(text: widget.item?.price.toString() ?? '');
     _quantityController = TextEditingController(text: widget.item != null ? provider.getItemStock(widget.item!.id).toString() : '');
-    // _categoryController = ... REMOVED
     _skuController = TextEditingController(text: widget.item?.sku ?? '');
     _imageController = TextEditingController(text: widget.item?.image ?? '');
     _lowStockController = TextEditingController(text: widget.item?.lowStockThreshold?.toString() ?? '10');
     _costController = TextEditingController(text: widget.item?.cost?.toString() ?? '');
     _selectedCounterId = widget.item?.counterId;
     
-    
-    // FIX: Handle empty string as null to avoid Dropdown assertion error
     _selectedCategory = (widget.item?.category != null && widget.item!.category.isNotEmpty) 
         ? widget.item!.category 
         : null;
         
     _selectedDietary = widget.item?.dietaryType;
     _selectedPackaging = widget.item?.packagingType;
-    // _selectedVariant = widget.item?.variantCategory; // REMOVED
 
     _loadData();
   }
@@ -91,12 +93,10 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
        final provider = Provider.of<DashboardProvider>(context, listen: false);
        final storeProvider = Provider.of<StoreProvider>(context, listen: false);
        
-       // 1. Fetch Metadata
        final dietary = await provider.fetchMetadata('dietary_types').timeout(const Duration(seconds: 5), onTimeout: () => []);
        final packaging = await provider.fetchMetadata('packaging_types').timeout(const Duration(seconds: 5), onTimeout: () => []);
-       final variants = await provider.fetchMetadata('variant_types').timeout(const Duration(seconds: 5), onTimeout: () => []); // This is now used for CATEGORY
+       final variants = await provider.fetchMetadata('variant_types').timeout(const Duration(seconds: 5), onTimeout: () => []);
        
-       // Ensure current category is in the list
        if (widget.item?.category != null && widget.item!.category.isNotEmpty) {
           if (!variants.contains(widget.item!.category)) {
              variants.add(widget.item!.category);
@@ -104,7 +104,6 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
           }
        }
        
-       // 2. Fetch Config
        final store = provider.activeStore;
        bool showD = false, showP = false;
        
@@ -126,7 +125,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
           });
        }
      } catch (e) {
-       debugPrint("âŒ AddEditInventoryScreen: Error loading data: $e");
+       debugPrint("❌ AddEditInventoryScreen: Error loading data: $e");
        if (mounted) {
          setState(() => _isLoading = false);
        }
@@ -161,7 +160,6 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
           _variantOptions.sort();
           _selectedCategory = newCategory;
         });
-        // Save to backend metadata
         if (mounted) {
           final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
           await dashboardProvider.addMetadata('variant_types', newCategory);
@@ -190,7 +188,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
         });
       }
     } catch (e) {
-      debugPrint("â Œ Error picking image: $e");
+      debugPrint("❌ Error picking image: $e");
       scaffoldMessenger.showSnackBar(
         SnackBar(content: Text(errorMsg)),
       );
@@ -202,11 +200,10 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
     _nameController.dispose();
     _priceController.dispose();
     _quantityController.dispose();
-    // _categoryController.dispose(); // REMOVED
     _skuController.dispose();
     _imageController.dispose();
-    _lowStockController.dispose(); // NEW
-    _costController.dispose(); // NEW
+    _lowStockController.dispose();
+    _costController.dispose();
     super.dispose();
   }
 
@@ -249,7 +246,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
         );
       }
     } catch (e) {
-      debugPrint("â Œ Error saving item: $e");
+      debugPrint("❌ Error saving item: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving item: $e')),
@@ -261,288 +258,273 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    final density = AppDensityProvider.configOf(context);
+    final isEditing = widget.item != null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.item == null ? 'Add Item' : 'Edit Item'),
-      ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-            padding: EdgeInsets.all(density.cardPadding),
-            child: Form(
-              key: _formKey,
-              child: Column(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 700,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.surface(context),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.adaptivePrimary(context).withValues(alpha: 0.15),
+              blurRadius: 30,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Header ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.adaptivePrimary(context),
+                    AppColors.adaptivePrimary(context).withValues(alpha: 0.85),
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
                 children: [
-                   AppTextField(
-                    key: const Key('item_name_input'),
-                    controller: _nameController,
-                    labelText: 'Item Name',
-                    validator: (v) => v!.trim().isEmpty ? 'Name is required' : null,
+                  Icon(
+                    isEditing ? Icons.edit_note_rounded : Icons.add_box_rounded,
+                    color: Colors.white,
+                    size: 28,
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppTextField(
-                          key: const Key('item_price_input'),
-                          controller: _priceController,
-                          labelText: 'Price',
-                          prefixText: '₹ ',
-                          keyboardType: TextInputType.number,
-                          validator: (v) => v!.isEmpty ? 'Price required' : null,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isEditing ? 'Edit Item' : 'Add New Item',
+                          style: const TextStyle(
+                            color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: 0.3,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: AppTextField(
-                          key: const Key('item_qty_input'),
-                          controller: _quantityController,
-                          labelText: 'Quantity',
-                          keyboardType: TextInputType.number,
-                          validator: (v) => v!.isEmpty ? 'Qty required' : null,
+                        const SizedBox(height: 2),
+                        Text(
+                          isEditing
+                              ? 'Update details for ${widget.item!.name}'
+                              : 'Fill in the details to create a new inventory item',
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
                         ),
-                      ),
-                    ],
-                   ),
-                   const SizedBox(height: AppSpacing.md),
-
-                   Row(
-                    children: [
-                      Expanded(
-                        child: AppTextField(
-                          key: const Key('item_cost_input'),
-                          controller: _costController,
-                          labelText: 'Item Cost',
-                          prefixText: '₹ ',
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: AppTextField(
-                          key: const Key('item_threshold_input'),
-                          controller: _lowStockController,
-                          labelText: 'Low Stock Threshold', 
-                          helperText: 'Default: 10',
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-
-                   // Category Dropdown
-                  Row(
-                    children: [
-                       Expanded(
-                         child: DropdownButtonFormField<String>(
-                           decoration: const InputDecoration(
-                             labelText: 'Category', 
-                             border: OutlineInputBorder(),
-                             contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
-                           ),
-                           value: (_selectedCategory != null && _variantOptions.contains(_selectedCategory)) 
-                                     ? _selectedCategory 
-                                     : null,
-                           items: _variantOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                           onChanged: (v) => setState(() => _selectedCategory = v),
-                           hint: Text(AppLocalizations.t(context, 'Select Category')),
-                           validator: (value) => (value == null || value.isEmpty) ? 'Please select a category' : null,
-                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      IconButton(
-                        onPressed: _addCategoryDialog,
-                        icon: Icon(Icons.add_circle_outline, color: AppColors.adaptivePrimary(context), size: 32),
-                        tooltip: "Add New Category",
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  
-                  if (_variantOptions.isEmpty && !_isLoading)
-                     Padding(
-                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                       child: TextButton.icon(
-                         onPressed: () {
-                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Please add categories in Settings > Products'))));
-                         },
-                         icon: const Icon(Icons.settings, size: 16),
-                         label: Text(AppLocalizations.t(context, 'Manage Categories in Settings')),
-                       ),
-                     ),
-                  
-                  // Conditional Fields
-                  if (_showDietary) ...[
-                      DropdownButtonFormField<String?>(
-                        decoration: const InputDecoration(
-                          labelText: 'Dietary Type', 
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
-                        ),
-                        value: _selectedDietary != null && _dietaryOptions.contains(_selectedDietary) ? _selectedDietary : null,
-                        items: [
-                           DropdownMenuItem(value: null, child: Text(AppLocalizations.t(context, 'None'))),
-                           ..._dietaryOptions.map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        ],
-                        onChanged: (v) => setState(() => _selectedDietary = v),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                  ],
-
-                   if (_showPackaging) ...[
-                      DropdownButtonFormField<String?>(
-                        decoration: const InputDecoration(
-                          labelText: 'Packaging Type', 
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
-                        ),
-                        value: _selectedPackaging != null && _packagingOptions.contains(_selectedPackaging) ? _selectedPackaging : null,
-                        items: [
-                           DropdownMenuItem(value: null, child: Text(AppLocalizations.t(context, 'None'))),
-                           ..._packagingOptions.map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        ],
-                        onChanged: (v) => setState(() => _selectedPackaging = v),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                  ],
-
-                  AppTextField(
-                    key: const Key('item_sku_input'),
-                    controller: _skuController,
-                    labelText: 'SKU / Barcode',
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  AppTextField(
-                    key: const Key('item_image_input'),
-                    controller: _imageController,
-                    labelText: 'Image (Local Only)', 
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.image_search),
-                      onPressed: _pickImage,
-                      tooltip: "Pick from Gallery",
+                      ],
                     ),
-                    helperText: 'Select an image from your device',
-                    readOnly: true,
-                    onTap: _pickImage,
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  if (_pickedImage != null || _imageController.text.isNotEmpty) ...[
-                    Center(
-                      child: Column(
-                        children: [
-                          Text(AppLocalizations.t(context, 'Preview:'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
-                          const SizedBox(height: AppSpacing.xs),
-                          if (_pickedImage != null)
-                            ClipRRect(
-                              borderRadius: BorderRadius.zero,
-                              child: kIsWeb 
-                                  ? Image.network(_pickedImage!.path, width: 120, height: 120, fit: BoxFit.cover, cacheWidth: 240, cacheHeight: 240)
-                                  : Image.file(_pickedImage!, width: 120, height: 120, fit: BoxFit.cover, cacheWidth: 240, cacheHeight: 240),
-                            )
-                          else
-                            InventoryImageWidget(
-                              item: InventoryItem(
-                                id: widget.item?.id ?? 'preview',
-                                name: '',
-                                category: '',
-                                price: 0,
-                                quantity: 0,
-                                status: 'In Stock',
-                                trackStock: false,
-                                image: _imageController.text,
-                                localImage: widget.item?.localImage,
-                              ),
-                              width: 120,
-                              height: 120,
-                              borderRadius: 12,
-                            ),
-                        ],
+                  Material(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => Navigator.pop(context),
+                      child: const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(Icons.close_rounded, color: Colors.white, size: 20),
                       ),
                     ),
-                  ],
-                  const SizedBox(height: AppSpacing.md),
-                  
-                  // Counter Selector
-                  Consumer<DashboardProvider>(
-                    builder: (context, provider, child) {
-                      final counters = provider.counters;
-                      if (counters.isEmpty) return const SizedBox.shrink();
-
-                      return DropdownButtonFormField<String?>(
-                        decoration: const InputDecoration(
-                          labelText: 'Assign to Counter (KDS)', 
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
-                        ),
-                        value: _selectedCounterId,
-                        items: [
-                          DropdownMenuItem<String?>(value: null, child: Text(AppLocalizations.t(context, 'Default / Kitchen'))),
-                          ...counters.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))),
-                        ],
-                        onChanged: (val) => setState(() => _selectedCounterId = val),
-                      );
-                    }
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  
-                  AppButton.primary(
-                    key: const Key('save_item_button'),
-                    onPressed: _isSaving ? null : _saveItem,
-                    isLoading: _isSaving,
-                    label: widget.item == null ? 'Create Item' : 'Update Item',
-                    width: double.infinity,
-                    size: AppButtonSize.large,
-                  ),
-                  
-                  if (widget.item != null) ...[
-                     const SizedBox(height: AppSpacing.md),
-                     AppButton.ghost(
-                       onPressed: () async {
-                         final confirm = await showDialog<bool>(
-                           context: context,
-                           builder: (ctx) => AlertDialog(
-                             title: Text(AppLocalizations.t(context, 'Delete Item?')),
-                             content: Text(AppLocalizations.t(context, 'This action cannot be undone.')),
-                             actions: [
-                               TextButton(onPressed: ()=>Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'Cancel'))),
-                               TextButton(onPressed: ()=>Navigator.pop(ctx, true), child: Text(AppLocalizations.t(context, 'Delete'), style: TextStyle(color: AppColors.adaptiveError(context)))),
-                             ],
-                           )
-                         );
-                         
-                         if (!context.mounted) return;
-                         if (confirm != true) return;
-
-                         final scaffoldMessenger = ScaffoldMessenger.of(context);
-                         final navigator = Navigator.of(context);
-                         final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
-
-                         setState(() => _isLoading = true);
-                         try {
-                           await dashboardProvider.deleteInventoryItem(widget.item!.id);
-                           navigator.pop();
-                         } catch (e) {
-                           scaffoldMessenger.showSnackBar(SnackBar(content: Text("Error: $e")));
-                         }
-                       },
-                       label: 'Delete Item',
-                       foregroundColor: AppColors.adaptiveError(context),
-                       width: double.infinity,
-                     )
-                  ]
                 ],
               ),
             ),
-          ),
+
+            // ── Body ──
+            Flexible(
+              child: _isLoading
+                  ? const Padding(padding: EdgeInsets.all(64), child: Center(child: CircularProgressIndicator()))
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionHeader(context, Icons.info_outline_rounded, 'Basic Information'),
+                            const SizedBox(height: 12),
+                            AppTextField(key: const Key('item_name_input'), controller: _nameController, labelText: 'Item Name', validator: (v) => v!.trim().isEmpty ? 'Name is required' : null),
+                            const SizedBox(height: AppSpacing.md),
+                            Row(children: [
+                              Expanded(child: AppTextField(key: const Key('item_price_input'), controller: _priceController, labelText: 'Selling Price', prefixText: '₹ ', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'Price required' : null)),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(child: AppTextField(key: const Key('item_cost_input'), controller: _costController, labelText: 'Cost Price', prefixText: '₹ ', keyboardType: TextInputType.number)),
+                            ]),
+                            const SizedBox(height: 20),
+                            _buildDivider(context),
+                            const SizedBox(height: 16),
+
+                            _buildSectionHeader(context, Icons.inventory_2_outlined, 'Stock & Category'),
+                            const SizedBox(height: 12),
+                            Row(children: [
+                              Expanded(child: AppTextField(key: const Key('item_qty_input'), controller: _quantityController, labelText: 'Quantity', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'Qty required' : null)),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(child: AppTextField(key: const Key('item_threshold_input'), controller: _lowStockController, labelText: 'Low Stock Alert', helperText: 'Default: 10', keyboardType: TextInputType.number)),
+                            ]),
+                            const SizedBox(height: AppSpacing.md),
+                            Row(children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  decoration: InputDecoration(labelText: 'Category', border: const OutlineInputBorder(), contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12), filled: true, fillColor: AppColors.surface(context)),
+                                  value: (_selectedCategory != null && _variantOptions.contains(_selectedCategory)) ? _selectedCategory : null,
+                                  items: _variantOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                                  onChanged: (v) => setState(() => _selectedCategory = v),
+                                  hint: Text(AppLocalizations.t(context, 'Select Category')),
+                                  validator: (value) => (value == null || value.isEmpty) ? 'Please select a category' : null,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              Tooltip(
+                                message: 'Add New Category',
+                                child: Material(
+                                  color: AppColors.adaptivePrimary(context).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: InkWell(borderRadius: BorderRadius.circular(8), onTap: _addCategoryDialog, child: Padding(padding: const EdgeInsets.all(10), child: Icon(Icons.add_rounded, color: AppColors.adaptivePrimary(context), size: 24))),
+                                ),
+                              ),
+                            ]),
+
+                            if (_variantOptions.isEmpty && !_isLoading)
+                              Padding(padding: const EdgeInsets.only(top: AppSpacing.sm), child: TextButton.icon(onPressed: () { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Please add categories in Settings > Products')))); }, icon: const Icon(Icons.settings, size: 16), label: Text(AppLocalizations.t(context, 'Manage Categories in Settings')))),
+
+                            if (_showDietary) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              DropdownButtonFormField<String?>(
+                                decoration: const InputDecoration(labelText: 'Dietary Type', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12)),
+                                value: _selectedDietary != null && _dietaryOptions.contains(_selectedDietary) ? _selectedDietary : null,
+                                items: [DropdownMenuItem(value: null, child: Text(AppLocalizations.t(context, 'None'))), ..._dietaryOptions.map((e) => DropdownMenuItem(value: e, child: Text(e)))],
+                                onChanged: (v) => setState(() => _selectedDietary = v),
+                              ),
+                            ],
+                            if (_showPackaging) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              DropdownButtonFormField<String?>(
+                                decoration: const InputDecoration(labelText: 'Packaging Type', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12)),
+                                value: _selectedPackaging != null && _packagingOptions.contains(_selectedPackaging) ? _selectedPackaging : null,
+                                items: [DropdownMenuItem(value: null, child: Text(AppLocalizations.t(context, 'None'))), ..._packagingOptions.map((e) => DropdownMenuItem(value: e, child: Text(e)))],
+                                onChanged: (v) => setState(() => _selectedPackaging = v),
+                              ),
+                            ],
+
+                            const SizedBox(height: 20),
+                            _buildDivider(context),
+                            const SizedBox(height: 16),
+
+                            _buildSectionHeader(context, Icons.qr_code_rounded, 'SKU & Image'),
+                            const SizedBox(height: 12),
+                            AppTextField(key: const Key('item_sku_input'), controller: _skuController, labelText: 'SKU / Barcode'),
+                            const SizedBox(height: AppSpacing.md),
+                            AppTextField(
+                              key: const Key('item_image_input'), controller: _imageController, labelText: 'Image (Local Only)',
+                              suffixIcon: IconButton(icon: const Icon(Icons.image_search), onPressed: _pickImage, tooltip: "Pick from Gallery"),
+                              helperText: 'Select an image from your device', readOnly: true, onTap: _pickImage,
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            if (_pickedImage != null || _imageController.text.isNotEmpty) ...[
+                              Center(child: Column(children: [
+                                Text(AppLocalizations.t(context, 'Preview:'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
+                                const SizedBox(height: AppSpacing.xs),
+                                if (_pickedImage != null)
+                                  ClipRRect(borderRadius: BorderRadius.circular(8), child: kIsWeb ? Image.network(_pickedImage!.path, width: 100, height: 100, fit: BoxFit.cover, cacheWidth: 200, cacheHeight: 200) : Image.file(_pickedImage!, width: 100, height: 100, fit: BoxFit.cover, cacheWidth: 200, cacheHeight: 200))
+                                else
+                                  InventoryImageWidget(item: InventoryItem(id: widget.item?.id ?? 'preview', name: '', category: '', price: 0, quantity: 0, status: 'In Stock', trackStock: false, image: _imageController.text, localImage: widget.item?.localImage), width: 100, height: 100, borderRadius: 8),
+                              ])),
+                            ],
+                            const SizedBox(height: AppSpacing.md),
+
+                            Consumer<DashboardProvider>(builder: (context, provider, child) {
+                              final counters = provider.counters;
+                              if (counters.isEmpty) return const SizedBox.shrink();
+                              return DropdownButtonFormField<String?>(
+                                decoration: const InputDecoration(labelText: 'Assign to Counter (KDS)', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12)),
+                                value: _selectedCounterId,
+                                items: [DropdownMenuItem<String?>(value: null, child: Text(AppLocalizations.t(context, 'Default / Kitchen'))), ...counters.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))],
+                                onChanged: (val) => setState(() => _selectedCounterId = val),
+                              );
+                            }),
+                            const SizedBox(height: AppSpacing.sm),
+                          ],
+                        ),
+                      ),
+                    ),
+            ),
+
+            // ── Footer ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(color: AppColors.surface(context), border: Border(top: BorderSide(color: AppColors.border(context)))),
+              child: Row(children: [
+                if (isEditing)
+                  TextButton.icon(
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+                        title: Text(AppLocalizations.t(context, 'Delete Item?')),
+                        content: Text(AppLocalizations.t(context, 'This action cannot be undone.')),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.t(context, 'Cancel'))),
+                          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(AppLocalizations.t(context, 'Delete'), style: TextStyle(color: AppColors.adaptiveError(context)))),
+                        ],
+                      ));
+                      if (!context.mounted) return;
+                      if (confirm != true) return;
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      final navigator = Navigator.of(context);
+                      final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+                      setState(() => _isLoading = true);
+                      try { await dashboardProvider.deleteInventoryItem(widget.item!.id); navigator.pop(); } catch (e) { scaffoldMessenger.showSnackBar(SnackBar(content: Text("Error: $e"))); }
+                    },
+                    icon: Icon(Icons.delete_outline, color: AppColors.adaptiveError(context), size: 18),
+                    label: Text('Delete', style: TextStyle(color: AppColors.adaptiveError(context))),
+                  ),
+                const Spacer(),
+                TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary(context), fontWeight: FontWeight.w600))),
+                const SizedBox(width: 12),
+                SizedBox(
+                  height: 44,
+                  child: ElevatedButton.icon(
+                    onPressed: _isSaving ? null : _saveItem,
+                    icon: _isSaving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Icon(isEditing ? Icons.save_rounded : Icons.add_rounded, size: 20),
+                    label: Text(isEditing ? 'Save Changes' : 'Create Item', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.adaptivePrimary(context), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(horizontal: 24), elevation: 0),
+                  ),
+                ),
+              ]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, IconData icon, String title) {
+    return Row(children: [
+      Icon(icon, size: 18, color: AppColors.adaptivePrimary(context)),
+      const SizedBox(width: 8),
+      Text(title, style: AppTypography.labelLarge.copyWith(color: AppColors.adaptivePrimary(context), fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+    ]);
+  }
+
+  Widget _buildDivider(BuildContext context) {
+    return Container(
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [AppColors.border(context).withValues(alpha: 0.0), AppColors.border(context), AppColors.border(context).withValues(alpha: 0.0)]),
+      ),
     );
   }
 }
-
-
-
-
