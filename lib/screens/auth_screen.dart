@@ -183,7 +183,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 8))],
               ),
             child: ClipOval(
-              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 40, color: AppColors.primary)),
+              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, cacheWidth: 400, errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 40, color: AppColors.primary)),
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -247,7 +247,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 8))],
               ),
             child: ClipOval(
-              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 40, color: AppColors.primary)),
+              child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, cacheWidth: 400, errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 40, color: AppColors.primary)),
             ),
           ),
           const SizedBox(height: AppSpacing.md),

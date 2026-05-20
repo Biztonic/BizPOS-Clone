@@ -441,8 +441,8 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                             ClipRRect(
                               borderRadius: BorderRadius.zero,
                               child: kIsWeb 
-                                  ? Image.network(_pickedImage!.path, width: 120, height: 120, fit: BoxFit.cover)
-                                  : Image.file(_pickedImage!, width: 120, height: 120, fit: BoxFit.cover),
+                                  ? Image.network(_pickedImage!.path, width: 120, height: 120, fit: BoxFit.cover, cacheWidth: 240, cacheHeight: 240)
+                                  : Image.file(_pickedImage!, width: 120, height: 120, fit: BoxFit.cover, cacheWidth: 240, cacheHeight: 240),
                             )
                           else
                             InventoryImageWidget(

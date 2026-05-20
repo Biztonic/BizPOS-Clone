@@ -5,6 +5,9 @@ import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+
+Map<String, dynamic> _decodeJson(String json) => jsonDecode(json) as Map<String, dynamic>;
 
 mixin OrderRepositoryMixin {
   Future<Database> get database;
@@ -157,7 +160,7 @@ mixin OrderRepositoryMixin {
 
   Future<void> replayTransaction(String txId, String operationsJson) async {
     final db = await dbHelper.database;
-    final Map<String, dynamic> data = jsonDecode(operationsJson);
+    final Map<String, dynamic> data = await compute(_decodeJson, operationsJson);
     
     final orderMap = data['order'] as Map<String, dynamic>;
     final itemsList = data['orderItems'] as List<dynamic>;

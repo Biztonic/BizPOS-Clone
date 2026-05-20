@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 
+Map<String, dynamic> _decodeJson(String json) => jsonDecode(json) as Map<String, dynamic>;
+
 class RecoveryService {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
@@ -23,7 +25,7 @@ class RecoveryService {
       final operationsJson = record['operations'] as String;
       
       try {
-        final payload = jsonDecode(operationsJson) as Map<String, dynamic>;
+        final payload = await compute(_decodeJson, operationsJson);
         final orderMap = payload['order'] as Map<String, dynamic>?;
         
         if (orderMap == null || !orderMap.containsKey('id')) {

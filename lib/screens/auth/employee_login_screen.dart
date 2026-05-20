@@ -538,9 +538,9 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                   child: ClipOval(
                     child: storeImage != null && storeImage.isNotEmpty
                         ? CachedNetworkImage(imageUrl: storeImage, fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => Image.asset('assets/logo.jpg', fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Image.asset('assets/logo.jpg', fit: BoxFit.cover, cacheWidth: 400,
                                 errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 36, color: AppColors.primaryLight)))
-                        : Image.asset('assets/logo.jpg', fit: BoxFit.cover,
+                        : Image.asset('assets/logo.jpg', fit: BoxFit.cover, cacheWidth: 400,
                             errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 36, color: AppColors.primaryLight)),
                   ),
                 ),
@@ -850,8 +850,8 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                         child: ClipOval(
                           child: _storeImage != null && _storeImage!.isNotEmpty
                               ? CachedNetworkImage(imageUrl: _storeImage!, fit: BoxFit.cover,
-                                  errorWidget: (_, __, ___) => Image.asset('assets/logo.jpg', fit: BoxFit.cover))
-                              : Image.asset('assets/logo.jpg', fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => Image.asset('assets/logo.jpg', fit: BoxFit.cover, cacheWidth: 400))
+                              : Image.asset('assets/logo.jpg', fit: BoxFit.cover, cacheWidth: 400,
                                   errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 36, color: AppColors.primaryLight)),
                         ),
                       ),
@@ -999,7 +999,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                         ],
                       ),
                       child: ClipOval(
-                        child: Image.asset('assets/logo.jpg', fit: BoxFit.cover,
+                        child: Image.asset('assets/logo.jpg', fit: BoxFit.cover, cacheWidth: 400,
                             errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 40, color: AppColors.primaryLight)),
                       ),
                     ),

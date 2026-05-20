@@ -23,6 +23,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:intl/intl.dart';
 
+Map<String, dynamic> _decodeJsonBackup(String json) => jsonDecode(json) as Map<String, dynamic>;
+
 class StoreProvider with ChangeNotifier {
   late final FirebaseFirestore _db = getFirestore(); // Use 'bizpos' database
   final FirebaseAuth? _auth;
@@ -1158,7 +1160,7 @@ class StoreProvider with ChangeNotifier {
        if (jsonString != null && jsonString.isNotEmpty) {
           final dbHelper = DatabaseHelper();
           final db = await dbHelper.database;
-          final Map<String, dynamic> backupData = jsonDecode(jsonString);
+          final Map<String, dynamic> backupData = await compute(_decodeJsonBackup, jsonString);
           
           await dbHelper.clearAll(); // Wipe SQLite database
                     final batch = db.batch();

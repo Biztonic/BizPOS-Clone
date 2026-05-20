@@ -311,7 +311,6 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
 
   void _handleCashPayment() {
     final provider = Provider.of<DashboardProvider>(context, listen: false);
-    final isDarkMode = provider.isDarkMode;
     final subtotal = _calculateTotal(provider.storeInventory);
     final taxRate = (provider.activeStore?.isTaxEnabled == true) ? ((provider.activeStore?.taxRate ?? 0) / 100) : 0.0;
     final total = subtotal * (1 + taxRate);
@@ -446,9 +445,6 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
   }
 
   Widget _buildPaymentSummaryRow(String label, double amount, Color color, {bool isLarge = false, bool isExtraLarge = false}) {
-    final provider = Provider.of<DashboardProvider>(context);
-    final isDarkMode = provider.isDarkMode;
-    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -459,8 +455,6 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
   }
 
   void _showUpgradeDialog(String message) {
-    final provider = Provider.of<DashboardProvider>(context, listen: false);
-    final isDarkMode = provider.isDarkMode;
 
     showDialog(
       context: context,
@@ -507,7 +501,6 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
 
   void _handleUPIPayment() {
     final provider = Provider.of<DashboardProvider>(context, listen: false);
-    final isDarkMode = provider.isDarkMode;
     final subtotal = _calculateTotal(provider.storeInventory);
     final taxRate = (provider.activeStore?.isTaxEnabled == true) ? ((provider.activeStore?.taxRate ?? 0) / 100) : 0.0;
     final total = subtotal * (1 + taxRate);
@@ -1425,7 +1418,6 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     
     if (products.isEmpty) {
-      final isDarkMode = provider.isDarkMode;
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1831,8 +1823,6 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
 
   Widget _buildOrderTypeBtn(String type, IconData icon) {
     final bool isSelected = _orderType == type;
-    final provider = Provider.of<DashboardProvider>(context);
-    final isDarkMode = provider.isDarkMode;
 
     Color activeColor;
     switch (type) {
@@ -2469,7 +2459,6 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       total += (subtotal * ((store.taxRate ?? 0.0) / 100));
     }
 
-    final isDarkMode = provider.isDarkMode;
 
     return Container(
        width: 280,
@@ -2643,7 +2632,7 @@ class _CentralCatalogPickerDialogState extends State<_CentralCatalogPickerDialog
                    
                    return ListTile(
                      leading: item.image != null 
-                         ? Image.network(item.image!, width: 40, height: 40, fit: BoxFit.cover)
+                         ? Image.network(item.image!, width: 40, height: 40, fit: BoxFit.cover, cacheWidth: 80, cacheHeight: 80)
                          : Container(width: 40, height: 40, color: AppColors.background(context), child: Icon(Icons.image, color: AppColors.textSecondary(context))),
                      title: Text(item.name, style: TextStyle(color: AppColors.textPrimary(context), fontWeight: FontWeight.bold)),
                      subtitle: Text("SKU: ${item.sku ?? '-'} | ${item.category}", style: TextStyle(color: AppColors.textSecondary(context))),
