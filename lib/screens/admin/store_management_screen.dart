@@ -9,8 +9,6 @@ import 'package:biztonic_pos/core/design/tokens/app_typography.dart';
 import 'package:biztonic_pos/core/design/components/atoms/app_button.dart';
 import 'package:biztonic_pos/core/design/components/atoms/app_card.dart';
 import 'package:biztonic_pos/core/design/layouts/pos_scaffold.dart';
-import 'package:biztonic_pos/core/design/components/organisms/pos_data_table.dart';
-import 'package:biztonic_pos/widgets/feature_guard.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../models/store.dart';
 
@@ -49,14 +47,10 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
       title: 'Store Management',
       actions: [
         if (provider.activeRole == 'Super Admin' && provider.isDeveloperMode)
-          FeatureGuard(
-            featureKey: 'admin.roles',
-            lockedChild: const SizedBox.shrink(),
-            child: AppButton.secondary(
-              onPressed: () => context.push('/roles'),
-              icon: Icons.shield_outlined,
-              label: "Roles",
-            ),
+          AppButton.secondary(
+            onPressed: () => context.push('/roles'),
+            icon: Icons.shield_outlined,
+            label: "Roles",
           ),
         const SizedBox(width: AppSpacing.sm),
         if (_selectedStoreIds.isNotEmpty)
@@ -80,127 +74,137 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
             padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
             child: _buildStatsRow(provider),
           ),
-          const SizedBox(height: AppSpacing.xl),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: AppCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Toolbar
-                    Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Row(
-                        children: [
-                          Checkbox(
-                            value: displayedStores.isNotEmpty && _selectedStoreIds.length == displayedStores.length,
-                            tristate: _selectedStoreIds.isNotEmpty && _selectedStoreIds.length < displayedStores.length,
-                            onChanged: (val) {
-                              setState(() {
-                                if (val == true) {
-                                  _selectedStoreIds.addAll(displayedStores.map((s) => s.id));
-                                } else {
-                                  _selectedStoreIds.clear();
-                                }
-                              });
-                            },
-                            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (v) => setState(() {}),
-                              decoration: const InputDecoration(
-                                hintText: "Search by name or owner...",
-                                prefixIcon: Icon(Icons.search),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
-                                contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Theme.of(context).dividerColor),
-                              borderRadius: BorderRadius.zero,
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _filterStatus,
-                                items: [
-                                  DropdownMenuItem(value: 'All', child: Text(AppLocalizations.t(context, 'All Status'))),
-                                  DropdownMenuItem(value: 'Active', child: Text(AppLocalizations.t(context, 'Active'))),
-                                  DropdownMenuItem(value: 'Inactive', child: Text(AppLocalizations.t(context, 'Inactive'))),
-                                ],
-                                onChanged: (v) => setState(() => _filterStatus = v!),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    if (displayedStores.isEmpty)
-                      Expanded(
-                        child: Center(child: Text(AppLocalizations.t(context, 'No stores found'))),
-                      )
-                    else
-                      Expanded(
-                        child: PosDataTable(
-                          columns: const [
-                            PosDataColumn(label: 'Store Name'),
-                            PosDataColumn(label: 'Owner'),
-                            PosDataColumn(label: 'Status', fixedWidth: 120),
-                            PosDataColumn(label: 'Actions', fixedWidth: 120),
-                          ],
-                          rows: displayedStores.map((store) {
-                          return PosDataRow(
-                            selected: _selectedStoreIds.contains(store.id),
-                            onTap: () {
-                              setState(() {
-                                if (_selectedStoreIds.contains(store.id)) {
-                                  _selectedStoreIds.remove(store.id);
-                                } else {
-                                  _selectedStoreIds.add(store.id);
-                                }
-                              });
-                            },
-                            cells: [
-                              Text(store.name, style: AppTypography.titleSmall),
-                              Text(store.owner, style: AppTypography.bodyMedium),
-                              _buildStatusBadge(context, provider, store),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_outlined, size: 20),
-                                    onPressed: () => _handleAction(context, provider, store, 'edit'),
-                                    tooltip: 'Edit Store',
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.delete_outline, size: 20, color: AppColors.adaptiveError(context)),
-                                    onPressed: () => _confirmDelete(context, provider, store),
-                                    tooltip: 'Delete Store',
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                        ),
-                      ),
-                  ],
+          const SizedBox(height: AppSpacing.lg),
+          // Toolbar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: displayedStores.isNotEmpty && _selectedStoreIds.length == displayedStores.length,
+                  tristate: _selectedStoreIds.isNotEmpty && _selectedStoreIds.length < displayedStores.length,
+                  onChanged: (val) {
+                    setState(() {
+                      if (val == true) {
+                        _selectedStoreIds.addAll(displayedStores.map((s) => s.id));
+                      } else {
+                        _selectedStoreIds.clear();
+                      }
+                    });
+                  },
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                 ),
-              ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (v) => setState(() {}),
+                    decoration: const InputDecoration(
+                      hintText: "Search by name or owner...",
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Theme.of(context).dividerColor),
+                    borderRadius: BorderRadius.zero,
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _filterStatus,
+                      items: [
+                        DropdownMenuItem(value: 'All', child: Text(AppLocalizations.t(context, 'All Status'))),
+                        DropdownMenuItem(value: 'Active', child: Text(AppLocalizations.t(context, 'Active'))),
+                        DropdownMenuItem(value: 'Inactive', child: Text(AppLocalizations.t(context, 'Inactive'))),
+                      ],
+                      onChanged: (v) => setState(() => _filterStatus = v!),
+                    ),
+                  ),
+                ),
+              ],
             ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          // Data area
+          Expanded(
+            child: displayedStores.isEmpty
+                ? Center(child: Text(AppLocalizations.t(context, 'No stores found')))
+                : _buildStoreList(displayedStores, provider),
           ),
           const SizedBox(height: AppSpacing.lg),
         ],
       ),
+    );
+  }
+
+  Widget _buildStoreList(List<Store> stores, DashboardProvider provider) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      itemCount: stores.length,
+      itemBuilder: (context, index) {
+        final store = stores[index];
+        final isSelected = _selectedStoreIds.contains(store.id);
+        return AppCard(
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          isSelected: isSelected,
+          onTap: () {
+            setState(() {
+              if (isSelected) {
+                _selectedStoreIds.remove(store.id);
+              } else {
+                _selectedStoreIds.add(store.id);
+              }
+            });
+          },
+          child: Row(
+            children: [
+              Checkbox(
+                value: isSelected,
+                onChanged: (val) {
+                  setState(() {
+                    if (val == true) {
+                      _selectedStoreIds.add(store.id);
+                    } else {
+                      _selectedStoreIds.remove(store.id);
+                    }
+                  });
+                },
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(store.name, style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 2),
+                    Text(store.owner, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              _buildStatusBadge(context, provider, store),
+              const SizedBox(width: AppSpacing.md),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: () => _handleAction(context, provider, store, 'edit'),
+                tooltip: 'Edit Store',
+              ),
+              IconButton(
+                icon: Icon(Icons.delete_outline, size: 20, color: AppColors.adaptiveError(context)),
+                onPressed: () => _confirmDelete(context, provider, store),
+                tooltip: 'Delete Store',
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -264,7 +268,7 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         status,
@@ -373,5 +377,3 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
     );
   }
 }
-
-
