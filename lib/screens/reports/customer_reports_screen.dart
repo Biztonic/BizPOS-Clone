@@ -354,7 +354,7 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                       Icon(Icons.access_time, size: 14, color: AppColors.textSecondary(context)),
                                       const SizedBox(width: AppSpacing.xs),
                                       Text(
-                                        customer.lastVisit != null ? DateFormat('MMM dd, yyyy â€¢ HH:mm').format(customer.lastVisit!) : 'Never visited',
+                                        customer.lastVisit != null ? DateFormat('MMM dd, yyyy • HH:mm').format(customer.lastVisit!) : 'Never visited',
                                         style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
                                       ),
                                     ],

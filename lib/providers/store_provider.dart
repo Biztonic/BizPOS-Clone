@@ -24,8 +24,8 @@ import 'package:universal_html/html.dart' as html;
 import 'package:intl/intl.dart';
 
 class StoreProvider with ChangeNotifier {
-  final FirebaseFirestore _db = getFirestore(); // Use 'bizpos' database
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  late final FirebaseFirestore _db = getFirestore(); // Use 'bizpos' database
+  final FirebaseAuth? _auth;
   final Repository _repository = Repository();
   final SyncService _syncService;
 
@@ -60,7 +60,7 @@ class StoreProvider with ChangeNotifier {
   
   // Exposed Services & Auth
   SyncService get syncService => _syncService;
-  User? get userProfile => _auth.currentUser;
+  User? get userProfile => _auth?.currentUser;
   
   StoreSettings? get storeSettings {
      if (_activeStore == null) return null;
@@ -81,8 +81,16 @@ class StoreProvider with ChangeNotifier {
      );
   }
 
-  StoreProvider(this._syncService) {
+  StoreProvider(this._syncService, {FirebaseAuth? auth}) : _auth = auth ?? _getDefaultAuth() {
     _loadBackupSettings();
+  }
+
+  static FirebaseAuth? _getDefaultAuth() {
+    try {
+      return FirebaseAuth.instance;
+    } catch (_) {
+      return null;
+    }
   }
 
   // --- INIT & SESSION ---
@@ -99,7 +107,7 @@ class StoreProvider with ChangeNotifier {
         
         if (storeId != null) {
            // NEW: Aggressive Profile Sync
-           final user = _auth.currentUser;
+           final user = _auth?.currentUser;
            if (user != null) {
              try {
                 await _db.collection('users').doc(user.uid).set({'storeId': storeId}, SetOptions(merge: true));
@@ -145,7 +153,7 @@ class StoreProvider with ChangeNotifier {
                  if (Hive.isBoxOpen('cache_stores')) {
                     Hive.box('cache_stores').put(storeId, _activeStore!.toMap());
                  }
-                 OfflineService().pinStore(_activeStore!.toMap(), uid: _auth.currentUser?.uid);
+                 OfflineService().pinStore(_activeStore!.toMap(), uid: _auth?.currentUser?.uid);
                  notifyListeners();
               }
            }, onError: (e) {
@@ -169,7 +177,7 @@ class StoreProvider with ChangeNotifier {
                 if (Hive.isBoxOpen('cache_stores')) {
                     Hive.box('cache_stores').put(storeId, _activeStore!.toMap());
                 }
-                await OfflineService().pinStore(_activeStore!.toMap(), uid: _auth.currentUser?.uid);
+                await OfflineService().pinStore(_activeStore!.toMap(), uid: _auth?.currentUser?.uid);
              }
            } catch (e) {
              debugPrint('⚠️ StoreProvider: Fresh store fetch failed (likely offline): $e');
@@ -196,7 +204,7 @@ class StoreProvider with ChangeNotifier {
   }
 
   Future<void> _fetchUserStores() async {
-    final user = _auth.currentUser;
+    final user = _auth?.currentUser;
     
     // NEW: Load from Cache First (for offline accessibility, uid-isolated)
     final cachedStores = await OfflineService().getCachedUserStores(uid: user?.uid);
@@ -284,7 +292,7 @@ class StoreProvider with ChangeNotifier {
   }
 
   Future<void> fetchStores({bool isSuperAdmin = false}) async {
-      final user = _auth.currentUser;
+      final user = _auth?.currentUser;
       if (user == null) {
         clearStores();
         return;
@@ -323,7 +331,7 @@ class StoreProvider with ChangeNotifier {
   // --- ACTIONS ---
 
   Future<String> addStore(String name, String ownerEmail, {String? address, String? phone}) async {
-      final user = _auth.currentUser;
+      final user = _auth?.currentUser;
       final email = ownerEmail.toLowerCase().trim();
 
       // 1. AVOID DUPLICATES: Check if a store with this name already exists for this owner

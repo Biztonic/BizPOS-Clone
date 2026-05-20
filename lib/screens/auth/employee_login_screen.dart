@@ -751,7 +751,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                 color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
               ),
               decoration: InputDecoration(
-                hintText: "â€¢ â€¢ â€¢ â€¢",
+                hintText: "• • • •",
                 hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.black26, fontSize: 24, letterSpacing: 12),
                 filled: true,
                 fillColor: isDark ? AppColors.surfaceLight.withValues(alpha: 0.06) : AppColors.textPrimaryLight.withValues(alpha: 0.03),
@@ -913,7 +913,7 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> with SingleTi
                           color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
                         ),
                         decoration: InputDecoration(
-                          hintText: "â€¢ â€¢ â€¢ â€¢",
+                          hintText: "• • • •",
                           hintStyle: TextStyle(color: AppColors.textSecondary(context), fontSize: 24, letterSpacing: 12),
                           filled: true,
                           fillColor: isDark ? AppColors.surfaceLight.withValues(alpha: 0.06) : AppColors.textSecondary(context),

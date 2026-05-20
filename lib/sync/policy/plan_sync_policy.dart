@@ -12,10 +12,18 @@ import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
 ///
 /// Now: SyncService calls `policy.shouldPullInbound(...)` and gets a boolean.
 class PlanSyncPolicy {
-  final FirebaseFirestore _db;
+  final FirebaseFirestore? _db;
 
   PlanSyncPolicy({FirebaseFirestore? db})
-      : _db = db ?? FirebaseFirestore.instance;
+      : _db = db ?? _getDefaultDb();
+
+  static FirebaseFirestore? _getDefaultDb() {
+    try {
+      return FirebaseFirestore.instance;
+    } catch (_) {
+      return null;
+    }
+  }
 
   // ─── Cached State ──────────────────────────────────────────
   String? _cachedPlan;
@@ -77,8 +85,8 @@ class PlanSyncPolicy {
     }
 
     try {
-      final doc = await _db.collection(SyncCollectionRegistry.stores).doc(storeId).get();
-      if (doc.exists) {
+      final doc = await _db?.collection(SyncCollectionRegistry.stores).doc(storeId).get();
+      if (doc != null && doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
         final plan = (data['subscriptionPlan'] ?? 'Basic').toString();
         _cachedPlan = plan;
@@ -109,8 +117,8 @@ class PlanSyncPolicy {
       }
 
       // Cloud fallback
-      final doc = await _db.collection(SyncCollectionRegistry.stores).doc(storeId).get();
-      if (doc.exists) {
+      final doc = await _db?.collection(SyncCollectionRegistry.stores).doc(storeId).get();
+      if (doc != null && doc.exists) {
         final data = doc.data()!;
         final addons = (data['addons'] as List<dynamic>?)
                 ?.map((e) => e?.toString() ?? '')
@@ -190,10 +198,10 @@ class PlanSyncPolicy {
     // 3. Cloud fetch
     try {
       final doc = await _db
-          .collection(SyncCollectionRegistry.settings)
+          ?.collection(SyncCollectionRegistry.settings)
           .doc(SyncCollectionRegistry.platformLimits)
           .get();
-      if (doc.exists) {
+      if (doc != null && doc.exists) {
         final data = doc.data()!;
         final limits = _parseLimitsFromCloud(data);
         _cachedPlatformLimits = limits;

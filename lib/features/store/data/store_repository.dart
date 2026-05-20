@@ -12,7 +12,7 @@ import '../domain/entities/store.dart';
 import '../domain/entities/counter_model.dart';
 
 class StoreRepository with StoreRepositoryMixin {
-  final FirebaseFirestore _db = getFirestore();
+  late final FirebaseFirestore _db = getFirestore();
   
   final OfflineService _offlineService = OfflineService();
   final SyncService _syncService;

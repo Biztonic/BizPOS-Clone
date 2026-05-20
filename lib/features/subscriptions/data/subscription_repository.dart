@@ -3,7 +3,7 @@ import 'package:biztonic_pos/services/firestore_helper.dart';
 import 'package:flutter/foundation.dart';
 
 class SubscriptionRepository {
-  final FirebaseFirestore _db = getFirestore();
+  late final FirebaseFirestore _db = getFirestore();
 
   Future<Map<String, dynamic>?> findPendingSubscription(String email) async {
     final emailList = {email.trim(), email.toLowerCase().trim()}.toList();

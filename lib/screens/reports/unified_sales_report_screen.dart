@@ -566,7 +566,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "#${order.id.substring(order.id.length - 6).toUpperCase()} â€¢ ₹${order.total.toStringAsFixed(0)}",
+                                    "#${order.id.substring(order.id.length - 6).toUpperCase()} • ₹${order.total.toStringAsFixed(0)}",
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold, 
                                       fontSize: 16,
@@ -575,7 +575,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                   ),
                                   const SizedBox(height: AppSpacing.xs),
                                   Text(
-                                    DateFormat('MMM dd, yyyy â€¢ HH:mm').format(order.date),
+                                    DateFormat('MMM dd, yyyy • HH:mm').format(order.date),
                                     style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
                                   ),
                                 ],

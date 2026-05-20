@@ -1409,7 +1409,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                           prefixIcon: const Icon(Icons.search),
                                           filled: true,
                                           fillColor: Theme.of(context).scaffoldBackgroundColor,
-                                          border: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: BorderSide.none),
+                                          border: const OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: BorderSide.none),
                                           contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14)
                                        ),
                                        onChanged: (val) => setDialogState(() => searchQuery = val),

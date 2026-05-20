@@ -45,10 +45,19 @@ import 'package:biztonic_pos/features/inventory/domain/use_cases/adjust_stock.da
 import 'package:biztonic_pos/features/inventory/data/mappers/inventory_mapper.dart';
 
 class DashboardProvider with ChangeNotifier {
-  final FirebaseFirestore _db = getFirestore();
-  final FirebaseAuth _auth = FirebaseAuth.instance; 
+  static bool isTesting = false;
+  late final FirebaseFirestore _db = getFirestore();
+  final FirebaseAuth? _auth;
   final SyncService _syncService = SyncService();
   final Repository _repository = Repository(); 
+
+  static FirebaseAuth? _getDefaultAuth() {
+    try {
+      return FirebaseAuth.instance;
+    } catch (_) {
+      return null;
+    }
+  }
   
   final EmployeeRepository _employeeRepository = EmployeeRepository();
   SyncService get syncService => _syncService;
@@ -119,7 +128,7 @@ class DashboardProvider with ChangeNotifier {
   List<Map<String, dynamic>> _pendingRecoveries = [];
   List<Map<String, dynamic>> get pendingRecoveries => _pendingRecoveries;
 
-  DashboardProvider() {
+  DashboardProvider({FirebaseAuth? auth}) : _auth = auth ?? _getDefaultAuth() {
      debugPrint('🏗️ DashboardProvider Constructor START');
      _listenToGlobalSettings();
      try {
@@ -217,7 +226,7 @@ class DashboardProvider with ChangeNotifier {
       }
       
       debugPrint('🔑 DashboardProvider: Setting up Auth Listener...');
-      final authSub = _auth.authStateChanges().listen((user) async {
+      final authSub = _auth?.authStateChanges().listen((user) async {
         if (_isDisposed) return;
         if (user != null) {
           debugPrint('👤 DashboardProvider: User detected: ${user.uid}');
@@ -238,7 +247,9 @@ class DashboardProvider with ChangeNotifier {
           }
         }
       });
-      _subscriptions.add(authSub);
+      if (authSub != null) {
+        _subscriptions.add(authSub);
+      }
       debugPrint('✅ DashboardProvider.init END');
     } catch (e, stack) {
       debugPrint('❌ DashboardProvider.init CRITICAL ERROR: $e');
@@ -380,7 +391,7 @@ class DashboardProvider with ChangeNotifier {
     // because _storeProvider was null. Now we detect that case and schedule a
     // deferred retry instead of force-resetting the lock (which caused
     // "Future already completed" crashes from re-entrant calls).
-    final user = _auth.currentUser;
+    final user = _auth?.currentUser;
     if (user != null && _stores.isEmpty && _activeStoreId == null && _userProfile != null) {
       debugPrint('🔁 DashboardProvider: StoreProvider injected after auth fired. Scheduling deferred retry...');
       _pendingStoreRetry = true;
@@ -411,7 +422,7 @@ class DashboardProvider with ChangeNotifier {
     debugPrint('🛡️ DashboardProvider.fetchStoresDirectly: Safety-net store fetch triggered');
     
     // 1. Try cache first for instant UI (uid-isolated)
-    final uid = _auth.currentUser?.uid;
+    final uid = _auth?.currentUser?.uid;
     final cachedStores = await OfflineService().getCachedUserStores(uid: uid);
     if (cachedStores.isNotEmpty) {
       _stores = cachedStores.map((m) => Store.fromMap(m, m['id']?.toString() ?? '')).toList();
@@ -448,7 +459,7 @@ class DashboardProvider with ChangeNotifier {
        }
     } else if (_activeStoreId == null) {
        // Try to restore pinned store if we still don't have an active one
-       final uid = _auth.currentUser?.uid;
+        final uid = _auth?.currentUser?.uid;
        if (uid != null) {
           await _restorePinnedStore(uid: uid);
        }
@@ -1079,7 +1090,7 @@ class DashboardProvider with ChangeNotifier {
        _superAdmins.clear();
 
        // 4. AUTH SIGN OUT (Last step)
-       await _auth.signOut();
+        await _auth?.signOut();
        await DatabaseHelper.switchUser(null);
        
        notifyListeners();
@@ -1148,7 +1159,9 @@ class DashboardProvider with ChangeNotifier {
   }
 
   Future<void> _initKioskMode() async {
-     await Future.delayed(const Duration(seconds: 1));
+     if (!isTesting) {
+       await Future.delayed(const Duration(seconds: 1));
+     }
   }
 
   void updateDashboardSettings({String? bgType, String? bgSource, String? heroStyle, Color? heroColor, bool? showSeconds}) {
@@ -1265,9 +1278,11 @@ class DashboardProvider with ChangeNotifier {
            }
       } else {
           _storeInventory = []; _customers = []; _orders = [];
-          if (_inventoryProvider != null) _inventoryProvider!.clearInventory(); 
-          if (_orderProvider != null) _orderProvider!.clearOrders();
-          if (_customerProvider != null) _customerProvider!.clearCustomers();
+          Future.microtask(() {
+            if (_inventoryProvider != null) _inventoryProvider!.clearInventory(); 
+            if (_orderProvider != null) _orderProvider!.clearOrders();
+            if (_customerProvider != null) _customerProvider!.clearCustomers();
+          });
       }
       if (Hive.isBoxOpen('settings')) {
          final settingsBox = Hive.box('settings');
@@ -1498,8 +1513,8 @@ class DashboardProvider with ChangeNotifier {
       if (_activeRole != 'Super Admin') {
         if (_activeStoreId != null) {
           query = query.where('storeId', isEqualTo: _activeStoreId);
-        } else if (_auth.currentUser != null) {
-          query = query.where('userId', isEqualTo: _auth.currentUser!.uid);
+        } else if (_auth?.currentUser != null) {
+          query = query.where('userId', isEqualTo: _auth!.currentUser!.uid);
         }
       }
 
@@ -1661,7 +1676,7 @@ class DashboardProvider with ChangeNotifier {
     await _db.collection('subscription_requests').add({
       'storeId': _activeStoreId,
       'storeName': sName,
-      'ownerEmail': activeStore?.ownerEmail ?? _auth.currentUser?.email ?? '',
+      'ownerEmail': activeStore?.ownerEmail ?? _auth?.currentUser?.email ?? '',
       'planType': planType,
       'durationInDays': finalDuration,
       'amount': amount,
@@ -1669,7 +1684,7 @@ class DashboardProvider with ChangeNotifier {
       'selectedAddons': selectedAddons ?? [],
       'status': 'PENDING',
       'createdAt': FieldValue.serverTimestamp(),
-      'userId': _auth.currentUser?.uid,
+      'userId': _auth?.currentUser?.uid,
     });
     // Refresh pending list so UI shows the new pending request immediately
     await fetchPendingSubscriptions();
@@ -1678,10 +1693,14 @@ class DashboardProvider with ChangeNotifier {
 
   // Admin & Store Config
   Future<Map<String, dynamic>> fetchAdminConfig() async {
-    final doc = await _db.collection('settings').doc('admin_config').get();
-    if (doc.exists) {
-      _adminConfig = doc.data()!;
-      notifyListeners();
+    try {
+      final doc = await _db.collection('settings').doc('admin_config').get();
+      if (doc.exists) {
+        _adminConfig = doc.data()!;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('⚠️ DashboardProvider: Failed to fetch admin config (likely Firebase uninitialized): $e');
     }
     return _adminConfig;
   }
@@ -1767,9 +1786,11 @@ class DashboardProvider with ChangeNotifier {
 
   void _startAutoBackupTimer() {
     _backupTimer?.cancel();
-    _backupTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-       _checkAndRunAutoBackup();
-    });
+    if (!isTesting) {
+      _backupTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+         _checkAndRunAutoBackup();
+      });
+    }
   }
 
   Future<void> _checkAndRunAutoBackup() async {
@@ -1892,6 +1913,10 @@ class DashboardProvider with ChangeNotifier {
                  syncStatus: 'PENDING',
                )
              ));
+             
+             // Update the item's quantity locally so the UI reflects the change
+             final updatedItem = item.copyWith(quantity: newQty);
+             await updateInventoryItem(updatedItem);
           }
         }
       }
@@ -2040,12 +2065,18 @@ class DashboardProvider with ChangeNotifier {
 
   // --- STUBS ---
   void _listenToGlobalSettings() {
-    _db.collection('settings').doc('global').snapshots().listen((snap) {
-       if (snap.exists) {
-         // Process global settings update if needed
-         notifyListeners();
-       }
-    });
+    try {
+      _db.collection('settings').doc('global').snapshots().listen((snap) {
+         if (snap.exists) {
+           // Process global settings update if needed
+           notifyListeners();
+         }
+      }, onError: (e) {
+        debugPrint('⚠️ DashboardProvider: Error in global settings stream: $e');
+      });
+    } catch (e) {
+      debugPrint('⚠️ DashboardProvider: Failed to listen to global settings (Firebase not initialized): $e');
+    }
   }
   void _listenToPlatformLimits() {}
   void _listenToSyncStatus() {
@@ -2337,7 +2368,7 @@ class DashboardProvider with ChangeNotifier {
             final store = _stores.firstWhere((s) => s.id == newId, orElse: () => _storeProvider!.stores.firstWhere((s) => s.id == newId));
             final storeMap = store.toMap();
             storeMap['id'] = store.id; // Ensure ID is included for offline persistence
-            OfflineService().pinStore(storeMap, uid: _auth.currentUser?.uid).then((_) {
+            OfflineService().pinStore(storeMap, uid: _auth?.currentUser?.uid).then((_) {
                fetchEmployeesForStore(newId).then((employees) {
                   OfflineService().cacheStoreEmployees(newId, employees);
                   debugPrint('📌 DashboardProvider: Store pinned and ${employees.length} employees cached for offline login');

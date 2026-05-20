@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+import 'package:biztonic_pos/core/design/tokens/app_radius.dart';
+import 'package:biztonic_pos/core/design/tokens/app_typography.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/dashboard_provider.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../utils/car_dashboard_theme.dart';
 import 'glass_panel.dart';
 import 'quick_action_dialogs.dart'; // Added
 
@@ -96,21 +98,56 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
     }
   }
 
+  Color _getItemColor(String label, BuildContext context) {
+    switch (label.toUpperCase()) {
+      case 'DASHBOARD':
+        return AppColors.adaptivePrimary(context);
+      case 'POS':
+        return AppColors.success;
+      case 'INVENTORY':
+        return AppColors.warning;
+      case 'SALES HISTORY':
+      case 'SALES':
+        return AppColors.primaryLight;
+      case 'REPORTS':
+        return AppColors.primary;
+      case 'PRINTER':
+        return AppColors.secondary;
+      case 'SETTINGS':
+        return AppColors.textSecondary(context);
+      case 'LOGOUT':
+        return AppColors.error;
+      case 'CUSTOMERS':
+        return AppColors.primaryLight;
+      case 'EMPLOYEES':
+        return AppColors.primary;
+      case 'DISPLAY':
+        return AppColors.primary;
+      case 'TABLES':
+        return AppColors.primary;
+      case 'FRANCHISES':
+        return AppColors.primaryLight;
+      case 'DATA CENTER':
+        return AppColors.secondary;
+      default:
+        return AppColors.primary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DashboardProvider>(context); // Listen to changes
-    final isDarkMode = provider.isDarkMode;
     final currentUri = GoRouterState.of(context).uri.toString();
     
     // Rebuild menu data on every build so it reacts to addon changes
     final menuItems = _buildMenuData(provider);
     
     return GlassPanel(
-      borderRadius: 24,
+      borderRadius: AppRadius.lg,
       withGlow: false, 
       opacity: 1.0, // Solid Background
-      color: CarDashboardTheme.panelColor(isDarkMode), // No opacity, strictly solid
-      borderColor: CarDashboardTheme.textColor(isDarkMode).withValues(alpha: 0.1),
+      color: AppColors.surface(context), // Solid surface color
+      borderColor: AppColors.border(context),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -120,7 +157,7 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: CarDashboardTheme.subTextColor(isDarkMode).withValues(alpha: 0.5),
+              color: AppColors.textSecondary(context).withValues(alpha: 0.5),
               borderRadius: BorderRadius.zero
             ),
           ),
@@ -136,21 +173,19 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
               padEnds: false, // Start from the edge
               itemBuilder: (context, index) {
                 final item = menuItems[index];
-                return _buildMenuItem(item, isDarkMode, currentUri);
+                return _buildMenuItem(item, currentUri);
               },
             ),
           ),
-          
-
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem(Map<String, dynamic> item, bool isDarkMode, String currentUri) {
+  Widget _buildMenuItem(Map<String, dynamic> item, String currentUri) {
     final bool isSelected = item['route'] != null && currentUri.startsWith(item['route']);
     
-    final itemColor = CarDashboardTheme.getIconColor(item['label'], isDarkMode);
+    final itemColor = _getItemColor(item['label'], context);
     final borderColor = isSelected ? itemColor : itemColor.withValues(alpha: 0.3);
 
     return GestureDetector(
@@ -163,6 +198,7 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
             decoration: BoxDecoration(
               color: isSelected ? itemColor.withValues(alpha: 0.2) : itemColor.withValues(alpha: 0.05),
               shape: BoxShape.rectangle,
+              borderRadius: AppRadius.borderSm,
               border: Border.all(
                 color: borderColor,
                 width: isSelected ? 2 : 1
@@ -175,9 +211,9 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
           Text(
             item['label'],
             textAlign: TextAlign.center,
-            style: CarDashboardTheme.labelStyle.copyWith(
-              color: isSelected ? itemColor : CarDashboardTheme.textColor(isDarkMode), 
-              fontWeight: FontWeight.bold,
+            style: AppTypography.labelMedium.copyWith(
+              color: isSelected ? itemColor : AppColors.textPrimary(context), 
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
               fontSize: 12 // Increased font size from 10 to 12
             ),
             maxLines: 1,

@@ -10,7 +10,7 @@ import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 class CustomerProvider with ChangeNotifier {
-  final FirebaseFirestore _db = getFirestore(); // Use 'bizpos' database
+  late final FirebaseFirestore _db = getFirestore(); // Use 'bizpos' database
   final Repository _repository = Repository();
   final SyncService _syncService;
 

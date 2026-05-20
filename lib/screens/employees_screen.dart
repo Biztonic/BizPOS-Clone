@@ -257,7 +257,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
         ),
         title: Text(emp.name, style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
         subtitle: Text(
-          "${emp.role} â€¢ ID: ${emp.employeeId ?? 'N/A'}",
+          "${emp.role} • ID: ${emp.employeeId ?? 'N/A'}",
           style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
         ),
         trailing: Row(

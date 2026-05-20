@@ -21,22 +21,37 @@ class OfflineUser {
 }
 
 class AuthProvider with ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAuth? _auth;
   User? _user;
   bool _isLoading = true;
 
   User? get user => _user;
   bool get isLoading => _isLoading;
 
-  AuthProvider() {
+  AuthProvider({FirebaseAuth? auth}) : _auth = auth ?? _getDefaultAuth() {
     _initAuth();
+  }
+
+  static FirebaseAuth? _getDefaultAuth() {
+    try {
+      return FirebaseAuth.instance;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _initAuth() async {
     // Initial fetch of persisted offline state
     _isOfflineLoggedIn = OfflineService().getOfflineLoginState();
 
-    _auth.authStateChanges().listen((User? user) async {
+    final auth = _auth;
+    if (auth == null) {
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    auth.authStateChanges().listen((User? user) async {
        if (user != null) {
          _user = user;
          _isOfflineLoggedIn = false;
@@ -77,7 +92,11 @@ class AuthProvider with ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
-      final credential = await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final auth = _auth;
+      if (auth == null) {
+        throw Exception('Authentication service is not available.');
+      }
+      final credential = await auth.signInWithEmailAndPassword(email: email, password: password);
       
       // 1. Cache Credentials + UID for offline fallback (keyed by email)
       await OfflineService().cacheCredentials(email, password, uid: credential.user?.uid);
@@ -136,7 +155,11 @@ class AuthProvider with ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
-      final credential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      final auth = _auth;
+      if (auth == null) {
+        throw Exception('Authentication service is not available.');
+      }
+      final credential = await auth.createUserWithEmailAndPassword(email: email, password: password);
       
       if (credential.user != null) {
         // Create User Profile in Firestore
@@ -185,7 +208,11 @@ class AuthProvider with ChangeNotifier {
       );
 
       // Once signed in, return the UserCredential
-      final userCredential = await _auth.signInWithCredential(credential);
+      final auth = _auth;
+      if (auth == null) {
+        throw Exception('Authentication service is not available.');
+      }
+      final userCredential = await auth.signInWithCredential(credential);
       final user = userCredential.user;
 
       if (user != null) {
@@ -216,7 +243,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _auth.signOut();
+    await _auth?.signOut();
     await OfflineService().clearCredentials(); 
     // NOTE: We intentionally do NOT call unpinStore() here.
     // The pinned store must survive logout so _restorePinnedStore
@@ -227,7 +254,11 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> sendPasswordResetEmail(String email) async {
-    await _auth.sendPasswordResetEmail(email: email);
+    final auth = _auth;
+    if (auth == null) {
+      throw Exception('Authentication service is not available.');
+    }
+    await auth.sendPasswordResetEmail(email: email);
   }
 
   Future<bool> checkIfNewCustomer(String email) async {

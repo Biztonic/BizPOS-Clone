@@ -15,7 +15,7 @@ import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/features/billing/domain/use_cases/checkout_order.dart';
 
 class OrderProvider with ChangeNotifier {
-  final FirebaseFirestore _db = getFirestore(); // ignore: unused_field
+  late final FirebaseFirestore _db = getFirestore(); // ignore: unused_field
   final Repository _repository = Repository();
   final InventoryMovementRepository _movementRepo = InventoryMovementRepository();
   final SyncService _syncService;

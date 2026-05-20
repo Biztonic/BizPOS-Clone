@@ -165,7 +165,7 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
                ),
                title: Text(device.name, style: AppTypography.titleSmall),
                subtitle: Text(
-                 "${device.type.name.toUpperCase().replaceAll('_', ' ')} â€¢ ${device.connection.name.toUpperCase()}",
+                 "${device.type.name.toUpperCase().replaceAll('_', ' ')} • ${device.connection.name.toUpperCase()}",
                  style: AppTypography.bodySmall,
                ),
                trailing: IconButton(

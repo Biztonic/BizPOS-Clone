@@ -282,7 +282,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
                 _buildStatusBadge(item['status']),
               ],
             ),
-            subtitle: Text("${df.format(createdAt)} â€¢ $plan ($cycle)", style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
+            subtitle: Text("${df.format(createdAt)} • $plan ($cycle)", style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
             trailing: Text("₹$amount", style: AppTypography.titleLarge.copyWith(color: AppColors.success)),
           );
         },

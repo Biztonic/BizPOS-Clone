@@ -1,7 +1,6 @@
 import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
-// ignore_for_file: deprecated_member_use_from_same_package, use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/inventory_item.dart';
@@ -11,7 +10,6 @@ import '../widgets/inventory_image_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
-import '../core/design/layouts/pos_scaffold.dart';
 import '../core/design/density/app_density.dart';
 import '../core/design/tokens/app_spacing.dart';
 import '../core/design/tokens/app_typography.dart';
@@ -164,8 +162,10 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
           _selectedCategory = newCategory;
         });
         // Save to backend metadata
-        final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
-        await dashboardProvider.addMetadata('variant_types', newCategory);
+        if (mounted) {
+          final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+          await dashboardProvider.addMetadata('variant_types', newCategory);
+        }
       } else {
         setState(() => _selectedCategory = newCategory);
       }
@@ -173,6 +173,8 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
   }
 
   Future<void> _pickImage() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final errorMsg = AppLocalizations.t(context, 'Error selecting image');
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
@@ -188,9 +190,9 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
         });
       }
     } catch (e) {
-      debugPrint("âŒ Error picking image: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.t(context, 'Error selecting image'))),
+      debugPrint("â Œ Error picking image: $e");
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text(errorMsg)),
       );
     }
   }
@@ -247,7 +249,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
         );
       }
     } catch (e) {
-      debugPrint("âŒ Error saving item: $e");
+      debugPrint("â Œ Error saving item: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving item: $e')),
@@ -513,14 +515,19 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                            )
                          );
                          
-                         if (confirm == true && mounted) {
-                           setState(() => _isLoading = true);
-                           try {
-                             await Provider.of<DashboardProvider>(context, listen: false).deleteInventoryItem(widget.item!.id);
-                             if (mounted) Navigator.pop(context);
-                           } catch (e) {
-                                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
-                           }
+                         if (!context.mounted) return;
+                         if (confirm != true) return;
+
+                         final scaffoldMessenger = ScaffoldMessenger.of(context);
+                         final navigator = Navigator.of(context);
+                         final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+
+                         setState(() => _isLoading = true);
+                         try {
+                           await dashboardProvider.deleteInventoryItem(widget.item!.id);
+                           navigator.pop();
+                         } catch (e) {
+                           scaffoldMessenger.showSnackBar(SnackBar(content: Text("Error: $e")));
                          }
                        },
                        label: 'Delete Item',

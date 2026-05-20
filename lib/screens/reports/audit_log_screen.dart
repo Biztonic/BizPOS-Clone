@@ -102,7 +102,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                           child: Icon(icon, color: iconColor),
                         ),
                         title: Text("${log['entityType'] ?? 'Unknown'}: $eventType", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text("$timeStr â€¢ ID: ${(log['entityId'] ?? '---').toString().substring(0, 8)}..."),
+                        subtitle: Text("$timeStr • ID: ${(log['entityId'] ?? '---').toString().substring(0, 8)}..."),
                         trailing: (log['amount'] ?? 0) > 0 
                           ? Text("₹${log['amount'].toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w500))
                           : null,

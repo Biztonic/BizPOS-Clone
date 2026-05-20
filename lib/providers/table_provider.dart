@@ -9,7 +9,7 @@ import 'package:biztonic_pos/services/firestore_helper.dart';
 
 class TableProvider with ChangeNotifier {
   final SyncService _syncService = SyncService();
-  final FirebaseFirestore _db = getFirestore();
+  late final FirebaseFirestore _db = getFirestore();
 
   List<Floor> _floors = [];
   List<TableModel> _tables = [];

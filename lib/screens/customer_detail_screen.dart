@@ -260,7 +260,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> with Single
                           Icon(Icons.shopping_bag_outlined, size: 14, color: AppColors.textSecondary(context)),
                           const SizedBox(width: AppSpacing.xs),
                           Text(
-                            "${order.items.length} Items â€¢ ${order.type}",
+                            "${order.items.length} Items • ${order.type}",
                             style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
                           ),
                           const Spacer(),

@@ -117,7 +117,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 Text(widget.employee.name, style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  "Role: ${widget.employee.role} â€¢ ID: ${widget.employee.employeeId}",
+                  "Role: ${widget.employee.role} • ID: ${widget.employee.employeeId}",
                   style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
                 ),
               ],

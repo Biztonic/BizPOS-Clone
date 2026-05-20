@@ -1,13 +1,12 @@
-﻿
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
-
-import '../../../utils/car_dashboard_theme.dart';
+import 'package:biztonic_pos/core/design/tokens/app_radius.dart';
+import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 
 class NeonButton extends StatefulWidget {
   final String label;
   final VoidCallback? onPressed;
-  final Color color;
+  final Color? color;
   final IconData? icon;
   final bool isLarge;
 
@@ -15,7 +14,7 @@ class NeonButton extends StatefulWidget {
     super.key,
     required this.label,
     required this.onPressed,
-    this.color = CarDashboardTheme.neonBlue,
+    this.color,
     this.icon,
     this.isLarge = false,
   });
@@ -26,6 +25,8 @@ class NeonButton extends StatefulWidget {
 
 class _NeonButtonState extends State<NeonButton> {
   bool _isPressed = false;
+
+  Color get _color => widget.color ?? AppColors.adaptivePrimary(context);
 
   void _onTapDown(TapDownDetails details) {
     if (widget.onPressed == null) return;
@@ -45,7 +46,6 @@ class _NeonButtonState extends State<NeonButton> {
 
   @override
   Widget build(BuildContext context) {
-    // Instant feedback without animation
     final scale = _isPressed ? 0.95 : 1.0;
     
     return GestureDetector(
@@ -60,25 +60,19 @@ class _NeonButtonState extends State<NeonButton> {
             vertical: widget.isLarge ? 20 : 12,
           ),
           decoration: BoxDecoration(
-            color: widget.color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.zero,
+            color: _color.withValues(alpha: _isPressed ? 0.2 : 0.1),
+            borderRadius: AppRadius.borderSm,
             border: Border.all(
-              color: widget.color.withValues(alpha: _isPressed ? 1.0 : 0.6),
-              width: 2,
+              color: _color.withValues(alpha: _isPressed ? 1.0 : 0.6),
+              width: 1.5,
             ),
             boxShadow: [
               if (!_isPressed && widget.onPressed != null)
                 BoxShadow(
-                  color: widget.color.withValues(alpha: 0.4),
-                  blurRadius: 10,
-                  spreadRadius: 1,
+                  color: _color.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  spreadRadius: 0,
                 ),
-              if (_isPressed)
-                BoxShadow(
-                  color: widget.color.withValues(alpha: 0.6),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                )
             ],
           ),
           child: Row(
@@ -88,22 +82,18 @@ class _NeonButtonState extends State<NeonButton> {
               if (widget.icon != null) ...[
                 Icon(
                   widget.icon,
-                  color: widget.color,
+                  color: _color,
                   size: widget.isLarge ? 24 : 18,
                 ),
                 const SizedBox(width: AppSpacing.sm),
               ],
               Text(
                 widget.label.toUpperCase(),
-                style: CarDashboardTheme.buttonText.copyWith(
-                  color: widget.color,
+                style: TextStyle(
+                  color: _color,
                   fontSize: widget.isLarge ? 20 : 14,
-                  shadows: [
-                    Shadow(
-                      color: widget.color,
-                      blurRadius: 8,
-                    ),
-                  ],
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -113,6 +103,3 @@ class _NeonButtonState extends State<NeonButton> {
     );
   }
 }
-
-
-

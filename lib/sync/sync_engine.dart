@@ -45,6 +45,7 @@ import 'package:biztonic_pos/sync/adapters/generic_sync_adapter.dart';
 /// - Manages connectivity and auth state listeners
 /// - Routes all work to specialized engines
 class SyncService with ChangeNotifier {
+  static bool isTesting = false;
   static final SyncService _instance = SyncService._internal();
   factory SyncService() => _instance;
   SyncService._internal();
@@ -60,8 +61,8 @@ class SyncService with ChangeNotifier {
   late final SyncDiagnostics _diagnostics;
   late final StatsEngine _statsEngine;
   late final SyncMaintenanceEngine _maintenanceEngine;
-  late final PlanSyncPolicy _planPolicy;
-  late final LimitsEngine _limitsEngine;
+  late final PlanSyncPolicy _planPolicy = PlanSyncPolicy(db: _db);
+  late final LimitsEngine _limitsEngine = LimitsEngine(policy: _planPolicy);
 
   // --- ADAPTER MAP ---
   Map<String, SyncAdapter> _adapters = {};
@@ -117,7 +118,7 @@ class SyncService with ChangeNotifier {
 
   final Repository _repository = Repository();
   Repository get repository => _repository;
-  final FirebaseFirestore _db = getFirestore();
+  late final FirebaseFirestore _db = getFirestore();
 
   String? _activeStoreId;
   String? get activeStoreId => _activeStoreId;
@@ -163,7 +164,13 @@ class SyncService with ChangeNotifier {
   }
   int get failedUploadCount => _failedQueueBox?.length ?? 0;
 
-  bool get _hasCloudAccess => FirebaseAuth.instance.currentUser != null;
+  bool get _hasCloudAccess {
+    try {
+      return FirebaseAuth.instance.currentUser != null;
+    } catch (_) {
+      return false;
+    }
+  }
 
   // ─────────────────────────────────────────────────────────────
   // SETTERS (called by providers)
@@ -212,15 +219,18 @@ class SyncService with ChangeNotifier {
         getQueueBox: () => _queueBox,
         getFailedQueueBox: () => _failedQueueBox,
         getActiveStoreId: () => activeStoreId,
-        getUserId: () => FirebaseAuth.instance.currentUser?.uid,
+        getUserId: () {
+          try {
+            return FirebaseAuth.instance.currentUser?.uid;
+          } catch (_) {
+            return null;
+          }
+        },
         getDeviceId: () => _deviceId,
         getRepository: () => _repository,
         checkConnectivity: _checkInternetConnection,
         logEvent: _diagnostics.log,
       );
-
-      _planPolicy = PlanSyncPolicy(db: _db);
-      _limitsEngine = LimitsEngine(policy: _planPolicy);
 
       _statsEngine = StatsEngine(
         db: _db,
@@ -305,12 +315,16 @@ class SyncService with ChangeNotifier {
   }
 
   void _setupAuthListener() {
-    FirebaseAuth.instance.authStateChanges().listen((User? user) {
-      if (user != null) {
-        setUserId(user.uid);
-        if (_activeStoreId != null) processSync();
-      }
-    });
+    try {
+      FirebaseAuth.instance.authStateChanges().listen((User? user) {
+        if (user != null) {
+          setUserId(user.uid);
+          if (_activeStoreId != null) processSync();
+        }
+      });
+    } catch (e) {
+      debugPrint('⚠️ SyncService: FirebaseAuth not initialized in _setupAuthListener: $e');
+    }
   }
 
   Future<void> _initDeviceId() async {
@@ -324,9 +338,11 @@ class SyncService with ChangeNotifier {
 
   void _startSyncTimer() {
     _syncTimer?.cancel();
-    _syncTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
-      if (_isOnline) processSync();
-    });
+    if (!isTesting) {
+      _syncTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+        if (_isOnline) processSync();
+      });
+    }
   }
 
   void _initConnectivity() {
@@ -413,9 +429,25 @@ class SyncService with ChangeNotifier {
 
   /// Retrieves platform limits (with caching).
   Future<Map<String, dynamic>> retrievePlatformLimits() async {
-    final limits = await _planPolicy.retrievePlatformLimits();
-    _cachedPlatformLimits = limits;
-    return limits;
+    try {
+      final limits = await _planPolicy.retrievePlatformLimits();
+      _cachedPlatformLimits = limits;
+      return limits;
+    } catch (e) {
+      debugPrint('⚠️ SyncService: Failed to retrieve platform limits (likely Firebase uninitialized): $e');
+      return const {
+        'daily': 2000,
+        'monthly': 50000,
+        'rate_customer_management': 0,
+        'rate_franchise_management': 0,
+        'rate_central_catalog': 0,
+        'rate_employee_management': 0,
+        'rate_supplier_management': 0,
+        'rate_kds_management': 0,
+        'rate_table_reservation': 0,
+        'rate_data_center': 0,
+      };
+    }
   }
 
   /// Updates the platform limits cache.

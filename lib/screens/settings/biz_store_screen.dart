@@ -44,7 +44,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       'title': 'Table Reservation',
       'description': 'Floor plan, table status, and reservation management.',
       'icon': Icons.table_restaurant,
-      'color': AppColors.textSecondary(context),
+      'color': AppColors.secondary,
       'version': '1.1',
       'size': '2.8 MB',
     },
@@ -342,7 +342,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          border: Border.all(color: isBestValue ? AppColors.warning : AppColors.textSecondary(context)),
+          border: Border.all(color: isBestValue ? AppColors.warning : AppColors.border(context)),
           borderRadius: BorderRadius.zero,
           color: isBestValue ? AppColors.warning.withValues(alpha: 0.05) : null,
         ),
@@ -725,11 +725,10 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                 final sub = historyItems[idx];
                 final df = DateFormat('dd MMM yyyy');
                 return ListTile(
-                  tileColor: isDark
-                      ? AppColors.surfaceLight.withValues(alpha: 0.05)
-                      : AppColors.textSecondary(context),
-                  shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero),
+                  tileColor: AppColors.surface(context),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                      side: BorderSide(color: AppColors.border(context), width: 0.5)),
                   leading: CircleAvatar(
                     backgroundColor: sub.isActive
                         ? AppColors.success.withValues(alpha: 0.1)
@@ -740,9 +739,12 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                             : AppColors.textSecondary(context)),
                   ),
                   title: Text("${sub.planName} - ${sub.billingCycle}",
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary(context))),
                   subtitle: Text(
-                      "Valid: ${df.format(sub.startDate)} - ${df.format(sub.endDate)}"),
+                      "Valid: ${df.format(sub.startDate)} - ${df.format(sub.endDate)}",
+                      style: TextStyle(color: AppColors.textSecondary(context))),
                   trailing: Text(
                     sub.isActive ? "ACTIVE" : "EXPIRED",
                     style: TextStyle(
@@ -1019,10 +1021,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           padding: const EdgeInsets.all(AppSpacing.lg),
           width: double.infinity,
           decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.surfaceLight.withValues(alpha: 0.03)
-                  : AppColors.textSecondary(context),
-              borderRadius: BorderRadius.zero),
+              color: AppColors.surfaceVariant(context),
+              borderRadius: BorderRadius.zero,
+              border: Border.all(color: AppColors.border(context), width: 0.5)),
           child: Text(AppLocalizations.t(context, 'No advance subscriptions in queue.'),
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -1156,10 +1157,10 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     final widget = Container(
       padding: const EdgeInsets.all(AppSpacing.xxs),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2D2D44) : AppColors.surfaceLight,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.zero,
         boxShadow: [BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: isDark ? 0.2 : 0.05), blurRadius: 10)],
-        border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Row(
         children: [
@@ -1203,9 +1204,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       padding: const EdgeInsets.all(AppSpacing.xxs),
       height: 320,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2D2D44) : AppColors.surfaceLight,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.zero,
-        border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         children: [
@@ -1238,9 +1239,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       padding: const EdgeInsets.all(AppSpacing.xxs),
       height: 320,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2D2D44) : AppColors.surfaceLight,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.zero,
-        border: Border.all(color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         children: [
@@ -1285,12 +1286,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           padding: const EdgeInsets.all(AppSpacing.lg),
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.surfaceLight.withValues(alpha: 0.03)
-                : AppColors.textSecondary(context),
+            color: AppColors.surfaceVariant(context),
             borderRadius: BorderRadius.zero,
-            border: Border.all(
-                color: isDark ? Colors.white10 : AppColors.textSecondary(context)),
+            border: Border.all(color: AppColors.border(context), width: 0.5),
           ),
           child: Column(
             children: [

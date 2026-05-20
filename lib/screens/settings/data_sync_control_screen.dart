@@ -430,8 +430,8 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                       ),
                   ]),
                   const SizedBox(height: AppSpacing.sm),
-                  Text("â€¢ Sync Frequency: $freq", style: AppTypography.bodySmall),
-                  Text("â€¢ Cloud Retention: $retention Days", style: AppTypography.bodySmall),
+                  Text("• Sync Frequency: $freq", style: AppTypography.bodySmall),
+                  Text("• Cloud Retention: $retention Days", style: AppTypography.bodySmall),
                 ],
               ),
             );
@@ -635,7 +635,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.history, color: AppColors.textSecondary(context)),
                 title: Text(name, style: AppTypography.bodyMedium),
-                subtitle: Text("${_timeAgo(date)} â€¢ $size KB", style: AppTypography.bodySmall),
+                subtitle: Text("${_timeAgo(date)} • $size KB", style: AppTypography.bodySmall),
                 trailing: AppButton(
                   label: "Restore",
                   variant: AppButtonVariant.ghost,

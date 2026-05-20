@@ -94,7 +94,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                                       child: Text(emp.name.isNotEmpty ? emp.name[0] : '?')),
                                   title: Text(emp.name,
                                       style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
-                                  subtitle: Text("${emp.role} â€¢ ID: ${emp.employeeId ?? 'N/A'}",
+                                  subtitle: Text("${emp.role} • ID: ${emp.employeeId ?? 'N/A'}",
                                       style: AppTypography.bodySmall),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,

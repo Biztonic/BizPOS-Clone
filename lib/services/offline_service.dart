@@ -8,6 +8,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
 class OfflineService {
+  static bool isTesting = false;
   static final OfflineService _instance = OfflineService._internal();
   factory OfflineService() => _instance;
   OfflineService._internal();
@@ -61,14 +62,16 @@ class OfflineService {
        });
     });
 
-    // 2. Periodic Poll (For \"Connected to WiFi but no Internet\" cases on Mobile)
-    _connectivityTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-       bool connected = await _checkConnection();
-       if (connected != _isOnline) {
-         _isOnline = connected;
-         _connectivityController.add(_isOnline);
-       }
-    });
+    // 2. Periodic Poll (For "Connected to WiFi but no Internet" cases on Mobile)
+    if (!isTesting) {
+      _connectivityTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+         bool connected = await _checkConnection();
+         if (connected != _isOnline) {
+           _isOnline = connected;
+           _connectivityController.add(_isOnline);
+         }
+      });
+    }
   }
   
   Future<bool> _checkConnection() async {

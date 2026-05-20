@@ -46,6 +46,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   int? get customThemeColor => state.customThemeColor;
 
   void _loadFromHive() {
+    if (!Hive.isBoxOpen('settings')) return;
     final box = Hive.box('settings');
     final uiStyleIndex = box.get('uiStyle', defaultValue: UIStyle.standard.index);
     final isDarkMode = box.get('isDarkMode', defaultValue: false);
@@ -62,23 +63,31 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 
   void setUIStyle(UIStyle style) {
     state = state.copyWith(uiStyle: style);
-    Hive.box('settings').put('uiStyle', style.index);
+    if (Hive.isBoxOpen('settings')) {
+      Hive.box('settings').put('uiStyle', style.index);
+    }
   }
 
   void setAppTheme(AppColorTheme theme) {
     state = state.copyWith(currentTheme: theme);
-    Hive.box('settings').put('currentTheme', theme.index);
+    if (Hive.isBoxOpen('settings')) {
+      Hive.box('settings').put('currentTheme', theme.index);
+    }
   }
 
   void toggleTheme() {
     final newMode = !state.isDarkMode;
     state = state.copyWith(isDarkMode: newMode);
-    Hive.box('settings').put('isDarkMode', newMode);
+    if (Hive.isBoxOpen('settings')) {
+      Hive.box('settings').put('isDarkMode', newMode);
+    }
   }
 
   void setCustomThemeColor(Color color) {
     state = state.copyWith(customThemeColor: color.toARGB32());
-    Hive.box('settings').put('customThemeColor', color.toARGB32());
+    if (Hive.isBoxOpen('settings')) {
+      Hive.box('settings').put('customThemeColor', color.toARGB32());
+    }
   }
 }
 

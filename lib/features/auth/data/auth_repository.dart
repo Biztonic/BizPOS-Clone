@@ -7,9 +7,9 @@ import '../../../services/firestore_helper.dart';
 import '../domain/models/app_user.dart';
 
 class AuthRepository {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  late final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final FirebaseFirestore _firestore = getFirestore();
+  late final FirebaseFirestore _firestore = getFirestore();
   final OfflineService _offlineService = OfflineService();
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
