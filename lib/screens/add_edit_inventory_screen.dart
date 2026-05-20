@@ -68,10 +68,9 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
   @override
   void initState() {
     super.initState();
-    final provider = Provider.of<DashboardProvider>(context, listen: false);
     _nameController = TextEditingController(text: widget.item?.name ?? '');
     _priceController = TextEditingController(text: widget.item?.price.toString() ?? '');
-    _quantityController = TextEditingController(text: widget.item != null ? provider.getItemStock(widget.item!.id).toString() : '');
+    _quantityController = TextEditingController(text: widget.item?.quantity.toString() ?? '0');
     _skuController = TextEditingController(text: widget.item?.sku ?? '');
     _imageController = TextEditingController(text: widget.item?.image ?? '');
     _lowStockController = TextEditingController(text: widget.item?.lowStockThreshold?.toString() ?? '10');
@@ -84,8 +83,21 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
         
     _selectedDietary = widget.item?.dietaryType;
     _selectedPackaging = widget.item?.packagingType;
+  }
 
-    _loadData();
+  bool _didInit = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didInit) {
+      _didInit = true;
+      if (widget.item != null) {
+        final provider = Provider.of<DashboardProvider>(context, listen: false);
+        _quantityController.text = provider.getItemStock(widget.item!.id).toString();
+      }
+      _loadData();
+    }
   }
 
   Future<void> _loadData() async {
