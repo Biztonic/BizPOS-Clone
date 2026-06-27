@@ -5,6 +5,7 @@ import '../providers/dashboard_provider.dart' as legacy;
 import '../features/store/providers/store_notifier.dart';
 import '../features/auth/providers/permissions_provider.dart';
 import 'settings/devices_settings_section.dart';
+import 'language_screen.dart';
 import '../widgets/feature_guard.dart';
 import '../l10n/app_localizations.dart';
 import '../core/design/layouts/pos_scaffold.dart';
@@ -117,6 +118,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         'roles': null, // All
         'key': 'settings.devices'
       },
+      {
+        'icon': Icons.translate,
+        'label': AppLocalizations.t(context, 'language_settings'),
+        'widgetBuilder': () => const LanguageScreen(isSubView: true),
+        'color': AppColors.adaptivePrimary(context),
+        'roles': null, // All
+        'key': 'settings.language'
+      },
     ];
 
     final isDesktop = MediaQuery.of(context).size.width > 800;
@@ -162,7 +171,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => widget,
+                      builder: (context) => PosScaffold(
+                        title: item['label'],
+                        showSidebar: false,
+                        mainContent: widget,
+                      ),
                     ));
               }
             },

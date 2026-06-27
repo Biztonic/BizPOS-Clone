@@ -39,6 +39,10 @@ class InventoryRepository {
       {'itemId': itemId, 'quantity': quantity, 'storeId': storeId},
       conflictAlgorithm: ConflictAlgorithm.replace
     );
+    await db.rawUpdate(
+      'UPDATE inventory SET quantity = ? WHERE id = ?',
+      [quantity, itemId]
+    );
   }
 
   Future<void> insertMovement(InventoryMovement movement, {Transaction? txn}) async {
@@ -83,15 +87,7 @@ class InventoryRepository {
     }
 
     final rows = await db.rawQuery(sql, args);
-    final items = rows.map((r) => InventoryItem.fromSql(r)).toList();
-    
-    final quantities = await movementRepo.getAllQuantities(storeId);
-    
-    for (int i = 0; i < items.length; i++) {
-      items[i] = items[i].copyWith(quantity: quantities[items[i].id] ?? 0);
-    }
-    
-    return items;
+    return rows.map((r) => InventoryItem.fromSql(r)).toList();
   }
 
   Future<InventoryItem?> getInventoryItem(String id, {String? storeId}) async {
@@ -99,9 +95,7 @@ class InventoryRepository {
     final rows = await db.query('inventory', where: 'id = ?', whereArgs: [id]);
     if (rows.isEmpty) return null;
     
-    final item = InventoryItem.fromSql(rows.first);
-    final quantity = await movementRepo.getItemQuantity(id, storeId: storeId);
-    return item.copyWith(quantity: quantity);
+    return InventoryItem.fromSql(rows.first);
   }
 
   // DEBUG: Get ALL items (no filter)
@@ -109,26 +103,7 @@ class InventoryRepository {
     final db = await dbHelper.database;
     try {
       final rows = await db.rawQuery('SELECT * FROM inventory');
-      final items = rows.map((r) => InventoryItem.fromSql(r)).toList();
-      
-      final allQuantities = await db.rawQuery('''
-        SELECT itemId, SUM(delta) as quantity
-        FROM inventory_movements
-        GROUP BY itemId
-      ''');
-      
-      final quantityMap = Map.fromEntries(
-        allQuantities.map((row) => MapEntry(
-          row['itemId'] as String,
-          (row['quantity'] as int?) ?? 0
-        ))
-      );
-      
-      for (int i = 0; i < items.length; i++) {
-        items[i] = items[i].copyWith(quantity: quantityMap[items[i].id] ?? 0);
-      }
-      
-      return items;
+      return rows.map((r) => InventoryItem.fromSql(r)).toList();
     } catch (e) {
        return [];
     }

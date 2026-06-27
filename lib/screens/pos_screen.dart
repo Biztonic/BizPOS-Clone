@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import '../core/design/tokens/app_colors.dart';
+import '../core/design/components/molecules/app_empty_state.dart';
 // ignore_for_file: deprecated_member_use_from_same_package, use_build_context_synchronously
 import 'package:flutter/material.dart';
 
@@ -27,6 +28,7 @@ import '../core/design/layouts/pos_scaffold.dart';
 import '../core/design/components/atoms/app_button.dart';
 import '../core/design/components/atoms/app_card.dart';
 import '../core/design/tokens/app_spacing.dart';
+import '../core/design/tokens/app_radius.dart';
 import '../widgets/inventory_image_widget.dart';
 
 class POSScreen extends StatefulWidget {
@@ -145,7 +147,7 @@ class _POSScreenState extends State<POSScreen> {
     final uiStyle = context.select<DashboardProvider, UIStyle>((p) => p.uiStyle);
 
     // AUTOMOTIVE THEME OVERRIDE
-    if (uiStyle == UIStyle.car_dashboard) {
+    if (uiStyle == UIStyle.car_dashboard && !isMobile) {
       // Lazy load the car dashboard POS to keep this file clean(er)
       // Note: We need to import it. I'll add the import via another edit or assume it's there.
       // Wait, I should add the import first or at same time.
@@ -259,7 +261,7 @@ class _POSScreenState extends State<POSScreen> {
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs, vertical: 12),
               decoration: BoxDecoration(
                 color: AppColors.surfaceVariant(context),
-                borderRadius: BorderRadius.zero,
+                borderRadius: AppRadius.borderSm,
                 border: Border.all(color: AppColors.adaptiveSuccess(context).withValues(alpha: 0.2)),
               ),
               child: Row(
@@ -315,7 +317,7 @@ class _POSScreenState extends State<POSScreen> {
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
               backgroundColor: AppColors.surfaceVariant(context),
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
               side: isSelected 
                   ? BorderSide.none 
                   : BorderSide(color: AppColors.border(context), width: 1),
@@ -415,7 +417,7 @@ class _POSScreenState extends State<POSScreen> {
                                     padding: const EdgeInsets.all(AppSpacing.sm),
                                     decoration: BoxDecoration(
                                       color: AppColors.adaptivePrimary(context).withValues(alpha: 0.1),
-                                      shape: BoxShape.rectangle,
+                                      borderRadius: AppRadius.borderSm,
                                     ),
                                     child: Icon(
                                       Icons.add_shopping_cart_rounded, 
@@ -463,15 +465,8 @@ class _POSScreenState extends State<POSScreen> {
         const Divider(height: 1),
         Expanded(
           child: billingProvider.cart.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.shopping_cart_outlined, size: 64, color: AppColors.textHint(context)),
-                      const SizedBox(height: AppSpacing.md),
-                      Text(AppLocalizations.t(context, 'Your cart is empty'), style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary(context))),
-                    ],
-                  ),
+              ? const AppEmptyState(
+                  type: AppEmptyStateType.cart,
                 )
                   : Builder(
                     builder: (context) {
@@ -523,9 +518,10 @@ class _POSScreenState extends State<POSScreen> {
                                   ),
                                 ),
                                 Container(
+                                  clipBehavior: Clip.antiAlias,
                                   decoration: BoxDecoration(
                                     color: AppColors.surfaceVariant(context),
-                                    borderRadius: BorderRadius.zero,
+                                    borderRadius: AppRadius.borderSm,
                                   ),
                                   child: Row(
                                     children: [
@@ -563,7 +559,7 @@ class _POSScreenState extends State<POSScreen> {
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: AppColors.surface(context),
-            borderRadius: const BorderRadius.vertical(top: Radius.zero),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
             boxShadow: [
               BoxShadow(
                 color: Theme.of(context).shadowColor.withValues(alpha: 0.08), 
@@ -642,7 +638,7 @@ class _POSScreenState extends State<POSScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
         title: Text(AppLocalizations.t(context, 'Plan Limit Reached'), style: AppTypography.titleLarge.copyWith(color: AppColors.adaptiveError(context))),
         content: Column(
            mainAxisSize: MainAxisSize.min,
@@ -712,7 +708,7 @@ class _POSScreenState extends State<POSScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
             title: Row(
               children: [
                 Icon(Icons.warning_amber_rounded, color: AppColors.adaptiveError(context)),
@@ -730,7 +726,7 @@ class _POSScreenState extends State<POSScreen> {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.adaptiveError(context).withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: AppRadius.borderSm,
                     border: Border.all(color: AppColors.adaptiveError(context).withValues(alpha: 0.1)),
                   ),
                   child: Column(
@@ -938,7 +934,7 @@ class _POSScreenState extends State<POSScreen> {
         height: MediaQuery.of(context).size.height * 0.85,
         decoration: BoxDecoration(
           color: AppColors.surface(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.zero),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
         ),
         child: Column(
           children: [
@@ -948,7 +944,7 @@ class _POSScreenState extends State<POSScreen> {
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 color: AppColors.border(context), 
-                borderRadius: BorderRadius.zero
+                borderRadius: AppRadius.borderCircular
               ),
             ),
             Expanded(child: _buildCartSection(billingProvider, dashboardProvider, inventoryProvider)),
@@ -967,12 +963,12 @@ class _POSScreenState extends State<POSScreen> {
     return InkWell(
       key: key,
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppRadius.borderSm,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: isPrimary ? AppColors.adaptivePrimary(context) : AppColors.transparent,
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppRadius.borderSm,
         ),
         child: Icon(
           icon, 
@@ -987,7 +983,7 @@ class _POSScreenState extends State<POSScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -996,7 +992,7 @@ class _POSScreenState extends State<POSScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: AppColors.adaptiveSuccess(context).withValues(alpha: 0.1),
-                shape: BoxShape.rectangle,
+                borderRadius: AppRadius.borderMd,
               ),
               child: Icon(Icons.check_circle_rounded, size: 64, color: AppColors.adaptiveSuccess(context)),
             ),
@@ -1020,7 +1016,7 @@ class _POSScreenState extends State<POSScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
         title: Text(AppLocalizations.t(context, 'Checkout Error'), style: AppTypography.titleLarge.copyWith(color: AppColors.adaptiveError(context))),
         content: Text(message, style: AppTypography.bodyMedium),
         actions: [

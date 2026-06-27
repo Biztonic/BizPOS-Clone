@@ -30,6 +30,15 @@ class ReceiptGenerator {
 
   ReceiptGenerator(this.config, {this.settings});
 
+  /// Check if a string contains non-Latin1 characters (Unicode/Devanagari/Marathi etc.)
+  static bool containsNonLatin1(String? s) {
+    if (s == null || s.isEmpty) return false;
+    for (int i = 0; i < s.length; i++) {
+      if (s.codeUnitAt(i) > 0xFF) return true;
+    }
+    return false;
+  }
+
   /// Generates the raw bytes for the receipt.
   List<int> generate(ReceiptContent content) {
     List<int> bytes = [];

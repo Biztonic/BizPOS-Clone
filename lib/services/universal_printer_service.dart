@@ -6,6 +6,9 @@ import 'package:flutter_thermal_printer/flutter_thermal_printer.dart'
 import 'package:flutter_thermal_printer/utils/printer.dart'
     if (dart.library.js_util) 'package:biztonic_pos/services/stubs/printer_stub.dart';
 
+import 'dart:ui' as ui;
+import 'package:image/image.dart' as img;
+
 // ignore: duplicate_import, unused_import, unnecessary_import
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 
@@ -14,6 +17,7 @@ import '../models/settings.dart'; // Added import
 import '../features/receipt_printing/models/receipt_config.dart';
 import '../features/receipt_printing/models/receipt_content.dart';
 import '../features/receipt_printing/core/receipt_generator.dart';
+import '../features/receipt_printing/core/receipt_image_renderer.dart';
 
 class UniversalPrinterService {
   final _flutterThermalPrinter = kIsWeb ? null : FlutterThermalPrinter.instance;
@@ -145,7 +149,7 @@ class UniversalPrinterService {
         try {
           debugPrint(
               '🖨️ PRINT: Sending ${data.length} bytes to ${target.connectionType} printer (${target.name})');
-          await _flutterThermalPrinter!.printData(target, data, longData: true);
+          await _flutterThermalPrinter!.printData(target, data, longData: true, chunkSize: 200);
           _lastUsedAt = DateTime.now();
 
           // Update last connected if it was null
@@ -246,6 +250,57 @@ class UniversalPrinterService {
   }) async {
     final profile = await CapabilityProfile.load();
     final generator = Generator(PaperSize.mm80, profile);
+
+    final hasMarathi = ReceiptGenerator.containsNonLatin1(storeName) ||
+        items.any((item) => ReceiptGenerator.containsNonLatin1(item['name'].toString()));
+
+    if (hasMarathi) {
+      final header = ReceiptHeader(storeName: storeName);
+      final billInfo = ReceiptBillInfo(billNo: orderId, date: DateTime.now(), cashierName: 'Cashier');
+      final receiptItems = items.map((item) {
+        final double qty = double.tryParse(item['qty'].toString()) ?? 1.0;
+        final double price = double.tryParse(item['price'].toString()) ?? 0.0;
+        return ReceiptItem(
+          name: item['name'].toString(),
+          quantity: qty,
+          price: price,
+          amount: qty * price,
+        );
+      }).toList();
+      final summary = ReceiptKeyValSummary(
+        rows: [],
+        grandTotal: ReceiptKeyVal(label: 'Total', value: total.toStringAsFixed(2), isBold: true, isLarge: true),
+      );
+      final content = ReceiptContent(
+        header: header,
+        billInfo: billInfo,
+        items: receiptItems,
+        summary: summary,
+        payment: null,
+        footer: null,
+      );
+      
+      final config = ReceiptConfig.mm80();
+      final uiImage = await ReceiptImageRenderer.renderCustomerReceipt(content: content, config: config);
+      final rawBytes = await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+      if (rawBytes != null) {
+        final imgImage = img.Image.fromBytes(
+          width: uiImage.width,
+          height: uiImage.height,
+          bytes: rawBytes.buffer,
+          order: img.ChannelOrder.rgba,
+        );
+        final optimizedImage = _optimizeAndBinarize(imgImage, 576);
+        List<int> printBytes = [];
+        printBytes += generator.reset();
+        printBytes += generator.image(optimizedImage);
+        printBytes += generator.feed(2);
+        printBytes += generator.cut();
+        await printRaw(printBytes);
+        return;
+      }
+    }
+
     List<int> bytes = [];
 
     bytes += generator.reset();
@@ -456,6 +511,58 @@ class UniversalPrinterService {
     debugPrint(
         '🖨️ RECEIPT: Items=${receiptItems.length}, StoreName=$storeName, HasFooter=${footer != null}, HasQR=${footer?.qrData != null}');
 
+    final hasMarathi = ReceiptGenerator.containsNonLatin1(storeName) ||
+        ReceiptGenerator.containsNonLatin1(address) ||
+        ReceiptGenerator.containsNonLatin1(cashierName) ||
+        ReceiptGenerator.containsNonLatin1(tableName ?? '') ||
+        ReceiptGenerator.containsNonLatin1(seatNumbers ?? '') ||
+        items.any((item) => ReceiptGenerator.containsNonLatin1(item['name'].toString())) ||
+        ReceiptGenerator.containsNonLatin1(settings.customHeaderMessage) ||
+        ReceiptGenerator.containsNonLatin1(settings.upsellMessage);
+
+    if (hasMarathi) {
+      final uiImage = await ReceiptImageRenderer.renderCustomerReceipt(
+        content: content,
+        config: config,
+      );
+      final rawBytes = await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+      if (rawBytes != null) {
+        final imgImage = img.Image.fromBytes(
+          width: uiImage.width,
+          height: uiImage.height,
+          bytes: rawBytes.buffer,
+          order: img.ChannelOrder.rgba,
+        );
+        final int targetWidth = settings.receiptWidth == 58 ? 384 : 576;
+        final optimizedImage = _optimizeAndBinarize(imgImage, targetWidth);
+        final profile = await CapabilityProfile.load();
+        final imgGenerator = Generator(settings.receiptWidth == 58 ? PaperSize.mm58 : PaperSize.mm80, profile);
+        List<int> printBytes = [];
+        printBytes += imgGenerator.reset();
+        printBytes += imgGenerator.image(optimizedImage);
+        
+        if (footer != null && footer.qrData != null && footer.qrData!.isNotEmpty) {
+           printBytes += imgGenerator.feed(1);
+           printBytes += [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06];
+           printBytes += [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31];
+           int len = footer.qrData!.length + 3;
+           int pL = len % 256;
+           int pH = len ~/ 256;
+           printBytes += [0x1D, 0x28, 0x6B, pL, pH, 0x31, 0x50, 0x30];
+           for (int i = 0; i < footer.qrData!.length; i++) {
+             printBytes.add(footer.qrData!.codeUnitAt(i));
+           }
+           printBytes += [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30];
+        }
+        
+        printBytes += imgGenerator.feed(3);
+        printBytes += imgGenerator.cut();
+        
+        await printRaw(printBytes);
+        return;
+      }
+    }
+
     // 3. Generate
     List<int> bytes = List.from(generator.generate(content));
 
@@ -477,6 +584,47 @@ class UniversalPrinterService {
     String? seatNumbers,
     int receiptWidth = 80, // Added width parameter, default 80mm
   }) async {
+    final hasMarathi = ReceiptGenerator.containsNonLatin1(counterName) ||
+        ReceiptGenerator.containsNonLatin1(serviceType) ||
+        ReceiptGenerator.containsNonLatin1(billerName) ||
+        ReceiptGenerator.containsNonLatin1(tableName ?? '') ||
+        ReceiptGenerator.containsNonLatin1(seatNumbers ?? '') ||
+        items.any((item) => ReceiptGenerator.containsNonLatin1(item['name'].toString()) || ReceiptGenerator.containsNonLatin1(item['note'] ?? ''));
+
+    if (hasMarathi) {
+      final uiImage = await ReceiptImageRenderer.renderKdsReceipt(
+        counterName: counterName,
+        date: date,
+        kotNumber: kotNumber,
+        serviceType: serviceType,
+        billerName: billerName,
+        items: items,
+        tableName: tableName,
+        seatNumbers: seatNumbers,
+        receiptWidth: receiptWidth,
+      );
+      final rawBytes = await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+      if (rawBytes != null) {
+        final imgImage = img.Image.fromBytes(
+          width: uiImage.width,
+          height: uiImage.height,
+          bytes: rawBytes.buffer,
+          order: img.ChannelOrder.rgba,
+        );
+        final int targetWidth = receiptWidth == 58 ? 384 : 576;
+        final optimizedImage = _optimizeAndBinarize(imgImage, targetWidth);
+        final profile = await CapabilityProfile.load();
+        final imgGenerator = Generator(receiptWidth == 58 ? PaperSize.mm58 : PaperSize.mm80, profile);
+        List<int> printBytes = [];
+        printBytes += imgGenerator.reset();
+        printBytes += imgGenerator.image(optimizedImage);
+        printBytes += imgGenerator.feed(3);
+        printBytes += imgGenerator.cut();
+        await printRaw(printBytes);
+        return;
+      }
+    }
+
     const esc = '\x1B';
     const alignCenter = '$esc\x61\x01';
     const boldOn = '$esc\x45\x01';
@@ -638,5 +786,30 @@ class UniversalPrinterService {
       default:
         return ConnectionType.BLE;
     }
+  }
+
+  img.Image _optimizeAndBinarize(img.Image highResImage, int targetWidth) {
+    final int targetHeight = (highResImage.height * targetWidth) ~/ highResImage.width;
+    final resized = img.copyResize(
+      highResImage,
+      width: targetWidth,
+      height: targetHeight,
+      interpolation: img.Interpolation.average,
+    );
+
+    for (final pixel in resized) {
+      final double luminance = 0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b;
+      if (luminance < 200) {
+        pixel.r = 0;
+        pixel.g = 0;
+        pixel.b = 0;
+      } else {
+        pixel.r = 255;
+        pixel.g = 255;
+        pixel.b = 255;
+      }
+      pixel.a = 255;
+    }
+    return resized;
   }
 }

@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/services/firestore_helper.dart';
+import 'package:biztonic_pos/services/offline_service.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/models/order_model.dart';
@@ -359,9 +360,56 @@ class SyncService with ChangeNotifier {
     bool wasOffline = !_isOnline;
     _isOnline = (result != ConnectivityResult.none);
     notifyListeners();
-    if (wasOffline && _isOnline && _hasCloudAccess) {
-      _diagnostics.log("Network Restored ($result). Triggering sync...");
-      processSync();
+    
+    if (_isOnline) {
+      if (!_hasCloudAccess && OfflineService().getOfflineLoginState()) {
+        _diagnostics.log("Network Restored ($result) but no cloud access. Attempting auto-login...");
+        _checkAndPerformAutoCloudLogin().then((_) {
+          if (_hasCloudAccess) {
+            _diagnostics.log("Auto-login succeeded after connection. Triggering sync...");
+            processSync();
+          }
+        });
+      } else if (wasOffline && _hasCloudAccess) {
+        _diagnostics.log("Network Restored ($result). Triggering sync...");
+        processSync();
+      }
+    }
+  }
+
+  Future<void> _checkAndPerformAutoCloudLogin() async {
+    if (!_isOnline) return;
+    try {
+      if (_hasCloudAccess) return;
+      
+      final isOfflineLoggedIn = OfflineService().getOfflineLoginState();
+      if (!isOfflineLoggedIn) return;
+      
+      final offlineEmail = OfflineService().getOfflineLoginEmail();
+      if (offlineEmail == null) return;
+      
+      final creds = OfflineService().getCachedCredentials(email: offlineEmail);
+      if (creds == null) return;
+      
+      final email = creds['email'];
+      final password = creds['password'];
+      if (email != null && password != null) {
+        debugPrint("🔄 SyncService: Device is online. Attempting auto-sign-in to Firebase Auth...");
+        _diagnostics.log("Attempting auto-sign-in to Firebase Auth for $email...");
+        final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        debugPrint("✅ SyncService: Auto-signed in to Firebase Auth successfully.");
+        _diagnostics.log("Auto-sign-in to Firebase Auth succeeded.");
+        
+        if (credential.user != null) {
+          setUserId(credential.user!.uid);
+        }
+      }
+    } catch (e) {
+      debugPrint("⚠️ SyncService: Auto-sign-in to Firebase Auth failed: $e");
+      _diagnostics.log("Auto-sign-in to Firebase Auth failed: $e", isError: true);
     }
   }
 
@@ -476,7 +524,18 @@ class SyncService with ChangeNotifier {
 
   Future<void> processSync({bool forceManual = false, bool forceFull = false}) async {
     if (!_isInitialized) return;
+    
+    // Auto-login if we have internet but no cloud session yet
+    if (_isOnline && !_hasCloudAccess && OfflineService().getOfflineLoginState()) {
+      await _checkAndPerformAutoCloudLogin();
+    }
+    
     await _orchestrator.processSync(forceManual: forceManual, forceFull: forceFull);
+  }
+
+  Future<int> pullCollection(String collection, {bool forceFull = false}) async {
+    if (!_isInitialized) return 0;
+    return _pullEngine.pullCollection(collection, forceFull: forceFull);
   }
 
   Future<void> forceSyncDown() async {
@@ -811,6 +870,45 @@ class SyncService with ChangeNotifier {
         debugPrint('📤 SyncBridge: OrderCreatedEvent fully processed (${event.movements.length} movements)');
       } catch (e) {
         debugPrint('❌ SyncBridge: Failed to queue OrderCreatedEvent: $e');
+      }
+    });
+
+    // ─── InventoryChangedEvent ──────────────────────────────
+    EventBus.instance.on<InventoryChangedEvent>((event) async {
+      try {
+        final itemId = event.itemId;
+        final storeId = event.storeId;
+        final changeType = event.changeType;
+
+        if (changeType == 'UPSERT') {
+          final item = await _repository.getInventoryItem(itemId, storeId: storeId);
+          if (item != null) {
+            final payload = item.toHiveMap();
+            payload['storeId'] = storeId;
+            await queueOperation(
+              collection: 'inventory',
+              docId: itemId,
+              action: 'create',
+              payload: payload,
+            );
+            debugPrint('📤 SyncBridge: Queued inventory item $itemId (UPSERT) for cloud sync');
+          } else {
+            debugPrint('⚠️ SyncBridge: Inventory item $itemId not found in local DB, cannot queue sync');
+          }
+        } else if (changeType == 'DELETE') {
+          await queueOperation(
+            collection: 'inventory',
+            docId: itemId,
+            action: 'delete',
+            payload: {
+              'id': itemId,
+              'storeId': storeId,
+            },
+          );
+          debugPrint('📤 SyncBridge: Queued inventory item $itemId (DELETE) for cloud sync');
+        }
+      } catch (e) {
+        debugPrint('❌ SyncBridge: Failed to queue InventoryChangedEvent: $e');
       }
     });
 

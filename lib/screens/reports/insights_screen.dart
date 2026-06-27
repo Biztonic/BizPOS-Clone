@@ -1,3 +1,4 @@
+import '../../core/design/tokens/app_radius.dart';
 import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
@@ -41,8 +42,8 @@ class InsightsScreen extends StatelessWidget {
                 // Strings are like "ðŸ“ˆ Message"
                 return Card(
                   elevation: 2,
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
+                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Row(

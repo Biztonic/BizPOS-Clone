@@ -51,7 +51,7 @@ class InventorySyncAdapter extends SyncAdapter {
   /// Rebuilds the full inventory quantity cache after a complete pull.
   @override
   Future<void> onPullComplete(String storeId, Repository repository) async {
-    await repository.rebuildQuantityCache(storeId);
+    // Rebuilding cache from movement ledger is skipped to maintain reconciled baseline quantities.
   }
 
   int _parseInt(dynamic v, [int fallback = 0]) {

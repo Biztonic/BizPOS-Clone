@@ -4,6 +4,7 @@ import 'package:biztonic_pos/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../utils/theme.dart';
+import '../../utils/responsive.dart';
 import '../../features/receipt_printing/screens/receipt_settings_screen.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 
@@ -20,6 +21,7 @@ class DisplaySettingsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeState = ref.watch(themeProvider);
     final themeNotifier = ref.read(themeProvider.notifier);
+    final isMobile = Responsive.isMobile(context);
 
     final content = ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -82,7 +84,7 @@ class DisplaySettingsSection extends ConsumerWidget {
                     child: const Icon(Icons.view_quilt, color: AppColors.primaryLight, size: 20),
                   ),
                   subtitle: Text(
-                    themeState.uiStyle == UIStyle.car_dashboard ? 'Automotive HUD' : 'Standard POS',
+                    (isMobile ? UIStyle.standard : themeState.uiStyle) == UIStyle.car_dashboard ? 'Automotive HUD' : 'Standard POS',
                     style: AppTypography.bodySmall,
                   ),
                 ),
@@ -96,14 +98,15 @@ class DisplaySettingsSection extends ConsumerWidget {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<UIStyle>(
                       isExpanded: true,
-                      value: themeState.uiStyle,
+                      value: isMobile ? UIStyle.standard : themeState.uiStyle,
                       style: AppTypography.bodyMedium,
                       items: [
                         DropdownMenuItem(
                           value: UIStyle.standard, 
                           child: Text(AppLocalizations.t(context, 'Standard'))
                         ),
-                        DropdownMenuItem(value: UIStyle.car_dashboard, child: Text(AppLocalizations.t(context, 'Automotive (Landscape)'))),
+                        if (!isMobile)
+                          DropdownMenuItem(value: UIStyle.car_dashboard, child: Text(AppLocalizations.t(context, 'Automotive (Landscape)'))),
                       ],
                       onChanged: (val) {
                         if (val != null) {

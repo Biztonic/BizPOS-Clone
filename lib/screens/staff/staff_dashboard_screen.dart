@@ -200,7 +200,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     final baseUrl = kIsWeb
         ? Uri.base.origin
         : 'https://bizpos-clone.web.app';
-    final loginUrl = '$baseUrl/employee-login?store=$storeCode&emp=$empId';
+    final loginUrl = '$baseUrl/login?store=$storeCode&emp=$empId';
 
     showDialog(
       context: context,

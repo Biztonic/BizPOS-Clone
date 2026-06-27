@@ -103,7 +103,6 @@ class _PosSidebarState extends State<PosSidebar> {
       width: widget.isDrawer ? null : (isCollapsed ? 80 : 280),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        border: widget.isDrawer ? null : Border(right: BorderSide(color: Theme.of(context).dividerColor, width: 0.5)),
       ),
       child: Column(
         children: [
@@ -132,10 +131,7 @@ class _PosSidebarState extends State<PosSidebar> {
       padding: EdgeInsets.symmetric(vertical: AppSpacing.xl, horizontal: isCollapsed ? AppSpacing.sm : AppSpacing.md),
       child: isCollapsed ? Column(
         children: [
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => provider.toggleSidebar(),
-          ),
+          _buildToggleButton(context, isCollapsed, provider),
           const SizedBox(height: AppSpacing.md),
           Icon(Icons.storefront, color: Theme.of(context).primaryColor, size: 28),
         ]
@@ -153,7 +149,7 @@ class _PosSidebarState extends State<PosSidebar> {
               children: [
                 Text(
                   storeName ?? 'BizPOS', 
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (userName != null)
@@ -171,11 +167,28 @@ class _PosSidebarState extends State<PosSidebar> {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.menu_open),
-            onPressed: () => provider.toggleSidebar(),
-          ),
+          _buildToggleButton(context, isCollapsed, provider),
         ],
+      ),
+    );
+  }
+
+  Widget _buildToggleButton(BuildContext context, bool isCollapsed, DashboardProvider provider) {
+    return InkWell(
+      onTap: () => provider.toggleSidebar(),
+      borderRadius: AppRadius.borderSm,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
+          borderRadius: AppRadius.borderSm,
+          border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.1)),
+        ),
+        child: Icon(
+          isCollapsed ? Icons.menu_rounded : Icons.menu_open_rounded,
+          color: Theme.of(context).primaryColor,
+          size: 20,
+        ),
       ),
     );
   }
@@ -258,103 +271,215 @@ class _PosSidebarState extends State<PosSidebar> {
     );
   }
 
+  Color _getMenuItemColor(BuildContext context, Map<String, dynamic> item) {
+    final key = item['key'] as String?;
+    final route = item['route'] as String?;
+
+    if (key == 'dashboard') return const Color(0xFF6366F1); // Indigo
+    if (key == 'pos') return const Color(0xFF10B981); // Emerald
+    if (key == 'inventory') return const Color(0xFFF59E0B); // Amber
+    if (key == 'customer_management') return const Color(0xFF0EA5E9); // Sky Blue
+    if (key == 'employee_management') return const Color(0xFF8B5CF6); // Purple
+    if (key == 'franchise_management') return const Color(0xFFF43F5E); // Rose
+    if (key == 'integration_hub') return const Color(0xFFD946EF); // Fuchsia
+    if (key == 'kds_management') return const Color(0xFF0D9488); // Teal
+    if (key == 'supplier_management') return const Color(0xFFEA580C); // Warm Orange
+    if (key == 'table_reservation') return const Color(0xFFEAB308); // Yellow
+    if (key == 'data_center') return const Color(0xFF8B5CF6); // Violet
+    if (key == 'biz_store') return const Color(0xFF06B6D4); // Cyan
+
+    if (route == '/sales') return const Color(0xFFEC4899); // Pink
+    if (route == '/reports') return const Color(0xFF3B82F6); // Blue
+    if (route == '/settings') return const Color(0xFF64748B); // Slate
+    if (route == '/admin') return const Color(0xFFEF4444); // Crimson
+    if (route == '/languages') return const Color(0xFF14B8A6); // Teal
+
+    return item['color'] as Color? ?? AppColors.primary;
+  }
+
   Widget _buildMenuList(BuildContext context, List<Map<String, dynamic>> menuItems, DashboardProvider dashboardProvider, bool isCollapsed) {
-    return ListView.builder(
-      itemCount: menuItems.length,
-      padding: EdgeInsets.symmetric(vertical: 10, horizontal: isCollapsed ? 8 : 12),
-      itemBuilder: (context, index) {
-        final item = menuItems[index];
-        // Safely get current URI from GoRouter or fallback to empty
-        String currentUri = '';
-        try {
-          currentUri = GoRouterState.of(context).uri.toString();
-        } catch (_) {
-          // Fallback for cases where Navigator is used instead of GoRouter
-        }
-        
-        // Exact match or sub-route match (e.g. /customers/detail matches /customers)
-        final isSelected = currentUri.isNotEmpty && (currentUri == item['route'] || (item['route'] != '/dashboard' && currentUri.startsWith(item['route'])));
-        final color = item['color'] as Color? ?? AppColors.textSecondary(context);
-        final isRestricted = item.containsKey('key') && !dashboardProvider.isFeatureEnabled(item['key'] as String);
-        
-        bool isHovered = false;
-        return DemoTarget(
-          step: item['key'] == 'pos' ? 'nav_pos' : (item['key'] == 'reports' ? 'nav_reports' : 'none'),
-          instruction: item['key'] == 'pos' ? "Click POS to start selling" : "Check Reports here",
-          child: StatefulBuilder(
-            builder: (context, setState) {
-              return MouseRegion(
-                onEnter: (_) => setState(() => isHovered = true),
-                onExit: (_) => setState(() => isHovered = false),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-                  decoration: BoxDecoration(
-                    color: isSelected ? color.withValues(alpha: 0.1) : (isHovered ? color.withValues(alpha: 0.05) : AppColors.transparent),
-                    borderRadius: AppRadius.borderMd,
-                    border: Border(left: BorderSide(color: isSelected ? color : (isHovered ? color.withValues(alpha: 0.5) : AppColors.transparent), width: 4)),
-                  ),
-                  child: Material(
-                    color: AppColors.transparent,
-                    child: InkWell(
+    return ScrollConfiguration(
+      behavior: const _NoScrollbarBehavior(),
+      child: ListView.builder(
+        itemCount: menuItems.length,
+        padding: EdgeInsets.symmetric(vertical: 10, horizontal: isCollapsed ? 8 : 12),
+        itemBuilder: (context, index) {
+          final item = menuItems[index];
+          // Safely get current URI from GoRouter or fallback to empty
+          String currentUri = '';
+          try {
+            currentUri = GoRouterState.of(context).uri.toString();
+          } catch (_) {
+            // Fallback for cases where Navigator is used instead of GoRouter
+          }
+          
+          // Exact match or sub-route match (e.g. /customers/detail matches /customers)
+          final isSelected = currentUri.isNotEmpty && (currentUri == item['route'] || (item['route'] != '/dashboard' && currentUri.startsWith(item['route'])));
+          final color = _getMenuItemColor(context, item);
+          final isRestricted = item.containsKey('key') && !dashboardProvider.isFeatureEnabled(item['key'] as String);
+          
+          bool isHovered = false;
+          return DemoTarget(
+            step: item['key'] == 'pos' ? 'nav_pos' : (item['key'] == 'reports' ? 'nav_reports' : 'none'),
+            instruction: item['key'] == 'pos' ? "Click POS to start selling" : "Check Reports here",
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return MouseRegion(
+                  onEnter: (_) => setState(() => isHovered = true),
+                  onExit: (_) => setState(() => isHovered = false),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+                    decoration: BoxDecoration(
+                      color: isSelected ? color.withValues(alpha: 0.1) : (isHovered ? color.withValues(alpha: 0.05) : AppColors.transparent),
                       borderRadius: AppRadius.borderMd,
-                      onTap: () {
-                        if (item['key'] == 'pos') dashboardProvider.nextDemoStep();
-                        
-                        final route = item['route'] as String;
-                        if (widget.isDrawer) {
-                          // Safely close the drawer before navigating to prevent hangs
-                          Navigator.pop(context);
-                          // Short delay to allow drawer animation to start closing before navigation
-                          Future.delayed(const Duration(milliseconds: 100), () {
-                            if (context.mounted) {
-                              context.go(route);
-                            }
-                          });
-                        } else {
-                          context.go(route);
-                        }
-                      },
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: isCollapsed ? 8 : 12, vertical: 10),
-                        child: Row(
-                          mainAxisAlignment: isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
-                          children: [
-                            AppIconography.iconContainer(
-                              icon: item['icon'] as IconData,
-                              color: color,
-                              size: AppIconography.md,
-                              containerSize: AppIconography.containerMd,
-                              borderRadius: AppRadius.md,
-                            ),
-                            if (!isCollapsed) ...[
-                              const SizedBox(width: AppSpacing.md),
-                              Expanded(
-                                child: Text(
-                                  item['label'],
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.bodyMedium.copyWith(
-                                    color: isRestricted ? AppColors.textSecondary(context) : (isSelected ? color : (Theme.of(context).brightness == Brightness.dark ? AppColors.surfaceLight : AppColors.textPrimary(context))),
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      border: Border(left: BorderSide(color: isSelected ? color : (isHovered ? color.withValues(alpha: 0.5) : AppColors.transparent), width: 4)),
+                    ),
+                    child: Material(
+                      color: AppColors.transparent,
+                      child: InkWell(
+                        borderRadius: AppRadius.borderMd,
+                        onTap: () {
+                          if (item['key'] == 'pos') dashboardProvider.nextDemoStep();
+                          
+                          final route = item['route'] as String;
+                          if (widget.isDrawer) {
+                            // Safely close the drawer before navigating to prevent hangs
+                            Navigator.pop(context);
+                            // Short delay to allow drawer animation to start closing before navigation
+                            Future.delayed(const Duration(milliseconds: 100), () {
+                              if (context.mounted) {
+                                context.go(route);
+                              }
+                            });
+                          } else {
+                            context.go(route);
+                          }
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: isCollapsed ? 8 : 12, vertical: 10),
+                          child: Row(
+                            mainAxisAlignment: isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
+                            children: [
+                              _AnimatedSidebarIcon(
+                                icon: item['icon'] as IconData,
+                                color: color,
+                                isSelected: isSelected,
+                                isHovered: isHovered,
+                                size: AppIconography.md,
+                                containerSize: AppIconography.containerMd,
+                                borderRadius: AppRadius.md,
+                              ),
+                              if (!isCollapsed) ...[
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: Text(
+                                    item['label'],
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.bodyLarge.copyWith(
+                                      color: isRestricted ? AppColors.textSecondary(context) : (isSelected ? color : (Theme.of(context).brightness == Brightness.dark ? AppColors.surfaceLight : AppColors.textPrimary(context))),
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              if (isRestricted) const Icon(Icons.lock, size: AppIconography.xs, color: AppColors.warning),
-                            ]
-                          ],
+                                if (isRestricted) const Icon(Icons.lock, size: AppIconography.xs, color: AppColors.warning),
+                              ]
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              );
-            }
-          ),
-        );
-      },
+                );
+              }
+            ),
+          );
+        },
+      ),
     );
   }
 }
+
+class _AnimatedSidebarIcon extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final bool isSelected;
+  final bool isHovered;
+  final double size;
+  final double containerSize;
+  final double borderRadius;
+
+  const _AnimatedSidebarIcon({
+    required this.icon,
+    required this.color,
+    required this.isSelected,
+    required this.isHovered,
+    this.size = AppIconography.md,
+    this.containerSize = AppIconography.containerMd,
+    this.borderRadius = 10.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      width: containerSize,
+      height: containerSize,
+      decoration: BoxDecoration(
+        color: isSelected
+            ? color.withValues(alpha: 0.16)
+            : (isHovered ? color.withValues(alpha: 0.1) : color.withValues(alpha: 0.05)),
+        borderRadius: BorderRadius.all(Radius.circular(isHovered ? borderRadius * 1.25 : borderRadius)),
+        border: Border.all(
+          color: isSelected
+              ? color.withValues(alpha: 0.4)
+              : (isHovered ? color.withValues(alpha: 0.3) : color.withValues(alpha: 0.1)),
+          width: 1.0,
+        ),
+        boxShadow: isHovered
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.25),
+                  blurRadius: 10,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 3),
+                )
+              ]
+            : [],
+      ),
+      child: Center(
+        child: AnimatedScale(
+          scale: isHovered ? 1.18 : 1.0,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutBack,
+          child: AnimatedRotation(
+            turns: isHovered ? -0.03 : 0.0,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutBack,
+            child: Icon(
+              icon,
+              color: isSelected
+                  ? color
+                  : (isHovered ? color.withValues(alpha: 1.0) : color.withValues(alpha: 0.75)),
+              size: size,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NoScrollbarBehavior extends ScrollBehavior {
+  const _NoScrollbarBehavior();
+
+  @override
+  Widget buildScrollbar(BuildContext context, Widget child, ScrollableDetails details) {
+    return child;
+  }
+}
+
 
 
 

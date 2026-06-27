@@ -2,6 +2,7 @@ import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../core/design/layouts/pos_scaffold.dart';
 import '../core/design/density/app_density.dart';
 import '../core/design/tokens/app_spacing.dart';
@@ -9,15 +10,6 @@ import '../core/design/tokens/app_typography.dart';
 import '../core/design/tokens/app_radius.dart';
 import '../core/design/tokens/app_shadows.dart';
 
-import 'admin/manage_roles_screen.dart';
-import 'admin/store_management_screen.dart';
-import 'admin/other_settings_screen.dart';
-import 'admin/release_management_screen.dart';
-import 'admin/basic_plan_settings_screen.dart';
-import 'user_management_screen.dart';
-import 'auth/station_lock_screen.dart';
-import 'admin/subscription_approval_screen.dart';
-import 'admin/subscriptions_overview_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -32,63 +24,63 @@ class AdminDashboardScreen extends StatelessWidget {
         icon: Icons.store_rounded,
         label: 'Store Management',
         description: 'Manage all client stores and subscriptions',
-        widgetBuilder: () => const StoreManagementScreen(),
+        routePath: '/stores',
         gradient: const [Color(0xFFF59E0B), Color(0xFFF97316)],
       ),
       _AdminMenuItem(
         icon: Icons.people_alt_rounded,
         label: 'User Management',
         description: 'Manage system users and access',
-        widgetBuilder: () => const UserManagementScreen(),
+        routePath: '/users',
         gradient: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
       ),
       _AdminMenuItem(
         icon: Icons.shield_rounded,
         label: 'Roles & Permissions',
         description: 'Define user roles and access control',
-        widgetBuilder: () => const ManageRolesScreen(),
+        routePath: '/admin/manage-roles',
         gradient: const [Color(0xFF3B82F6), Color(0xFF06B6D4)],
       ),
       _AdminMenuItem(
         icon: Icons.tune_rounded,
         label: 'Other Settings',
         description: 'Configure store types and misc settings',
-        widgetBuilder: () => const OtherSettingsScreen(),
+        routePath: '/admin/other-settings',
         gradient: const [Color(0xFF64748B), Color(0xFF94A3B8)],
       ),
       _AdminMenuItem(
         icon: Icons.rocket_launch_rounded,
         label: 'App Releases',
         description: 'Manage versions and force updates',
-        widgetBuilder: () => const ReleaseManagementScreen(),
+        routePath: '/admin/releases',
         gradient: const [Color(0xFFEF4444), Color(0xFFF97316)],
       ),
       _AdminMenuItem(
         icon: Icons.phonelink_lock_rounded,
         label: 'Handover System',
         description: 'Lock station for employee use',
-        widgetBuilder: () => const StationLockScreen(),
+        routePath: '/admin/lock',
         gradient: const [Color(0xFFF59E0B), Color(0xFFEAB308)],
       ),
       _AdminMenuItem(
         icon: Icons.speed_rounded,
         label: 'Basic Plan Limits',
         description: 'Set daily/monthly order quotas',
-        widgetBuilder: () => const BasicPlanSettingsScreen(),
+        routePath: '/admin/limits',
         gradient: const [Color(0xFF8B5CF6), Color(0xFFA855F7)],
       ),
       _AdminMenuItem(
         icon: Icons.account_balance_wallet_rounded,
         label: 'Subscriptions',
         description: 'View revenue, active plans and history',
-        widgetBuilder: () => const SubscriptionsOverviewScreen(),
+        routePath: '/admin/subscriptions',
         gradient: const [Color(0xFF10B981), Color(0xFF14B8A6)],
       ),
       _AdminMenuItem(
         icon: Icons.verified_rounded,
         label: 'Subscription Approvals',
         description: 'Verify and approve plan upgrade requests',
-        widgetBuilder: () => const SubscriptionApprovalScreen(),
+        routePath: '/admin/approvals',
         gradient: const [Color(0xFF06B6D4), Color(0xFF3B82F6)],
       ),
     ];
@@ -234,29 +226,19 @@ class AdminDashboardScreen extends StatelessWidget {
       crossAxisCount = 1;
     }
 
-    double aspectRatio = 1.35;
-    if (crossAxisCount == 1) {
-      aspectRatio = 3.5;
-    } else if (crossAxisCount <= 2) {
-      aspectRatio = 1.1;
-    }
-
     return SliverGrid(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: AppSpacing.md,
         mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: aspectRatio,
+        mainAxisExtent: crossAxisCount == 1 ? 120 : 210,
       ),
       delegate: SliverChildBuilderDelegate(
         (context, index) => _PremiumAdminCard(
           item: items[index],
           isHorizontal: crossAxisCount == 1,
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => items[index].widgetBuilder()),
-            );
+            context.push(items[index].routePath);
           },
         ),
         childCount: items.length,
@@ -270,14 +252,14 @@ class _AdminMenuItem {
   final IconData icon;
   final String label;
   final String description;
-  final Widget Function() widgetBuilder;
+  final String routePath;
   final List<Color> gradient;
 
   const _AdminMenuItem({
     required this.icon,
     required this.label,
     required this.description,
-    required this.widgetBuilder,
+    required this.routePath,
     required this.gradient,
   });
 }

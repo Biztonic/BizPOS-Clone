@@ -13,6 +13,7 @@ import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/features/billing/domain/use_cases/checkout_order.dart';
+import 'package:intl/intl.dart';
 
 class OrderProvider with ChangeNotifier {
   late final FirebaseFirestore _db = getFirestore(); // ignore: unused_field
@@ -381,6 +382,9 @@ class OrderProvider with ChangeNotifier {
         double totalCogs = 0;
         int count = 0;
         
+        final Map<String, Map<String, double>> categoryAggregations = {};
+        final Map<String, Map<String, double>> dayAggregations = {};
+
         final targetStoreId = storeId.trim();
         for (var val in box.values) {
           if (val is! Map) continue;
@@ -422,21 +426,73 @@ class OrderProvider with ChangeNotifier {
             cashSales += effectiveTotal;
           }
 
+          final String dayKey = DateFormat('yyyy-MM-dd').format(orderDate);
+          dayAggregations.putIfAbsent(dayKey, () => {'sales': 0.0, 'cogs': 0.0});
+
           // CALCULATE COGS (Iterate Items)
           final items = val['items'] as List<dynamic>? ?? [];
           for (var itemRecord in items) {
              if (itemRecord is Map) {
                 final qty = (itemRecord['quantity'] ?? 0).toDouble();
                 final cost = (itemRecord['costSnapshot'] ?? itemRecord['cost'] ?? 0).toDouble();
+                final price = (itemRecord['priceSnapshot'] ?? itemRecord['price'] ?? 0).toDouble();
+                
                 final itemCogs = cost * qty;
+                final itemSales = price * qty;
+                
                 totalCogs += isRefunded ? 0.0 : itemCogs;
+
+                final category = (itemRecord['category'] ?? 'Uncategorized').toString();
+                categoryAggregations.putIfAbsent(category, () => {'sales': 0.0, 'cogs': 0.0});
+                
+                if (!isRefunded) {
+                  categoryAggregations[category]!['sales'] = categoryAggregations[category]!['sales']! + itemSales;
+                  categoryAggregations[category]!['cogs'] = categoryAggregations[category]!['cogs']! + itemCogs;
+
+                  dayAggregations[dayKey]!['sales'] = dayAggregations[dayKey]!['sales']! + itemSales;
+                  dayAggregations[dayKey]!['cogs'] = dayAggregations[dayKey]!['cogs']! + itemCogs;
+                }
              }
+          }
+
+          if (items.isEmpty && !isRefunded) {
+            categoryAggregations.putIfAbsent('Uncategorized', () => {'sales': 0.0, 'cogs': 0.0});
+            categoryAggregations['Uncategorized']!['sales'] = categoryAggregations['Uncategorized']!['sales']! + effectiveTotal;
+            categoryAggregations['Uncategorized']!['cogs'] = categoryAggregations['Uncategorized']!['cogs']! + (effectiveTotal * 0.7);
+
+            dayAggregations[dayKey]!['sales'] = dayAggregations[dayKey]!['sales']! + effectiveTotal;
+            dayAggregations[dayKey]!['cogs'] = dayAggregations[dayKey]!['cogs']! + (effectiveTotal * 0.7);
           }
 
           if (!isRefunded) {
             count++;
           }
         }
+
+        final List<Map<String, dynamic>> categoryStats = [];
+        categoryAggregations.forEach((cat, data) {
+          final sales = data['sales']!;
+          final cogs = data['cogs']!;
+          categoryStats.add({
+            'category': cat,
+            'sales': sales,
+            'cogs': cogs,
+            'profit': sales - cogs,
+          });
+        });
+
+        final List<Map<String, dynamic>> dayStats = [];
+        dayAggregations.forEach((day, data) {
+          final sales = data['sales']!;
+          final cogs = data['cogs']!;
+          dayStats.add({
+            'day': day,
+            'sales': sales,
+            'cogs': cogs,
+            'profit': sales - cogs,
+          });
+        });
+
         return {
           'totalSales': totalSales,
           'orderCount': count,
@@ -445,6 +501,8 @@ class OrderProvider with ChangeNotifier {
           'cashSales': cashSales,
           'totalCogs': totalCogs,
           'grossProfit': totalSales - totalCogs,
+          'categoryStats': categoryStats,
+          'dayStats': dayStats,
         };
       } catch (e) {
         return {

@@ -8,7 +8,9 @@ import '../core/design/components/atoms/app_button.dart';
 import '../core/design/components/atoms/app_card.dart';
 import '../core/design/components/atoms/app_text_field.dart';
 import '../core/design/components/organisms/pos_data_table.dart';
+import '../core/design/components/molecules/app_empty_state.dart';
 import '../core/design/design_system.dart';
+
 
 class EmployeesScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -151,7 +153,10 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                 else if (isDesktop)
                   SliverPadding(
                     padding: const EdgeInsets.all(AppSpacing.md),
-                    sliver: SliverToBoxAdapter(child: _buildTableView(context, provider)),
+                    sliver: SliverFillRemaining(
+                      hasScrollBody: true,
+                      child: _buildTableView(context, provider),
+                    ),
                   )
                 else
                   SliverPadding(
@@ -224,21 +229,8 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.people_outline, size: 80, color: AppColors.border(context)),
-          const SizedBox(height: AppSpacing.md),
-          Text(AppLocalizations.t(context, 'No employees found'),
-            style: AppTypography.titleLarge.copyWith(color: AppColors.textSecondary(context)),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(AppLocalizations.t(context, 'Tap + to add your first staff member.'),
-            style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
-          ),
-        ],
-      ),
+    return const AppEmptyState(
+      type: AppEmptyStateType.employee,
     );
   }
 

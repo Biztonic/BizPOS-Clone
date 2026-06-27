@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
@@ -14,10 +14,12 @@ import '../core/design/components/atoms/app_button.dart';
 import '../core/design/components/atoms/app_card.dart';
 import '../core/design/components/atoms/app_text_field.dart';
 import '../core/design/components/organisms/pos_data_table.dart';
+import '../core/design/components/molecules/app_empty_state.dart';
 import '../core/design/tokens/app_spacing.dart';
 import '../core/design/tokens/app_typography.dart';
 import '../core/design/density/app_density.dart';
 import '../core/design/tokens/app_colors.dart';
+
 
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
@@ -104,7 +106,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                         sliver: SliverFillRemaining(
-                          hasScrollBody: false,
+                          hasScrollBody: true,
                           child: _buildTableView(context, provider, displayedCustomers),
                         ),
                       )
@@ -304,15 +306,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.person_search, size: 80, color: AppColors.border(context)),
-          const SizedBox(height: AppSpacing.md),
-          Text(AppLocalizations.t(context, 'no_data'), style: AppTypography.titleMedium.copyWith(color: AppColors.textSecondary(context))),
-        ],
-      ),
+    return const AppEmptyState(
+      type: AppEmptyStateType.employee,
     );
   }
 

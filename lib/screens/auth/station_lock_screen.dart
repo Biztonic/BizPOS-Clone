@@ -8,7 +8,7 @@ import '../../core/design/tokens/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/dashboard_provider.dart';
-import 'package:biztonic_pos/screens/auth/employee_login_screen.dart';
+import 'package:biztonic_pos/widgets/employee_pin_dialog.dart';
 import '../../utils/pin_utils.dart';
 
 class StationLockScreen extends StatefulWidget {
@@ -66,12 +66,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
               role: "Cashier / Staff",
               color: AppColors.warning,
               icon: Icons.badge,
-              onTap: () {
-                 // Push Employee Login - but modified to float or dialog?
-                 // Or just navigate. If navigate, we need to ensure back comes here.
-                 // For now, let's just push Material Page so we stay in 'Lock' context if they cancel.
-                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmployeeLoginScreen()));
-              }
+              onTap: () => _showEmployeeSelectorDialog(context, provider),
             ),
 
             const SizedBox(height: AppSpacing.xxl),
@@ -182,6 +177,155 @@ class _StationLockScreenState extends State<StationLockScreen> {
           ],
        )
      );
+  }
+
+  void _showEmployeeSelectorDialog(BuildContext context, DashboardProvider provider) {
+    final employees = provider.employees;
+    final store = provider.activeStore;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (store == null) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 400,
+            constraints: const BoxConstraints(maxHeight: 500),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
+                  blurRadius: 32,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        AppLocalizations.t(context, 'Select Profile'),
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  if (employees.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                      child: Center(
+                        child: Text(
+                          AppLocalizations.t(context, 'No employees configured'),
+                          style: TextStyle(color: AppColors.textSecondary(context)),
+                        ),
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: employees.length,
+                        itemBuilder: (context, index) {
+                          final emp = employees[index];
+                          final name = emp.name.isEmpty ? 'Employee' : emp.name;
+                          final role = emp.role.isEmpty ? 'Staff' : emp.role;
+                          final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                              ),
+                            ),
+                            color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.black.withValues(alpha: 0.01),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () {
+                                Navigator.pop(ctx); // Close selector dialog
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => EmployeePinDialog(
+                                    employee: {
+                                      ...emp.toMap(),
+                                      'uid': emp.uid,
+                                    },
+                                    storeCode: store.shortCode ?? store.id,
+                                    storeId: store.id,
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 20,
+                                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                      child: Text(
+                                        initial,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          Text(
+                                            role,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: AppColors.textSecondary(context),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.chevron_right, color: Colors.grey),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 

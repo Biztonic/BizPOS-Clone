@@ -10,6 +10,10 @@ import '../widgets/inventory_image_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'package:uuid/uuid.dart';
+import '../services/image_cache_service.dart';
+import '../features/inventory/presentation/providers/inventory_provider.dart';
 import '../core/design/tokens/app_spacing.dart';
 import '../core/design/tokens/app_typography.dart';
 import '../core/design/components/atoms/app_text_field.dart';
@@ -53,6 +57,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
   String? _selectedPackaging;
   
   File? _pickedImage;
+  String? _base64Image;
   final ImagePicker _picker = ImagePicker();
 
   bool _isLoading = true;
@@ -83,6 +88,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
         
     _selectedDietary = widget.item?.dietaryType;
     _selectedPackaging = widget.item?.packagingType;
+    _base64Image = widget.item?.localImage;
   }
 
   bool _didInit = false;
@@ -109,12 +115,19 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
        final packaging = await provider.fetchMetadata('packaging_types').timeout(const Duration(seconds: 5), onTimeout: () => []);
        final variants = await provider.fetchMetadata('variant_types').timeout(const Duration(seconds: 5), onTimeout: () => []);
        
-       if (widget.item?.category != null && widget.item!.category.isNotEmpty) {
-          if (!variants.contains(widget.item!.category)) {
-             variants.add(widget.item!.category);
-             variants.sort();
-          }
+       List<String> existingCategories = [];
+       try {
+         final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
+         existingCategories = inventoryProvider.categories.where((c) => c != 'All').toList();
+       } catch (e) {
+         debugPrint("No InventoryProvider found: $e");
        }
+       
+       final mergedVariants = <String>{
+         ...variants,
+         ...existingCategories,
+         if (widget.item?.category != null && widget.item!.category.isNotEmpty) widget.item!.category,
+       }.toList()..sort();
        
        final store = provider.activeStore;
        bool showD = false, showP = false;
@@ -130,7 +143,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
           setState(() {
              _dietaryOptions = dietary.toSet().toList();
              _packagingOptions = packaging.toSet().toList();
-             _variantOptions = variants.toSet().toList();
+             _variantOptions = mergedVariants;
              _showDietary = showD;
              _showPackaging = showP;
              _isLoading = false;
@@ -188,16 +201,28 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
+        maxWidth: 256,
+        maxHeight: 256,
+        imageQuality: 75,
       );
       
       if (image != null) {
-        setState(() {
-          _pickedImage = File(image.path);
-          _imageController.text = image.name; 
-        });
+        if (kIsWeb) {
+          final bytes = await image.readAsBytes();
+          final base64Str = base64Encode(bytes);
+          final format = image.path.endsWith('.png') ? 'png' : 'jpeg';
+          setState(() {
+            _pickedImage = null;
+            _imageController.text = image.name; 
+            _base64Image = 'data:image/$format;base64,$base64Str';
+          });
+        } else {
+          setState(() {
+            _pickedImage = File(image.path);
+            _imageController.text = image.name; 
+            _base64Image = null;
+          });
+        }
       }
     } catch (e) {
       debugPrint("❌ Error picking image: $e");
@@ -226,16 +251,24 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
     
     try {
       final provider = Provider.of<DashboardProvider>(context, listen: false);
+      final newItemId = (widget.item != null && widget.item!.id.isNotEmpty) 
+          ? widget.item!.id 
+          : const Uuid().v4();
       
+      String? savedImagePath;
+      if (!kIsWeb && _pickedImage != null) {
+        savedImagePath = await ImageCacheService.saveLocalImage(_pickedImage!, newItemId);
+      }
+
       final newItem = InventoryItem(
-        id: widget.item?.id ?? '', 
+        id: newItemId, 
         name: _nameController.text.trim(),
         category: _selectedCategory ?? 'General',
         price: double.tryParse(_priceController.text) ?? 0.0,
         cost: double.tryParse(_costController.text) ?? 0.0,
         sku: _skuController.text.trim(),
-        image: _imageController.text,
-        localImage: _pickedImage?.path,
+        image: _imageController.text.isEmpty ? null : _imageController.text,
+        localImage: savedImagePath ?? _base64Image ?? widget.item?.localImage,
         quantity: int.tryParse(_quantityController.text) ?? 0,
         status: (int.tryParse(_quantityController.text) ?? 0) > 0 ? 'In Stock' : 'Out of Stock',
         trackStock: true,
@@ -446,14 +479,14 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                               helperText: 'Select an image from your device', readOnly: true, onTap: _pickImage,
                             ),
                             const SizedBox(height: AppSpacing.md),
-                            if (_pickedImage != null || _imageController.text.isNotEmpty) ...[
+                            if (_pickedImage != null || _base64Image != null || _imageController.text.isNotEmpty) ...[
                               Center(child: Column(children: [
                                 Text(AppLocalizations.t(context, 'Preview:'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
                                 const SizedBox(height: AppSpacing.xs),
                                 if (_pickedImage != null)
                                   ClipRRect(borderRadius: BorderRadius.circular(8), child: kIsWeb ? Image.network(_pickedImage!.path, width: 100, height: 100, fit: BoxFit.cover, cacheWidth: 200, cacheHeight: 200) : Image.file(_pickedImage!, width: 100, height: 100, fit: BoxFit.cover, cacheWidth: 200, cacheHeight: 200))
                                 else
-                                  InventoryImageWidget(item: InventoryItem(id: widget.item?.id ?? 'preview', name: '', category: '', price: 0, quantity: 0, status: 'In Stock', trackStock: false, image: _imageController.text, localImage: widget.item?.localImage), width: 100, height: 100, borderRadius: 8),
+                                  InventoryImageWidget(item: InventoryItem(id: widget.item?.id ?? 'preview', name: '', category: '', price: 0, quantity: 0, status: 'In Stock', trackStock: false, image: _imageController.text.isEmpty ? null : _imageController.text, localImage: _base64Image ?? widget.item?.localImage), width: 100, height: 100, borderRadius: 8),
                               ])),
                             ],
                             const SizedBox(height: AppSpacing.md),

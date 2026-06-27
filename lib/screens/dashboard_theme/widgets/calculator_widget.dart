@@ -1,6 +1,6 @@
 import '../../../core/design/tokens/app_colors.dart';
+import '../../../core/design/tokens/app_radius.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
-
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 // ignore_for_file: curly_braces_in_flow_control_structures, deprecated_member_use
@@ -225,47 +225,41 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
     }).toList();
     final ordersCount = todayOrders.length.toString();
 
-    // 3. Cash (Today)
     final cashOrders = todayOrders.where((o) => o.paymentMethod == 'Cash').toList();
     final cashTotal = cashOrders.fold(0.0, (sum, o) => sum + o.total);
     final cashDisplay = "₹${cashTotal.toStringAsFixed(0)}";
-
 
     return Scaffold(
       backgroundColor: bgColor, 
       body: SafeArea(
         child: Column(
           children: [
-             // HEADER: Title + Close Button
              Padding(
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                 child: Row(
                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                    children: [
                       Text(AppLocalizations.t(context, 'Tools & Calculator'), style: TextStyle(color: textColor, fontSize: 24, fontWeight: FontWeight.bold)),
-                      // CLOSE BUTTON
                       InkWell(
                          onTap: () => Navigator.pop(context),
+                         borderRadius: AppRadius.borderSm,
                          child: Container(
                             width: 36, 
                             height: 36,
-                            decoration: const BoxDecoration(
-                               color: AppColors.error,
-                               borderRadius: BorderRadius.zero,
+                            decoration: BoxDecoration(
+                               color: AppColors.error.withOpacity(0.12),
+                               borderRadius: AppRadius.borderSm,
                             ),
-                            child: const Icon(Icons.close, color: AppColors.surfaceLight, size: 20),
+                            child: const Icon(Icons.close, color: AppColors.error, size: 20),
                          ),
                       )
                    ],
                 ),
              ),
-             
-             // MAIN BODY
              Expanded(
                 child: Row(
                    crossAxisAlignment: CrossAxisAlignment.stretch,
                    children: [
-                      // LEFT COLUMN (Flex 4) -> Contains Display, Quick Data, Converter
                       Expanded(
                          flex: 4,
                          child: Container(
@@ -273,22 +267,20 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                             child: Column(
                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                children: [
-                                  // 1. DISPLAY
                                   Expanded(
                                      flex: 3,
                                      child: Container(
                                         padding: const EdgeInsets.all(AppSpacing.md),
                                         decoration: BoxDecoration(
-                                           color: isDark ? AppColors.textHintLight : AppColors.textSecondary(context),
-                                           borderRadius: BorderRadius.zero,
-                                           border: Border.all(color: AppColors.textSecondary(context).withValues(alpha: 0.1))
+                                           color: isDark ? Colors.black.withOpacity(0.25) : Colors.black.withOpacity(0.04),
+                                           borderRadius: AppRadius.borderMd,
+                                           border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05))
                                         ),
                                         child: Column(
                                            mainAxisAlignment: MainAxisAlignment.end,
                                            crossAxisAlignment: CrossAxisAlignment.end,
                                            children: [
-                                              Text(_result, style: TextStyle(fontSize: 20, color: textColor.withValues(alpha: 0.5))),
-                                              // FITTED BOX to prevent overflow
+                                              Text(_result, style: TextStyle(fontSize: 20, color: textColor.withOpacity(0.5))),
                                               Flexible(
                                                  child: FittedBox(
                                                     fit: BoxFit.scaleDown, 
@@ -301,10 +293,8 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                      ),
                                   ),
                                   const SizedBox(height: AppSpacing.md),
-
-                                  // 2. QUICK DATA (Live)
                                   SizedBox(
-                                     height: 70, // Fixed height
+                                     height: 70,
                                      child: Row(
                                         children: [
                                            _buildSmartKey("Last Sale", lastSaleAmount, AppColors.success),
@@ -316,20 +306,17 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                      ),
                                   ),
                                   const SizedBox(height: AppSpacing.md),
-
-                                  // 3. CONVERTER (WHEEL PICKER STYLE)
                                   Expanded(
                                      flex: 4,
                                      child: Container(
                                         padding: const EdgeInsets.all(AppSpacing.md),
                                         decoration: BoxDecoration(
                                            color: panelColor,
-                                           borderRadius: BorderRadius.zero,
+                                           borderRadius: AppRadius.borderMd,
                                            border: Border.all(color: CarDashboardTheme.borderColor(isDark))
                                         ),
                                         child: Column(
                                            children: [
-                                              // Categories List
                                               SingleChildScrollView(
                                                  scrollDirection: Axis.horizontal,
                                                  child: Row(
@@ -352,57 +339,50 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                              }
                                                           },
                                                           selectedColor: primary,
-                                                          labelStyle: TextStyle(color: _selectedCategory == cat ? AppColors.surfaceLight : textColor),
-                                                          backgroundColor: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context),
+                                                          labelStyle: TextStyle(
+                                                            color: _selectedCategory == cat ? Colors.white : textColor,
+                                                            fontWeight: _selectedCategory == cat ? FontWeight.bold : FontWeight.normal,
+                                                          ),
+                                                          backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04),
                                                           side: BorderSide.none,
+                                                          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
                                                           visualDensity: VisualDensity.compact,
                                                        ),
                                                     )).toList(),
                                                  ),
                                               ),
                                               const SizedBox(height: AppSpacing.md),
-                                              
-                                              // WHEEL PICKER UI
                                               Expanded(
                                                 child: Stack(
                                                   alignment: Alignment.center,
                                                   children: [
                                                     Row(
                                                       children: [
-                                                        // COL 1: FROM UNIT (Distinct Card + Shadow Overlay)
                                                         Expanded(
                                                           child: Container(
                                                             margin: const EdgeInsets.fromLTRB(8, 0, 4, 0),
                                                             decoration: BoxDecoration(
                                                               color: isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight,
-                                                              borderRadius: BorderRadius.zero,
+                                                              borderRadius: AppRadius.borderSm,
+                                                              border: Border.all(color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04)),
                                                             ),
                                                             child: Stack(
                                                               children: [
-                                                                // The Wheel - RED
-                                                                _buildWheelPicker(
-                                                                  _units[_selectedCategory] ?? [], 
-                                                                  _fromUnit, 
-                                                                  AppColors.error, 
-                                                                  (val) {
-                                                                    setState(() { _fromUnit = val; _convert(); });
-                                                                  }
-                                                                ),
-                                                                // Shadow Gradient Overlay
+                                                                _buildWheelPicker(_units[_selectedCategory] ?? [], _fromUnit, AppColors.error, (val) { setState(() { _fromUnit = val; _convert(); }); }),
                                                                 IgnorePointer(
                                                                   child: Container(
                                                                     decoration: BoxDecoration(
-                                                                      borderRadius: BorderRadius.zero,
+                                                                      borderRadius: AppRadius.borderSm,
                                                                       gradient: LinearGradient(
                                                                         begin: Alignment.topCenter,
                                                                         end: Alignment.bottomCenter,
                                                                         colors: [
-                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.9), 
-                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.0), 
-                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.0), 
-                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.9)
+                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.95), 
+                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.0), 
+                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.0), 
+                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.95)
                                                                         ],
-                                                                        stops: const [0.0, 0.3, 0.7, 1.0],
+                                                                        stops: const [0.0, 0.25, 0.75, 1.0],
                                                                       ),
                                                                     ),
                                                                   ),
@@ -411,8 +391,6 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                             ),
                                                           ),
                                                         ),
-                                                        
-                                                        // COL 2: INPUT / RESULT (Floating Middle)
                                                         Expanded(
                                                           child: Column(
                                                             mainAxisAlignment: MainAxisAlignment.center,
@@ -420,10 +398,10 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                               TextField(
                                                                  controller: _converterController,
                                                                  textAlign: TextAlign.center,
-                                                                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: textColor.withValues(alpha: 0.8)),
+                                                                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: textColor.withOpacity(0.8)),
                                                                  keyboardType: TextInputType.number,
                                                                  decoration: InputDecoration(
-                                                                    hintText: "0", hintStyle: TextStyle(fontSize: 32, color: textColor.withValues(alpha: 0.1)),
+                                                                    hintText: "0", hintStyle: TextStyle(fontSize: 32, color: textColor.withOpacity(0.1)),
                                                                     border: InputBorder.none, isDense: true,
                                                                     contentPadding: EdgeInsets.zero
                                                                  ),
@@ -431,7 +409,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                               Container(
                                                                 height: 2, 
                                                                 width: 50, 
-                                                                color: primary.withValues(alpha: 0.4), 
+                                                                color: primary.withOpacity(0.4), 
                                                                 margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm)
                                                               ),
                                                               FittedBox(
@@ -443,41 +421,31 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                                                             ],
                                                           ),
                                                         ),
-
-                                                        // COL 3: TO UNIT (Distinct Card + Shadow Overlay)
                                                         Expanded(
                                                           child: Container(
                                                             margin: const EdgeInsets.fromLTRB(4, 0, 8, 0),
                                                             decoration: BoxDecoration(
                                                               color: isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight,
-                                                              borderRadius: BorderRadius.zero,
+                                                              borderRadius: AppRadius.borderSm,
+                                                              border: Border.all(color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04)),
                                                             ),
                                                             child: Stack(
                                                               children: [
-                                                                // The Wheel - BLUE
-                                                                _buildWheelPicker(
-                                                                  _units[_selectedCategory] ?? [], 
-                                                                  _toUnit,
-                                                                  AppColors.primaryLightAccent, // Right is Blue (Wait prompt said "blue color to right wheel")
-                                                                  (val) {
-                                                                    setState(() { _toUnit = val; _convert(); });
-                                                                  }
-                                                                ),
-                                                                // Shadow Gradient Overlay
+                                                                _buildWheelPicker(_units[_selectedCategory] ?? [], _toUnit, AppColors.primaryLightAccent, (val) { setState(() { _toUnit = val; _convert(); }); }),
                                                                 IgnorePointer(
                                                                   child: Container(
                                                                     decoration: BoxDecoration(
-                                                                      borderRadius: BorderRadius.zero,
+                                                                      borderRadius: AppRadius.borderSm,
                                                                       gradient: LinearGradient(
                                                                         begin: Alignment.topCenter,
                                                                         end: Alignment.bottomCenter,
                                                                         colors: [
-                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.9), 
-                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.0), 
-                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.0), 
-                                                                           (isDark ? AppColors.textPrimaryLight : AppColors.surfaceLight).withValues(alpha: 0.9)
+                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.95), 
+                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.0), 
+                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.0), 
+                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.95)
                                                                         ],
-                                                                        stops: const [0.0, 0.3, 0.7, 1.0],
+                                                                        stops: const [0.0, 0.25, 0.75, 1.0],
                                                                       ),
                                                                     ),
                                                                   ),
@@ -499,61 +467,60 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                             ),
                          ),
                       ),
-                      
-                      // RIGHT COLUMN (Flex 5)
                       Expanded(
                          flex: 5,
                          child: Container(
                             padding: const EdgeInsets.only(right: AppSpacing.lg, bottom: AppSpacing.lg, top: 0, left: 12),
                             child: Row(
                               children: [
-                                 // NUMPAD (Flex 3)
                                  Expanded(
                                    flex: 3,
                                    child: Column(
                                      children: [
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('C', AppColors.error, AppColors.error)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('âŒ«', AppColors.warning, AppColors.warning)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('%', isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context), textColor)) ])),
-                                       const SizedBox(height: AppSpacing.md),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('7', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('8', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('9', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)) ])),
-                                       const SizedBox(height: AppSpacing.md),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('4', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('5', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('6', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)) ])),
-                                       const SizedBox(height: AppSpacing.md),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('1', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('2', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('3', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)) ])),
-                                       const SizedBox(height: AppSpacing.md),
-                                       // ROW 5: 0, ., = (Moved = here)
                                        Expanded(child: Row(children: [ 
-                                          Expanded(child: _buildBtn('0', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), 
+                                          Expanded(child: _buildBtn('C', AppColors.error.withOpacity(0.12), AppColors.error, onTap: _clear)), 
                                           const SizedBox(width: AppSpacing.sm), 
-                                          Expanded(child: _buildBtn('.', isDark ? AppColors.textSecondary(context) : AppColors.surfaceLight, textColor)), 
+                                          Expanded(child: _buildBtn(const Icon(Icons.backspace_outlined, color: AppColors.warning, size: 20), AppColors.warning.withOpacity(0.12), AppColors.warning, onTap: _delete)), 
                                           const SizedBox(width: AppSpacing.sm), 
-                                          Expanded(child: _buildBtn('=', AppColors.success, AppColors.surfaceLight)),
+                                          Expanded(child: _buildBtn('%', isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.04), textColor)) 
+                                       ])),
+                                       const SizedBox(height: AppSpacing.sm),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('7', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('8', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('9', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)) ])),
+                                       const SizedBox(height: AppSpacing.sm),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('4', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('5', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('6', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)) ])),
+                                       const SizedBox(height: AppSpacing.sm),
+                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('1', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('2', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('3', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)) ])),
+                                       const SizedBox(height: AppSpacing.sm),
+                                       Expanded(child: Row(children: [ 
+                                          Expanded(child: _buildBtn('0', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), 
+                                          const SizedBox(width: AppSpacing.sm), 
+                                          Expanded(child: _buildBtn('.', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), 
+                                          const SizedBox(width: AppSpacing.sm), 
+                                          Expanded(child: _buildBtn('=', AppColors.success, Colors.white, onTap: _evaluate)),
                                        ])),
                                      ],
                                    ),
                                  ),
-                                 const SizedBox(width: AppSpacing.md),
-                                 // OPERATORS (Flex 1)
+                                 const SizedBox(width: AppSpacing.sm),
                                  Expanded(
                                    flex: 1,
                                    child: Column(
                                      children: [
-                                       Expanded(child: _buildBtn('÷', primary.withValues(alpha: 0.2), primary)),
-                                       const SizedBox(height: AppSpacing.md),
-                                       Expanded(child: _buildBtn('x', primary.withValues(alpha: 0.2), primary)),
-                                       const SizedBox(height: AppSpacing.md),
-                                       Expanded(child: _buildBtn('-', primary.withValues(alpha: 0.2), primary)),
-                                       const SizedBox(height: AppSpacing.md),
-                                       // TALL PLUS BUTTON
+                                       Expanded(child: _buildBtn('÷', primary.withOpacity(0.12), primary)),
+                                       const SizedBox(height: AppSpacing.sm),
+                                       Expanded(child: _buildBtn('x', primary.withOpacity(0.12), primary)),
+                                       const SizedBox(height: AppSpacing.sm),
+                                       Expanded(child: _buildBtn('-', primary.withOpacity(0.12), primary)),
+                                       const SizedBox(height: AppSpacing.sm),
                                        Expanded(
                                          flex: 2, 
-                                         child: _buildBtn('+', primary.withValues(alpha: 0.2), primary, fontSize: 56),
+                                         child: _buildBtn('+', primary.withOpacity(0.12), primary, fontSize: 32),
                                        ),
                                      ], 
                                    ),
                                  ),
                               ],
                             ),
-                            // OLD GRID WAS HERE
                          ),
                       )
                    ],
@@ -569,18 +536,18 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
      return Expanded(
         child: InkWell(
            onTap: () => _insertValue(value.replaceAll(RegExp(r'[^0-9.]'), '')), 
-           borderRadius: BorderRadius.zero,
+           borderRadius: AppRadius.borderSm,
            child: Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                 color: color.withValues(alpha: 0.1),
-                 borderRadius: BorderRadius.zero,
-                 border: Border.all(color: color.withValues(alpha: 0.3))
+                 color: color.withOpacity(0.08),
+                 borderRadius: AppRadius.borderSm,
+                 border: Border.all(color: color.withOpacity(0.15))
               ),
               child: Column(
                  mainAxisAlignment: MainAxisAlignment.center,
                  children: [
-                    Text(label, style: TextStyle(color: color.withValues(alpha: 0.8), fontWeight: FontWeight.bold, fontSize: 12)),
+                    Text(label, style: TextStyle(color: color.withOpacity(0.7), fontWeight: FontWeight.w600, fontSize: 11)),
                     const SizedBox(height: AppSpacing.xxs),
                     Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
                  ],
@@ -590,7 +557,6 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
      );
   }
   
-  // NEW: Wheel Picker Helper
   Widget _buildWheelPicker(List<String> items, String selected, Color selectedColor, Function(String) onChanged) {
      final itemIndex = items.indexOf(selected);
      return ListWheelScrollView.useDelegate(
@@ -624,29 +590,41 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
      );
   }
 
-  Widget _buildBtn(String text, Color bg, Color txtColor, {double? fontSize}) {
+  Widget _buildBtn(dynamic content, Color bg, Color txtColor, {double? fontSize, VoidCallback? onTap}) {
      return Material(
-        color: AppColors.transparent,
+        color: Colors.transparent,
         child: InkWell(
-           onTap: () {
-              if (text == 'C') {
-                _clear();
-              } else if (text == 'âŒ«') _delete();
-              else if (text == '=') _evaluate();
-              else _onBtnTap(text);
+           onTap: onTap ?? () {
+              if (content == 'C') {
+                 _clear();
+              } else if (content is String && (content == '⌫' || content == 'delete')) {
+                 _delete();
+              } else if (content == '=') {
+                 _evaluate();
+              } else if (content is String) {
+                 _onBtnTap(content);
+              }
            },
-           borderRadius: BorderRadius.zero,
-           child: Container(
+           borderRadius: AppRadius.borderSm,
+           child: Ink(
               decoration: BoxDecoration(
                  color: bg,
-                 borderRadius: BorderRadius.zero,
+                 borderRadius: AppRadius.borderSm,
               ),
               child: Center(
-                 child: Text(text, style: TextStyle(fontSize: fontSize ?? 28, fontWeight: FontWeight.w600, color: txtColor)),
+                 child: content is Widget 
+                     ? content 
+                     : Text(
+                         content.toString(), 
+                         style: TextStyle(
+                            fontSize: fontSize ?? 24, 
+                            fontWeight: FontWeight.bold, 
+                            color: txtColor
+                         )
+                       ),
               ),
            ),
         ),
      );
   }
 }
-

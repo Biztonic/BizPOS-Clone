@@ -19,6 +19,10 @@ import 'package:shared_preferences/shared_preferences.dart'; // Added
 import 'dart:convert'; // Added
 import 'widgets/calculator_widget.dart';
 import 'widgets/calendar_widget.dart';
+import '../../features/inventory/presentation/providers/inventory_provider.dart';
+import '../../features/inventory/domain/entities/inventory_entity.dart';
+import '../../widgets/inventory_image_widget.dart';
+import '../add_edit_customer_screen.dart';
 
 import '../../providers/dashboard_provider.dart';
 import '../../widgets/feature_guard.dart';
@@ -281,10 +285,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                               children: [
                                 SizedBox(
                                   height: 200,
-                                  child: _PerformanceIndexCard(
-                                     todaySales: stats.todaySales,
-                                     todayCount: stats.todayOrders,
-                                     avgDailySale: stats.avgDailySale,
+                                  child: _SupplierQuickAccessCard(
                                      isDarkMode: isDarkMode,
                                   ),
                                 ),
@@ -309,8 +310,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                                 const SizedBox(height: AppSpacing.md),
                                 SizedBox(
                                   height: 200,
-                                  child: _PaymentBreakdownCard(
-                                     paymentStats: stats.paymentStats,
+                                  child: _CustomerQuickAccessCard(
                                      isDarkMode: isDarkMode,
                                   ),
                                 ),
@@ -350,7 +350,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                             children: [
                               // HERO BUTTON
                               Expanded(
-                                flex: 3, 
+                                flex: 1, 
                                 child: _AnimatedBillingButton(
                                   onTap: () => context.go('/pos'),
                                   isDarkMode: isDarkMode,
@@ -361,17 +361,16 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
 
                               // INSIGHTS ROW (Performance, Rushed Hours, Top Products)
                               Expanded(
-                                flex: 2, 
+                                flex: 1, 
+
                                 child: FeatureGuard(
                                   featureKey: 'card.sales_summary',
                                   lockedChild: const SizedBox.shrink(),
                                   child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
-                                      // 1. Store Performance Index
-                                      Expanded(child: _PerformanceIndexCard(
-                                         todaySales: stats.todaySales,
-                                         todayCount: stats.todayOrders,
-                                         avgDailySale: stats.avgDailySale,
+                                      // 1. Supplier Quick Access
+                                      Expanded(child: _SupplierQuickAccessCard(
                                          isDarkMode: isDarkMode,
                                       )),
                                       const SizedBox(width: AppSpacing.md),
@@ -392,9 +391,8 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                                       )),
                                       const SizedBox(width: AppSpacing.md),
 
-                                      // 4. Payment Breakdown
-                                      Expanded(child: _PaymentBreakdownCard(
-                                         paymentStats: stats.paymentStats,
+                                      // 4. Customer Quick Access
+                                      Expanded(child: _CustomerQuickAccessCard(
                                          isDarkMode: isDarkMode,
                                       )),
                                     ],
@@ -1175,137 +1173,132 @@ class _AnimatedBillingButtonState extends State<_AnimatedBillingButton> with Sin
 }
 // --- INSIGHT WIDGETS ---
 
-class _PerformanceIndexCard extends StatelessWidget {
-  final double todaySales;
-  final int todayCount;
-  final double avgDailySale;
+class _SupplierQuickAccessCard extends StatelessWidget {
   final bool isDarkMode;
 
-  const _PerformanceIndexCard({
-    required this.todaySales,
-    required this.todayCount,
-    required this.avgDailySale,
-    required this.isDarkMode,
-  });
+  const _SupplierQuickAccessCard({required this.isDarkMode});
 
   @override
   Widget build(BuildContext context) {
-    // Calculate performance and cap display at 100%
-    double rawIndex = (avgDailySale > 0) ? (todaySales / avgDailySale) * 100 : 0;
-    double displayIndex = rawIndex.clamp(0.0, 100.0);
-    double displayProgress = displayIndex / 100.0;
-    
-    // Dynamic Colors based on raw performance (allows "Excellent" color even if capped at 100%)
-    Color performanceColor = rawIndex >= 90 
-      ? AppColors.success
-      : (rawIndex >= 60 ? AppColors.warning : AppColors.error);
-    
+    final provider = legacy.Provider.of<DashboardProvider>(context);
+    final isSubscribed = provider.hasAddon('supplier_management');
+
     return Container(
+      padding: const EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
         color: AppColors.surface(context),
-        borderRadius: AppRadius.borderMd,
-        border: Border.all(color: AppColors.border(context).withValues(alpha: 0.5)),
-        boxShadow: [
-          if (rawIndex >= 90)
-            BoxShadow(
-              color: performanceColor.withValues(alpha: 0.2),
-              blurRadius: 15,
-              spreadRadius: 2,
-            ),
-        ],
-      ),
-      child: ClipRRect(
         borderRadius: AppRadius.borderSm,
-        child: Stack(
-          children: [
-            // Background Gauge "Track"
-            Positioned(
-              bottom: -40, right: -20,
-              child: Opacity(
-                opacity: isDarkMode ? 0.05 : 0.08,
-                child: Icon(Icons.speed, size: 120, color: performanceColor),
-              ),
+        border: Border.all(color: AppColors.border(context).withValues(alpha: 0.5)),
+        boxShadow: AppShadows.adaptive(context),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            bottom: -20,
+            right: -10,
+            child: Opacity(
+              opacity: isDarkMode ? 0.05 : 0.08,
+              child: Icon(Icons.local_shipping, size: 100, color: AppColors.warning),
             ),
-            
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(AppLocalizations.t(context, 'PERFORMANCE'), 
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.labelLarge.copyWith(
-                            fontSize: 10, 
-                            fontWeight: FontWeight.w900, 
-                            letterSpacing: 1.2,
-                            color: AppColors.textSecondary(context)
-                          )
-                        ),
-                      ),
-                      Icon(Icons.trending_up, color: performanceColor, size: 16),
-                    ],
-                  ),
-                  const Spacer(),
-                  Center(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final gaugeSize = (constraints.maxWidth * 0.45).clamp(50.0, 80.0);
-                        return Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              height: gaugeSize, width: gaugeSize,
-                              child: CircularProgressIndicator(
-                                value: displayProgress,
-                                strokeWidth: 6,
-                                strokeCap: StrokeCap.round,
-                                backgroundColor: isDarkMode ? AppColors.surfaceLight.withValues(alpha: 0.05) : AppColors.textPrimaryLight.withValues(alpha: 0.05),
-                                valueColor: AlwaysStoppedAnimation<Color>(performanceColor),
-                              ),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text("${displayIndex.toStringAsFixed(0)}%", 
-                                  style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w900, color: AppColors.textPrimary(context))
-                                ),
-                                Text(AppLocalizations.t(context, 'GOAL'), 
-                                  style: AppTypography.labelSmall.copyWith(fontSize: 8, fontWeight: FontWeight.bold, color: AppColors.textSecondary(context).withValues(alpha: 0.7))
-                                ),
-                              ],
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    decoration: BoxDecoration(
-                      color: performanceColor.withValues(alpha: 0.1),
-                      borderRadius: AppRadius.borderSm,
-                    ),
-                    alignment: Alignment.center,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        rawIndex >= 100 ? "EXCEEDING TARGET" : (rawIndex >= 85 ? "OPTIMAL" : "BELOW TARGET"),
-                        style: AppTypography.labelSmall.copyWith(fontSize: 10, fontWeight: FontWeight.w900, color: performanceColor, letterSpacing: 0.5)
+                  Flexible(
+                    child: Text(
+                      AppLocalizations.t(context, 'SUPPLIER DIRECTORY'),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.textSecondary(context),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 9,
+                        letterSpacing: 1.0,
                       ),
                     ),
                   ),
+                  if (!isSubscribed)
+                    const Icon(Icons.lock, color: AppColors.warning, size: 16)
+                  else
+                    Icon(Icons.local_shipping, color: AppColors.adaptiveWarning(context), size: 16),
                 ],
               ),
-            ),
-          ],
-        ),
+              if (isSubscribed) ...[
+                const Spacer(),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.adaptiveWarning(context).withValues(alpha: 0.1),
+                    foregroundColor: AppColors.adaptiveWarning(context),
+                    shadowColor: Colors.transparent,
+                    minimumSize: const Size(double.infinity, 30),
+                    shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                  ),
+                  onPressed: () => context.go('/inventory'),
+                  icon: const Icon(Icons.inventory, size: 14),
+                  label: Text(
+                    AppLocalizations.t(context, 'Inventory Stock'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.adaptiveWarning(context),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 30),
+                    shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                  ),
+                  onPressed: () => context.go('/suppliers'),
+                  icon: const Icon(Icons.local_shipping, size: 14),
+                  label: Text(
+                    AppLocalizations.t(context, 'Manage Suppliers'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
+                ),
+              ] else ...[
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          color: AppColors.textSecondary(context).withValues(alpha: 0.6),
+                          size: 28,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withValues(alpha: 0.15),
+                            borderRadius: AppRadius.borderXs,
+                          ),
+                          child: Text(
+                            AppLocalizations.t(context, 'NOT SUBSCRIBED'),
+                            style: const TextStyle(
+                              color: AppColors.warning,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1318,378 +1311,504 @@ class _RushedHoursCard extends StatefulWidget {
   final bool isDarkMode;
 
   const _RushedHoursCard({
-    required this.peakHour, 
-    required this.leastHour, 
+    required this.peakHour,
+    required this.leastHour,
     required this.hasOrders,
-    required this.isDarkMode
+    required this.isDarkMode,
   });
 
   @override
   State<_RushedHoursCard> createState() => _RushedHoursCardState();
 }
 
-class _RushedHoursCardState extends State<_RushedHoursCard> {
-  bool _showFreeHours = false;
+class _RushedHoursCardState extends State<_RushedHoursCard> with SingleTickerProviderStateMixin {
+  late AnimationController _spinController;
+  Timer? _tickTimer;
+  DateTime _currentTime = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _spinController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _tickTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (mounted) {
+        setState(() {
+          _currentTime = DateTime.now();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _spinController.dispose();
+    _tickTimer?.cancel();
+    super.dispose();
+  }
+
+  void _triggerSpinAnimation() {
+    if (!_spinController.isAnimating) {
+      _spinController.forward(from: 0.0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    int peakHour = widget.peakHour ?? 0;
-    int leastHour = widget.leastHour ?? 0;
-
-    String formatHour(int hour) {
-      final h = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-      return "$h ${hour >= 12 ? 'PM' : 'AM'}";
-    }
-
     return GestureDetector(
-      onTap: () => setState(() => _showFreeHours = !_showFreeHours),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 500),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          final rotate = Tween(begin: 3.1415, end: 0.0).animate(animation);
-          return AnimatedBuilder(
-            animation: rotate,
-            builder: (ctx, _) {
-              final isUnder = (ValueKey(_showFreeHours) != child.key);
-              final value = isUnder ? math.min(rotate.value, 3.1415/2) : rotate.value;
-              return Transform(
-                transform: Matrix4.rotationY(value)..setEntry(3, 2, 0.001),
-                alignment: Alignment.center,
-                child: child,
-              );
-            },
-          );
-        },
-        child: Container(
-          key: ValueKey(_showFreeHours),
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.surface(context),
-            borderRadius: AppRadius.borderMd,
-            border: Border.all(color: AppColors.border(context)),
-            boxShadow: AppShadows.adaptive(context),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Text(_showFreeHours ? "OPPORTUNITY TIME" : "PEAK TRAFFIC", 
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.labelLarge.copyWith(
-                        fontSize: 10, 
-                        fontWeight: FontWeight.w900, 
-                        letterSpacing: 1.0,
-                        color: _showFreeHours ? AppColors.primaryLightAccent : AppColors.warning
-                      )
-                    ),
-                  ),
-                  Icon(_showFreeHours ? Icons.eco : Icons.speed, color: _showFreeHours ? AppColors.primaryLightAccent : AppColors.warning, size: 16),
-                ],
+      onTap: _triggerSpinAnimation,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.xs),
+        decoration: BoxDecoration(
+          color: AppColors.surface(context),
+          borderRadius: AppRadius.borderMd,
+          border: Border.all(color: AppColors.border(context)),
+          boxShadow: AppShadows.adaptive(context),
+        ),
+        child: AnimatedBuilder(
+          animation: _spinController,
+          builder: (context, child) {
+            return SizedBox.expand(
+              child: CustomPaint(
+                painter: _AnalogClockPainter(
+                  time: _currentTime,
+                  peakHour: widget.peakHour ?? 12,
+                  leastHour: widget.leastHour ?? 15,
+                  hasOrders: widget.hasOrders,
+                  spinValue: _spinController.value,
+                  isDarkMode: widget.isDarkMode,
+                ),
               ),
-              const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_showFreeHours ? "QUIETEST HOUR" : "RUSHED HOUR", 
-                    style: AppTypography.labelSmall.copyWith(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textSecondary(context).withValues(alpha: 0.6))
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      widget.hasOrders ? formatHour(_showFreeHours ? leastHour : peakHour) : "--", 
-                      style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.w900, color: AppColors.textPrimary(context), letterSpacing: -1)
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Row(
-                children: [
-                  Icon(Icons.touch_app, size: 10, color: AppColors.textSecondary(context).withValues(alpha: 0.4)),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(AppLocalizations.t(context, 'TAP TO FLIP'), style: AppTypography.labelSmall.copyWith(fontSize: 8, color: AppColors.textSecondary(context).withValues(alpha: 0.4), fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _TopSellingProductsCard extends StatelessWidget {
+class _AnalogClockPainter extends CustomPainter {
+  final DateTime time;
+  final int peakHour;
+  final int leastHour;
+  final bool hasOrders;
+  final double spinValue;
+  final bool isDarkMode;
+
+  _AnalogClockPainter({
+    required this.time,
+    required this.peakHour,
+    required this.leastHour,
+    required this.hasOrders,
+    required this.spinValue,
+    required this.isDarkMode,
+  });
+
+  double _radians(double degrees) => degrees * math.pi / 180.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 - 4;
+
+    final bgPaint = Paint()
+      ..color = isDarkMode ? Colors.black.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.5)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius, bgPaint);
+
+    final borderPaint = Paint()
+      ..color = isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawCircle(center, radius, borderPaint);
+
+    final arcRect = Rect.fromCircle(center: center, radius: radius - 6);
+    final sectorPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12
+      ..strokeCap = StrokeCap.round;
+
+    if (hasOrders) {
+      final peakHourAngle = (peakHour % 12) * 30.0 - 90.0;
+      final peakStartRad = _radians(peakHourAngle - 25.0);
+      final peakSweepRad = _radians(50.0);
+      sectorPaint.color = Colors.red.withValues(alpha: 0.35);
+      canvas.drawArc(arcRect, peakStartRad, peakSweepRad, false, sectorPaint);
+
+      final leastHourAngle = (leastHour % 12) * 30.0 - 90.0;
+      final leastStartRad = _radians(leastHourAngle - 25.0);
+      final leastSweepRad = _radians(50.0);
+      sectorPaint.color = Colors.green.withValues(alpha: 0.35);
+      canvas.drawArc(arcRect, leastStartRad, leastSweepRad, false, sectorPaint);
+    }
+
+    final tickPaint = Paint()
+      ..color = isDarkMode ? Colors.white.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.3)
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < 12; i++) {
+      final angle = _radians(i * 30.0 - 90.0);
+      final tickRadius = (i % 3 == 0) ? 3.0 : 1.5;
+      final tickPos = center + Offset(math.cos(angle), math.sin(angle)) * (radius - 16);
+      canvas.drawCircle(tickPos, tickRadius, tickPaint);
+    }
+
+    final ms = time.millisecond / 1000.0;
+    final sec = time.second + ms;
+    final min = time.minute + sec / 60.0;
+    final hour = time.hour % 12 + min / 60.0;
+
+    double secondAngle = _radians(sec * 6.0 - 90.0);
+    double minuteAngle = _radians(min * 6.0 - 90.0);
+    double hourAngle = _radians(hour * 30.0 - 90.0);
+
+    if (spinValue > 0.0) {
+      hourAngle += spinValue * math.pi * 4;
+      minuteAngle += spinValue * math.pi * 12;
+      secondAngle += spinValue * math.pi * 24;
+    }
+
+    final hourHandPaint = Paint()
+      ..color = isDarkMode ? Colors.white : Colors.black87
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      center,
+      center + Offset(math.cos(hourAngle), math.sin(hourAngle)) * (radius * 0.5),
+      hourHandPaint,
+    );
+
+    final minHandPaint = Paint()
+      ..color = isDarkMode ? Colors.white.withValues(alpha: 0.8) : Colors.black54
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      center,
+      center + Offset(math.cos(minuteAngle), math.sin(minuteAngle)) * (radius * 0.75),
+      minHandPaint,
+    );
+
+    final secHandPaint = Paint()
+      ..color = Colors.redAccent
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      center,
+      center + Offset(math.cos(secondAngle), math.sin(secondAngle)) * (radius * 0.85),
+      secHandPaint,
+    );
+
+    final pinPaint = Paint()..color = Colors.redAccent;
+    canvas.drawCircle(center, 4, pinPaint);
+    final innerPinPaint = Paint()..color = Colors.white;
+    canvas.drawCircle(center, 1.5, innerPinPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AnalogClockPainter oldDelegate) {
+    return oldDelegate.time != time ||
+        oldDelegate.spinValue != spinValue ||
+        oldDelegate.peakHour != peakHour ||
+        oldDelegate.leastHour != leastHour ||
+        oldDelegate.hasOrders != hasOrders ||
+        oldDelegate.isDarkMode != isDarkMode;
+  }
+}
+
+class _TopSellingProductsCard extends StatefulWidget {
   final List<Map<String, dynamic>> topProducts;
   final bool isDarkMode;
 
   const _TopSellingProductsCard({required this.topProducts, required this.isDarkMode});
 
   @override
+  State<_TopSellingProductsCard> createState() => _TopSellingProductsCardState();
+}
+
+class _TopSellingProductsCardState extends State<_TopSellingProductsCard> {
+  late PageController _pageController;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: 1000);
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (widget.topProducts.isEmpty) return;
+    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (_pageController.hasClients) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _TopSellingProductsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.topProducts != widget.topProducts) {
+      _startTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Take 4 to fit well
-    var topDisplay = topProducts.take(4).toList();
+    final topDisplay = widget.topProducts.take(5).toList();
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: AppRadius.borderSm,
         border: Border.all(color: AppColors.border(context)),
         boxShadow: AppShadows.adaptive(context),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(AppLocalizations.t(context, 'TOP SELLING'), 
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary(context), fontWeight: FontWeight.bold, fontSize: 10)),
-              ),
-              const Icon(Icons.auto_awesome, color: AppColors.warning, size: 16),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          if (topDisplay.isEmpty)
-            Expanded(child: Center(child: Text(AppLocalizations.t(context, 'Waiting for sales...'), style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context)))))
-          else
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: topDisplay.length,
-                itemBuilder: (context, index) {
-                  final item = topDisplay[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 26, height: 26,
-                          decoration: BoxDecoration(
-                            borderRadius: AppRadius.borderXs, 
-                            color: AppColors.adaptivePrimary(context).withValues(alpha: 0.1),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text("${index + 1}", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.adaptivePrimary(context))),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Text(item['name'] ?? "", 
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary(context))),
-                        ),
-                        Text("${item['quantity'] ?? 0}", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.adaptivePrimary(context))),
-                      ],
+      child: ClipRRect(
+        borderRadius: AppRadius.borderSm,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (topDisplay.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.auto_awesome, color: AppColors.warning, size: 24),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      AppLocalizations.t(context, 'Waiting for sales...'),
+                      style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context)),
                     ),
-                  );
-                },
-              ),
-            ),
-        ],
+                  ],
+                ),
+              );
+            }
+
+            return PageView.builder(
+              controller: _pageController,
+              scrollDirection: Axis.vertical,
+              itemBuilder: (context, index) {
+                final item = topDisplay[index % topDisplay.length];
+                final productName = item['name'] ?? '';
+                final rank = (index % topDisplay.length) + 1;
+                
+                final inventoryProvider = legacy.Provider.of<InventoryProvider>(context);
+                final matchingItem = inventoryProvider.allItems.cast<InventoryEntity?>().firstWhere(
+                  (entity) => entity?.name.toLowerCase() == productName.toLowerCase(),
+                  orElse: () => null,
+                );
+                
+                final displayItem = matchingItem ?? InventoryEntity(
+                  id: '',
+                  name: productName,
+                  category: '',
+                  price: 0,
+                );
+
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    InventoryImageWidget(
+                      item: displayItem,
+                      width: constraints.maxWidth,
+                      height: constraints.maxHeight,
+                      fit: BoxFit.cover,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.8),
+                              Colors.black.withValues(alpha: 0.0),
+                            ],
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "#$rank ${productName.toUpperCase()}",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Text(
+                              "${item['quantity'] ?? 0} sold",
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-class _PaymentBreakdownCard extends StatelessWidget {
-  final Map<String, double> paymentStats;
+class _CustomerQuickAccessCard extends StatelessWidget {
   final bool isDarkMode;
 
-  const _PaymentBreakdownCard({required this.paymentStats, required this.isDarkMode});
+  const _CustomerQuickAccessCard({required this.isDarkMode});
 
   @override
   Widget build(BuildContext context) {
-    // Sort by volume
-    final sortedStats = paymentStats.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    // Calculate total for percentages
-    final total = paymentStats.values.fold(0.0, (sum, val) => sum + val);
+    final provider = legacy.Provider.of<DashboardProvider>(context);
+    final isSubscribed = provider.hasAddon('customer_management');
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: AppRadius.borderSm,
         border: Border.all(color: AppColors.border(context).withValues(alpha: 0.5)),
         boxShadow: AppShadows.adaptive(context),
-        gradient: isDarkMode ? LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surface(context),
-            AppColors.surface(context).withValues(alpha: 0.8),
-          ],
-        ) : null,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Positioned(
+            bottom: -20,
+            right: -10,
+            child: Opacity(
+              opacity: isDarkMode ? 0.05 : 0.08,
+              child: Icon(Icons.people, size: 100, color: AppColors.primary),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(AppLocalizations.t(context, 'PAYMENT DISTRIBUTION'), 
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      AppLocalizations.t(context, 'CUSTOMER DIRECTORY'),
                       overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                       style: AppTypography.labelLarge.copyWith(
-                        color: AppColors.textSecondary(context), 
+                        color: AppColors.textSecondary(context),
                         fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                        letterSpacing: 1.2
-                      )
+                        fontSize: 9,
+                        letterSpacing: 1.0,
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(AppLocalizations.t(context, 'Revenue Share'), style: TextStyle(
-                      color: AppColors.textPrimary(context),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                    )),
-                  ],
-                ),
+                  ),
+                  if (!isSubscribed)
+                    const Icon(Icons.lock, color: AppColors.warning, size: 16)
+                  else
+                    Icon(Icons.people, color: AppColors.adaptivePrimary(context), size: 16),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: AppColors.adaptivePrimary(context).withValues(alpha: 0.1),
-                  borderRadius: AppRadius.borderXs,
+              if (isSubscribed) ...[
+                const Spacer(),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.adaptivePrimary(context).withValues(alpha: 0.1),
+                    foregroundColor: AppColors.adaptivePrimary(context),
+                    shadowColor: Colors.transparent,
+                    minimumSize: const Size(double.infinity, 30),
+                    shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                  ),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AddEditCustomerScreen()),
+                  ),
+                  icon: const Icon(Icons.person_add, size: 14),
+                  label: Text(
+                    AppLocalizations.t(context, 'Register Customer'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
                 ),
-                child: Icon(Icons.account_balance_wallet_rounded, 
-                  color: AppColors.adaptivePrimary(context), size: 16),
-              ),
+                const SizedBox(height: AppSpacing.xs),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.adaptivePrimary(context),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 30),
+                    shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                  ),
+                  onPressed: () => context.go('/customers'),
+                  icon: const Icon(Icons.people, size: 14),
+                  label: Text(
+                    AppLocalizations.t(context, 'View Directory'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
+                ),
+              ] else ...[
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          color: AppColors.textSecondary(context).withValues(alpha: 0.6),
+                          size: 28,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withValues(alpha: 0.15),
+                            borderRadius: AppRadius.borderXs,
+                          ),
+                          child: Text(
+                            AppLocalizations.t(context, 'NOT SUBSCRIBED'),
+                            style: const TextStyle(
+                              color: AppColors.warning,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
-          const SizedBox(height: AppSpacing.xxs),
-          if (paymentStats.isEmpty)
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.adaptivePrimary(context)),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(AppLocalizations.t(context, 'Calculating stats...'), style: TextStyle(
-                      fontSize: 12, 
-                      color: AppColors.textSecondary(context),
-                      fontStyle: FontStyle.italic,
-                    )),
-                  ],
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: ListView.separated(
-                padding: EdgeInsets.zero,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: math.min(sortedStats.length, 3),
-                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-                itemBuilder: (context, index) {
-                  final entry = sortedStats[index];
-                  final percentage = total > 0 ? (entry.value / total) : 0.0;
-                  
-                  // Premium Color selection
-                  final Color primaryColor = entry.key.toUpperCase().contains('CASH') 
-                    ? AppColors.success // Vibrant Green
-                    : (entry.key.toUpperCase().contains('UPI') 
-                        ? AppColors.info // Vibrant Blue
-                        : AppColors.warning); // Vibrant Orange
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: primaryColor,
-                                  borderRadius: AppRadius.borderXs,
-                                  boxShadow: [
-                                    BoxShadow(color: primaryColor.withValues(alpha: 0.5), blurRadius: 4),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Text(entry.key, style: TextStyle(
-                                fontSize: 13, 
-                                fontWeight: FontWeight.bold, 
-                                color: AppColors.textPrimary(context)
-                              )),
-                            ],
-                          ),
-                          Text("₹${entry.value.toStringAsFixed(0)}", style: TextStyle(
-                            fontSize: 13, 
-                            fontWeight: FontWeight.w900, 
-                            color: AppColors.textPrimary(context)
-                          )),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Stack(
-                        children: [
-                          Container(
-                            height: 4,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: isDarkMode ? AppColors.surfaceLight.withValues(alpha: 0.05) : AppColors.textPrimaryLight.withValues(alpha: 0.05),
-                              borderRadius: AppRadius.borderSm,
-                            ),
-                          ),
-                          TweenAnimationBuilder<double>(
-                            tween: Tween<double>(begin: 0, end: percentage),
-                            duration: const Duration(seconds: 1),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, value, _) => FractionallySizedBox(
-                              widthFactor: value,
-                              child: Container(
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      primaryColor,
-                                      primaryColor.withValues(alpha: 0.6),
-                                    ],
-                                  ),
-                                  borderRadius: AppRadius.borderSm,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: primaryColor.withValues(alpha: 0.3),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
         ],
       ),
     );

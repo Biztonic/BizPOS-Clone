@@ -10,8 +10,9 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:biztonic_pos/services/firestore_helper.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:biztonic_pos/providers/auth_provider.dart';
 import 'dart:math'; 
 import 'package:biztonic_pos/utils/pin_utils.dart';
 import 'package:biztonic_pos/models/store.dart';
@@ -44,6 +45,8 @@ import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'package:biztonic_pos/features/inventory/domain/use_cases/adjust_stock.dart';
 import 'package:biztonic_pos/features/inventory/data/mappers/inventory_mapper.dart';
 
+import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
+
 class DashboardProvider with ChangeNotifier {
   static bool isTesting = false;
   late final FirebaseFirestore _db = getFirestore();
@@ -68,6 +71,14 @@ class DashboardProvider with ChangeNotifier {
   List<Map<String, dynamic>> get leaveRequests => _leaveRequests;
   List<Map<String, dynamic>> _payrollRecords = [];
   List<Map<String, dynamic>> get payrollRecords => _payrollRecords;
+
+  // --- INITIAL SYNC STATE ---
+  bool _isInitialSyncing = false;
+  bool get isInitialSyncing => _isInitialSyncing;
+  double _initialSyncProgress = 0.0;
+  double get initialSyncProgress => _initialSyncProgress;
+  String _initialSyncStatus = "";
+  String get initialSyncStatus => _initialSyncStatus;
 
   // --- CONSOLIDATED STATE ---
   final bool _isSwitchingStore = false;
@@ -172,6 +183,7 @@ class DashboardProvider with ChangeNotifier {
     if (_orderProvider != null) _orderProvider!.removeListener(_onOrderChange);
     if (_customerProvider != null) _customerProvider!.removeListener(_onCustomerChange);
     if (_storeProvider != null) _storeProvider!.removeListener(_onStoreChange);
+    if (_authProvider != null) _authProvider!.removeListener(_onAuthChange);
     
     _countersSubscription?.cancel();
     super.dispose();
@@ -269,8 +281,71 @@ class DashboardProvider with ChangeNotifier {
 
     // Initial pull
     if (_activeStoreId != null) {
-       await _syncService.processSync();
+      final prefsBox = Hive.box('settings');
+      final setupKey = 'initial_sync_completed_$_activeStoreId';
+      final isSetupCompleted = prefsBox.get(setupKey, defaultValue: false) == true;
+      final isOnline = _syncService.isOnline;
+
+      if (!isSetupCompleted && isOnline) {
+        _isInitialSyncing = true;
+        _initialSyncProgress = 0.0;
+        _initialSyncStatus = "Connecting to store...";
+        notifyListeners();
+
+        try {
+          await _performInitialSetupSync();
+          await prefsBox.put(setupKey, true);
+        } catch (e) {
+          debugPrint("❌ DashboardProvider: Initial setup sync failed: $e");
+        } finally {
+          _isInitialSyncing = false;
+          notifyListeners();
+        }
+      } else {
+        await _syncService.processSync();
+      }
     }
+  }
+
+  Future<void> _performInitialSetupSync() async {
+    final modules = [
+      SyncCollectionRegistry.settings,
+      SyncCollectionRegistry.employees,
+      SyncCollectionRegistry.floors,
+      SyncCollectionRegistry.tables,
+      SyncCollectionRegistry.suppliers,
+      SyncCollectionRegistry.customers,
+      SyncCollectionRegistry.inventory,
+      SyncCollectionRegistry.orders,
+      SyncCollectionRegistry.notes,
+      SyncCollectionRegistry.inventoryMovements,
+    ];
+    
+    double progressPerModule = 1.0 / modules.length;
+    
+    for (int i = 0; i < modules.length; i++) {
+      final module = modules[i];
+      
+      final displayName = module[0].toUpperCase() + module.substring(1).replaceAll('_', ' ');
+      _initialSyncStatus = "Setting up $displayName...";
+      notifyListeners();
+      
+      try {
+        await _syncService.pullCollection(module, forceFull: true);
+      } catch (e) {
+        debugPrint("📥 [InitialSync] Error pulling $module: $e");
+      }
+      
+      _initialSyncProgress = (i + 1) * progressPerModule;
+      notifyListeners();
+      
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    
+    _initialSyncStatus = "Finalizing store configuration...";
+    _initialSyncProgress = 1.0;
+    notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 600));
   }
 
   Future<void> _runRecoveryRunner() async {
@@ -338,6 +413,23 @@ class DashboardProvider with ChangeNotifier {
     }
     if (_isOfflineLoggedIn) {
        _checkOfflineSession();
+    }
+  }
+
+  AuthProvider? _authProvider;
+  void injectAuthProvider(AuthProvider provider) {
+    if (_authProvider == provider) return;
+    if (_authProvider != null) {
+      _authProvider!.removeListener(_onAuthChange);
+    }
+    _authProvider = provider;
+    _authProvider!.addListener(_onAuthChange);
+    _onAuthChange();
+  }
+
+  void _onAuthChange() {
+    if (_authProvider != null) {
+      updateAuthStatus(_authProvider!.isOfflineLoggedIn);
     }
   }
 
@@ -881,13 +973,17 @@ class DashboardProvider with ChangeNotifier {
       debugPrint('🔒 hasAddon($key): BLOCKED - activeStore is null');
       return false;
     }
+    if (activeStore!.subscriptionPlan != 'Standard') {
+      debugPrint('🔒 hasAddon($key): BLOCKED - store is on ${activeStore!.subscriptionPlan} plan (not Standard)');
+      return false;
+    }
     if (_userProfile != null && _userProfile!.role != 'Store Owner' && _userProfile!.accessibleAddons != null) {
        if (!_userProfile!.accessibleAddons!.contains(key)) {
          debugPrint('🔒 hasAddon($key): BLOCKED by accessibleAddons filter (role: ${_userProfile!.role})');
          return false;
        }
     }
-    final result = activeStore!.addons.contains(key) || activeStore!.purchasedAddons.contains(key);
+    final result = activeStore!.addons.contains(key);
     debugPrint('🔑 hasAddon($key): $result | addons=${activeStore!.addons} | purchasedAddons=${activeStore!.purchasedAddons} | plan=${activeStore!.subscriptionPlan}');
     return result;
   }
@@ -901,15 +997,16 @@ class DashboardProvider with ChangeNotifier {
     }
     final oldAddons = List<String>.from(activeStore!.addons);
     try {
+      final updatedStore = activeStore!.copyWith(addons: newAddons);
       final storeIndex = stores.indexWhere((s) => s.id == activeStore!.id);
       if (storeIndex != -1) {
-        _stores[storeIndex] = activeStore!;
+        _stores[storeIndex] = updatedStore;
       }
       if (Hive.isBoxOpen('cache_stores')) {
-         Hive.box('cache_stores').put(activeStore!.id, activeStore!.toMap());
+         Hive.box('cache_stores').put(updatedStore.id, updatedStore.toMap());
       }
       notifyListeners();
-      await _db.collection('stores').doc(activeStore!.id).update({
+      await _db.collection('stores').doc(updatedStore.id).update({
         'addons': newAddons,
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -1506,6 +1603,10 @@ class DashboardProvider with ChangeNotifier {
   List<SubscriptionRequest> get pendingSubscriptions => _pendingSubscriptions;
 
   Future<void> fetchPendingSubscriptions() async {
+    if (!_isOnline) {
+      debugPrint('🌐 DashboardProvider: Offline. Skipping fetchPendingSubscriptions.');
+      return;
+    }
     try {
       Query query = _db.collection('subscription_requests').where('status', isEqualTo: 'PENDING');
       
@@ -1624,6 +1725,11 @@ class DashboardProvider with ChangeNotifier {
   }
 
   Future<List<Map<String, dynamic>>> fetchEmployeesForStore(String storeId) async {
+    if (!_isOnline) {
+      debugPrint('🏬 DashboardProvider: Device is offline. Loading cached store employees.');
+      final cached = await OfflineService().getCachedStoreEmployees(storeId);
+      return cached.map((e) => Map<String, dynamic>.from(e)).toList();
+    }
     try {
       // Harmonized Fetch: Check root 'users' (for owners/admins) and root 'employees' (for staff)
       // Stop querying nested 'stores/{id}/employees'
@@ -1724,15 +1830,15 @@ class DashboardProvider with ChangeNotifier {
   }
 
   Future<void> addMetadata(String key, String value) async {
-    await _db.collection('settings').doc('metadata').update({
+    await _db.collection('settings').doc('metadata').set({
       key: FieldValue.arrayUnion([value])
-    });
+    }, SetOptions(merge: true));
   }
 
   Future<void> deleteMetadata(String key, String value) async {
-    await _db.collection('settings').doc('metadata').update({
+    await _db.collection('settings').doc('metadata').set({
       key: FieldValue.arrayRemove([value])
-    });
+    }, SetOptions(merge: true));
   }
 
   // --- ADDITIONAL MODULES (INVENTORY, CUSTOMERS, ETC) ---
@@ -2121,21 +2227,35 @@ class DashboardProvider with ChangeNotifier {
          debugPrint('📦 DashboardProvider: Loaded role from cache: $_activeRole');
          
          // If we have a role, we can allow the UI to start rendering earlier
-         if (!_isInitialized && _activeRole != 'Unauthorized' && _activeRole != 'Unauthorized') {
+         if (!_isInitialized && _activeRole != 'Unauthorized') {
             _isInitialized = true;
             _routerNotifier?.notify();
             notifyListeners();
          }
       }
 
-      debugPrint('👤 DashboardProvider: Fetching user data for $uid');
-      DocumentSnapshot<Map<String, dynamic>> doc;
-      try {
-        doc = await _db.collection('users').doc(uid).get();
-      } catch (e) {
-        debugPrint('❌ DashboardProvider: GET USER DOC FAILED for $uid: $e');
-        if (e.toString().contains('permission-denied')) {
-           debugPrint('⛔ DashboardProvider: FIRESTORE PERMISSION DENIED for users/$uid. Check Security Rules.');
+      if (!_isOnline) {
+        debugPrint('🌐 DashboardProvider: Offline Mode. Finalizing offline user session.');
+        _loadAdminConfig();
+        _loadPlatformLimits();
+        if (_storeProvider != null) {
+          debugPrint('🏬 DashboardProvider: Loading user stores from local cache...');
+          await _storeProvider!.fetchStores(isSuperAdmin: isSuperAdmin);
+          _stores = _storeProvider!.stores;
+          if (_activeStoreId == null) {
+             await _restorePinnedStore(uid: uid);
+          }
+          if (_activeStoreId == null && _stores.length == 1) {
+            final soloStoreId = _stores.first.id;
+            _activeStoreId = soloStoreId;
+            await _storeProvider!.setActiveStoreId(soloStoreId);
+          } else if (_activeStoreId != null) {
+             _loadFromCache();
+             // ignore: unawaited_futures
+             fetchPendingSubscriptions();
+             // ignore: unawaited_futures
+             fetchSubscriptionHistory();
+          }
         }
         _isInitialized = true;
         _routerNotifier?.notify();
@@ -2143,96 +2263,69 @@ class DashboardProvider with ChangeNotifier {
         return;
       }
 
-      if (doc.exists && doc.data() != null) {
-        final data = doc.data()!;
-        _userProfile = UserProfile.fromMap(data, uid);
-        _activeRole = _userProfile!.role;
-        debugPrint('👤 DashboardProvider: User Role identified as: $_activeRole');
+      debugPrint('👤 DashboardProvider: Fetching user data for $uid');
+      Map<String, dynamic>? userData;
+      try {
+        final doc = await _db.collection('users').doc(uid).get();
+        if (doc.exists && doc.data() != null) {
+          userData = doc.data()!;
+          _userProfile = UserProfile.fromMap(userData, uid);
+          _activeRole = _userProfile!.role;
+          debugPrint('👤 DashboardProvider: User Role identified as: $_activeRole');
 
-        // Persist to Cache for next launch
-        await OfflineService().cacheUserProfile(data, uid: uid);
+          // Persist to Cache for next launch
+          await OfflineService().cacheUserProfile(userData, uid: uid);
+        } else {
+          debugPrint('⚠️ DashboardProvider: User document NOT FOUND in Firestore for $uid.');
+        }
+      } catch (e) {
+        debugPrint('❌ DashboardProvider: GET USER DOC FAILED for $uid: $e');
+        if (e.toString().contains('permission-denied')) {
+           debugPrint('⛔ DashboardProvider: FIRESTORE PERMISSION DENIED for users/$uid. Check Security Rules.');
+        }
         
-        // Load additional configs once user is identified
-        _loadAdminConfig();
-        _loadPlatformLimits();
-        
-        // Trigger Store Fetch
-        if (_storeProvider != null) {
-          debugPrint('🏬 DashboardProvider: Triggering store fetch via StoreProvider');
-          try {
-             await _storeProvider!.fetchStores(isSuperAdmin: isSuperAdmin);
-             _stores = _storeProvider!.stores;
-             
-             // --- RETRY LOGIC FOR EXISTING OWNERS/ADMINS ---
-             // If we expect stores (Owner/Admin) but got 0, wait a moment and try one more time.
-             // This solves the "Existing user sees No Stores found" issue on slow connections.
-             if (_stores.isEmpty && (_activeRole == 'Store Owner' || _activeRole == 'Admin')) {
-                debugPrint('⏳ DashboardProvider: Owner has 0 stores. Retrying sync in 2s...');
-                await Future.delayed(const Duration(seconds: 2));
-                await _storeProvider!.fetchStores(isSuperAdmin: isSuperAdmin);
-                _stores = _storeProvider!.stores;
-                debugPrint('✅ DashboardProvider: Retry fetch result: ${_stores.length} stores');
-             }
-             
-             debugPrint('✅ DashboardProvider: Stores populated: ${_stores.length}');
-          } catch (e) {
-             debugPrint('❌ DashboardProvider: FETCH STORES FAILED: $e');
-          }
+        if (_userProfile == null) {
+          _activeStoreId = null;
+          _isInitialized = true;
           _hasCheckedStores = true;
-          
-          // --- DASHBOARD RESTORATION LOGIC ---
-          // Try to restore last active store if none is currently selected (e.g. fresh launch)
-          if (_activeStoreId == null) {
-             await _restorePinnedStore(uid: uid);
-          }
+          _routerNotifier?.notify();
+          notifyListeners();
+          return;
+        }
+        debugPrint('⚠️ DashboardProvider: Proceeding with cached profile: ${_userProfile?.role}');
+      }
 
-          // Fallback to User Profile storeId if restoration didn't yield an active store
-          if (_activeStoreId == null) {
-              if (_userProfile?.storeId != null && _userProfile!.storeId!.isNotEmpty) {
-                 _activeStoreId = _userProfile!.storeId;
-                 debugPrint('🎯 DashboardProvider: Auto-selecting store from User Profile: $_activeStoreId');
-              } else if (_userProfile?.accessibleStoreIds != null && _userProfile!.accessibleStoreIds!.isNotEmpty) {
-                 _activeStoreId = _userProfile!.accessibleStoreIds!.first;
-                 debugPrint('🎯 DashboardProvider: Auto-selecting store from accessibleStoreIds: $_activeStoreId');
+      if (_userProfile != null) {
+         // Load additional configs once user is identified
+         _loadAdminConfig();
+         _loadPlatformLimits();
+         
+         // Trigger Store Fetch
+         if (_storeProvider != null) {
+           debugPrint('🏬 DashboardProvider: Triggering store fetch via StoreProvider');
+           try {
+              await _storeProvider!.fetchStores(isSuperAdmin: isSuperAdmin);
+              _stores = _storeProvider!.stores;
+              
+              // --- RETRY LOGIC FOR EXISTING OWNERS/ADMINS ---
+              // If we expect stores (Owner/Admin) but got 0, wait a moment and try one more time.
+              // This solves the "Existing user sees No Stores found" issue on slow connections.
+              if (_stores.isEmpty && (_activeRole == 'Store Owner' || _activeRole == 'Admin')) {
+                 debugPrint('⏳ DashboardProvider: Owner has 0 stores. Retrying sync in 2s...');
+                 await Future.delayed(const Duration(seconds: 2));
+                 await _storeProvider!.fetchStores(isSuperAdmin: isSuperAdmin);
+                 _stores = _storeProvider!.stores;
+                 debugPrint('✅ DashboardProvider: Retry fetch result: ${_stores.length} stores');
               }
               
-              if (_activeStoreId != null && _storeProvider != null) {
-                 // ignore: unawaited_futures
-                 _storeProvider!.setActiveStoreId(_activeStoreId);
-              }
-          }
-
-          // Validate Restored ID: If restored ID is NOT in the user's list of stores, clear it
-          if (_activeStoreId != null && _stores.isNotEmpty) {
-             bool hasAccess = _stores.any((s) => s.id == _activeStoreId);
-             if (!hasAccess && !isSuperAdmin) {
-                 debugPrint('⚠️ DashboardProvider: Restored Store ID $_activeStoreId is INVALID for this user. Clearing.');
-                 _activeStoreId = null;
-                 await OfflineService().unpinStore(uid: uid);
-             }
-          }
-
-          // --- AUTO-SELECT LOGIC ---
-          if (_activeStoreId == null && _stores.length == 1) {
-            final soloStoreId = _stores.first.id;
-            debugPrint('🎯 DashboardProvider: Auto-selecting single available store: $soloStoreId');
-            _activeStoreId = soloStoreId;
-            await _storeProvider!.setActiveStoreId(soloStoreId);
-          } else if (_activeStoreId != null) {
-              // Re-trigger cache load for the current active store
-              _loadFromCache(); 
-              fetchPendingSubscriptions();
-              // Load subscription history and auto-activate if needed
-              fetchSubscriptionHistory().then((_) {
-                _checkAndAutoActivateReadySubs();
-              });
+              debugPrint('✅ DashboardProvider: Stores populated: ${_stores.length}');
+           } catch (e) {
+              debugPrint('❌ DashboardProvider: FETCH STORES FAILED: $e');
            }
-        } else {
-           // FIX: _storeProvider is NULL (Android race condition - auth fired before injection)
-           // Don't mark as fully initialized yet — injectStoreProvider will retry _fetchUserData
-           debugPrint('⚠️ DashboardProvider: _storeProvider is NULL during _fetchUserData. Deferring store load...');
+           _hasCheckedStores = true;
            
-           // Still try to restore pinned store from cache as a stopgap
+           // --- DASHBOARD RESTORATION LOGIC ---
+           // Try to restore last active store if none is currently selected (e.g. fresh launch)
            if (_activeStoreId == null) {
               await _restorePinnedStore(uid: uid);
            }
@@ -2241,40 +2334,91 @@ class DashboardProvider with ChangeNotifier {
            if (_activeStoreId == null) {
                if (_userProfile?.storeId != null && _userProfile!.storeId!.isNotEmpty) {
                   _activeStoreId = _userProfile!.storeId;
-                  debugPrint('🎯 DashboardProvider: Auto-selecting store from User Profile (Deferred): $_activeStoreId');
+                  debugPrint('🎯 DashboardProvider: Auto-selecting store from User Profile: $_activeStoreId');
                } else if (_userProfile?.accessibleStoreIds != null && _userProfile!.accessibleStoreIds!.isNotEmpty) {
                   _activeStoreId = _userProfile!.accessibleStoreIds!.first;
-                  debugPrint('🎯 DashboardProvider: Auto-selecting store from accessibleStoreIds (Deferred): $_activeStoreId');
+                  debugPrint('🎯 DashboardProvider: Auto-selecting store from accessibleStoreIds: $_activeStoreId');
+               }
+               
+               if (_activeStoreId != null && _storeProvider != null) {
+                  // ignore: unawaited_futures
+                  _storeProvider!.setActiveStoreId(_activeStoreId);
                }
            }
-           
-           // Load cached stores list so hasAnyStore returns true (prevents /create-store redirect)
-           final cachedStores = await OfflineService().getCachedUserStores(uid: uid);
-           if (cachedStores.isNotEmpty) {
-              _stores = cachedStores.map((m) => Store.fromMap(Map<String, dynamic>.from(m), m['id']?.toString() ?? '')).toList();
-              debugPrint('📦 DashboardProvider: Loaded ${_stores.length} stores from cache (storeProvider pending)');
-              _hasCheckedStores = true;
-              
-              // Auto-select single store even without provider
-              if (_activeStoreId == null && _stores.length == 1) {
-                _activeStoreId = _stores.first.id;
-                debugPrint('🎯 DashboardProvider: Auto-selecting cached store: $_activeStoreId');
+
+           // Validate Restored ID: If restored ID is NOT in the user's list of stores, clear it
+           if (_activeStoreId != null && _stores.isNotEmpty) {
+              bool hasAccess = _stores.any((s) => s.id == _activeStoreId);
+              if (!hasAccess && !isSuperAdmin) {
+                  debugPrint('⚠️ DashboardProvider: Restored Store ID $_activeStoreId is INVALID for this user. Clearing.');
+                  _activeStoreId = null;
+                  await OfflineService().unpinStore(uid: uid);
               }
            }
-            // DON'T set _isInitialized = true yet — let injectStoreProvider handle the full init
-            debugPrint('🏁 DashboardProvider: Deferring initialization until StoreProvider is injected.');
-            return; 
-         }
-         
-         _isInitialized = true;
-        debugPrint('🏁 DashboardProvider: Initialized with ${_stores.length} stores. Signaling router...');
-        _routerNotifier?.notify(); // EXPLICIT SIGNAL TO GO_ROUTER
-        notifyListeners();
+
+           // --- AUTO-SELECT LOGIC ---
+           if (_activeStoreId == null && _stores.length == 1) {
+             final soloStoreId = _stores.first.id;
+             debugPrint('🎯 DashboardProvider: Auto-selecting single available store: $soloStoreId');
+             _activeStoreId = soloStoreId;
+             await _storeProvider!.setActiveStoreId(soloStoreId);
+           } else if (_activeStoreId != null) {
+               // Re-trigger cache load for the current active store
+               _loadFromCache(); 
+               fetchPendingSubscriptions();
+               // Load subscription history and auto-activate if needed
+               fetchSubscriptionHistory().then((_) {
+                 _checkAndAutoActivateReadySubs();
+               });
+            }
+         } else {
+            // FIX: _storeProvider is NULL (Android race condition - auth fired before injection)
+            // Don't mark as fully initialized yet — injectStoreProvider will retry _fetchUserData
+            debugPrint('⚠️ DashboardProvider: _storeProvider is NULL during _fetchUserData. Deferring store load...');
+            
+            // Still try to restore pinned store from cache as a stopgap
+            if (_activeStoreId == null) {
+               await _restorePinnedStore(uid: uid);
+            }
+
+            // Fallback to User Profile storeId if restoration didn't yield an active store
+            if (_activeStoreId == null) {
+                if (_userProfile?.storeId != null && _userProfile!.storeId!.isNotEmpty) {
+                   _activeStoreId = _userProfile!.storeId;
+                   debugPrint('🎯 DashboardProvider: Auto-selecting store from User Profile (Deferred): $_activeStoreId');
+                } else if (_userProfile?.accessibleStoreIds != null && _userProfile!.accessibleStoreIds!.isNotEmpty) {
+                   _activeStoreId = _userProfile!.accessibleStoreIds!.first;
+                   debugPrint('🎯 DashboardProvider: Auto-selecting store from accessibleStoreIds (Deferred): $_activeStoreId');
+                }
+            }
+            
+            // Load cached stores list so hasAnyStore returns true (prevents /create-store redirect)
+            final cachedStores = await OfflineService().getCachedUserStores(uid: uid);
+            if (cachedStores.isNotEmpty) {
+               _stores = cachedStores.map((m) => Store.fromMap(Map<String, dynamic>.from(m), m['id']?.toString() ?? '')).toList();
+               debugPrint('📦 DashboardProvider: Loaded ${_stores.length} stores from cache (storeProvider pending)');
+               _hasCheckedStores = true;
+               
+               // Auto-select single store even without provider
+               if (_activeStoreId == null && _stores.length == 1) {
+                 _activeStoreId = _stores.first.id;
+                 debugPrint('🎯 DashboardProvider: Auto-selecting cached store: $_activeStoreId');
+               }
+            }
+             // DON'T set _isInitialized = true yet — let injectStoreProvider handle the full init
+             debugPrint('🏁 DashboardProvider: Deferring initialization until StoreProvider is injected.');
+             return; 
+          }
+          
+          _isInitialized = true;
+          debugPrint('🏁 DashboardProvider: Initialized with ${_stores.length} stores. Signaling router...');
+          _routerNotifier?.notify(); // EXPLICIT SIGNAL TO GO_ROUTER
+          notifyListeners();
       } else {
         _activeStoreId = null; // Ensure fresh state for new user
         _isInitialized = true;
         _hasCheckedStores = true; 
-        debugPrint('⚠️ DashboardProvider: User document NOT FOUND in Firestore for $uid. Signaling router...');
+        debugPrint('⚠️ DashboardProvider: User document NOT FOUND or cached profile missing for $uid. Signaling router...');
         _routerNotifier?.notify(); 
         notifyListeners();
       }
@@ -2309,15 +2453,32 @@ class DashboardProvider with ChangeNotifier {
     }
     
     debugPrint('🌐 DashboardProvider: Checking Offline Session...');
-    final profile = await OfflineService().getCachedUserProfile(uid: OfflineService().getCachedUserId());
+    final offlineEmail = OfflineService().getOfflineLoginEmail();
+    final cachedUid = OfflineService().getCachedUserId(email: offlineEmail);
+    
+    if (cachedUid == null) {
+       debugPrint('❌ DashboardProvider: No cached UID found for offline email: $offlineEmail');
+       _isInitialized = true;
+       _routerNotifier?.notify();
+       notifyListeners();
+       return;
+    }
+    
+    await DatabaseHelper.switchUser(cachedUid);
+    
+    final profile = await OfflineService().getCachedUserProfile(uid: cachedUid);
     if (profile != null) {
-      _userProfile = UserProfile.fromMap(profile, profile['uid'] ?? 'offline_user');
+      _userProfile = UserProfile.fromMap(profile, profile['uid'] ?? cachedUid);
       _activeRole = _userProfile!.role;
       debugPrint('👤 DashboardProvider: Offline User Profile Rehydrated (Role: $_activeRole)');
       
-       // Try to restore last active store if available
-      await _restorePinnedStore(uid: profile['uid']);
+      // Try to restore last active store if available
+      await _restorePinnedStore(uid: cachedUid);
       
+      // Fetch user data & stores list for offline user
+      await _fetchUserData(cachedUid);
+    } else {
+      debugPrint('❌ DashboardProvider: Cached user profile not found for UID: $cachedUid');
       _isInitialized = true;
       _routerNotifier?.notify();
       notifyListeners();
@@ -2388,6 +2549,10 @@ class DashboardProvider with ChangeNotifier {
   }
   Future<void> fetchSubscriptionHistory() async {
     if (_activeStoreId == null) return;
+    if (!_isOnline) {
+      debugPrint('🌐 DashboardProvider: Offline. Skipping fetchSubscriptionHistory.');
+      return;
+    }
     try {
        final snap = await _db.collection('stores').doc(_activeStoreId).collection('subscription_history').orderBy('startDate', descending: true).get();
        _subscriptionHistory = snap.docs.map((d) => SubscriptionHistory.fromMap(d.data(), d.id)).toList();

@@ -129,7 +129,7 @@ final dashboardProvider = ChangeNotifierProvider<DashboardProvider>((ref) {
   final themeNotifier = ref.watch(themeProvider.notifier);
   
   final dashboard = DashboardProvider();
-  dashboard.updateAuthStatus(auth.isOfflineLoggedIn);
+  dashboard.injectAuthProvider(auth);
   dashboard.injectInventory(inventory);
   dashboard.injectOrderProvider(orders);
   dashboard.injectCustomerProvider(customers);

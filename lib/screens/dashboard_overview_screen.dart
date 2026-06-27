@@ -12,6 +12,7 @@ import '../core/design/tokens/app_iconography.dart';
 import '../core/design/density/app_density.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/theme.dart';
+import '../utils/responsive.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/reporting/reporting_provider.dart';
@@ -44,24 +45,25 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
       title: AppLocalizations.t(context, 'overview'),
       actions: [
         _buildPeriodSelector(context, reportingState.selectedPeriod),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          child: InkWell(
-            onTap: () => dashboardProvider.setUIStyle(UIStyle.car_dashboard),
-            borderRadius: AppRadius.borderMd,
-            child: Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.8),
-                borderRadius: AppRadius.borderMd,
-                border: Border.all(color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.1)),
+        if (!Responsive.isMobile(context))
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: InkWell(
+              onTap: () => dashboardProvider.setUIStyle(UIStyle.car_dashboard),
+              borderRadius: AppRadius.borderMd,
+              child: Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.8),
+                  borderRadius: AppRadius.borderMd,
+                  border: Border.all(color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.1)),
+                ),
+                child: Icon(Icons.speed, size: AppIconography.md, color: Theme.of(context).colorScheme.onSecondaryContainer),
               ),
-              child: Icon(Icons.speed, size: AppIconography.md, color: Theme.of(context).colorScheme.onSecondaryContainer),
             ),
           ),
-        ),
       ],
       mainContent: reportingState.isComputing && stats == null
           ? const Center(child: CircularProgressIndicator())
@@ -205,14 +207,35 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
   }
 
   Widget _buildKpiSliverGrid(BuildContext context, dynamic stats) {
-    final primary = AppColors.adaptivePrimary(context);
-    final success = AppColors.adaptiveSuccess(context);
-    
     final cards = [
-      _KpiData(title: AppLocalizations.t(context, 'period_sales'), value: "₹${stats?.totalSales.toStringAsFixed(0) ?? '0'}", icon: Icons.payments_rounded, color: primary, gradient: [primary, primary.withValues(alpha: 0.7)]),
-      _KpiData(title: AppLocalizations.t(context, 'orders'), value: "${stats?.totalOrders ?? '0'}", icon: Icons.shopping_basket_rounded, color: primary, gradient: [primary.withValues(alpha: 0.8), primary]),
-      _KpiData(title: AppLocalizations.t(context, 'avg_order'), value: "₹${stats?.avgOrderValue.toStringAsFixed(0) ?? '0'}", icon: Icons.pie_chart_rounded, color: primary, gradient: [primary.withValues(alpha: 0.9), primary.withValues(alpha: 0.6)]),
-      _KpiData(title: AppLocalizations.t(context, 'today_sales'), value: "₹${stats?.todaySales.toStringAsFixed(0) ?? '0'}", icon: Icons.today_rounded, color: success, gradient: [success, success.withValues(alpha: 0.7)]),
+      _KpiData(
+        title: AppLocalizations.t(context, 'period_sales'), 
+        value: "₹${stats?.totalSales.toStringAsFixed(0) ?? '0'}", 
+        icon: Icons.payments_rounded, 
+        color: const Color(0xFF6366F1), 
+        gradient: const [Color(0xFF6366F1), Color(0xFF4F46E5)]
+      ),
+      _KpiData(
+        title: AppLocalizations.t(context, 'orders'), 
+        value: "${stats?.totalOrders ?? '0'}", 
+        icon: Icons.shopping_basket_rounded, 
+        color: const Color(0xFFF97316), 
+        gradient: const [Color(0xFFF97316), Color(0xFFEA580C)]
+      ),
+      _KpiData(
+        title: AppLocalizations.t(context, 'avg_order'), 
+        value: "₹${stats?.avgOrderValue.toStringAsFixed(0) ?? '0'}", 
+        icon: Icons.pie_chart_rounded, 
+        color: const Color(0xFFD946EF), 
+        gradient: const [Color(0xFFD946EF), Color(0xFF8B5CF6)]
+      ),
+      _KpiData(
+        title: AppLocalizations.t(context, 'today_sales'), 
+        value: "₹${stats?.todaySales.toStringAsFixed(0) ?? '0'}", 
+        icon: Icons.today_rounded, 
+        color: const Color(0xFF10B981), 
+        gradient: const [Color(0xFF10B981), Color(0xFF059669)]
+      ),
     ];
 
     final width = MediaQuery.of(context).size.width;
@@ -384,18 +407,31 @@ class _KpiData {
   });
 }
 
-class _PremiumKpiCard extends StatelessWidget {
+class _PremiumKpiCard extends StatefulWidget {
   final _KpiData data;
   final int index;
 
   const _PremiumKpiCard({required this.data, required this.index});
 
   @override
+  State<_PremiumKpiCard> createState() => _PremiumKpiCardState();
+}
+
+class _PremiumKpiCardState extends State<_PremiumKpiCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final density = AppDensityProvider.configOf(context);
     
+    final gradient = LinearGradient(
+      colors: widget.data.gradient,
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
     return TweenAnimationBuilder<double>(
-      duration: Duration(milliseconds: 400 + (index * 100)),
+      duration: Duration(milliseconds: 400 + (widget.index * 100)),
       tween: Tween(begin: 0, end: 1),
       builder: (context, value, child) {
         return Opacity(
@@ -406,60 +442,125 @@ class _PremiumKpiCard extends StatelessWidget {
           ),
         );
       },
-      child: AppCard(
-        padding: EdgeInsets.all(density.cardPadding),
-        child: Stack(
-          children: [
-            // Background Decorative Gradient Icon
-            Positioned(
-              right: -10,
-              bottom: -10,
-              child: Icon(
-                data.icon,
-                size: 60,
-                color: data.color.withValues(alpha: 0.05),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.identity()
+            ..translate(0.0, _isHovered ? -6.0 : 0.0)
+            ..scale(_isHovered ? 1.03 : 1.0),
+          decoration: BoxDecoration(
+            gradient: gradient,
+            borderRadius: AppRadius.borderLg,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
+              if (_isHovered)
+                BoxShadow(
+                  color: widget.data.color.withOpacity(0.35),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 10),
+                ),
+            ],
+            border: Border.all(
+              color: Colors.white.withOpacity(_isHovered ? 0.35 : 0.15),
+              width: _isHovered ? 1.5 : 1.0,
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+          ),
+          child: ClipRRect(
+            borderRadius: AppRadius.borderLg,
+            child: Stack(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.sm),
+                // Background Decorative Gradient Icon
+                Positioned(
+                  right: -15,
+                  bottom: -15,
+                  child: AnimatedScale(
+                    scale: _isHovered ? 1.15 : 1.0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                    child: AnimatedRotation(
+                      turns: _isHovered ? -0.04 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      child: Icon(
+                        widget.data.icon,
+                        size: 90,
+                        color: Colors.white.withOpacity(0.08),
+                      ),
+                    ),
+                  ),
+                ),
+                // Glass overlay on hover
+                if (_isHovered)
+                  Positioned.fill(
+                    child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: data.gradient,
+                          colors: [
+                            Colors.white.withOpacity(0.06),
+                            Colors.white.withOpacity(0.0),
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: AppRadius.borderMd,
                       ),
-                      child: Icon(data.icon, color: AppColors.surfaceLight, size: AppIconography.md),
                     ),
-                  ],
-                ),
-                const Spacer(),
-                Text(
-                  data.value,
-                  style: AppTypography.displaySmall.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
                   ),
-                ),
-                Text(
-                  data.title.toUpperCase(),
-                  style: AppTypography.labelSmall.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary(context),
-                    letterSpacing: 1.2,
+                Padding(
+                  padding: EdgeInsets.all(density.cardPadding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            padding: const EdgeInsets.all(AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(_isHovered ? 0.25 : 0.15),
+                              borderRadius: AppRadius.borderMd,
+                            ),
+                            child: Icon(
+                              widget.data.icon, 
+                              color: Colors.white, 
+                              size: AppIconography.md
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Text(
+                        widget.data.value,
+                        style: AppTypography.headlineMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.data.title.toUpperCase(),
+                        style: AppTypography.labelSmall.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white.withOpacity(0.7),
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -531,14 +632,26 @@ class _EnhancedTrendChart extends StatelessWidget {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 42,
+                reservedSize: 64,
                 getTitlesWidget: (value, meta) {
+                  String formattedText;
+                  final double val = value;
+                  if (val >= 10000000) {
+                    formattedText = '₹${(val / 10000000).toStringAsFixed(1)}Cr';
+                  } else if (val >= 100000) {
+                    formattedText = '₹${(val / 100000).toStringAsFixed(1)}L';
+                  } else if (val >= 1000) {
+                    final double kVal = val / 1000;
+                    formattedText = '₹${kVal % 1 == 0 ? kVal.toInt().toString() : kVal.toStringAsFixed(1)}K';
+                  } else {
+                    formattedText = '₹${val.toInt()}';
+                  }
                   return SideTitleWidget(
                     axisSide: meta.axisSide,
                     space: 8,
                     child: Text(
-                      '₹${value.toInt()}',
-                      style: AppTypography.labelSmall.copyWith(
+                      formattedText,
+                      style: AppTypography.labelMedium.copyWith(
                         color: AppColors.textSecondary(context),
                         fontWeight: FontWeight.w600,
                       ),

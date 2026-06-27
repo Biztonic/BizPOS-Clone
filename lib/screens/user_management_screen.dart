@@ -99,17 +99,24 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         ),
         const SizedBox(width: AppSpacing.md),
       ],
-      mainContent: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStatsRow(context, provider),
-            const SizedBox(height: AppSpacing.lg),
-            _buildFilters(context, filteredUsers),
-            const SizedBox(height: AppSpacing.lg),
-            if (filteredUsers.isEmpty)
-              AppCard(
+      mainContent: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildStatsRow(context, provider),
+                const SizedBox(height: AppSpacing.lg),
+                _buildFilters(context, filteredUsers),
+              ],
+            ),
+          ),
+          if (filteredUsers.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: AppCard(
                 child: Center(
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -122,11 +129,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     ),
                   ),
                 ),
-              )
-            else
-              AppCard(
-                padding: EdgeInsets.zero,
-                child: PosDataTable(
+              ),
+            )
+          else
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.lg, right: AppSpacing.lg, bottom: AppSpacing.lg),
+                child: AppCard(
+                  padding: EdgeInsets.zero,
+                  child: PosDataTable(
                   columns: const [
                     PosDataColumn(label: 'SEL', fixedWidth: 50),
                     PosDataColumn(label: 'User Info', flex: 3),
@@ -185,8 +196,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   }).toList(),
                 ),
               ),
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }

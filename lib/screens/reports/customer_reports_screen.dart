@@ -1,4 +1,5 @@
 import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_typography.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -196,29 +197,32 @@ class _CustomerReportsScreenState extends State<CustomerReportsScreen> {
                                     axisSide: meta.axisSide,
                                     child: Text(
                                       DateFormat('E').format(date), 
-                                      style: TextStyle(
-                                        color: isDark ? AppColors.textHintDark : AppColors.textSecondaryLight, 
-                                        fontWeight: FontWeight.bold, 
-                                        fontSize: 12
-                                      )
-                                    )
+                                      style: AppTypography.labelMedium.copyWith(
+                                        color: AppColors.textSecondary(context),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   );
                                 },
                               ),
                             ),
                             leftTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  interval: maxVisits > 5 ? (maxVisits/5).ceilToDouble() : 1,
-                                  reservedSize: 28,
-                                  getTitlesWidget: (value, meta) => Text(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                interval: maxVisits > 5 ? (maxVisits/5).ceilToDouble() : 1,
+                                reservedSize: 36,
+                                getTitlesWidget: (value, meta) => SideTitleWidget(
+                                  axisSide: meta.axisSide,
+                                  space: 6,
+                                  child: Text(
                                     value.toInt().toString(), 
-                                    style: TextStyle(
-                                      color: isDark ? AppColors.textHintDark : AppColors.textSecondaryLight, 
-                                      fontSize: 10
-                                    )
+                                    style: AppTypography.labelSmall.copyWith(
+                                      color: AppColors.textSecondary(context),
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
-                                )
+                                ),
+                              ),
                             ),
                             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                             rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),

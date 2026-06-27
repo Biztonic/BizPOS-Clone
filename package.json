@@ -8,7 +8,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:playwright": "playwright test"
   },
   "repository": {
     "type": "git",
@@ -24,5 +25,8 @@
   "homepage": "https://github.com/Biztonic/Biztonic_Point-Of-Sale#readme",
   "dependencies": {
     "firebase": "^12.10.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
   }
 }

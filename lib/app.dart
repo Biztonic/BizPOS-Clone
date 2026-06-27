@@ -41,21 +41,26 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
     
     return legacy_provider.Consumer<LocaleProvider>(
       builder: (context, localeProvider, _) {
-        final appDensity = themeData.uiStyle == UIStyle.car_dashboard 
+        final view = View.of(context);
+        final size = view.physicalSize / view.devicePixelRatio;
+        final isMobile = size.width < 600;
+        final isCarDashboard = themeData.uiStyle == UIStyle.car_dashboard && !isMobile;
+
+        final appDensity = isCarDashboard 
             ? AppDensity.touch 
             : AppDensity.comfortable;
 
         return AppDensityProvider(
           density: appDensity,
           child: MaterialApp.router(
-            title: themeData.uiStyle == UIStyle.car_dashboard ? 'BizPOS Auto' : 'BizPOS',
-            theme: themeData.uiStyle == UIStyle.car_dashboard 
+            title: isCarDashboard ? 'BizPOS Auto' : 'BizPOS',
+            theme: isCarDashboard 
                 ? CarDashboardTheme.getThemeData(isDark: themeData.isDarkMode)
                 : AppTheme.getTheme(themeData.currentTheme, false,
                     customSeed: themeData.customThemeColor != null
                         ? Color(themeData.customThemeColor!)
                         : null),
-            darkTheme: themeData.uiStyle == UIStyle.car_dashboard
+            darkTheme: isCarDashboard
                 ? CarDashboardTheme.getThemeData(isDark: themeData.isDarkMode)
                 : AppTheme.getTheme(themeData.currentTheme, true,
                     customSeed: themeData.customThemeColor != null
@@ -72,7 +77,15 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
             supportedLocales: const [
               Locale('en'),
               Locale('hi'),
+              Locale('bn'),
               Locale('mr'),
+              Locale('te'),
+              Locale('ta'),
+              Locale('gu'),
+              Locale('ur'),
+              Locale('kn'),
+              Locale('or'),
+              Locale('ml'),
             ],
             routerConfig: _router,
             debugShowCheckedModeBanner: false,

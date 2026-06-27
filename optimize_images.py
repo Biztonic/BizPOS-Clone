@@ -1,6 +1,5 @@
 import os
 files = [
-    r'd:\BizPOS_Clone\lib\screens\auth\employee_login_screen.dart',
     r'd:\BizPOS_Clone\lib\screens\auth_screen.dart',
 ]
 for f in files:

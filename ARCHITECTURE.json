@@ -814,7 +814,6 @@
         "screens": {
             "authentication": {
                 "AuthScreen": "lib/screens/auth_screen.dart",
-                "EmployeeLoginScreen": "lib/screens/auth/employee_login_screen.dart",
                 "StationLockScreen": "lib/screens/auth/station_lock_screen.dart",
                 "CompleteProfileScreen": "lib/screens/complete_profile_screen.dart"
             },

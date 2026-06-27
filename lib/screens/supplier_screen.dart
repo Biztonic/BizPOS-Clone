@@ -1,10 +1,8 @@
-import '../core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../core/design/layouts/pos_scaffold.dart';
 import '../core/design/components/atoms/app_button.dart';
-import '../core/design/tokens/app_spacing.dart';
-import '../core/design/tokens/app_typography.dart';
+import '../core/design/components/molecules/app_empty_state.dart';
 
 class SupplierScreen extends StatelessWidget {
   const SupplierScreen({super.key});
@@ -20,31 +18,18 @@ class SupplierScreen extends StatelessWidget {
             icon: Icons.add,
             label: AppLocalizations.t(context, 'add'),
           ),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: 16),
         ],
       ),
-      mainContent: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.local_shipping_outlined, size: 80, color: AppColors.textHint(context)),
-            const SizedBox(height: AppSpacing.lg),
-            Text(AppLocalizations.t(context, 'No Suppliers Found'),
-              style: AppTypography.titleLarge.copyWith(color: AppColors.textHint(context)),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(AppLocalizations.t(context, 'Add your first supplier to start tracking purchases.'),
-              style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            AppButton.secondary(
-              onPressed: () {},
-              label: 'Learn More about Suppliers',
-            ),
-          ],
+      mainContent: AppEmptyState(
+        type: AppEmptyStateType.employee,
+        action: AppButton.secondary(
+          onPressed: () {},
+          label: 'Learn More about Suppliers',
         ),
       ),
     );
   }
 }
+
 

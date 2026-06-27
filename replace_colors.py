@@ -1,8 +1,7 @@
-﻿import re
+import re
 
 files_to_edit = [
     r'd:\BizPOS_Clone\lib\screens\auth\store_select_screen.dart',
-    r'd:\BizPOS_Clone\lib\screens\auth\employee_login_screen.dart',
     r'd:\BizPOS_Clone\lib\screens\auth\station_lock_screen.dart',
     r'd:\BizPOS_Clone\lib\screens\auth\set_password_screen.dart'
 ]

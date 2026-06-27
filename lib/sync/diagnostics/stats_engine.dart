@@ -28,6 +28,28 @@ class StatsEngine {
     final sid = storeId.trim().toLowerCase();
     final counts = <String, int>{};
 
+    // If native platform, retrieve counts from SQLite repository
+    if (!kIsWeb) {
+      try {
+        counts[SyncCollectionRegistry.orders] = await _repository.getOrderCount(storeId);
+        counts[SyncCollectionRegistry.inventory] = await _repository.getInventoryCount(storeId);
+        counts[SyncCollectionRegistry.customers] = await _repository.getCustomerCount(storeId);
+        counts[SyncCollectionRegistry.employees] = await _repository.getEmployeeCount(storeId);
+        counts[SyncCollectionRegistry.floors] = await _repository.getFloorCount(storeId);
+        counts[SyncCollectionRegistry.tables] = await _repository.getTableCount(storeId);
+        counts[SyncCollectionRegistry.suppliers] = await _repository.getSupplierCount(storeId);
+        counts[SyncCollectionRegistry.notes] = await _repository.getNoteCount(storeId);
+        
+        // Settings count: check if local settings exist
+        final settings = await _repository.getStoreSettings(storeId);
+        counts[SyncCollectionRegistry.settings] = (settings != null && settings.isNotEmpty) ? 1 : 0;
+        
+        return counts;
+      } catch (e) {
+        debugPrint('⚠️ [StatsEngine] Native SQLite counting failed: $e. Falling back to Hive.');
+      }
+    }
+
     for (var module in SyncCollectionRegistry.pullModules) {
       try {
         final boxName = SyncCollectionRegistry.getBoxName(module, storeId: storeId);

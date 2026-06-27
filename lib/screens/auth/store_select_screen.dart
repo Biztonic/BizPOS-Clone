@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../models/store.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../widgets/employee_pin_dialog.dart';
 
 class StoreSelectScreen extends StatefulWidget {
   const StoreSelectScreen({super.key});
@@ -120,10 +121,15 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   }
 
   void _navigateToEmployeeLogin(Store store, Map<String, dynamic> employee) {
-    context.push('/employee-login', extra: {
-      'store': store,
-      'employee': employee,
-    });
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => EmployeePinDialog(
+        employee: employee,
+        storeCode: store.shortCode ?? store.id,
+        storeId: store.id,
+      ),
+    );
   }
 
   @override

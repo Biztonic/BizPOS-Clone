@@ -22,9 +22,35 @@
 
   <title>Biztonic POS</title>
   <link rel="manifest" href="manifest.json">
+  
+  <style>
+    /* Force Agentation toolbar to render above Flutter canvas */
+    #agentation-root,
+    [data-agentation-root] {
+      z-index: 2147483647 !important;
+      position: relative;
+    }
+  </style>
 </head>
 
 <body>
+  <!-- Agentation visual feedback and annotation toolbar -->
+  <div id="agentation-root" style="position: relative; z-index: 2147483647;"></div>
+  <script type="module">
+    import React from 'https://esm.sh/react@18.3.1';
+    import ReactDOM from 'https://esm.sh/react-dom@18.3.1/client';
+    import { Agentation } from 'https://esm.sh/agentation?deps=react@18.3.1,react-dom@18.3.1';
+
+    try {
+      const container = document.getElementById('agentation-root');
+      const root = ReactDOM.createRoot(container);
+      root.render(React.createElement(Agentation));
+      console.log("Agentation toolbar loaded successfully.");
+    } catch (e) {
+      console.error("Failed to initialize Agentation toolbar:", e);
+    }
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 

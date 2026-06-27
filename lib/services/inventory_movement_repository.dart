@@ -36,6 +36,12 @@ class InventoryMovementRepository {
       'UPDATE cache_inventory_quantities SET quantity = quantity + ? WHERE itemId = ? AND storeId = ?',
       [movement.delta, movement.itemId, movement.storeId]
     );
+
+    // 3. Atomically update inventory table baseline quantity
+    await txn.rawUpdate(
+      'UPDATE inventory SET quantity = quantity + ? WHERE id = ?',
+      [movement.delta, movement.itemId]
+    );
   }
 
   /// Get all movements for a specific item

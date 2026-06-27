@@ -10,9 +10,11 @@ service cloud.firestore {
 
     function isSuperAdmin() {
       return isAuthenticated() && (
-        request.auth.token.email == 'pthorat600@gmail.com' ||
-        request.auth.token.email == 'biztonicautomation@gmail.com' ||
-        request.auth.token.email == 'biztonicautomation@gmail.com'.lower() ||
+        ('email' in request.auth.token && (
+          request.auth.token.email == 'pthorat600@gmail.com' ||
+          request.auth.token.email == 'biztonicautomation@gmail.com' ||
+          request.auth.token.email == 'biztonicautomation@gmail.com'.lower()
+        )) ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin')
       );
@@ -27,7 +29,7 @@ service cloud.firestore {
       return isSuperAdmin() || (
         isAuthenticated() && (
           storeData.owner == request.auth.uid ||
-          storeData.ownerEmail == request.auth.token.email ||
+          ('email' in request.auth.token && storeData.ownerEmail == request.auth.token.email) ||
           (userData.size() > 0 && (
             userData.storeId == storeId || 
             (userData.accessibleStoreIds != null && storeId in userData.accessibleStoreIds) ||
@@ -43,10 +45,10 @@ service cloud.firestore {
     match /users/{uid} {
       // Allow unauthenticated read ONLY if the document is marked for initial password setup (activation flow)
       // This is safe because these are placeholder documents with no sensitive data.
-      allow read: if (isAuthenticated() && (isSuperAdmin() || request.auth.uid == uid)) || 
+      allow read: if (isAuthenticated() && (request.auth.uid == uid || isSuperAdmin())) || 
                    (resource.data.needsInitialPassword == true || resource.data.needsInitialPassword == 'true');
       
-      allow create: if isAuthenticated() && (isSuperAdmin() || request.auth.uid == uid);
+      allow create: if isAuthenticated() && (request.auth.uid == uid || isSuperAdmin());
       allow update: if isSuperAdmin() || (
         isAuthenticated() && request.auth.uid == uid && 
         (!('storeId' in request.resource.data) || request.resource.data.storeId == resource.data.storeId) &&
@@ -59,7 +61,7 @@ service cloud.firestore {
         isSuperAdmin() || 
         (request.query.limit <= 100 && (
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.storeId == request.query.storeId ||
-          request.auth.token.email == 'pthorat600@gmail.com'
+          ('email' in request.auth.token && request.auth.token.email == 'pthorat600@gmail.com')
         ))
       );
     }
@@ -252,6 +254,18 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (isSuperAdmin() || 
                            (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
                             request.resource.data.storeId == resource.data.storeId));
+    }
+
+    // 8. Roles Collection
+    match /roles/{roleId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
+    // 9. Leads Collection
+    match /leads/{leadId} {
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
     }
 
     // Default Deny

@@ -144,7 +144,7 @@ class PlanSyncPolicy {
     final plan = await getSubscriptionPlan(storeId);
 
     // Unlimited plans
-    if (plan == 'Starting' || plan == 'Standard' || userRole == 'Super Admin') return;
+    if (plan == 'Standard' || userRole == 'Super Admin') return;
 
     // Basic Plan (Limited)
     final limits = await retrievePlatformLimits();

@@ -15,10 +15,12 @@ import '../core/design/components/atoms/app_text_field.dart';
 import '../core/design/components/atoms/app_button.dart';
 import '../core/design/components/atoms/app_card.dart';
 import '../core/design/components/organisms/pos_data_table.dart';
+import '../core/design/components/molecules/app_empty_state.dart';
 import '../core/design/density/app_density.dart';
 import '../core/design/tokens/app_spacing.dart';
 import '../core/design/tokens/app_typography.dart';
 import '../core/design/tokens/app_colors.dart';
+
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -145,32 +147,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   Widget _buildEmptyState() {
-    final provider = Provider.of<InventoryProvider>(context, listen: false);
-    final query = provider.searchQuery;
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.border(context)),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            query.isEmpty 
-              ? AppLocalizations.t(context, 'no_items_found') 
-              : AppLocalizations.t(context, 'no_matching_items'), 
-            style: AppTypography.titleMedium.copyWith(
-              color: AppColors.textSecondary(context),
-              fontWeight: FontWeight.w600,
-            )
-          ),
-          if (query.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(AppLocalizations.t(context, 'Try a different search term'),
-              style: AppTypography.bodySmall.copyWith(color: AppColors.textHint(context)),
-            ),
-          ],
-        ],
-      ),
+    return const AppEmptyState(
+      type: AppEmptyStateType.box,
     );
   }
 

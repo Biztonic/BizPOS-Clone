@@ -59,11 +59,13 @@ class PermissionsHelper {
     
     if (activeStore == null) return false;
     
+    if (activeStore!.subscriptionPlan != 'Standard') return false;
+    
     if (profile != null && profile!.role != 'Store Owner' && profile!.accessibleAddons != null) {
       if (!profile!.accessibleAddons!.contains(key)) return false;
     }
     
-    return activeStore!.addons.contains(key) || activeStore!.purchasedAddons.contains(key);
+    return activeStore!.addons.contains(key);
   }
 }
 

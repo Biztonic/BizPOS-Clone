@@ -1,4 +1,4 @@
-﻿import 'package:biztonic_pos/l10n/app_localizations.dart';
+import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,7 +80,7 @@ class _ManageCountersScreenState extends ConsumerState<ManageCountersScreen> {
   }
 
   void _deleteCounter(CounterModel counter) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showDialog<bool?>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Delete "${counter.name}"?', style: AppTypography.titleMedium),

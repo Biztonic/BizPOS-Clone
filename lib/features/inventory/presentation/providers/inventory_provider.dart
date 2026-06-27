@@ -85,7 +85,7 @@ class InventoryProvider extends ChangeNotifier {
 
   /// Returns items filtered by category and search query.
   List<InventoryEntity> get filteredItems {
-    var filtered = _items;
+    var filtered = List<InventoryEntity>.from(_items);
 
     // Filter by Category
     if (_selectedCategory != 'All') {

@@ -7,6 +7,7 @@ import '../../../providers/dashboard_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../navigation/pos_sidebar.dart';
 import '../tokens/app_colors.dart';
+import '../tokens/app_radius.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../widgets/sync_status_widget.dart';
 
@@ -87,12 +88,15 @@ class _PosScaffoldState extends State<PosScaffold> {
             );
           
           case PosLayoutType.tablet:
+            final showInlineSidebar = widget.showSidebar && widget.rightPanel == null;
             return Scaffold(
               key: _scaffoldKey,
               appBar: effectiveAppBar,
-              drawer: widget.drawer ?? const PosSidebar(isDrawer: true),
+              drawer: showInlineSidebar ? null : (widget.drawer ?? const PosSidebar(isDrawer: true)),
               body: Row(
                 children: [
+                  if (showInlineSidebar)
+                    widget.leftPanel ?? const PosSidebar(),
                   Expanded(
                     flex: 6,
                     child: widget.mainContent,
@@ -117,12 +121,6 @@ class _PosScaffoldState extends State<PosScaffold> {
                   // Automatically include Sidebar on Desktop if leftPanel is not explicitly overridden
                   if (widget.showSidebar)
                     widget.leftPanel ?? const PosSidebar(),
-                  if (widget.showSidebar)
-                    VerticalDivider(
-                      width: 1,
-                      thickness: 1,
-                      color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
-                    ),
                   Expanded(
                     flex: 8,
                     child: Column(
@@ -172,7 +170,9 @@ class _PosScaffoldState extends State<PosScaffold> {
             icon: const Icon(Icons.arrow_back_ios_new, size: 18),
             onPressed: () => Navigator.of(context).pop(),
           )
-        : null,
+        : (layoutType == PosLayoutType.mobile || layoutType == PosLayoutType.tablet)
+            ? _buildDrawerMenuButton(context)
+            : null,
       title: Text(
         widget.title ?? storeName ?? 'BizPOS',
         style: const TextStyle(fontWeight: FontWeight.bold),
@@ -221,7 +221,7 @@ class _PosScaffoldState extends State<PosScaffold> {
               final isEmployee = dashboardProvider.activeRole != 'Store Owner' && dashboardProvider.activeRole != 'Admin';
               dashboardProvider.clearSession();
               authProvider.signOut();
-              if (isEmployee) context.go('/employee-login');
+              if (isEmployee) context.go('/login');
             },
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -246,14 +246,14 @@ class _PosScaffoldState extends State<PosScaffold> {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppRadius.borderSm,
           child: Container(
             width: 40,
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: (iconColor ?? AppColors.textPrimaryLight).withValues(alpha: 0.05),
-              borderRadius: BorderRadius.zero,
+              borderRadius: AppRadius.borderSm,
               border: Border.all(color: (iconColor ?? AppColors.textPrimaryLight).withValues(alpha: 0.1)),
             ),
             child: Icon(icon, size: 20, color: iconColor),
@@ -269,7 +269,7 @@ class _PosScaffoldState extends State<PosScaffold> {
     
     return InkWell(
       onTap: () => dashboardProvider.toggleDeveloperMode(),
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppRadius.borderSm,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -277,7 +277,7 @@ class _PosScaffoldState extends State<PosScaffold> {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: statusColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppRadius.borderSm,
           border: Border.all(color: statusColor),
         ),
         child: Text(
@@ -286,6 +286,28 @@ class _PosScaffoldState extends State<PosScaffold> {
             color: statusColor, 
             fontWeight: FontWeight.bold, 
             fontSize: 11,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerMenuButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: InkWell(
+        onTap: () => Scaffold.of(context).openDrawer(),
+        borderRadius: AppRadius.borderSm,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.adaptivePrimary(context).withValues(alpha: 0.05),
+            borderRadius: AppRadius.borderSm,
+            border: Border.all(color: AppColors.adaptivePrimary(context).withValues(alpha: 0.1)),
+          ),
+          child: Icon(
+            Icons.menu_rounded,
+            color: AppColors.adaptivePrimary(context),
+            size: 20,
           ),
         ),
       ),

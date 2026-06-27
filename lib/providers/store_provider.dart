@@ -98,6 +98,7 @@ class StoreProvider with ChangeNotifier {
   // --- INIT & SESSION ---
 
   Future<void> setActiveStoreId(String? storeId) async {
+    final uid = _effectiveUid;
     if (storeId == _activeStoreId) return;
     _storeSubscription?.cancel();
     
@@ -122,7 +123,7 @@ class StoreProvider with ChangeNotifier {
                final map = Hive.box('cache_stores').get(storeId);
                if (map != null) {
                   _activeStore = Store.fromMap(_deepSanitize(map as Map), storeId);
-                  await OfflineService().pinStore(_activeStore!.toMap(), uid: user?.uid);
+                  await OfflineService().pinStore(_activeStore!.toMap(), uid: uid);
                   pinned = true;
                   notifyListeners();
                }
@@ -133,9 +134,19 @@ class StoreProvider with ChangeNotifier {
                final matchingStores = _stores.where((s) => s.id == storeId).toList();
                if (matchingStores.isNotEmpty) {
                   _activeStore = matchingStores.first;
-                  await OfflineService().pinStore(_activeStore!.toMap(), uid: user?.uid);
+                  await OfflineService().pinStore(_activeStore!.toMap(), uid: uid);
                   notifyListeners();
                }
+            }
+            if (!OfflineService().isOnline) {
+               debugPrint('🏬 StoreProvider: Device is offline. Skipping Firestore store details fetch & listener.');
+               final cachedStores = await OfflineService().getCachedUserStores(uid: uid);
+               if (cachedStores.isNotEmpty) {
+                  _stores = cachedStores.map((m) => Store.fromMap(Map<String, dynamic>.from(m), m['id']?.toString() ?? '')).toList();
+               }
+               _isLoading = false;
+               notifyListeners();
+               return;
             }
            
            // Start Listener for Real-time Updates (Unified Source)
@@ -155,7 +166,7 @@ class StoreProvider with ChangeNotifier {
                  if (Hive.isBoxOpen('cache_stores')) {
                     Hive.box('cache_stores').put(storeId, _activeStore!.toMap());
                  }
-                 OfflineService().pinStore(_activeStore!.toMap(), uid: _auth?.currentUser?.uid);
+                 OfflineService().pinStore(_activeStore!.toMap(), uid: uid);
                  notifyListeners();
               }
            }, onError: (e) {
@@ -179,7 +190,7 @@ class StoreProvider with ChangeNotifier {
                 if (Hive.isBoxOpen('cache_stores')) {
                     Hive.box('cache_stores').put(storeId, _activeStore!.toMap());
                 }
-                await OfflineService().pinStore(_activeStore!.toMap(), uid: _auth?.currentUser?.uid);
+                await OfflineService().pinStore(_activeStore!.toMap(), uid: uid);
              }
            } catch (e) {
              debugPrint('⚠️ StoreProvider: Fresh store fetch failed (likely offline): $e');
@@ -205,29 +216,52 @@ class StoreProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  String? get _effectiveUid {
+    final firebaseUser = _auth?.currentUser;
+    if (firebaseUser != null) {
+      return firebaseUser.uid;
+    }
+    final offlineEmail = OfflineService().getOfflineLoginEmail();
+    return OfflineService().getCachedUserId(email: offlineEmail);
+  }
+
+  String? get _effectiveEmail {
+    final firebaseUser = _auth?.currentUser;
+    if (firebaseUser != null) {
+      return firebaseUser.email;
+    }
+    return OfflineService().getOfflineLoginEmail();
+  }
+
   Future<void> _fetchUserStores() async {
-    final user = _auth?.currentUser;
+    final uid = _effectiveUid;
+    final email = _effectiveEmail;
     
     // NEW: Load from Cache First (for offline accessibility, uid-isolated)
-    final cachedStores = await OfflineService().getCachedUserStores(uid: user?.uid);
+    final cachedStores = await OfflineService().getCachedUserStores(uid: uid);
     if (cachedStores.isNotEmpty) {
-       _stores = cachedStores.map((m) => Store.fromMap(m, m['id'] ?? '')).toList();
-       debugPrint('🏬 StoreProvider: Loaded ${_stores.length} stores from local cache (uid: ${user?.uid}).');
+       _stores = cachedStores.map((m) => Store.fromMap(Map<String, dynamic>.from(m), m['id']?.toString() ?? '')).toList();
+       debugPrint('🏬 StoreProvider: Loaded ${_stores.length} stores from local cache (uid: $uid).');
        notifyListeners();
     }
 
-    if (user == null) {
+    if (uid == null) {
       debugPrint('⚠️ StoreProvider: No current user for store fetch.');
       return;
+    }
+
+    if (!OfflineService().isOnline) {
+       debugPrint('🏬 StoreProvider: Device is offline. Skipping Firestore stores fetch.');
+       return;
     }
     
     try {
       final Map<String, Store> uniqueStores = {};
-      debugPrint('🏬 StoreProvider: Fetching fresh stores for ${user.uid}');
+      debugPrint('🏬 StoreProvider: Fetching fresh stores for $uid');
 
       // 1. Fetch by UID
       try {
-        final q0 = await _db.collection('stores').where('owner', isEqualTo: user.uid).get();
+        final q0 = await _db.collection('stores').where('owner', isEqualTo: uid).get();
         for (var doc in q0.docs) {
           uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
         }
@@ -236,9 +270,9 @@ class StoreProvider with ChangeNotifier {
       }
 
       // 2. Fetch by Email
-      if (user.email != null) {
+      if (email != null) {
         try {
-          final q1 = await _db.collection('stores').where('ownerEmail', isEqualTo: user.email).get();
+          final q1 = await _db.collection('stores').where('ownerEmail', isEqualTo: email).get();
           for (var doc in q1.docs) {
             uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
           }
@@ -249,7 +283,7 @@ class StoreProvider with ChangeNotifier {
 
       // 3. Direct access linking
       try {
-        final userDoc = await _db.collection('users').doc(user.uid).get();
+        final userDoc = await _db.collection('users').doc(uid).get();
         if (userDoc.exists) {
            final data = userDoc.data()!;
            final List<dynamic> accessIds = data['accessibleStoreIds'] ?? [];
@@ -276,7 +310,7 @@ class StoreProvider with ChangeNotifier {
          debugPrint('🏁 StoreProvider: Online fetch successful: ${_stores.length} stores');
          
          // Cache the results for next offline session (uid-isolated)
-         await OfflineService().cacheUserStores(_stores.map((s) => s.toMap()).toList(), uid: user.uid);
+         await OfflineService().cacheUserStores(_stores.map((s) => s.toMap()).toList(), uid: uid);
          notifyListeners();
       }
     } catch (e) {
@@ -294,8 +328,8 @@ class StoreProvider with ChangeNotifier {
   }
 
   Future<void> fetchStores({bool isSuperAdmin = false}) async {
-      final user = _auth?.currentUser;
-      if (user == null) {
+      final uid = _effectiveUid;
+      if (uid == null) {
         clearStores();
         return;
       }
@@ -333,8 +367,9 @@ class StoreProvider with ChangeNotifier {
   // --- ACTIONS ---
 
   Future<String> addStore(String name, String ownerEmail, {String? address, String? phone}) async {
-      final user = _auth?.currentUser;
+      final uid = _effectiveUid;
       final email = ownerEmail.toLowerCase().trim();
+      final userEmail = _effectiveEmail;
 
       // 1. AVOID DUPLICATES: Check if a store with this name already exists for this owner
       try {
@@ -347,8 +382,8 @@ class StoreProvider with ChangeNotifier {
            final existingId = existingQuery.docs.first.id;
            debugPrint('🏬 StoreProvider: Store "$name" already exists ($existingId). Skipping creation.');
            // Ensure it's linked if not already (safeguard)
-           if (user != null && user.email == email) {
-              await _db.collection('users').doc(user.uid).set({
+           if (uid != null && userEmail == email) {
+              await _db.collection('users').doc(uid).set({
                  'storeIds': FieldValue.arrayUnion([existingId]),
               }, SetOptions(merge: true));
            }
@@ -438,8 +473,8 @@ class StoreProvider with ChangeNotifier {
           debugPrint('🔍 StoreProvider: No pending requests. Checking user profiles...');
           Map<String, dynamic>? userData;
           
-          if (user != null) {
-            final userDoc = await _db.collection('users').doc(user.uid).get();
+          if (uid != null) {
+            final userDoc = await _db.collection('users').doc(uid).get();
             userData = userDoc.data();
           }
           
@@ -481,7 +516,7 @@ class StoreProvider with ChangeNotifier {
       final newStore = Store(
          id: docRef.id,
          name: name,
-         owner: user?.uid ?? name,
+         owner: uid ?? name,
          ownerEmail: email,
          status: 'Active',
          storeType: 'Restaurant',
@@ -523,10 +558,10 @@ class StoreProvider with ChangeNotifier {
       }
 
       // LINK TO USER
-      if (user != null) {
+      if (uid != null) {
           // 1. If Creator is the Owner
-          if (user.email == ownerEmail) {
-              await _db.collection('users').doc(user.uid).set({
+          if (userEmail == ownerEmail) {
+              await _db.collection('users').doc(uid).set({
                  'storeId': docRef.id,
                  'storeIds': FieldValue.arrayUnion([docRef.id]),
                  'role': 'Store Owner'
@@ -534,7 +569,7 @@ class StoreProvider with ChangeNotifier {
           } else {
               // 2. Admin creating for someone else
               // Link to the Admin so they can manage/onboard it
-              await _db.collection('users').doc(user.uid).set({
+              await _db.collection('users').doc(uid).set({
                  'accessibleStoreIds': FieldValue.arrayUnion([docRef.id]),
               }, SetOptions(merge: true));
 
@@ -557,7 +592,7 @@ class StoreProvider with ChangeNotifier {
       if (!_stores.any((s) => s.id == newStore.id)) {
         _stores.add(newStore);
         // NEW: Cache immediately to prevent data loss on restart for new users
-        await OfflineService().cacheUserStores(_stores.map((s) => s.toMap()).toList(), uid: user?.uid);
+        await OfflineService().cacheUserStores(_stores.map((s) => s.toMap()).toList(), uid: uid);
         notifyListeners();
       }
 

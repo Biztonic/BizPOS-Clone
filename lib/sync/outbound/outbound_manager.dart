@@ -6,6 +6,8 @@ import 'package:biztonic_pos/services/firestore_helper.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/services/repository.dart';
+import '../registry/sync_collection_registry.dart';
+
 
 /// Manages the outbound sync queue — pushing local changes to Firestore.
 ///
@@ -299,15 +301,8 @@ class OutboundManager {
 
   /// Helper to update sync status in Hive cache.
   Future<void> _markHiveAsPushed(String collection, String docId) async {
-    final modules = ['orders', 'inventory', 'customers', 'employees', 'floors', 'tables', 'suppliers', 'notes', 'settings'];
-    String? boxName;
-    for (var mod in modules) {
-      if (collection.endsWith(mod)) {
-        boxName = 'cache_$mod';
-        if (mod == 'settings') boxName = 'settings';
-        break;
-      }
-    }
+    final storeId = getActiveStoreId();
+    final boxName = SyncCollectionRegistry.getBoxName(collection, storeId: storeId);
 
     if (boxName != null) {
       try {

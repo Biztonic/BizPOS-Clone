@@ -9,7 +9,9 @@ import '../l10n/app_localizations.dart';
 import '../core/design/layouts/pos_scaffold.dart';
 import '../core/design/components/atoms/app_button.dart';
 import '../core/design/components/atoms/app_card.dart';
+import '../core/design/components/molecules/app_empty_state.dart';
 import '../core/design/design_system.dart';
+
 
 class SalesScreen extends StatefulWidget {
   const SalesScreen({super.key});
@@ -432,22 +434,14 @@ class _SalesScreenState extends State<SalesScreen> {
           if (_orders.isEmpty && !_isLoading)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.history_toggle_off, size: 64, color: AppColors.textSecondary(context).withValues(alpha: 0.5)),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(_errorMessage ?? AppLocalizations.t(context, 'no_data'), 
-                      style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary(context))
-                    ),
-                    if (_errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.sm),
-                        child: AppButton.primary(onPressed: () => _fetchOrders(isRefresh: true), label: AppLocalizations.t(context, 'refresh')),
+              child: AppEmptyState(
+                type: AppEmptyStateType.cart,
+                action: _errorMessage != null
+                    ? AppButton.primary(
+                        onPressed: () => _fetchOrders(isRefresh: true),
+                        label: AppLocalizations.t(context, 'refresh'),
                       )
-                  ],
-                )
+                    : null,
               ),
             )
           else

@@ -1,6 +1,7 @@
 import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+import 'package:biztonic_pos/core/design/tokens/app_radius.dart';
 
 import '../core/design/tokens/app_typography.dart';
 
@@ -24,7 +25,7 @@ class ReportStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(AppSpacing.xxs),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -34,7 +35,7 @@ class ReportStatCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppRadius.borderSm,
           boxShadow: [
             BoxShadow(
               color: baseColor.withValues(alpha: 0.3),
@@ -52,7 +53,7 @@ class ReportStatCard extends StatelessWidget {
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceLight.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: AppRadius.borderSm,
                   ),
                   child: Icon(icon, color: AppColors.surfaceLight, size: 24),
                 ),

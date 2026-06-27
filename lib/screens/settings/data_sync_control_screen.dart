@@ -12,6 +12,7 @@ import '../../core/design/components/molecules/app_dialog.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_spacing.dart';
 import '../../core/design/tokens/app_typography.dart';
+import '../../core/design/tokens/app_radius.dart';
 
 
 class DataSyncControlScreen extends StatefulWidget {
@@ -23,6 +24,20 @@ class DataSyncControlScreen extends StatefulWidget {
 
 class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
   // Removed local _isGridView
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = Provider.of<DashboardProvider>(context, listen: false);
+        provider.syncService.refreshLocalCounts();
+        if (provider.syncService.isOnline) {
+          provider.syncService.refreshCloudCounts();
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +125,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
         Container(
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.zero,
+            borderRadius: AppRadius.borderSm,
             border: Border.all(color: AppColors.surfaceVariant(context)),
           ),
           child: Row(
@@ -232,6 +247,12 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
       bool isOnline = stats['isOnline'] ?? false;
       int totalPending = stats['pending'] ?? 0;
       
+      bool isSuper = provider.userProfile?.role == 'Super Admin';
+      String plan = provider.activeStore?.subscriptionPlan ?? 'Basic';
+      bool isOfflineMode = (plan == 'Basic' || plan == 'Starting');
+      bool hasAddon = provider.activeStore?.addons.contains('data_center') ?? false;
+      bool canSync = !isOfflineMode || isSuper || hasAddon;
+      
       int safeInt(dynamic value) => (value is int && value >= 0) ? value : 0;
       
       bool hasMismatch = (safeInt(stats['orders']) != safeInt(stats['cloudOrders'])) || 
@@ -269,7 +290,10 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
           children: [
             Container(
               width: 56, height: 56,
-              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.2), shape: BoxShape.rectangle),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.2),
+                borderRadius: AppRadius.borderSm,
+              ),
               child: Icon(
                 isOnline ? ((totalPending > 0 || hasMismatch) ? Icons.cloud_sync : Icons.cloud_done) : Icons.cloud_off, 
                 color: statusColor, 
@@ -296,11 +320,30 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                 label: "Fix Now",
                 variant: AppButtonVariant.primary,
                 size: AppButtonSize.small,
-                onPressed: isOnline ? () => _handleSyncAction(context, () => service.syncUp(forceManual: true), "Sync") : null,
+                onPressed: (isOnline && canSync) ? () => _handleSyncAction(context, () => service.syncUp(forceManual: true), "Sync") : null,
               )
           ],
         ),
       );
+  }
+
+  Widget _buildStatusChip(String status, Color baseColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
+      decoration: BoxDecoration(
+        color: baseColor.withValues(alpha: 0.1),
+        borderRadius: AppRadius.borderXs,
+        border: Border.all(color: baseColor.withValues(alpha: 0.3), width: 0.5),
+      ),
+      child: Text(
+        status,
+        style: AppTypography.labelSmall.copyWith(
+          color: baseColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 10,
+        ),
+      ),
+    );
   }
 
   Widget _buildModuleCard(BuildContext context, SyncService service, String label, IconData icon, Color color, int local, int cloud, int pending, DashboardProvider provider, {bool isSettings = false, bool isList = false}) {
@@ -320,7 +363,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: AppRadius.borderSm,
                   ),
                   child: Icon(icon, color: color, size: 20),
                 ),
@@ -329,42 +372,46 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(label, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                      Text(label, style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
                       if (isSyncing)
-                        Text(AppLocalizations.t(context, 'Syncing...'), style: AppTypography.bodySmall.copyWith(color: color, fontWeight: FontWeight.bold))
+                        _buildStatusChip(AppLocalizations.t(context, 'Syncing...'), color)
                       else if (pending > 0)
-                        Text("$pending Pending", style: AppTypography.bodySmall.copyWith(color: AppColors.warning, fontWeight: FontWeight.bold))
+                        _buildStatusChip("$pending Pending", AppColors.warning)
                       else 
-                        Text(isSynced ? "Synced" : "Mismatch", style: AppTypography.bodySmall.copyWith(color: isSynced ? AppColors.success : AppColors.error)),
+                        _buildStatusChip(isSynced ? "Synced" : "Mismatch", isSynced ? AppColors.success : AppColors.error),
                     ],
                   ),
                 ),
               ],
             ),
-            if (isList) const SizedBox(height: AppSpacing.md),
-            if (!isList) const Spacer(),
+            const SizedBox(height: AppSpacing.md),
             Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant(context).withValues(alpha: 0.5),
-                borderRadius: BorderRadius.zero,
+                color: AppColors.surfaceVariant(context).withValues(alpha: 0.3),
+                borderRadius: AppRadius.borderSm,
+                border: Border.all(color: AppColors.surfaceVariant(context).withValues(alpha: 0.2), width: 0.5),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _statItem("Local", local.toString()),
-                  Container(width: 1, height: 20, color: AppColors.surfaceVariant(context)),
-                  _statItem("Cloud", cloud.toString()),
+                  _statItem("Local Records", local.toString()),
+                  Container(width: 1, height: 28, color: AppColors.surfaceVariant(context)),
+                  _statItem("Cloud Records", cloud.toString()),
                 ],
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            AppButton(
-              label: isSyncing ? "Syncing..." : (mismatch ? "Fix Mismatch" : (pending > 0 ? "Sync Pending" : "Force Sync")),
-              variant: (mismatch || pending > 0) ? AppButtonVariant.primary : AppButtonVariant.ghost,
-              size: AppButtonSize.small,
-              isLoading: isSyncing,
-              onPressed: isSyncing ? null : () => _handleSyncAction(context, () => service.syncModule(moduleKey, forceManual: true), "Sync $label"),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                label: isSyncing ? "Syncing..." : (mismatch ? "Fix Mismatch" : (pending > 0 ? "Sync Pending" : "Force Sync")),
+                variant: (mismatch || pending > 0) ? AppButtonVariant.primary : AppButtonVariant.ghost,
+                size: AppButtonSize.small,
+                isLoading: isSyncing,
+                onPressed: isSyncing ? null : () => _handleSyncAction(context, () => service.syncModule(moduleKey, forceManual: true), "Sync $label"),
+              ),
             ),
           ],
         ),
@@ -373,9 +420,25 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
 
   Widget _statItem(String label, String value) {
     return Column(
+       mainAxisSize: MainAxisSize.min,
        children: [
-         Text(label, style: AppTypography.bodySmall.copyWith(fontSize: 9, color: AppColors.textSecondary(context))),
-         Text(value, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+         Text(
+           label.toUpperCase(), 
+           style: AppTypography.labelSmall.copyWith(
+             fontSize: 9, 
+             color: AppColors.textSecondary(context),
+             fontWeight: FontWeight.bold,
+             letterSpacing: 0.5,
+           )
+         ),
+         const SizedBox(height: 4),
+         Text(
+           value, 
+           style: AppTypography.titleLarge.copyWith(
+             fontWeight: FontWeight.bold,
+             color: AppColors.textPrimary(context),
+           )
+         ),
        ],
     );
   }
@@ -425,7 +488,11 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                     if (isSuper) 
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
-                        decoration: BoxDecoration(color: AppColors.surface(context), borderRadius: BorderRadius.zero),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface(context),
+                          borderRadius: AppRadius.borderXs,
+                          border: Border.all(color: AppColors.surfaceVariant(context), width: 0.5),
+                        ),
                         child: Text(AppLocalizations.t(context, 'Super Override'), style: AppTypography.labelSmall),
                       ),
                   ]),
@@ -469,11 +536,11 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
             label: "Heal / Fix Mismatches",
             variant: AppButtonVariant.ghost,
             size: AppButtonSize.large,
-            onPressed: () async {
+            onPressed: (isOnline && canSync) ? () async {
               _handleSyncAction(context, () => service.resolveMismatches(
                 inventoryCollection: (provider.debugCollectionFound != "None") ? provider.debugCollectionFound : null
               ), "Repairing");
-            }
+            } : null,
           ),
         ],
       ],
@@ -485,7 +552,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
+          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: AppRadius.borderSm),
           child: const Icon(Icons.timer, color: AppColors.primary, size: 20),
         ),
         title: Text(AppLocalizations.t(context, 'Sync Frequency'), style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
@@ -494,14 +561,13 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
           decoration: BoxDecoration(
             color: AppColors.surfaceVariant(context).withValues(alpha: 0.5),
-            borderRadius: BorderRadius.zero
+            borderRadius: AppRadius.borderSm
           ),
           child: Builder(
             builder: (context) {
               final activeStore = Provider.of<DashboardProvider>(context, listen: false).activeStore;
-              final plan = activeStore?.subscriptionPlan ?? 'Basic';
               final hasAddon = activeStore?.addons.contains('data_center') ?? false;
-              bool isDisabled = (plan == 'Basic' && !hasAddon);
+              bool isDisabled = !hasAddon;
               
               if (isDisabled) {
                 return Text(service.syncFrequency, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.textSecondary(context)));
@@ -541,7 +607,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                 onChanged: (val) => provider.toggleAutoBackup(val),
                 secondary: Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(color: AppColors.secondary.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
+                  decoration: BoxDecoration(color: AppColors.secondary.withValues(alpha: 0.1), borderRadius: AppRadius.borderSm),
                   child: const Icon(Icons.access_time, color: AppColors.secondary, size: 20),
                 ),
               ),
@@ -670,7 +736,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: AppRadius.borderSm),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: AppSpacing.md),

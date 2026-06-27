@@ -177,6 +177,8 @@ class AppLocalizations {
       'growth': 'Growth',
       'avg_order': 'Avg Order',
       'alert': 'ALERT',
+      'sales_performance': 'Sales Performance',
+      'period_sales': 'Period Sales',
     },
     'hi': {
       // Dashboard Menu
@@ -344,6 +346,8 @@ class AppLocalizations {
       'growth': 'वृद्धि',
       'avg_order': 'औसत ऑर्डर',
       'alert': 'चेतावनी',
+      'sales_performance': 'बिक्री प्रदर्शन',
+      'period_sales': 'अवधि बिक्री',
     },
     'mr': {
       'dashboard': 'डॅशबोर्ड',
@@ -497,7 +501,16 @@ class AppLocalizations {
   };
 
   String translate(String key) {
-    return _localizedValues[locale.languageCode]?[key] ?? key;
+    // 1. Try to find the translation in the current locale
+    final currentTranslation = _localizedValues[locale.languageCode]?[key];
+    if (currentTranslation != null) return currentTranslation;
+    
+    // 2. Try to fall back to English translation
+    final englishTranslation = _localizedValues['en']?[key];
+    if (englishTranslation != null) return englishTranslation;
+    
+    // 3. Fall back to the key itself
+    return key;
   }
 
   // Static helper for easy access

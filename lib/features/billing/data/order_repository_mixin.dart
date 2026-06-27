@@ -483,12 +483,48 @@ mixin OrderRepositoryMixin {
       $filter
     ''', args);
 
+    final categoryRows = await db.rawQuery('''
+      SELECT 
+        oi.category, 
+        SUM(CASE WHEN o.status = 'Refunded' THEN 0 ELSE (oi.price * oi.quantity) END) as sales,
+        SUM(CASE WHEN o.status = 'Refunded' THEN 0 ELSE (oi.cost * oi.quantity) END) as cogs
+      FROM order_items oi
+      JOIN orders o ON oi.orderId = o.id
+      $filter
+      GROUP BY oi.category
+    ''', args);
+
+    final dayRows = await db.rawQuery('''
+      SELECT 
+        strftime('%Y-%m-%d', o.date) as day,
+        SUM(CASE WHEN o.status = 'Refunded' THEN 0 ELSE (oi.price * oi.quantity) END) as sales,
+        SUM(CASE WHEN o.status = 'Refunded' THEN 0 ELSE (oi.cost * oi.quantity) END) as cogs
+      FROM order_items oi
+      JOIN orders o ON oi.orderId = o.id
+      $filter
+      GROUP BY day
+    ''', args);
+
     double total = (orderStats.first['totalSales'] as num? ?? 0).toDouble();
     int count = (orderStats.first['count'] as num? ?? 0).toInt();
     double card = (orderStats.first['cardSales'] as num? ?? 0).toDouble();
     double cash = (orderStats.first['cashSales'] as num? ?? 0).toDouble();
     double cogs = (itemStats.first['totalCogs'] as num? ?? 0).toDouble();
     double avg = count > 0 ? total / count : 0.0;
+
+    final List<Map<String, dynamic>> categoryStats = categoryRows.map((row) => {
+      'category': row['category'] ?? 'Uncategorized',
+      'sales': (row['sales'] as num? ?? 0).toDouble(),
+      'cogs': (row['cogs'] as num? ?? 0).toDouble(),
+      'profit': ((row['sales'] as num? ?? 0) - (row['cogs'] as num? ?? 0)).toDouble(),
+    }).toList();
+
+    final List<Map<String, dynamic>> dayStats = dayRows.map((row) => {
+      'day': row['day'] ?? '',
+      'sales': (row['sales'] as num? ?? 0).toDouble(),
+      'cogs': (row['cogs'] as num? ?? 0).toDouble(),
+      'profit': ((row['sales'] as num? ?? 0) - (row['cogs'] as num? ?? 0)).toDouble(),
+    }).toList();
 
     return {
       'totalSales': total,
@@ -498,6 +534,8 @@ mixin OrderRepositoryMixin {
       'cashSales': cash,
       'totalCogs': cogs,
       'grossProfit': total - cogs,
+      'categoryStats': categoryStats,
+      'dayStats': dayStats,
     };
   }
 
