@@ -134,19 +134,6 @@ class _PosSidebarState extends State<PosSidebar> {
           _buildToggleButton(context, isCollapsed, provider),
           const SizedBox(height: AppSpacing.md),
           CircleAvatar(
-            radius: 24,
-            backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-            backgroundImage: (userPhoto != null && userPhoto.isNotEmpty)
-                ? MemoryImage(base64Decode(userPhoto))
-                : null,
-            child: (userPhoto == null || userPhoto.isEmpty)
-                ? Icon(Icons.person, color: Theme.of(context).primaryColor, size: 24)
-                : null,
-          ),
-        ]
-      ) : Row(
-        children: [
-          CircleAvatar(
             radius: 28,
             backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             backgroundImage: (userPhoto != null && userPhoto.isNotEmpty)
@@ -154,6 +141,19 @@ class _PosSidebarState extends State<PosSidebar> {
                 : null,
             child: (userPhoto == null || userPhoto.isEmpty)
                 ? Icon(Icons.person, color: Theme.of(context).primaryColor, size: 28)
+                : null,
+          ),
+        ]
+      ) : Row(
+        children: [
+          CircleAvatar(
+            radius: 36,
+            backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            backgroundImage: (userPhoto != null && userPhoto.isNotEmpty)
+                ? MemoryImage(base64Decode(userPhoto))
+                : null,
+            child: (userPhoto == null || userPhoto.isEmpty)
+                ? Icon(Icons.person, color: Theme.of(context).primaryColor, size: 36)
                 : null,
           ),
           const SizedBox(width: AppSpacing.md),

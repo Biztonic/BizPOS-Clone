@@ -1,4 +1,4 @@
-﻿// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
@@ -21,6 +21,14 @@ class RoleConfigurationScreen extends StatefulWidget {
 }
 
 class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<StoreProvider>(context, listen: false).fetchRoles();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return PosScaffold(

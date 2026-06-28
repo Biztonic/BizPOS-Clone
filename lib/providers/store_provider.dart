@@ -987,7 +987,9 @@ class StoreProvider with ChangeNotifier {
 
        _roles = fetchedRoles;
        notifyListeners();
-    } catch (e) { /* Error ignored */ }
+    } catch (e) {
+      debugPrint('❌ StoreProvider: Error fetching roles: $e');
+    }
   }
 
   Future<void> addRole(RoleModel role) async {

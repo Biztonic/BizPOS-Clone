@@ -57,6 +57,26 @@ class _PosScaffoldState extends State<PosScaffold> {
     return PosLayoutType.desktop;
   }
 
+  Widget _buildBodyWithTitle(BuildContext context, Widget content) {
+    if (widget.title == null || widget.title!.isEmpty) return content;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
+          child: Text(
+            widget.title!,
+            style: AppTypography.headlineMedium.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.titleLarge?.color,
+            ),
+          ),
+        ),
+        Expanded(child: content),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // CRITICAL: Use context.select instead of Provider.of(context) to prevent
@@ -82,7 +102,7 @@ class _PosScaffoldState extends State<PosScaffold> {
               key: _scaffoldKey,
               appBar: effectiveAppBar,
               drawer: widget.drawer ?? const PosSidebar(isDrawer: true),
-              body: widget.mainContent,
+              body: _buildBodyWithTitle(context, widget.mainContent),
               floatingActionButton: widget.floatingActionButton,
               bottomNavigationBar: widget.bottomBar,
             );
@@ -99,7 +119,7 @@ class _PosScaffoldState extends State<PosScaffold> {
                     widget.leftPanel ?? const PosSidebar(),
                   Expanded(
                     flex: 6,
-                    child: widget.mainContent,
+                    child: _buildBodyWithTitle(context, widget.mainContent),
                   ),
                   if (widget.rightPanel != null) ...[
                     const VerticalDivider(width: 1),
@@ -130,7 +150,7 @@ class _PosScaffoldState extends State<PosScaffold> {
                             preferredSize: const Size.fromHeight(kToolbarHeight),
                             child: effectiveAppBar,
                           ),
-                        Expanded(child: widget.mainContent),
+                        Expanded(child: _buildBodyWithTitle(context, widget.mainContent)),
                       ],
                     ),
                   ),

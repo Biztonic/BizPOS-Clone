@@ -2159,8 +2159,57 @@ class DashboardProvider with ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> fetchPaginatedUsers({int limit = 20, dynamic startAfter, String? filterRole}) async {
-    // Placeholder for paginated fetch
-    return {'users': [], 'lastId': null};
+    try {
+      Query query = _db.collection('users');
+
+      if (filterRole != null && filterRole != 'All') {
+        if (filterRole == 'Unauthorized') {
+          query = query.where('role', isEqualTo: 'Unauthorized');
+        } else {
+          query = query.where('role', isEqualTo: filterRole);
+        }
+      }
+
+      query = query.limit(limit);
+
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter as DocumentSnapshot);
+      }
+
+      final snap = await query.get();
+      final users = snap.docs.map((d) => UserProfile.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
+
+      // Gather store plans for these users to populate `storePlans`
+      final Map<String, String> storePlans = {};
+      final uniqueStoreIds = users.map((u) => u.storeId).where((id) => id != null && id.isNotEmpty).toSet();
+
+      if (uniqueStoreIds.isNotEmpty) {
+        final List<String> storeIdsList = uniqueStoreIds.toList();
+        for (var i = 0; i < storeIdsList.length; i += 10) {
+          final chunk = storeIdsList.sublist(i, i + 10 > storeIdsList.length ? storeIdsList.length : i + 10);
+          final storesSnap = await _db.collection('stores')
+              .where(FieldPath.documentId, whereIn: chunk)
+              .get();
+          for (var doc in storesSnap.docs) {
+            final plan = doc.data()['subscriptionPlan']?.toString() ?? 'Basic';
+            storePlans[doc.id] = plan;
+          }
+        }
+      }
+
+      return {
+        'users': users,
+        'storePlans': storePlans,
+        'lastDoc': snap.docs.isNotEmpty ? snap.docs.last : null,
+      };
+    } catch (e) {
+      debugPrint('❌ DashboardProvider: Error fetching paginated users: $e');
+      return {
+        'users': <UserProfile>[],
+        'storePlans': <String, String>{},
+        'lastDoc': null,
+      };
+    }
   }
 
   Future<void> approveDemoRequest(String uid) async {

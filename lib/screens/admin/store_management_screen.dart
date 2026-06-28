@@ -36,12 +36,20 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
     });
   }
 
-  void _loadStores() {
+  Future<void> _loadStores() async {
     final provider = Provider.of<DashboardProvider>(context, listen: false);
-    setState(() {
-      _stores = List.from(provider.stores);
-      _isLoading = false;
-    });
+    setState(() => _isLoading = true);
+    try {
+      await provider.fetchStores();
+    } catch (e) {
+      debugPrint("Error fetching stores: $e");
+    }
+    if (mounted) {
+      setState(() {
+        _stores = List.from(provider.stores);
+        _isLoading = false;
+      });
+    }
   }
 
   @override
