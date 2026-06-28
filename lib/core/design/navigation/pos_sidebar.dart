@@ -134,49 +134,45 @@ class _PosSidebarState extends State<PosSidebar> {
           _buildToggleButton(context, isCollapsed, provider),
           const SizedBox(height: AppSpacing.md),
           CircleAvatar(
-            radius: 18,
+            radius: 24,
             backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             backgroundImage: (userPhoto != null && userPhoto.isNotEmpty)
                 ? MemoryImage(base64Decode(userPhoto))
                 : null,
             child: (userPhoto == null || userPhoto.isEmpty)
-                ? Icon(Icons.person, color: Theme.of(context).primaryColor, size: 18)
+                ? Icon(Icons.person, color: Theme.of(context).primaryColor, size: 24)
                 : null,
           ),
         ]
       ) : Row(
         children: [
           CircleAvatar(
-            radius: 20,
+            radius: 28,
             backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             backgroundImage: (userPhoto != null && userPhoto.isNotEmpty)
                 ? MemoryImage(base64Decode(userPhoto))
                 : null,
             child: (userPhoto == null || userPhoto.isEmpty)
-                ? Icon(Icons.person, color: Theme.of(context).primaryColor, size: 20)
+                ? Icon(Icons.person, color: Theme.of(context).primaryColor, size: 28)
                 : null,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  storeName ?? 'BizPOS', 
-                  style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
                 if (userName != null)
                   Text(
                     userName,
                     style: TextStyle(
-                      fontSize: 12, 
-                      color: Theme.of(context).textTheme.bodySmall?.color,
-                      fontWeight: FontWeight.w500
+                      fontSize: 14, 
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      fontWeight: FontWeight.bold
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: 4),
                 _buildStatusBadge(context, isOnline),
               ],
             ),

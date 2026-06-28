@@ -1643,6 +1643,23 @@ class DashboardProvider with ChangeNotifier {
     final now = DateTime.now();
     final expiry = now.add(Duration(days: request.durationInDays));
     
+    // Find if franchise addon is being approved
+    final bool hasFranchiseAddon = request.selectedAddons.contains('franchise_management');
+    DocumentReference? userRefToUpdate;
+
+    if (hasFranchiseAddon) {
+      try {
+        final usersSnap = await _db.collection('users')
+            .where('email', isEqualTo: request.ownerEmail)
+            .get();
+        if (usersSnap.docs.isNotEmpty) {
+          userRefToUpdate = usersSnap.docs.first.reference;
+        }
+      } catch (e) {
+        debugPrint('⚠️ DashboardProvider: Error finding user by email for role update: $e');
+      }
+    }
+
     // Hoist outside transaction so we can use them for local state update after commit
     List<String> finalPurchased = [];
     List<String> finalActive = [];
@@ -1678,7 +1695,14 @@ class DashboardProvider with ChangeNotifier {
         'addons': currentActive,
       });
 
-      // 3. Add to History
+      // 3. Update User Role if franchise addon purchased
+      if (userRefToUpdate != null) {
+        tx.update(userRefToUpdate, {
+          'role': 'Franchise Owner',
+        });
+      }
+
+      // 4. Add to History
       final historyRef = storeRef.collection('subscription_history').doc();
       tx.set(historyRef, {
         'planName': request.planType,
@@ -1704,6 +1728,13 @@ class DashboardProvider with ChangeNotifier {
         debugPrint('⚠️ DashboardProvider: Error updating purchasedAddons locally: $e');
       }
     }
+
+    // Update local user role state if matching current user
+    if (hasFranchiseAddon && _userProfile != null && _userProfile!.email == request.ownerEmail) {
+      _userProfile = _userProfile!.copyWith(role: 'Franchise Owner');
+      _activeRole = 'Franchise Owner';
+    }
+
     await fetchSubscriptionHistory();
     fetchPendingSubscriptions();
     notifyListeners();
