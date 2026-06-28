@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
+import 'package:biztonic_pos/core/design/tokens/app_typography.dart';
 
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
