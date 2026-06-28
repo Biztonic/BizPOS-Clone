@@ -577,6 +577,7 @@ class DashboardProvider with ChangeNotifier {
   Future<void> fetchRoles() async {
       if (_storeProvider != null) {
           await _storeProvider!.fetchRoles();
+          _roles = _storeProvider!.roles;
           notifyListeners();
       }
   }
@@ -953,7 +954,11 @@ class DashboardProvider with ChangeNotifier {
   }
 
   Future<void> fetchStores() async {
-      if (_storeProvider != null) await _storeProvider!.fetchStores(isSuperAdmin: isSuperAdmin);
+      if (_storeProvider != null) {
+        await _storeProvider!.fetchStores(isSuperAdmin: isSuperAdmin);
+        _stores = _storeProvider!.stores;
+        notifyListeners();
+      }
   }
 
   Future<String> addStore(String name, String owner, {String? address, String? phone}) async {
@@ -2134,8 +2139,8 @@ class DashboardProvider with ChangeNotifier {
 
   List<UserProfile> get employees => _employees;
 
-  List<RoleModel> get roles => _roles;
-  final List<RoleModel> _roles = [
+  List<RoleModel> get roles => _storeProvider != null ? _storeProvider!.roles : _roles;
+  List<RoleModel> _roles = [
     RoleModel(id: 'admin', name: 'Admin', permissions: {}, isSystem: true),
     RoleModel(id: 'manager', name: 'Manager', permissions: {}, isSystem: true),
     RoleModel(id: 'cashier', name: 'Cashier', permissions: {}, isSystem: true),
@@ -2181,7 +2186,7 @@ class DashboardProvider with ChangeNotifier {
 
       // Gather store plans for these users to populate `storePlans`
       final Map<String, String> storePlans = {};
-      final uniqueStoreIds = users.map((u) => u.storeId).where((id) => id != null && id.isNotEmpty).toSet();
+      final uniqueStoreIds = users.map((u) => u.storeId).where((id) => id != null && id.isNotEmpty).cast<String>().toSet();
 
       if (uniqueStoreIds.isNotEmpty) {
         final List<String> storeIdsList = uniqueStoreIds.toList();
