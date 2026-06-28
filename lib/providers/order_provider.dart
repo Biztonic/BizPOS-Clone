@@ -44,12 +44,18 @@ class OrderProvider with ChangeNotifier {
   }
 
   StreamSubscription? _orderCreatedSub;
+  StreamSubscription? _syncCompletedSub;
 
   OrderProvider(this._syncService) {
     // Listen to OrderCreatedEvent from EventBus so that orders created via
     // BillingProvider.checkout() (standard POS) are also reflected here.
     _orderCreatedSub = EventBus.instance.on<OrderCreatedEvent>((event) {
       _handleOrderCreatedEvent(event);
+    });
+
+    // Listen to SyncCompletedEvent to reload orders from cache/DB
+    _syncCompletedSub = EventBus.instance.on<SyncCompletedEvent>((event) {
+      fetchOrders(event.storeId, refresh: true);
     });
   }
 
@@ -587,6 +593,7 @@ class OrderProvider with ChangeNotifier {
   @override
   void dispose() {
     _orderCreatedSub?.cancel();
+    _syncCompletedSub?.cancel();
     super.dispose();
   }
 }

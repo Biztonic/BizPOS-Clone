@@ -27,6 +27,7 @@ class InventoryProvider extends ChangeNotifier {
   final SyncService _syncService;
 
   StreamSubscription? _orderCreatedSub;
+  StreamSubscription? _syncCompletedSub;
 
   InventoryProvider({
     required InventoryRepositoryInterface repository,
@@ -43,6 +44,13 @@ class InventoryProvider extends ChangeNotifier {
     // Listen to OrderCreatedEvent to decrement stock instantly after checkout
     _orderCreatedSub = EventBus.instance.on<OrderCreatedEvent>((event) {
       _handleOrderCreatedEvent(event);
+    });
+
+    // Listen to SyncCompletedEvent to reload inventory from cache/DB
+    _syncCompletedSub = EventBus.instance.on<SyncCompletedEvent>((event) {
+      if (event.storeId == _storeProvider.activeStore?.id) {
+        loadInventory();
+      }
     });
     
     // Initial load if store is already selected
@@ -125,6 +133,7 @@ class InventoryProvider extends ChangeNotifier {
   void dispose() {
     _storeProvider.removeListener(_onStoreChanged);
     _orderCreatedSub?.cancel();
+    _syncCompletedSub?.cancel();
     super.dispose();
   }
 

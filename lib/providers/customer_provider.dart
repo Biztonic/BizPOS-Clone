@@ -8,6 +8,8 @@ import 'package:biztonic_pos/models/customer.dart';
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:biztonic_pos/core/events/event_bus.dart';
+import 'package:biztonic_pos/core/events/app_events.dart';
 
 class CustomerProvider with ChangeNotifier {
   late final FirebaseFirestore _db = getFirestore(); // Use 'bizpos' database
@@ -20,7 +22,13 @@ class CustomerProvider with ChangeNotifier {
   List<Customer> get customers => _customers;
   bool get isLoading => _isLoading;
 
-  CustomerProvider(this._syncService);
+  StreamSubscription? _syncCompletedSub;
+
+  CustomerProvider(this._syncService) {
+    _syncCompletedSub = EventBus.instance.on<SyncCompletedEvent>((event) {
+      fetchCustomers(event.storeId, refresh: true);
+    });
+  }
 
   // --- FETCHING ---
 
@@ -189,5 +197,11 @@ class CustomerProvider with ChangeNotifier {
      // Optimistic Local Update
      _customers[index] = updatedCustomer;
      notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _syncCompletedSub?.cancel();
+    super.dispose();
   }
 }

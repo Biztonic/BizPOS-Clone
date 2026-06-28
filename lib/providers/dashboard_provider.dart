@@ -44,6 +44,8 @@ import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'package:biztonic_pos/features/inventory/domain/use_cases/adjust_stock.dart';
 import 'package:biztonic_pos/features/inventory/data/mappers/inventory_mapper.dart';
+import 'package:biztonic_pos/core/events/event_bus.dart';
+import 'package:biztonic_pos/core/events/app_events.dart';
 
 import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
 
@@ -161,6 +163,14 @@ class DashboardProvider with ChangeNotifier {
        }
      });
      _subscriptions.add(connectivitySub);
+
+      final syncCompletedSub = EventBus.instance.on<SyncCompletedEvent>((event) {
+        if (_isDisposed) return;
+        if (event.storeId == _activeStoreId) {
+          reloadLocalData();
+        }
+      });
+      _subscriptions.add(syncCompletedSub);
 
     // _syncService.addListener(_onSyncUpdate); // Removed to prevent UI jank during background syncs
 
@@ -295,6 +305,7 @@ class DashboardProvider with ChangeNotifier {
         try {
           await _performInitialSetupSync();
           await prefsBox.put(setupKey, true);
+          await reloadLocalData();
         } catch (e) {
           debugPrint("❌ DashboardProvider: Initial setup sync failed: $e");
         } finally {
