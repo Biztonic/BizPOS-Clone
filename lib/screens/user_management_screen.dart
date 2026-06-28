@@ -89,15 +89,19 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       return matchesSearch && matchesRole;
     }).toList();
 
+    final isSuperAdmin = provider.activeRole == 'Super Admin';
+
     return PosScaffold(
       title: 'User Management',
       actions: [
-        AppButton.primary(
-          onPressed: () => _showAddUserDialog(),
-          icon: Icons.person_add,
-          label: isDesktop ? "Add New User" : null,
-        ),
-        const SizedBox(width: AppSpacing.md),
+        if (!isSuperAdmin) ...[
+          AppButton.primary(
+            onPressed: () => _showAddUserDialog(),
+            icon: Icons.person_add,
+            label: isDesktop ? "Add New User" : null,
+          ),
+          const SizedBox(width: AppSpacing.md),
+        ],
       ],
       mainContent: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

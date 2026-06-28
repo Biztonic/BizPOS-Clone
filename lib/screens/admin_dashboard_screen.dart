@@ -31,7 +31,7 @@ class AdminDashboardScreen extends StatelessWidget {
         icon: Icons.people_alt_rounded,
         label: 'User Management',
         description: 'Manage system users and access',
-        routePath: '/users',
+        routePath: '/roles',
         gradient: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
       ),
       _AdminMenuItem(
