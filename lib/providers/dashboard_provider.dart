@@ -1447,6 +1447,8 @@ class DashboardProvider with ChangeNotifier {
   List<UserProfile> _superAdmins = [];
   List<SubscriptionHistory> _subscriptionHistory = [];
   List<SubscriptionHistory> get subscriptionHistory => _subscriptionHistory;
+  String? _userFetchError;
+  String? get userFetchError => _userFetchError;
   bool _isDarkMode = false;
   final bool _isDemoMode = false;
   bool _isDeveloperMode = false;
@@ -2165,6 +2167,7 @@ class DashboardProvider with ChangeNotifier {
 
   Future<Map<String, dynamic>> fetchPaginatedUsers({int limit = 20, dynamic startAfter, String? filterRole}) async {
     try {
+      _userFetchError = null;
       Query query = _db.collection('users');
 
       if (filterRole != null && filterRole != 'All') {
@@ -2208,7 +2211,9 @@ class DashboardProvider with ChangeNotifier {
         'lastDoc': snap.docs.isNotEmpty ? snap.docs.last : null,
       };
     } catch (e) {
+      _userFetchError = e.toString();
       debugPrint('❌ DashboardProvider: Error fetching paginated users: $e');
+      notifyListeners();
       return {
         'users': <UserProfile>[],
         'storePlans': <String, String>{},

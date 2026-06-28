@@ -143,6 +143,22 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildStatsHeader(),
+            if (provider.userFetchError != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: AppRadius.borderSm,
+                  border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  "Error loading users: ${provider.userFetchError}",
+                  style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             _buildSearchAndFilters(),
             const SizedBox(height: AppSpacing.lg),
