@@ -109,7 +109,7 @@ class _PosSidebarState extends State<PosSidebar> {
           if (widget.isDrawer)
             _buildDrawerHeader(context, userName, userEmail, activeStoreName, userPhoto, authProvider)
           else
-            _buildSidebarHeader(context, activeStoreName, userName, isOnline, isCollapsed, dashboardProvider),
+            _buildSidebarHeader(context, activeStoreName, userName, userPhoto, isOnline, isCollapsed, dashboardProvider),
           
           // Store Selector (if multiple stores - include Store Owner)
           if (!isCollapsed && (role == 'Store Owner' || role == 'Admin' || role == 'Franchise Owner' || role == 'Super Admin') && hasMultipleStores)
@@ -126,21 +126,35 @@ class _PosSidebarState extends State<PosSidebar> {
     return widget.isDrawer ? Drawer(child: sidebarContent) : sidebarContent;
   }
 
-  Widget _buildSidebarHeader(BuildContext context, String? storeName, String? userName, bool isOnline, bool isCollapsed, DashboardProvider provider) {
+  Widget _buildSidebarHeader(BuildContext context, String? storeName, String? userName, String? userPhoto, bool isOnline, bool isCollapsed, DashboardProvider provider) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: AppSpacing.xl, horizontal: isCollapsed ? AppSpacing.sm : AppSpacing.md),
       child: isCollapsed ? Column(
         children: [
           _buildToggleButton(context, isCollapsed, provider),
           const SizedBox(height: AppSpacing.md),
-          Icon(Icons.storefront, color: Theme.of(context).primaryColor, size: 28),
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            backgroundImage: (userPhoto != null && userPhoto.isNotEmpty)
+                ? MemoryImage(base64Decode(userPhoto))
+                : null,
+            child: (userPhoto == null || userPhoto.isEmpty)
+                ? Icon(Icons.person, color: Theme.of(context).primaryColor, size: 18)
+                : null,
+          ),
         ]
       ) : Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(color: Theme.of(context).primaryColor.withValues(alpha: 0.1), borderRadius: AppRadius.borderMd),
-            child: Icon(Icons.storefront, color: Theme.of(context).primaryColor, size: 28),
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            backgroundImage: (userPhoto != null && userPhoto.isNotEmpty)
+                ? MemoryImage(base64Decode(userPhoto))
+                : null,
+            child: (userPhoto == null || userPhoto.isEmpty)
+                ? Icon(Icons.person, color: Theme.of(context).primaryColor, size: 20)
+                : null,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(

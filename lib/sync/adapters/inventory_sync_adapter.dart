@@ -41,9 +41,10 @@ class InventorySyncAdapter extends SyncAdapter {
       storeId: data['storeId'],
     );
     final safeQuantity = cloudQuantity + pendingDelta;
+    final nonNegativeQuantity = safeQuantity < 0 ? 0 : safeQuantity;
     await repository.updateInventoryCache(
       docId,
-      safeQuantity,
+      nonNegativeQuantity,
       data['storeId'] ?? '',
     );
   }

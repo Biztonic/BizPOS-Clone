@@ -117,9 +117,10 @@ class InventoryRepository {
   
   Future<void> updateQuantityCache(String itemId, int newQty, String storeId) async {
     final db = await _dbHelper.database;
+    final safeQty = newQty < 0 ? 0 : newQty;
     await db.insert(
       'cache_inventory_quantities',
-      {'itemId': itemId, 'quantity': newQty, 'storeId': storeId},
+      {'itemId': itemId, 'quantity': safeQty, 'storeId': storeId},
       conflictAlgorithm: ConflictAlgorithm.replace
     );
   }
@@ -129,7 +130,7 @@ class InventoryRepository {
      // Read-Modify-Write (Safe in transaction if needed, but simple update query is Atomic in SQLite)
      // atomic update: UPDATE cache SET quantity = quantity + delta WHERE itemId = ?
      await db.rawUpdate(
-       'UPDATE cache_inventory_quantities SET quantity = quantity + ? WHERE itemId = ?',
+       'UPDATE cache_inventory_quantities SET quantity = MAX(0, quantity + ?) WHERE itemId = ?',
        [delta, itemId]
      );
   }

@@ -73,7 +73,7 @@ class InventoryEntity {
     required this.category,
     required this.price,
     this.cost = 0.0,
-    this.quantity = 0,
+    int quantity = 0,
     this.unit = 'pcs',
     this.sku,
     this.image,
@@ -96,7 +96,7 @@ class InventoryEntity {
     this.syncStatus = 'PENDING',
     this.deviceId,
     this.version = 1,
-  });
+  }) : this.quantity = quantity < 0 ? 0 : quantity;
 
   // ─── Computed Properties ───────────────────────────────────
 

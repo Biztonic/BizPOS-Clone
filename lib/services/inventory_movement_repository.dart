@@ -33,13 +33,13 @@ class InventoryMovementRepository {
     );
     
     await txn.rawUpdate(
-      'UPDATE cache_inventory_quantities SET quantity = quantity + ? WHERE itemId = ? AND storeId = ?',
+      'UPDATE cache_inventory_quantities SET quantity = MAX(0, quantity + ?) WHERE itemId = ? AND storeId = ?',
       [movement.delta, movement.itemId, movement.storeId]
     );
 
     // 3. Atomically update inventory table baseline quantity
     await txn.rawUpdate(
-      'UPDATE inventory SET quantity = quantity + ? WHERE id = ?',
+      'UPDATE inventory SET quantity = MAX(0, quantity + ?) WHERE id = ?',
       [movement.delta, movement.itemId]
     );
   }

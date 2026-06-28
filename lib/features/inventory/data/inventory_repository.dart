@@ -34,14 +34,15 @@ class InventoryRepository {
 
   Future<void> updateInventoryCache(String itemId, int quantity, String storeId) async {
     final db = await dbHelper.database;
+    final safeQty = quantity < 0 ? 0 : quantity;
     await db.insert(
       'cache_inventory_quantities',
-      {'itemId': itemId, 'quantity': quantity, 'storeId': storeId},
+      {'itemId': itemId, 'quantity': safeQty, 'storeId': storeId},
       conflictAlgorithm: ConflictAlgorithm.replace
     );
     await db.rawUpdate(
       'UPDATE inventory SET quantity = ? WHERE id = ?',
-      [quantity, itemId]
+      [safeQty, itemId]
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:biztonic_pos/core/base/use_case.dart';
 import 'package:biztonic_pos/models/order_model.dart';
 import 'package:biztonic_pos/models/store.dart';
+import 'dart:math';
 import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/services/repository.dart';
@@ -115,7 +116,7 @@ class CheckoutOrderUseCase extends UseCase<CheckoutOrderParams, CheckoutOrderRes
             if (raw != null && raw is Map) {
               final itemData = Map<String, dynamic>.from(raw);
               final currentQty = (itemData['quantity'] as num?)?.toInt() ?? 0;
-              itemData['quantity'] = currentQty + m.delta;
+              itemData['quantity'] = max(0, currentQty + m.delta);
               await invBox.put(m.itemId, itemData);
             }
          }

@@ -20,6 +20,7 @@ import '../core/design/density/app_density.dart';
 import '../core/design/tokens/app_spacing.dart';
 import '../core/design/tokens/app_typography.dart';
 import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_radius.dart';
 
 
 class InventoryScreen extends StatefulWidget {
@@ -92,6 +93,59 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ),
 
+          // Category Filters
+          Selector<InventoryProvider, List<String>>(
+            selector: (_, p) => p.categories,
+            builder: (context, categories, _) {
+              if (categories.length <= 1) return const SliverToBoxAdapter(child: SizedBox.shrink());
+              final selectedCategory = Provider.of<InventoryProvider>(context).selectedCategory;
+              return SliverPadding(
+                padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.md, bottom: AppSpacing.md),
+                sliver: SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 38,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: categories.length,
+                      itemBuilder: (context, idx) {
+                        final cat = categories[idx];
+                        final isSelected = cat == selectedCategory;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: AppSpacing.sm),
+                          child: ChoiceChip(
+                            label: Text(
+                              cat,
+                              style: TextStyle(
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected ? Colors.white : AppColors.textSecondary(context),
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedColor: AppColors.adaptivePrimary(context),
+                            backgroundColor: AppColors.surface(context),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadius.borderSm,
+                              side: BorderSide(
+                                color: isSelected
+                                    ? Colors.transparent
+                                    : AppColors.textHint(context).withValues(alpha: 0.2),
+                              ),
+                            ),
+                            onSelected: (val) {
+                              if (val) {
+                                Provider.of<InventoryProvider>(context, listen: false).setCategory(cat);
+                              }
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
           Selector<InventoryProvider, bool>(
             selector: (_, p) => p.isLoading,
             builder: (context, isLoading, _) {
@@ -154,62 +208,79 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
 
   Widget _buildTableView(BuildContext context, List<InventoryEntity> items) {
-    return PosDataTable(
-      columns: [
-        PosDataColumn(label: AppLocalizations.t(context, 'item'), fixedWidth: 300),
-        PosDataColumn(label: AppLocalizations.t(context, 'category'), fixedWidth: 150),
-        PosDataColumn(label: AppLocalizations.t(context, 'price'), numeric: true, fixedWidth: 120),
-        PosDataColumn(label: AppLocalizations.t(context, 'stock'), numeric: true, fixedWidth: 150),
-        PosDataColumn(label: AppLocalizations.t(context, 'status'), fixedWidth: 150),
-      ],
-      rows: items.map((item) {
-        final status = item.stockStatus;
-        final color = status == StockStatus.outOfStock 
-            ? AppColors.adaptiveError(context) 
-            : (status == StockStatus.lowStock ? AppColors.adaptiveWarning(context) : AppColors.adaptiveSuccess(context));
-
-        return PosDataRow(
-          onTap: () {
-            AddEditInventoryScreen.showAsDialog(context, item: InventoryMapper.toLegacy(item));
-          },
-          cells: [
-            Row(
-              children: [
-                InventoryImageWidget(item: InventoryMapper.toLegacy(item), width: 40, height: 40),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    item.name, 
-                    style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                ),
-              ],
-            ),
-            Text(item.category, style: AppTypography.bodyMedium),
-            Text(
-              '₹${item.price.toStringAsFixed(2)}', 
-              style: AppTypography.bodyMedium.copyWith(
-                fontWeight: FontWeight.bold, 
-                color: AppColors.adaptiveSuccess(context)
-              )
-            ),
-            Text(
-              item.quantity.toString(),
-              style: AppTypography.bodyMedium.copyWith(
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-            _buildStatusBadge(
-              context,
-              status.value,
-              color,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface(context),
+          borderRadius: AppRadius.borderSm,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
-        );
-      }).toList(),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: PosDataTable(
+          columns: [
+            PosDataColumn(label: AppLocalizations.t(context, 'item'), fixedWidth: 300),
+            PosDataColumn(label: AppLocalizations.t(context, 'category'), fixedWidth: 150),
+            PosDataColumn(label: AppLocalizations.t(context, 'price'), numeric: true, fixedWidth: 120),
+            PosDataColumn(label: AppLocalizations.t(context, 'stock'), numeric: true, fixedWidth: 150),
+            PosDataColumn(label: AppLocalizations.t(context, 'status'), fixedWidth: 150),
+          ],
+          rows: items.map((item) {
+            final status = item.stockStatus;
+            final color = status == StockStatus.outOfStock 
+                ? AppColors.adaptiveError(context) 
+                : (status == StockStatus.lowStock ? AppColors.adaptiveWarning(context) : AppColors.adaptiveSuccess(context));
+
+            return PosDataRow(
+              onTap: () {
+                AddEditInventoryScreen.showAsDialog(context, item: InventoryMapper.toLegacy(item));
+              },
+              cells: [
+                Row(
+                  children: [
+                    InventoryImageWidget(item: InventoryMapper.toLegacy(item), width: 40, height: 40),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        item.name, 
+                        style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    ),
+                  ],
+                ),
+                Text(item.category, style: AppTypography.bodyMedium),
+                Text(
+                  '₹${item.price.toStringAsFixed(2)}', 
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold, 
+                    color: AppColors.adaptiveSuccess(context)
+                  )
+                ),
+                Text(
+                  item.quantity.toString(),
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+                _buildStatusBadge(
+                  context,
+                  status.value,
+                  color,
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 
@@ -291,7 +362,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1), 
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppRadius.borderXs,
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Text(

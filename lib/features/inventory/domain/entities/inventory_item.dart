@@ -41,7 +41,7 @@ class InventoryItem {
     required this.name,
     required this.category,
     required this.price,
-    this.quantity = 0, 
+    int quantity = 0, 
     required this.status,
     this.image,
     this.counterId,
@@ -66,7 +66,7 @@ class InventoryItem {
     this.featured = false, 
     this.lowStockThreshold = 10,
     this.localImage,
-  });
+  }) : this.quantity = quantity < 0 ? 0 : quantity;
 
   factory InventoryItem.fromMap(Map<String, dynamic> data, String id) {
     // Helper for safe parsing

@@ -405,9 +405,39 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                             AppTextField(key: const Key('item_name_input'), controller: _nameController, labelText: 'Item Name', validator: (v) => v!.trim().isEmpty ? 'Name is required' : null),
                             const SizedBox(height: AppSpacing.md),
                             Row(children: [
-                              Expanded(child: AppTextField(key: const Key('item_price_input'), controller: _priceController, labelText: 'Selling Price', prefixText: '₹ ', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'Price required' : null)),
+                              Expanded(
+                                child: AppTextField(
+                                  key: const Key('item_price_input'),
+                                  controller: _priceController,
+                                  labelText: 'Selling Price',
+                                  prefixText: '₹ ',
+                                  keyboardType: TextInputType.number,
+                                  validator: (v) {
+                                    if (v == null || v.isEmpty) return 'Price required';
+                                    final val = double.tryParse(v);
+                                    if (val == null) return 'Invalid price';
+                                    final costVal = double.tryParse(_costController.text) ?? 0.0;
+                                    if (val < costVal) return 'Must be >= Cost Price';
+                                    return null;
+                                  },
+                                ),
+                              ),
                               const SizedBox(width: AppSpacing.md),
-                              Expanded(child: AppTextField(key: const Key('item_cost_input'), controller: _costController, labelText: 'Cost Price', prefixText: '₹ ', keyboardType: TextInputType.number)),
+                              Expanded(
+                                child: AppTextField(
+                                  key: const Key('item_cost_input'),
+                                  controller: _costController,
+                                  labelText: 'Cost Price',
+                                  prefixText: '₹ ',
+                                  keyboardType: TextInputType.number,
+                                  validator: (v) {
+                                    final val = double.tryParse(v ?? '') ?? 0.0;
+                                    final priceVal = double.tryParse(_priceController.text) ?? 0.0;
+                                    if (priceVal < val) return 'Must be <= Selling Price';
+                                    return null;
+                                  },
+                                ),
+                              ),
                             ]),
                             const SizedBox(height: 20),
                             _buildDivider(context),
@@ -416,7 +446,21 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
                             _buildSectionHeader(context, Icons.inventory_2_outlined, 'Stock & Category'),
                             const SizedBox(height: 12),
                             Row(children: [
-                              Expanded(child: AppTextField(key: const Key('item_qty_input'), controller: _quantityController, labelText: 'Quantity', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'Qty required' : null)),
+                              Expanded(
+                                child: AppTextField(
+                                  key: const Key('item_qty_input'),
+                                  controller: _quantityController,
+                                  labelText: 'Quantity',
+                                  keyboardType: TextInputType.number,
+                                  validator: (v) {
+                                    if (v == null || v.isEmpty) return 'Qty required';
+                                    final val = int.tryParse(v);
+                                    if (val == null) return 'Invalid quantity';
+                                    if (val < 0) return 'Must be >= 0';
+                                    return null;
+                                  },
+                                ),
+                              ),
                               const SizedBox(width: AppSpacing.md),
                               Expanded(child: AppTextField(key: const Key('item_threshold_input'), controller: _lowStockController, labelText: 'Low Stock Alert', helperText: 'Default: 10', keyboardType: TextInputType.number)),
                             ]),
