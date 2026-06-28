@@ -1,9 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:async';
+import 'dart:math';
 
 import 'package:biztonic_pos/providers/store_provider.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:biztonic_pos/models/inventory_item.dart' as legacy;
+import 'package:biztonic_pos/core/events/event_bus.dart';
+import 'package:biztonic_pos/core/events/app_events.dart';
+import 'package:biztonic_pos/models/order_model.dart';
 import '../../data/mappers/inventory_mapper.dart';
 import 'dart:io';
 
@@ -21,6 +26,8 @@ class InventoryProvider extends ChangeNotifier {
   final StoreProvider _storeProvider;
   final SyncService _syncService;
 
+  StreamSubscription? _orderCreatedSub;
+
   InventoryProvider({
     required InventoryRepositoryInterface repository,
     required InventoryOrchestrator orchestrator,
@@ -32,6 +39,11 @@ class InventoryProvider extends ChangeNotifier {
         _syncService = syncService {
     // Listen to store changes to reload data
     _storeProvider.addListener(_onStoreChanged);
+    
+    // Listen to OrderCreatedEvent to decrement stock instantly after checkout
+    _orderCreatedSub = EventBus.instance.on<OrderCreatedEvent>((event) {
+      _handleOrderCreatedEvent(event);
+    });
     
     // Initial load if store is already selected
     if (_storeProvider.activeStore != null) {
@@ -112,7 +124,73 @@ class InventoryProvider extends ChangeNotifier {
   @override
   void dispose() {
     _storeProvider.removeListener(_onStoreChanged);
+    _orderCreatedSub?.cancel();
     super.dispose();
+  }
+
+  /// Decrement stock in-memory for each item in the order.
+  /// This gives instant UI feedback without waiting for a full reload.
+  void _handleOrderCreatedEvent(OrderCreatedEvent event) {
+    try {
+      // Extract order items from the event
+      final order = event.order;
+      List<dynamic> orderItems;
+      if (order is OrderModel) {
+        orderItems = order.items;
+      } else {
+        // OrderEntity path
+        orderItems = (order as dynamic).items as List<dynamic>;
+      }
+
+      bool didUpdate = false;
+      for (final orderItem in orderItems) {
+        String itemId;
+        int qty;
+        if (orderItem is OrderItem) {
+          itemId = orderItem.item.id;
+          qty = orderItem.quantity;
+        } else {
+          // OrderItemEntity from checkout orchestrator
+          itemId = (orderItem as dynamic).itemId as String;
+          qty = (orderItem as dynamic).quantity as int;
+        }
+
+        final idx = _items.indexWhere((e) => e.id == itemId);
+        if (idx != -1 && _items[idx].trackStock) {
+          final currentQty = _items[idx].quantity;
+          final newQty = max(0, currentQty - qty);
+          _items[idx] = _items[idx].copyWith(quantity: newQty);
+          didUpdate = true;
+        }
+      }
+
+      if (didUpdate) {
+        // Recalculate stats after stock update
+        _recalcStats();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('InventoryProvider: Error handling OrderCreatedEvent: $e');
+    }
+  }
+
+  /// Recalculate inventory stats from in-memory items.
+  void _recalcStats() {
+    if (_items.isEmpty) return;
+    final totalItems = _items.length;
+    final lowStock = _items.where((e) => e.trackStock && e.quantity <= e.lowStockThreshold && e.quantity > 0).length;
+    final outOfStock = _items.where((e) => e.trackStock && e.quantity <= 0).length;
+    final totalCostValue = _items.fold<double>(0, (sum, e) => sum + (e.cost * e.quantity));
+    final totalRetailValue = _items.fold<double>(0, (sum, e) => sum + (e.price * e.quantity));
+    final categoriesCount = _items.map((e) => e.category).toSet().length;
+    _stats = InventoryStats(
+      totalItems: totalItems,
+      lowStockItems: lowStock,
+      outOfStockItems: outOfStock,
+      totalCostValue: totalCostValue,
+      totalRetailValue: totalRetailValue,
+      categoriesCount: categoriesCount,
+    );
   }
 
   void _onStoreChanged() {

@@ -64,7 +64,7 @@ class Reporting extends _$Reporting {
 
   void _scheduleComputation() {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+    _debounceTimer = Timer(const Duration(milliseconds: 100), () {
       computeStats();
     });
   }

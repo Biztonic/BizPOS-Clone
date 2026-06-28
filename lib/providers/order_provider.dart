@@ -8,11 +8,13 @@ import 'package:biztonic_pos/models/order_model.dart';
 import 'package:biztonic_pos/models/store.dart';
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
-// NEW
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/features/billing/domain/use_cases/checkout_order.dart';
+import 'package:biztonic_pos/core/events/event_bus.dart';
+import 'package:biztonic_pos/core/events/app_events.dart';
+import 'package:biztonic_pos/features/billing/domain/entities/order_entity.dart';
 import 'package:intl/intl.dart';
 
 class OrderProvider with ChangeNotifier {
@@ -41,7 +43,39 @@ class OrderProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  OrderProvider(this._syncService);
+  StreamSubscription? _orderCreatedSub;
+
+  OrderProvider(this._syncService) {
+    // Listen to OrderCreatedEvent from EventBus so that orders created via
+    // BillingProvider.checkout() (standard POS) are also reflected here.
+    _orderCreatedSub = EventBus.instance.on<OrderCreatedEvent>((event) {
+      _handleOrderCreatedEvent(event);
+    });
+  }
+
+  /// Handle an OrderCreatedEvent by inserting the order into the local list
+  /// if it doesn't already exist (avoids duplicates when OrderProvider.placeOrder
+  /// already inserted it via the automotive theme path).
+  void _handleOrderCreatedEvent(OrderCreatedEvent event) {
+    try {
+      OrderModel orderModel;
+      if (event.order is OrderModel) {
+        orderModel = event.order as OrderModel;
+      } else {
+        // OrderEntity from BillingProvider path — convert to OrderModel
+        orderModel = OrderModel.fromEntity(event.order);
+      }
+
+      // Avoid duplicates: only insert if the order isn't already in the list
+      final alreadyExists = _orders.any((o) => o.id == orderModel.id);
+      if (!alreadyExists) {
+        _orders.insert(0, orderModel);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('OrderProvider: Error handling OrderCreatedEvent: $e');
+    }
+  }
 
   Future<void> clearOrders() async {
       _orders.clear();
@@ -548,5 +582,11 @@ class OrderProvider with ChangeNotifier {
       action: 'create',
       payload: event.toMap(),
     );
+  }
+
+  @override
+  void dispose() {
+    _orderCreatedSub?.cancel();
+    super.dispose();
   }
 }
