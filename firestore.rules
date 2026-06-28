@@ -11,12 +11,13 @@ service cloud.firestore {
     function isSuperAdmin() {
       return isAuthenticated() && (
         ('email' in request.auth.token && (
-          request.auth.token.email == 'pthorat600@gmail.com' ||
-          request.auth.token.email == 'biztonicautomation@gmail.com' ||
-          request.auth.token.email == 'biztonicautomation@gmail.com'.lower()
+          request.auth.token.email.lower() == 'pthorat600@gmail.com'.lower() ||
+          request.auth.token.email.lower() == 'biztonicautomation@gmail.com'.lower()
         )) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin')
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin'
+        ))
       );
     }
 

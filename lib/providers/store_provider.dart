@@ -978,6 +978,19 @@ class StoreProvider with ChangeNotifier {
          RoleModel(id: 'store_owner', name: 'Store Owner', permissions: {'admin': true}, isSystem: true),
        ];
 
+       final hasFranchise = (_activeStore?.addons.contains('franchise_management') ?? false) ||
+           _stores.any((s) => s.addons.contains('franchise_management'));
+       if (hasFranchise) {
+         systemRoles.add(
+           RoleModel(
+             id: 'franchise_owner',
+             name: 'Franchise Owner',
+             permissions: {'pos': true, 'inventory': true, 'reports': true, 'settings': true},
+             isSystem: true,
+           ),
+         );
+       }
+
        final Set<String> existingNames = fetchedRoles.map((r) => r.name).toSet();
        for (var sysRole in systemRoles) {
          if (!existingNames.contains(sysRole.name)) {

@@ -194,26 +194,9 @@ class _PosScaffoldState extends State<PosScaffold> {
         : (layoutType == PosLayoutType.mobile || layoutType == PosLayoutType.tablet)
             ? _buildDrawerMenuButton(context)
             : null,
-      title: LayoutBuilder(
-        builder: (context, constraints) {
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              if (widget.title != null && widget.title!.isNotEmpty)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    widget.title!,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              Text(
-                storeName ?? 'BizPOS',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ],
-          );
-        }
+      title: Text(
+        storeName ?? 'BizPOS',
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
       ),
       centerTitle: true,
       elevation: 0,

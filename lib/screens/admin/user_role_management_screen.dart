@@ -69,8 +69,12 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
   }
 
   Future<void> _loadStats() async {
-    final stats = await Provider.of<DashboardProvider>(context, listen: false).getUserStats();
-    if (context.mounted) setState(() => _stats = stats);
+    try {
+      final stats = await Provider.of<DashboardProvider>(context, listen: false).getUserStats();
+      if (context.mounted) setState(() => _stats = stats);
+    } catch (e) {
+      debugPrint("Error loading user stats: $e");
+    }
   }
 
   Future<void> _loadUsers({bool next = false, bool prev = false}) async {
