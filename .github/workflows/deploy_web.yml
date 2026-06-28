@@ -24,6 +24,9 @@ jobs:
         # Dynamically set base-href to repository name for correct routing on GH Pages
         run: flutter build web --release --base-href "/$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')/"
 
+      - name: Copy index.html to 404.html for SPA routing
+        run: cp build/web/index.html build/web/404.html
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
