@@ -937,7 +937,7 @@ class DashboardProvider with ChangeNotifier {
   Future<void> inviteEmployee(String email, String role, String name) async {}
 
   List<UserProfile> get systemUsers {
-    if (_activeRole == 'Super Admin' || _activeRole == 'Store Owner') {
+    if (_activeRole == 'Super Admin' || _activeRole == 'Store Owner' || _activeRole == 'Franchise Owner') {
       return _systemUsers;
     }
     return _employees;
@@ -1655,15 +1655,28 @@ class DashboardProvider with ChangeNotifier {
     DocumentReference? userRefToUpdate;
 
     if (hasFranchiseAddon) {
-      try {
-        final usersSnap = await _db.collection('users')
-            .where('email', isEqualTo: request.ownerEmail)
-            .get();
-        if (usersSnap.docs.isNotEmpty) {
-          userRefToUpdate = usersSnap.docs.first.reference;
+      if (request.userId != null && request.userId.isNotEmpty) {
+        userRefToUpdate = _db.collection('users').doc(request.userId);
+      } else {
+        try {
+          final usersSnap = await _db.collection('users')
+              .where('email', isEqualTo: request.ownerEmail)
+              .get();
+          if (usersSnap.docs.isNotEmpty) {
+            userRefToUpdate = usersSnap.docs.first.reference;
+          } else {
+            // Case-insensitive fallback lookup
+            final allUsers = await _db.collection('users').get();
+            final matches = allUsers.docs.where((d) => 
+              (d.data()['email'] as String?)?.toLowerCase() == request.ownerEmail.toLowerCase()
+            ).toList();
+            if (matches.isNotEmpty) {
+              userRefToUpdate = matches.first.reference;
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ DashboardProvider: Error finding user by email for role update: $e');
         }
-      } catch (e) {
-        debugPrint('⚠️ DashboardProvider: Error finding user by email for role update: $e');
       }
     }
 
@@ -1737,9 +1750,12 @@ class DashboardProvider with ChangeNotifier {
     }
 
     // Update local user role state if matching current user
-    if (hasFranchiseAddon && _userProfile != null && _userProfile!.email == request.ownerEmail) {
+    final matchesUid = request.userId != null && request.userId.isNotEmpty && _userProfile?.uid == request.userId;
+    final matchesEmail = request.ownerEmail.isNotEmpty && _userProfile?.email.toLowerCase() == request.ownerEmail.toLowerCase();
+    if (hasFranchiseAddon && _userProfile != null && (matchesUid || matchesEmail)) {
       _userProfile = _userProfile!.copyWith(role: 'Franchise Owner');
       _activeRole = 'Franchise Owner';
+      notifyListeners();
     }
 
     await fetchSubscriptionHistory();
@@ -2831,7 +2847,7 @@ class DashboardProvider with ChangeNotifier {
        notifyListeners();
     });
     
-    _db.collection('users').where('role', isEqualTo: 'Store Owner').snapshots().listen((snap) {
+    _db.collection('users').where('role', whereIn: ['Store Owner', 'Franchise Owner']).snapshots().listen((snap) {
        _systemUsers = snap.docs.map((d) => UserProfile.fromMap(d.data(), d.id)).toList();
        notifyListeners();
     });
