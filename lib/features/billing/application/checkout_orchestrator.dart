@@ -13,10 +13,14 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:math';
 
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/kernel/idempotency/idempotency_service.dart';
+import 'package:biztonic_pos/services/repository.dart';
+import 'package:biztonic_pos/services/token_service.dart';
+import 'package:biztonic_pos/models/order_model.dart';
 
 import '../domain/entities/order_entity.dart';
 import '../domain/repositories/billing_repository.dart';
@@ -76,6 +80,8 @@ class CheckoutResult {
 /// 7. Fire OrderCreatedEvent for SyncEngine
 class CheckoutOrchestrator {
   final BillingRepository _billingRepository;
+  final Repository _repository = Repository();
+  final TokenService _tokenService = TokenService();
   final CalculateTaxUseCase _calculateTax = CalculateTaxUseCase();
 
   CheckoutOrchestrator({
@@ -136,48 +142,75 @@ class CheckoutOrchestrator {
       date: now,
     );
 
+    // Generate Inventory Movements if tracking is enabled
+    final List<InventoryMovement> movements = [];
+    if (params.trackInventory) {
+      for (var item in enrichedOrder.items) {
+        movements.add(InventoryMovement(
+          id: _generateId('INV_MOV'),
+          itemId: item.itemId, // Fix: Changed item.id to item.itemId
+          storeId: params.activeStoreId,
+          type: MovementType.sale,
+          delta: -(item.quantity),
+          reason: 'Sale',
+          deviceId: params.deviceId,
+          createdAt: now,
+        ));
+      }
+    }
+
+    // Generate Business Ledger Event
+    final businessEvent = BusinessEvent(
+      id: _generateId('BIZ'),
+      storeId: params.activeStoreId,
+      entityType: 'ORDER',
+      entityId: orderId,
+      eventType: 'CREATE',
+      amount: enrichedOrder.total,
+      quantity: enrichedOrder.items.fold(0, (sum, item) => sum + item.quantity),
+      createdAt: now,
+      deviceId: params.deviceId,
+    );
+
     try {
       // ─── Step 5: Persist to Hive Cache ──────────────────────
       await _persistToCache(enrichedOrder);
 
-      // ─── Step 6: Persist via Repository ─────────────────────
-      final insertResult = await _billingRepository.insertOrder(enrichedOrder);
-      if (!insertResult.isSuccess) {
-        return CheckoutResult.failure(insertResult.error);
-      }
-
-      // ─── Step 7: Fire Decoupled Event ───────────────────────
-      // Generate Inventory Movements if tracking is enabled
-      final List<InventoryMovement> movements = [];
-      if (params.trackInventory) {
-        for (var item in enrichedOrder.items) {
-          movements.add(InventoryMovement(
-            id: _generateId('INV_MOV'),
-            itemId: item.itemId, // Fix: Changed item.id to item.itemId
-            storeId: params.activeStoreId,
-            type: MovementType.sale,
-            delta: -(item.quantity),
-            orderId: orderId,
-            reason: 'Sale',
-            deviceId: params.deviceId,
-            createdAt: now,
-          ));
+      // Decrement stock in-memory Hive cache
+      if (movements.isNotEmpty) {
+        final invBox = Hive.box('cache_inventory');
+        for (var m in movements) {
+          final raw = invBox.get(m.itemId);
+          if (raw != null && raw is Map) {
+            final itemData = Map<String, dynamic>.from(raw);
+            final currentQty = (itemData['quantity'] as num?)?.toInt() ?? 0;
+            itemData['quantity'] = max(0, currentQty + m.delta); // m.delta is negative
+            await invBox.put(m.itemId, itemData);
+          }
         }
       }
 
-      // Generate Business Ledger Event
-      final businessEvent = BusinessEvent(
-        id: _generateId('BIZ'),
-        storeId: params.activeStoreId,
-        entityType: 'ORDER',
-        entityId: orderId,
-        eventType: 'CREATE',
-        amount: enrichedOrder.total,
-        quantity: enrichedOrder.items.fold(0, (sum, item) => sum + item.quantity),
-        createdAt: now,
-        deviceId: params.deviceId,
-      );
+      // ─── Step 6: Persist via Repository ─────────────────────
+      if (!kIsWeb) {
+        // NATIVE: Use atomic SQLite transaction
+        final legacyOrder = OrderModel.fromEntity(enrichedOrder);
+        await _repository.performAtomicCheckout(
+          order: legacyOrder,
+          movements: movements,
+          event: businessEvent,
+          storeId: params.activeStoreId,
+          yearMonth: '${now.year}-${now.month.toString().padLeft(2, '0')}',
+        );
+      } else {
+        // WEB: Standard Repository Write
+        final insertResult = await _billingRepository.insertOrder(enrichedOrder);
+        if (!insertResult.isSuccess) {
+          return CheckoutResult.failure(insertResult.error);
+        }
+        await _tokenService.incrementOrderCounter(params.activeStoreId);
+      }
 
+      // ─── Step 7: Fire Decoupled Event ───────────────────────
       EventBus.instance.fire(OrderCreatedEvent(
         order: enrichedOrder,
         storeId: params.activeStoreId,
