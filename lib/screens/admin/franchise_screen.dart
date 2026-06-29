@@ -1,9 +1,10 @@
 import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../models/store.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import '../../core/design/components/atoms/app_card.dart';
 import '../../core/design/components/atoms/app_button.dart';
@@ -19,6 +20,65 @@ class FranchiseScreen extends StatefulWidget {
 
 class _FranchiseScreenState extends State<FranchiseScreen> {
   final _searchController = TextEditingController();
+  String _selectedOwner = 'All Owners';
+  String _selectedStatus = 'All Statuses';
+  int _currentPage = 1;
+  static const int _pageSize = 5;
+
+  Map<String, Map<String, dynamic>> _storeStats = {};
+  bool _isLoadingStats = false;
+  List<Store>? _previousStores;
+
+  bool _areListsEqual(List<Store> a, List<Store> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
+  }
+
+  Future<void> _loadStoresStats(List<Store> stores) async {
+    if (_isLoadingStats) return;
+    setState(() => _isLoadingStats = true);
+    
+    try {
+      final db = FirebaseFirestore.instance;
+      final Map<String, Map<String, dynamic>> newStats = {};
+      
+      for (var store in stores) {
+        final ordersQuery = await db.collection('stores')
+            .doc(store.id)
+            .collection('orders')
+            .get();
+            
+        double totalSales = 0.0;
+        int totalOrders = ordersQuery.docs.length;
+        
+        for (var doc in ordersQuery.docs) {
+          final data = doc.data();
+          final total = (data['total'] ?? data['grandTotal'] ?? data['amount'] ?? 0.0) as num;
+          totalSales += total.toDouble();
+        }
+        
+        newStats[store.id] = {
+          'sales': totalSales,
+          'orders': totalOrders,
+        };
+      }
+      
+      if (mounted) {
+        setState(() {
+          _storeStats = newStats;
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading franchise stores stats: $e');
+      if (mounted) {
+        setState(() => _isLoadingStats = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +98,38 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
     final franchiseId = provider.userProfile?.franchiseId ?? uid;
 
     final stores = provider.stores.where((s) => s.franchiseId == franchiseId).toList();
+
+    // Trigger stats load if stores list changed
+    if (_previousStores == null || !_areListsEqual(_previousStores!, stores)) {
+      _previousStores = stores;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadStoresStats(stores);
+      });
+    }
+
+    // Filtered list
     final filteredStores = stores.where((s) {
-      return s.name.toLowerCase().contains(_searchController.text.toLowerCase());
+      final nameMatch = s.name.toLowerCase().contains(_searchController.text.toLowerCase());
+      final ownerMatch = _selectedOwner == 'All Owners' || (s.ownerEmail == _selectedOwner || s.owner == _selectedOwner);
+      final statusMatch = _selectedStatus == 'All Statuses' || s.status == _selectedStatus;
+      return nameMatch && ownerMatch && statusMatch;
     }).toList();
+
     int activeStores = stores.where((s) => s.status == 'Active').length;
+
+    // Calculate aggregated sales & orders from real loaded stats
+    double aggregatedSales = 0.0;
+    int aggregatedOrders = 0;
+    
+    for (var store in stores) {
+      if (_storeStats.containsKey(store.id)) {
+        aggregatedSales += (_storeStats[store.id]?['sales'] ?? 0.0) as double;
+        aggregatedOrders += (_storeStats[store.id]?['orders'] ?? 0) as int;
+      }
+    }
+
+    final totalPages = (filteredStores.length / _pageSize).ceil();
+    final paginatedStores = filteredStores.skip((_currentPage - 1) * _pageSize).take(_pageSize).toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -107,8 +195,8 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
               children: [
                 _buildStatCard('Total Stores', stores.length.toString(), Icons.store_outlined, AppColors.primary, constraints.maxWidth),
                 _buildStatCard('Active Stores', activeStores.toString(), Icons.check_circle_outline, AppColors.success, constraints.maxWidth),
-                _buildStatCard('Total Sales (Est)', '₹0', Icons.payments_outlined, AppColors.warning, constraints.maxWidth),
-                _buildStatCard('Total Orders (Est)', '0', Icons.receipt_long_outlined, AppColors.primary, constraints.maxWidth),
+                _buildStatCard('Total Sales (Est)', '₹${aggregatedSales.toStringAsFixed(2)}', Icons.payments_outlined, AppColors.warning, constraints.maxWidth),
+                _buildStatCard('Total Orders (Est)', aggregatedOrders.toString(), Icons.receipt_long_outlined, AppColors.primary, constraints.maxWidth),
               ],
             );
           }),
@@ -127,12 +215,24 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                 // Filters
                 LayoutBuilder(builder: (context, constraints) {
                   final isNarrow = constraints.maxWidth < 800;
+
+                  // Get unique owner emails/IDs from the franchise stores
+                  final Set<String> uniqueOwners = {'All Owners'};
+                  for (var s in stores) {
+                    if (s.ownerEmail != null) uniqueOwners.add(s.ownerEmail!);
+                    else uniqueOwners.add(s.owner);
+                  }
+
                   final filterContent = [
                     Expanded(
                       flex: isNarrow ? 0 : 2,
                       child: TextField(
                         controller: _searchController,
-                        onChanged: (v) => setState(() {}),
+                        onChanged: (v) {
+                          setState(() {
+                            _currentPage = 1;
+                          });
+                        },
                         decoration: const InputDecoration(
                           hintText: 'Filter by Store Name...',
                           prefixIcon: Icon(Icons.search),
@@ -144,7 +244,28 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                     if (!isNarrow) const SizedBox(width: AppSpacing.md),
                     Expanded(
                       flex: isNarrow ? 0 : 1,
-                      child: _buildMockDropdown('Filter by Owner...'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(border: Border.all(color: AppColors.textSecondary(context)), borderRadius: BorderRadius.zero),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedOwner,
+                            isExpanded: true,
+                            hint: const Text('Filter by Owner...'),
+                            items: uniqueOwners.map((owner) {
+                              return DropdownMenuItem(value: owner, child: Text(owner, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)));
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _selectedOwner = val;
+                                  _currentPage = 1;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
                     ),
                     if (!isNarrow) const SizedBox(width: AppSpacing.md),
                     Expanded(
@@ -163,7 +284,30 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                     if (!isNarrow) const SizedBox(width: AppSpacing.md),
                     Expanded(
                       flex: isNarrow ? 0 : 1,
-                      child: _buildMockDropdown('All Statuses'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(border: Border.all(color: AppColors.textSecondary(context)), borderRadius: BorderRadius.zero),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedStatus,
+                            isExpanded: true,
+                            hint: const Text('All Statuses'),
+                            items: const [
+                              DropdownMenuItem(value: 'All Statuses', child: Text('All Statuses', style: TextStyle(fontSize: 13))),
+                              DropdownMenuItem(value: 'Active', child: Text('Active', style: TextStyle(fontSize: 13))),
+                              DropdownMenuItem(value: 'Inactive', child: Text('Inactive', style: TextStyle(fontSize: 13))),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _selectedStatus = val;
+                                  _currentPage = 1;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
                     ),
                   ];
 
@@ -193,7 +337,7 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                         DataColumn(label: Text(AppLocalizations.t(context, 'Total Orders'))),
                         DataColumn(label: Text(AppLocalizations.t(context, 'Status'))),
                       ],
-                      rows: filteredStores.isEmpty
+                      rows: paginatedStores.isEmpty
                           ? [
                               DataRow(cells: [
                                 DataCell(Text(AppLocalizations.t(context, 'No stores found matching your criteria.'), style: TextStyle(color: AppColors.textSecondary(context)))),
@@ -204,13 +348,16 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                                 const DataCell(SizedBox()),
                               ])
                             ]
-                          : filteredStores.map((store) {
+                          : paginatedStores.map((store) {
+                              final double storeSales = (_storeStats[store.id]?['sales'] ?? 0.0) as double;
+                              final int storeOrders = (_storeStats[store.id]?['orders'] ?? 0) as int;
+
                               return DataRow(cells: [
                                 DataCell(Text(store.name, style: const TextStyle(fontWeight: FontWeight.w600))),
-                                DataCell(Text(store.owner)),
+                                DataCell(Text(store.ownerEmail ?? store.owner)),
                                 DataCell(Text(store.franchiseName ?? '-')),
-                                DataCell(Text(AppLocalizations.t(context, '₹0.00'))),
-                                const DataCell(Text('0')),
+                                DataCell(Text('₹${storeSales.toStringAsFixed(2)}')),
+                                DataCell(Text(storeOrders.toString())),
                                 DataCell(_buildStatusBadge(store.status)),
                               ]);
                             }).toList(),
@@ -222,11 +369,21 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    const AppButton.secondary(onPressed: null, label: 'Previous'),
+                    AppButton.secondary(
+                      onPressed: _currentPage > 1 
+                          ? () => setState(() => _currentPage--) 
+                          : null, 
+                      label: 'Previous',
+                    ),
                     const SizedBox(width: AppSpacing.md),
-                    Text(AppLocalizations.t(context, 'Page 1 of 1'), style: AppTypography.bodySmall),
+                    Text(AppLocalizations.t(context, 'Page $_currentPage of ${totalPages == 0 ? 1 : totalPages}'), style: AppTypography.bodySmall),
                     const SizedBox(width: AppSpacing.md),
-                    const AppButton.secondary(onPressed: null, label: 'Next'),
+                    AppButton.secondary(
+                      onPressed: _currentPage < totalPages 
+                          ? () => setState(() => _currentPage++) 
+                          : null, 
+                      label: 'Next',
+                    ),
                   ],
                 )
               ],
