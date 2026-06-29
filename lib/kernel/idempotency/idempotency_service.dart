@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:biztonic_pos/services/database_helper.dart';
@@ -24,6 +25,7 @@ class IdempotencyService {
     required String entityId,
     required String deviceId,
   }) async {
+    if (kIsWeb) return true;
     final db = await DatabaseHelper().database;
 
     try {
@@ -56,6 +58,7 @@ class IdempotencyService {
     required String entityId,
     required String deviceId,
   }) async {
+    if (kIsWeb) return true;
     try {
       await txn.insert(
         'idempotency_keys',
