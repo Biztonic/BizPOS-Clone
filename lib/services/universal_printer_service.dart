@@ -149,7 +149,9 @@ class UniversalPrinterService {
         try {
           debugPrint(
               '🖨️ PRINT: Sending ${data.length} bytes to ${target.connectionType} printer (${target.name})');
-          await _flutterThermalPrinter!.printData(target, data, longData: true, chunkSize: 200);
+          await _flutterThermalPrinter!
+              .printData(target, data, longData: true, chunkSize: 200)
+              .timeout(const Duration(seconds: 5));
           _lastUsedAt = DateTime.now();
 
           // Update last connected if it was null
@@ -203,7 +205,8 @@ class UniversalPrinterService {
       debugPrint('🖨️ VERIFY: Sending heartbeat to ${target.name}...');
       // ESC @ = Initialize/Reset printer — harmless, no paper output
       await _flutterThermalPrinter!
-          .printData(target, [0x1B, 0x40], longData: false);
+          .printData(target, [0x1B, 0x40], longData: false)
+          .timeout(const Duration(seconds: 2));
       _lastUsedAt = DateTime.now();
       return true;
     } catch (e) {
@@ -248,7 +251,8 @@ class UniversalPrinterService {
     required double total,
     required double tax,
   }) async {
-    final profile = await CapabilityProfile.load();
+    if (kIsWeb) return;
+    final profile = await CapabilityProfile.load().timeout(const Duration(seconds: 2));
     final generator = Generator(PaperSize.mm80, profile);
 
     final hasMarathi = ReceiptGenerator.containsNonLatin1(storeName) ||
@@ -380,6 +384,7 @@ class UniversalPrinterService {
     String? tableName,
     String? seatNumbers,
   }) async {
+    if (kIsWeb) return;
     // 1. Setup Config
     final config = settings.receiptWidth == 58
         ? ReceiptConfig.mm58()
@@ -535,7 +540,7 @@ class UniversalPrinterService {
         );
         final int targetWidth = settings.receiptWidth == 58 ? 384 : 576;
         final optimizedImage = _optimizeAndBinarize(imgImage, targetWidth);
-        final profile = await CapabilityProfile.load();
+        final profile = await CapabilityProfile.load().timeout(const Duration(seconds: 2));
         final imgGenerator = Generator(settings.receiptWidth == 58 ? PaperSize.mm58 : PaperSize.mm80, profile);
         List<int> printBytes = [];
         printBytes += imgGenerator.reset();
@@ -584,6 +589,7 @@ class UniversalPrinterService {
     String? seatNumbers,
     int receiptWidth = 80, // Added width parameter, default 80mm
   }) async {
+    if (kIsWeb) return;
     final hasMarathi = ReceiptGenerator.containsNonLatin1(counterName) ||
         ReceiptGenerator.containsNonLatin1(serviceType) ||
         ReceiptGenerator.containsNonLatin1(billerName) ||
@@ -613,7 +619,7 @@ class UniversalPrinterService {
         );
         final int targetWidth = receiptWidth == 58 ? 384 : 576;
         final optimizedImage = _optimizeAndBinarize(imgImage, targetWidth);
-        final profile = await CapabilityProfile.load();
+        final profile = await CapabilityProfile.load().timeout(const Duration(seconds: 2));
         final imgGenerator = Generator(receiptWidth == 58 ? PaperSize.mm58 : PaperSize.mm80, profile);
         List<int> printBytes = [];
         printBytes += imgGenerator.reset();
