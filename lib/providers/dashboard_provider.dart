@@ -995,7 +995,7 @@ class DashboardProvider with ChangeNotifier {
       debugPrint('🔒 hasAddon($key): BLOCKED - store is on ${activeStore!.subscriptionPlan} plan (not Standard)');
       return false;
     }
-    if (_userProfile != null && _userProfile!.role != 'Store Owner' && _userProfile!.accessibleAddons != null) {
+    if (_userProfile != null && _userProfile!.role != 'Store Owner' && _userProfile!.role != 'Franchise Owner' && _userProfile!.accessibleAddons != null) {
        if (!_userProfile!.accessibleAddons!.contains(key)) {
          debugPrint('🔒 hasAddon($key): BLOCKED by accessibleAddons filter (role: ${_userProfile!.role})');
          return false;
@@ -1232,7 +1232,7 @@ class DashboardProvider with ChangeNotifier {
       }
     }
 
-    if (activeRole != 'Store Owner' && activeRole != 'Admin' && activeRole != 'Super Admin') {
+    if (activeRole != 'Store Owner' && activeRole != 'Admin' && activeRole != 'Super Admin' && activeRole != 'Franchise Owner') {
       if (key == 'admin') return false;
       final store = activeStore;
       final userRole = _userProfile?.role;

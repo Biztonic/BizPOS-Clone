@@ -239,7 +239,9 @@ class _PosScaffoldState extends State<PosScaffold> {
             icon: Icons.logout,
             tooltip: 'Logout',
             onPressed: () {
-              final isEmployee = dashboardProvider.activeRole != 'Store Owner' && dashboardProvider.activeRole != 'Admin';
+              final isEmployee = dashboardProvider.activeRole != 'Store Owner' && 
+                  dashboardProvider.activeRole != 'Admin' && 
+                  dashboardProvider.activeRole != 'Franchise Owner';
               dashboardProvider.clearSession();
               authProvider.signOut();
               if (isEmployee) context.go('/login');

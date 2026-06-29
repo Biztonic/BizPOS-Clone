@@ -39,7 +39,7 @@ class PermissionsHelper {
     }
 
     final activeRole = profile?.role;
-    if (activeRole != 'Store Owner' && activeRole != 'Admin' && activeRole != 'Super Admin') {
+    if (activeRole != 'Store Owner' && activeRole != 'Admin' && activeRole != 'Super Admin' && activeRole != 'Franchise Owner') {
       if (key == 'admin') return false;
       if (activeStore != null && activeRole != null && activeStore!.rolePermissions.containsKey(activeRole)) {
         final perms = activeStore!.rolePermissions[activeRole]!;
@@ -61,7 +61,7 @@ class PermissionsHelper {
     
     if (activeStore!.subscriptionPlan != 'Standard') return false;
     
-    if (profile != null && profile!.role != 'Store Owner' && profile!.accessibleAddons != null) {
+    if (profile != null && profile!.role != 'Store Owner' && profile!.role != 'Franchise Owner' && profile!.accessibleAddons != null) {
       if (!profile!.accessibleAddons!.contains(key)) return false;
     }
     
