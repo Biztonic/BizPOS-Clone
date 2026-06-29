@@ -23,6 +23,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _mobileController = TextEditingController();
+  final _franchiseCodeController = TextEditingController();
   bool _isLogin = true;
   bool _obscurePassword = true;
   late AnimationController _animController;
@@ -74,6 +75,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     _emailController.dispose();
     _passwordController.dispose();
     _mobileController.dispose();
+    _franchiseCodeController.dispose();
     _animController.dispose();
     super.dispose();
   }
@@ -115,6 +117,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           email,
           _passwordController.text.trim(),
           _mobileController.text.trim(),
+          franchiseCode: _franchiseCodeController.text.trim(),
         );
       }
     } catch (e) {
@@ -493,6 +496,24 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                       return null;
                     },
                   ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildTextField(
+                    key: const Key('franchise_code_input'),
+                    controller: _franchiseCodeController,
+                    label: "Franchise Code (Optional)",
+                    icon: Icons.vpn_key_outlined,
+                    keyboardType: TextInputType.number,
+                    isDark: isDark,
+                    maxLength: 6,
+                    validator: (value) {
+                      if (value != null && value.trim().isNotEmpty) {
+                        if (value.trim().length != 6 || int.tryParse(value.trim()) == null) {
+                          return 'Franchise code must be 6 digits';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
                 ],
                 const SizedBox(height: AppSpacing.xl),
 
@@ -580,6 +601,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     Widget? suffixIcon,
     String? prefix,
     String? Function(String?)? validator,
+    int? maxLength,
   }) {
     final Color textColor = AppColors.textPrimary(context);
     final Color labelColor = AppColors.textSecondary(context);
@@ -597,8 +619,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       keyboardType: keyboardType,
       obscureText: obscure,
       autofillHints: autofillHints,
+      maxLength: maxLength,
       style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: 0.2),
       decoration: InputDecoration(
+        counterText: maxLength != null ? "" : null,
         labelText: label,
         labelStyle: TextStyle(color: labelColor, fontSize: 13, fontWeight: FontWeight.w500),
         floatingLabelStyle: TextStyle(

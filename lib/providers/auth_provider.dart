@@ -151,7 +151,7 @@ class AuthProvider with ChangeNotifier {
   // Override to check offline status
   bool get isLoggedIn => _user != null || _isOfflineLoggedIn;
 
-  Future<void> signUpWithEmail(String email, String password, String mobile) async {
+  Future<void> signUpWithEmail(String email, String password, String mobile, {String? franchiseCode}) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -166,7 +166,7 @@ class AuthProvider with ChangeNotifier {
         // We default 'name' to part of email since we aren't asking for it yet
         final name = email.split('@')[0];
         
-        await getFirestore().collection('users').doc(credential.user!.uid).set({
+        final Map<String, dynamic> userData = {
           'uid': credential.user!.uid,
           'email': email,
           'name': name,
@@ -174,7 +174,13 @@ class AuthProvider with ChangeNotifier {
           'phoneNumber': mobile,
           'createdAt': FieldValue.serverTimestamp(),
           'accessibleStoreIds': [],
-        });
+        };
+
+        if (franchiseCode != null && franchiseCode.trim().isNotEmpty) {
+          userData['pendingFranchiseCode'] = franchiseCode.trim();
+        }
+
+        await getFirestore().collection('users').doc(credential.user!.uid).set(userData);
       }
     } catch (e) {
       _isLoading = false;

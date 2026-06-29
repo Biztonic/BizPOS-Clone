@@ -3131,8 +3131,9 @@ class DashboardProvider with ChangeNotifier {
         throw Exception("Authentication failed.");
       }
       
-      // 2. Fetch the store owned by this email
-      final storeSnap = await _db.collection('stores')
+      // 2. Fetch and update the store using secondaryDb (authenticated as store owner)
+      final secondaryDb = FirebaseFirestore.instanceFor(app: secondaryApp);
+      final storeSnap = await secondaryDb.collection('stores')
           .where('ownerEmail', isEqualTo: email.toLowerCase().trim())
           .get();
           
@@ -3140,24 +3141,20 @@ class DashboardProvider with ChangeNotifier {
         throw Exception("No store found owned by $email.");
       }
       
-      final batch = _db.batch();
       final storeIds = <String>[];
-      
       for (var doc in storeSnap.docs) {
-        batch.update(doc.reference, {
+        await secondaryDb.collection('stores').doc(doc.id).update({
           'franchiseId': uid,
           'franchiseName': franchiseName,
         });
         storeIds.add(doc.id);
       }
       
-      // Link store IDs to franchise owner
-      batch.set(_db.collection('users').doc(uid), {
+      // Link store IDs to franchise owner using primary _db (authenticated as franchise owner)
+      await _db.collection('users').doc(uid).set({
         'accessibleStoreIds': FieldValue.arrayUnion(storeIds),
         'storeIds': FieldValue.arrayUnion(storeIds),
       }, SetOptions(merge: true));
-      
-      await batch.commit();
       
       // Refresh local stores list in StoreProvider
       if (_storeProvider != null) {
