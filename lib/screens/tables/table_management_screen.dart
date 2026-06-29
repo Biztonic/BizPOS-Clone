@@ -12,6 +12,7 @@ import '../../models/floor.dart';
 import '../../models/table_model.dart';
 import '../../models/inventory_item.dart'; // Added
 import '../../models/order_model.dart'; // Added
+import '../../widgets/inventory_image_widget.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:math' as dart_math;
 // Ensure correct ReceiptSettings import
@@ -1467,8 +1468,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                 setDialogState(() {
                                                    // Check if item exists (matching ID AND Seat)
                                                    // If seat is selected, we only group with same seat items
+                                                   final targetSeat = selectedSeatIndex == -1 ? null : selectedSeatIndex;
                                                    final idx = currentOrderItems.indexWhere((x) => 
-                                                      x.item.id == item.id && x.seatIndex == selectedSeatIndex
+                                                      x.item.id == item.id && x.seatIndex == targetSeat
                                                    );
                                                    
                                                    if (idx != -1) {
@@ -1479,7 +1481,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                        currentOrderItems.add(OrderItem(
                                                           item: item, 
                                                           quantity: 1,
-                                                          seatIndex: selectedSeatIndex == -1 ? null : selectedSeatIndex
+                                                          seatIndex: targetSeat
                                                        ));
                                                     }
                                                 });
@@ -1496,12 +1498,14 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                                    crossAxisAlignment: CrossAxisAlignment.stretch,
                                                    children: [
                                                       Expanded(
-                                                         child: Container(
-                                                            decoration: BoxDecoration(
-                                                               color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
-                                                               borderRadius: const BorderRadius.vertical(top: Radius.circular(14))
+                                                         child: ClipRRect(
+                                                            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                                                            child: InventoryImageWidget(
+                                                               item: item,
+                                                               width: double.infinity,
+                                                               height: double.infinity,
+                                                               fit: BoxFit.cover,
                                                             ),
-                                                            child: Icon(Icons.fastfood, size: 40, color: Theme.of(context).primaryColor.withValues(alpha: 0.5)),
                                                          ),
                                                       ),
                                                       Padding(
