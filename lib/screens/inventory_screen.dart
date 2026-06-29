@@ -208,77 +208,164 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
 
   Widget _buildTableView(BuildContext context, List<InventoryEntity> items) {
-    return Padding(
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface(context),
-          borderRadius: AppRadius.borderSm,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: PosDataTable(
-          columns: [
-            PosDataColumn(label: AppLocalizations.t(context, 'item'), fixedWidth: 300),
-            PosDataColumn(label: AppLocalizations.t(context, 'category'), fixedWidth: 150),
-            PosDataColumn(label: AppLocalizations.t(context, 'price'), numeric: true, fixedWidth: 120),
-            PosDataColumn(label: AppLocalizations.t(context, 'stock'), numeric: true, fixedWidth: 150),
-            PosDataColumn(label: AppLocalizations.t(context, 'status'), fixedWidth: 150),
-          ],
-          rows: items.map((item) {
-            final status = item.stockStatus;
-            final color = status == StockStatus.outOfStock 
-                ? AppColors.adaptiveError(context) 
-                : (status == StockStatus.lowStock ? AppColors.adaptiveWarning(context) : AppColors.adaptiveSuccess(context));
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: _buildDesktopInventoryCard(context, items[index]),
+        );
+      },
+    );
+  }
 
-            return PosDataRow(
-              onTap: () {
-                AddEditInventoryScreen.showAsDialog(context, item: InventoryMapper.toLegacy(item));
-              },
-              cells: [
-                Row(
-                  children: [
-                    InventoryImageWidget(item: InventoryMapper.toLegacy(item), width: 40, height: 40),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        item.name, 
-                        style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
+  Widget _buildDesktopInventoryCard(BuildContext context, InventoryEntity item) {
+    final status = item.stockStatus;
+    final color = status == StockStatus.outOfStock 
+        ? AppColors.adaptiveError(context) 
+        : (status == StockStatus.lowStock ? AppColors.adaptiveWarning(context) : AppColors.adaptiveSuccess(context));
+
+    return AppCard(
+      key: Key('inventory_item_desktop_${item.id}'),
+      onTap: () {
+        AddEditInventoryScreen.showAsDialog(context, item: InventoryMapper.toLegacy(item));
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+        child: Row(
+          children: [
+            // 1. Large Image Thumbnail
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                borderRadius: AppRadius.borderSm,
+                border: Border.all(color: AppColors.border(context)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InventoryImageWidget(
+                item: InventoryMapper.toLegacy(item),
+                width: 64,
+                height: 64,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+
+            // 2. Info Column (Name & Category)
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    item.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: AppColors.textPrimary(context),
                     ),
-                  ],
-                ),
-                Text(item.category, style: AppTypography.bodyMedium),
-                Text(
-                  '₹${item.price.toStringAsFixed(2)}', 
-                  style: AppTypography.bodyMedium.copyWith(
-                    fontWeight: FontWeight.bold, 
-                    color: AppColors.adaptiveSuccess(context)
-                  )
-                ),
-                Text(
-                  item.quantity.toString(),
-                  style: AppTypography.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: color,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                _buildStatusBadge(
-                  context,
-                  status.value,
-                  color,
-                ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '${AppLocalizations.t(context, 'category')}: ${item.category}',
+                    style: TextStyle(
+                      color: AppColors.textSecondary(context),
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: AppSpacing.md),
+
+            // 3. Price Column
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    AppLocalizations.t(context, 'price').toUpperCase(),
+                    style: TextStyle(
+                      color: AppColors.textHint(context),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '₹${item.price.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: AppColors.adaptiveSuccess(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: AppSpacing.md),
+
+            // 4. Stock Column
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    AppLocalizations.t(context, 'stock').toUpperCase(),
+                    style: TextStyle(
+                      color: AppColors.textHint(context),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '${item.quantity} units',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: AppSpacing.md),
+
+            // 5. Status Badge Column
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildStatusBadge(context, status.value, color),
               ],
-            );
-          }).toList(),
+            ),
+
+            const SizedBox(width: AppSpacing.lg),
+
+            // 6. Action Button (Chevron or Edit)
+            Icon(
+              Icons.edit_outlined,
+              size: 20,
+              color: AppColors.textSecondary(context),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+          ],
         ),
       ),
     );
