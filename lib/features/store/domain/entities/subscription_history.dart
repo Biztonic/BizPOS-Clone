@@ -8,6 +8,7 @@ class SubscriptionHistory {
   final DateTime endDate;
   final String status;
   final List<String> selectedAddons; // NEW
+  final bool isAddonOnly; // NEW
 
   SubscriptionHistory({
     required this.id,
@@ -19,6 +20,7 @@ class SubscriptionHistory {
     required this.endDate,
     this.status = 'ACTIVE',
     this.selectedAddons = const [], // NEW
+    this.isAddonOnly = false, // NEW
   });
 
   factory SubscriptionHistory.fromMap(Map<String, dynamic> data, String id) {
@@ -32,6 +34,7 @@ class SubscriptionHistory {
       endDate: _parseDate(data['endDate']),
       status: data['status'] ?? 'ACTIVE',
       selectedAddons: List<String>.from(data['selectedAddons'] ?? []), // NEW
+      isAddonOnly: data['isAddonOnly'] ?? false, // NEW
     );
   }
 
@@ -57,6 +60,7 @@ class SubscriptionHistory {
       'endDate': endDate.millisecondsSinceEpoch,
       'status': status,
       'selectedAddons': selectedAddons, // NEW
+      'isAddonOnly': isAddonOnly, // NEW
     };
   }
 

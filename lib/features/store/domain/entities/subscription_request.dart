@@ -11,6 +11,7 @@ class SubscriptionRequest {
   final String userId; // NEW: Added for Firestore Security Rules
   final List<String> selectedAddons; // NEW
   final int durationInDays; // NEW
+  final bool isAddonOnly; // NEW
 
   SubscriptionRequest({
     required this.id,
@@ -25,6 +26,7 @@ class SubscriptionRequest {
     required this.createdAt,
     this.selectedAddons = const [], // NEW
     this.durationInDays = 30, // NEW
+    this.isAddonOnly = false, // NEW
   });
 
   factory SubscriptionRequest.fromMap(Map<String, dynamic> data, String id) {
@@ -41,6 +43,7 @@ class SubscriptionRequest {
       createdAt: _parseDate(data['createdAt']),
       selectedAddons: List<String>.from(data['selectedAddons'] ?? []), // NEW
       durationInDays: data['durationInDays'] ?? 30, // NEW
+      isAddonOnly: data['isAddonOnly'] ?? false, // NEW
     );
   }
 
@@ -69,6 +72,7 @@ class SubscriptionRequest {
       'createdAt': createdAt.millisecondsSinceEpoch,
       'selectedAddons': selectedAddons, // NEW
       'durationInDays': durationInDays, // NEW
+      'isAddonOnly': isAddonOnly, // NEW
     };
   }
 }

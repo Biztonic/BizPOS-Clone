@@ -16,6 +16,7 @@ class PaymentQrDialog extends StatefulWidget {
   final String adminUpiId;
   final List<String> selectedAddons;
   final Map<String, dynamic> addonRates;
+  final bool isAddonOnly;
 
   const PaymentQrDialog({
     super.key,
@@ -25,6 +26,7 @@ class PaymentQrDialog extends StatefulWidget {
     required this.adminUpiId,
     this.selectedAddons = const [],
     this.addonRates = const {},
+    this.isAddonOnly = false,
   });
 
   @override
@@ -143,6 +145,7 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
                             billingCycle: widget.billingCycle,
                             amount: widget.amount,
                             selectedAddons: widget.selectedAddons,
+                            isAddonOnly: widget.isAddonOnly,
                           );
                           if (context.mounted) {
                             Navigator.pop(context, true);

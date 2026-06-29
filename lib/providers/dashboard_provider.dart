@@ -751,8 +751,9 @@ class DashboardProvider with ChangeNotifier {
     final String checkingStoreId = activeStore!.id; 
     final now = DateTime.now();
     final activeSubs = _subscriptionHistory.where((h) => h.isActive && h.endDate.isAfter(now)).toList();
+    final hasActiveBase = activeSubs.any((h) => !h.isAddonOnly && h.planName == 'Standard');
     
-    if (activeSubs.isNotEmpty) {
+    if (hasActiveBase) {
       const String plan = 'Standard';
       final Set<String> activeAddons = Set<String>.from(activeStore!.purchasedAddons);
       for (var sub in activeSubs) {
@@ -1736,6 +1737,7 @@ class DashboardProvider with ChangeNotifier {
         'status': 'ACTIVE',
         'storeId': storeId,
         'selectedAddons': request.selectedAddons,
+        'isAddonOnly': request.isAddonOnly,
       });
     });
 
@@ -1826,7 +1828,8 @@ class DashboardProvider with ChangeNotifier {
     int durationInDays = 30, 
     required double amount,
     String? billingCycle,
-    List<String>? selectedAddons
+    List<String>? selectedAddons,
+    bool isAddonOnly = false,
   }) async {
     final int finalDuration = billingCycle == 'Yearly' ? 365 : 30;
     if (_activeStoreId == null) return;
@@ -1858,6 +1861,7 @@ class DashboardProvider with ChangeNotifier {
       'status': 'PENDING',
       'createdAt': FieldValue.serverTimestamp(),
       'userId': _auth?.currentUser?.uid,
+      'isAddonOnly': isAddonOnly,
     });
     // Refresh pending list so UI shows the new pending request immediately
     await fetchPendingSubscriptions();
@@ -2832,7 +2836,7 @@ class DashboardProvider with ChangeNotifier {
     final now = DateTime.now();
     int totalDays = 0;
     for (var sub in _subscriptionHistory) {
-      if (sub.planName == 'Standard' && (sub.status == 'ACTIVE' || sub.status == 'QUEUED')) {
+      if (sub.planName == 'Standard' && !sub.isAddonOnly && (sub.status == 'ACTIVE' || sub.status == 'QUEUED')) {
         if (sub.endDate.isAfter(now)) {
            final effectiveStart = sub.startDate.isBefore(now) ? now : sub.startDate;
            if (sub.endDate.isAfter(effectiveStart)) {

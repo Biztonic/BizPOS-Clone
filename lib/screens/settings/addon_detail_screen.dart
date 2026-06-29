@@ -479,6 +479,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen> with TickerProvid
           adminUpiId: upiId,
           selectedAddons: [_addonKey],
           addonRates: provider.platformLimits,
+          isAddonOnly: true,
         ),
       );
 

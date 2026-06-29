@@ -151,6 +151,7 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           adminUpiId: upiId,
           selectedAddons: selectedAddons, // Pass addons to breakdown
           addonRates: provider.platformLimits, // Use provider data
+          isAddonOnly: false,
         ),
       );
 
