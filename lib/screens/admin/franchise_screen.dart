@@ -34,7 +34,10 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
   }
 
   Widget _buildFranchiseOwnerContent(BuildContext context, DashboardProvider provider) {
-    final stores = provider.stores;
+    final uid = provider.userProfile?.uid;
+    final franchiseId = provider.userProfile?.franchiseId ?? uid;
+
+    final stores = provider.stores.where((s) => s.franchiseId == franchiseId).toList();
     final filteredStores = stores.where((s) {
       return s.name.toLowerCase().contains(_searchController.text.toLowerCase());
     }).toList();
@@ -61,7 +64,30 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                       child: const Icon(Icons.business_outlined, color: AppColors.primaryLight),
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    Text(AppLocalizations.t(context, 'Franchise Overview'), style: AppTypography.headlineSmall),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(AppLocalizations.t(context, 'Franchise Overview'), style: AppTypography.headlineSmall),
+                          if (provider.userProfile?.franchiseCode != null) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            SelectableText(
+                              'Franchise Code: ${provider.userProfile!.franchiseCode}',
+                              style: AppTypography.titleMedium.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    AppButton.primary(
+                      label: 'Link Existing Store',
+                      icon: Icons.add,
+                      onPressed: () => _showAddExistingStoreDialog(context, provider),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -299,6 +325,115 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showAddExistingStoreDialog(BuildContext context, DashboardProvider provider) {
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Add Existing Store'),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Enter the credentials of the existing store owner to link it under your franchise.',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextFormField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'Store Owner Email',
+                        prefixIcon: Icon(Icons.email_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      ),
+                      validator: (v) => v == null || v.isEmpty ? 'Please enter email' : null,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextFormField(
+                      controller: passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Store Owner Password',
+                        prefixIcon: Icon(Icons.lock_outline),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      ),
+                      validator: (v) => v == null || v.isEmpty ? 'Please enter password' : null,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+                          setState(() => isSubmitting = true);
+                          try {
+                            await provider.addExistingStoreToFranchise(
+                              email: emailController.text.trim(),
+                              password: passwordController.text,
+                            );
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Store successfully linked to your franchise!'),
+                                  backgroundColor: AppColors.success,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error linking store: ${e.toString()}'),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (context.mounted) {
+                              setState(() => isSubmitting = false);
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.surfaceLight,
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Link Store'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

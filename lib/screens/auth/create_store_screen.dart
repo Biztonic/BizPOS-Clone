@@ -22,6 +22,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _franchiseCodeController = TextEditingController();
   bool _isSubmitting = false;
   
   @override
@@ -41,6 +42,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
     _nameController.dispose();
     _addressController.dispose();
     _phoneController.dispose();
+    _franchiseCodeController.dispose();
     super.dispose();
   }
 
@@ -64,6 +66,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
         user.email!,
         address: _addressController.text.trim(),
         phone: _phoneController.text.trim(),
+        franchiseCode: _franchiseCodeController.text.trim(),
       );
       
       // Explicitly set as active to ensure immediate selection
@@ -187,18 +190,40 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                        prefixIcon: Icon(Icons.location_on_outlined),
                      ),
                    ),
-                   const SizedBox(height: AppSpacing.md),
-                   
-                   TextFormField(
-                     controller: _phoneController,
-                     keyboardType: TextInputType.phone,
-                     decoration: const InputDecoration(
-                       labelText: "Phone (Optional)",
-                       border: OutlineInputBorder(),
-                       prefixIcon: Icon(Icons.phone),
-                     ),
-                   ),
-                   const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.md),
+                    
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: "Phone (Optional)",
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.phone),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    TextFormField(
+                      controller: _franchiseCodeController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      decoration: const InputDecoration(
+                        labelText: "Franchise Code (Optional)",
+                        hintText: "6-digit code for your franchise",
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.vpn_key_outlined),
+                        counterText: "",
+                      ),
+                      validator: (value) {
+                        if (value != null && value.trim().isNotEmpty) {
+                          if (value.trim().length != 6 || int.tryParse(value.trim()) == null) {
+                            return "Franchise code must be a 6-digit number";
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
 
                    SizedBox(
                      height: 50,

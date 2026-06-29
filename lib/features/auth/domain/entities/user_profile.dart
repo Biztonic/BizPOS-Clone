@@ -7,6 +7,7 @@ class UserProfile {
   final String role;
   final String? storeId;
   final String? franchiseId;
+  final String? franchiseCode;
   final DateTime? createdAt;
   final List<String>? accessibleStoreIds;
   final String? photoBase64; // NEW: Stored as Base64 string
@@ -27,6 +28,7 @@ class UserProfile {
     required this.role,
     this.storeId,
     this.franchiseId,
+    this.franchiseCode,
     this.createdAt,
     this.accessibleStoreIds,
     this.photoBase64,
@@ -50,6 +52,7 @@ class UserProfile {
       role: data['role'] ?? 'Unauthorized',
       storeId: data['storeId'],
       franchiseId: data['franchiseId'],
+      franchiseCode: data['franchiseCode'],
       accessibleStoreIds: (data['accessibleStoreIds'] is List) 
           ? (data['accessibleStoreIds'] as List).map((e) => e.toString()).toList() 
           : null,
@@ -79,6 +82,7 @@ class UserProfile {
       'role': role,
       'storeId': storeId,
       'franchiseId': franchiseId,
+      'franchiseCode': franchiseCode,
       'createdAt': createdAt,
       'accessibleStoreIds': accessibleStoreIds,
       'photoBase64': photoBase64,
@@ -101,6 +105,7 @@ class UserProfile {
     String? role,
     String? storeId,
     String? franchiseId,
+    String? franchiseCode,
     DateTime? createdAt,
     List<String>? accessibleStoreIds,
     String? photoBase64,
@@ -122,6 +127,7 @@ class UserProfile {
       role: role ?? this.role,
       storeId: storeId ?? this.storeId,
       franchiseId: franchiseId ?? this.franchiseId,
+      franchiseCode: franchiseCode ?? this.franchiseCode,
       createdAt: createdAt ?? this.createdAt,
       accessibleStoreIds: accessibleStoreIds ?? this.accessibleStoreIds,
       photoBase64: photoBase64 ?? this.photoBase64,

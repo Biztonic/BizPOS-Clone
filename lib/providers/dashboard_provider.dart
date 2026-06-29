@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:biztonic_pos/services/firestore_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:biztonic_pos/providers/auth_provider.dart';
 import 'dart:math'; 
@@ -964,9 +965,9 @@ class DashboardProvider with ChangeNotifier {
       }
   }
 
-  Future<String> addStore(String name, String owner, {String? address, String? phone}) async {
+  Future<String> addStore(String name, String owner, {String? address, String? phone, String? franchiseCode}) async {
       if (_storeProvider != null) {
-          return await _storeProvider!.addStore(name, owner, address: address, phone: phone);
+          return await _storeProvider!.addStore(name, owner, address: address, phone: phone, franchiseCode: franchiseCode);
       }
       return '';
   }
@@ -2396,6 +2397,29 @@ class DashboardProvider with ChangeNotifier {
           _activeRole = _userProfile!.role;
           debugPrint('👤 DashboardProvider: User Role identified as: $_activeRole');
 
+          // Generate franchise code if missing for Franchise Owner
+          if (_activeRole == 'Franchise Owner' && (userData['franchiseCode'] == null || userData['franchiseCode'].toString().isEmpty)) {
+            final String generatedCode = (Random().nextInt(900000) + 100000).toString();
+            userData['franchiseCode'] = generatedCode;
+            userData['franchiseId'] = uid;
+            
+            await _db.collection('users').doc(uid).update({
+              'franchiseCode': generatedCode,
+              'franchiseId': uid,
+            });
+            
+            await _db.collection('franchises').doc(uid).set({
+              'id': uid,
+              'name': _userProfile!.name.isNotEmpty ? "${_userProfile!.name} Franchise" : "Franchise",
+              'ownerEmail': _userProfile!.email,
+              'code': generatedCode,
+              'createdAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+
+            _userProfile = UserProfile.fromMap(userData, uid);
+            debugPrint('🔑 Generated franchise code for owner: $generatedCode');
+          }
+
           // Persist to Cache for next launch
           await OfflineService().cacheUserProfile(userData, uid: uid);
         } else {
@@ -3079,6 +3103,70 @@ class DashboardProvider with ChangeNotifier {
       }
     } catch (e) {
       debugPrint('⚠️ DashboardProvider: Error rechecking clock status: $e');
+    }
+  }
+
+  Future<void> addExistingStoreToFranchise({
+    required String email,
+    required String password,
+  }) async {
+    final uid = _userProfile?.uid;
+    if (uid == null) {
+      throw Exception("User not authenticated.");
+    }
+    final franchiseName = _userProfile?.name.isNotEmpty == true 
+        ? "${_userProfile!.name} Franchise" 
+        : "Franchise";
+
+    final secondaryApp = await Firebase.initializeApp(
+      name: 'SecondaryApp_${Random().nextInt(1000000)}',
+      options: Firebase.app().options,
+    );
+    final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+    
+    try {
+      final creds = await secondaryAuth.signInWithEmailAndPassword(email: email.trim(), password: password);
+      final storeOwnerUid = creds.user?.uid;
+      if (storeOwnerUid == null) {
+        throw Exception("Authentication failed.");
+      }
+      
+      // 2. Fetch the store owned by this email
+      final storeSnap = await _db.collection('stores')
+          .where('ownerEmail', isEqualTo: email.toLowerCase().trim())
+          .get();
+          
+      if (storeSnap.docs.isEmpty) {
+        throw Exception("No store found owned by $email.");
+      }
+      
+      final batch = _db.batch();
+      final storeIds = <String>[];
+      
+      for (var doc in storeSnap.docs) {
+        batch.update(doc.reference, {
+          'franchiseId': uid,
+          'franchiseName': franchiseName,
+        });
+        storeIds.add(doc.id);
+      }
+      
+      // Link store IDs to franchise owner
+      batch.set(_db.collection('users').doc(uid), {
+        'accessibleStoreIds': FieldValue.arrayUnion(storeIds),
+        'storeIds': FieldValue.arrayUnion(storeIds),
+      }, SetOptions(merge: true));
+      
+      await batch.commit();
+      
+      // Refresh local stores list in StoreProvider
+      if (_storeProvider != null) {
+        await _storeProvider!.fetchStores(isSuperAdmin: isSuperAdmin);
+        _stores = _storeProvider!.stores;
+        notifyListeners();
+      }
+    } finally {
+      await secondaryApp.delete();
     }
   }
 }

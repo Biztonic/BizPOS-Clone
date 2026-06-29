@@ -300,6 +300,18 @@ class StoreProvider with ChangeNotifier {
                  }
               }
            }
+
+           // If role is Franchise Owner, fetch all stores belonging to this franchise
+           if (data['role'] == 'Franchise Owner') {
+              try {
+                final qFranchise = await _db.collection('stores').where('franchiseId', isEqualTo: uid).get();
+                for (var doc in qFranchise.docs) {
+                  uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
+                }
+              } catch (e) {
+                debugPrint('⚠️ StoreProvider: Franchise-owned Query Failed: $e');
+              }
+           }
         }
       } catch (e) {
         debugPrint('⚠️ StoreProvider: ID-based Query Failed/Timeout: $e');
@@ -366,10 +378,42 @@ class StoreProvider with ChangeNotifier {
 
   // --- ACTIONS ---
 
-  Future<String> addStore(String name, String ownerEmail, {String? address, String? phone}) async {
+  Future<String> addStore(String name, String ownerEmail, {String? address, String? phone, String? franchiseCode}) async {
       final uid = _effectiveUid;
       final email = ownerEmail.toLowerCase().trim();
       final userEmail = _effectiveEmail;
+
+      String? resolvedFranchiseId;
+      String? resolvedFranchiseName;
+
+      if (franchiseCode != null && franchiseCode.trim().isNotEmpty) {
+        try {
+          final franchiseQuery = await _db.collection('users')
+              .where('role', isEqualTo: 'Franchise Owner')
+              .where('franchiseCode', isEqualTo: franchiseCode.trim())
+              .get();
+          
+          if (franchiseQuery.docs.isNotEmpty) {
+            final fOwner = franchiseQuery.docs.first;
+            resolvedFranchiseId = fOwner.id;
+            resolvedFranchiseName = fOwner.data()['name'] ?? "${fOwner.data()['email']?.split('@')[0]} Franchise";
+            debugPrint('🏪 StoreProvider: Store linked to franchise code $franchiseCode (Owner: $resolvedFranchiseId)');
+          } else {
+            // Also search in franchises collection
+            final fCollQuery = await _db.collection('franchises')
+                .where('code', isEqualTo: franchiseCode.trim())
+                .get();
+            if (fCollQuery.docs.isNotEmpty) {
+              final fDoc = fCollQuery.docs.first;
+              resolvedFranchiseId = fDoc.id;
+              resolvedFranchiseName = fDoc.data()['name'] ?? 'Franchise';
+              debugPrint('🏪 StoreProvider: Store linked to franchise code $franchiseCode (ID: $resolvedFranchiseId)');
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ StoreProvider: Error resolving franchise code: $e');
+        }
+      }
 
       // 1. AVOID DUPLICATES: Check if a store with this name already exists for this owner
       try {
@@ -529,6 +573,8 @@ class StoreProvider with ChangeNotifier {
          receipt: ReceiptSettings(),
          payment: PaymentSettings(),
          kds: KdsSettings(), 
+         franchiseId: resolvedFranchiseId,
+         franchiseName: resolvedFranchiseName,
       );
       
       await docRef.set(newStore.toMap());
@@ -558,6 +604,18 @@ class StoreProvider with ChangeNotifier {
       }
 
       // LINK TO USER
+      if (resolvedFranchiseId != null) {
+        try {
+          await _db.collection('users').doc(resolvedFranchiseId).set({
+            'accessibleStoreIds': FieldValue.arrayUnion([docRef.id]),
+            'storeIds': FieldValue.arrayUnion([docRef.id]),
+          }, SetOptions(merge: true));
+          debugPrint('🔗 StoreProvider: Linked new store to franchise owner accessibleStoreIds.');
+        } catch (e) {
+          debugPrint('⚠️ StoreProvider: Failed to link store to franchise owner document: $e');
+        }
+      }
+
       if (uid != null) {
           // 1. If Creator is the Owner
           if (userEmail == ownerEmail) {
