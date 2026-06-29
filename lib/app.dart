@@ -4,6 +4,8 @@ import 'package:provider/provider.dart' as legacy_provider;
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'providers/locale_provider.dart';
+import 'providers/dashboard_provider.dart';
+import 'screens/error/clock_tampered_screen.dart';
 import 'routing/app_router.dart';
 import 'utils/theme.dart';
 import 'utils/car_dashboard_theme.dart';
@@ -39,8 +41,8 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
   Widget build(BuildContext context) {
     final themeData = ref.watch(themeProvider);
     
-    return legacy_provider.Consumer<LocaleProvider>(
-      builder: (context, localeProvider, _) {
+    return legacy_provider.Consumer2<LocaleProvider, DashboardProvider>(
+      builder: (context, localeProvider, dashboardProvider, _) {
         final view = View.of(context);
         final size = view.physicalSize / view.devicePixelRatio;
         final isMobile = size.width < 600;
@@ -49,6 +51,50 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
         final appDensity = isCarDashboard 
             ? AppDensity.touch 
             : AppDensity.comfortable;
+
+        if (dashboardProvider.isClockTampered) {
+          return AppDensityProvider(
+            density: appDensity,
+            child: MaterialApp(
+              title: 'BizPOS Lockout',
+              theme: isCarDashboard 
+                  ? CarDashboardTheme.getThemeData(isDark: themeData.isDarkMode)
+                  : AppTheme.getTheme(themeData.currentTheme, false,
+                      customSeed: themeData.customThemeColor != null
+                          ? Color(themeData.customThemeColor!)
+                          : null),
+              darkTheme: isCarDashboard
+                  ? CarDashboardTheme.getThemeData(isDark: themeData.isDarkMode)
+                  : AppTheme.getTheme(themeData.currentTheme, true,
+                      customSeed: themeData.customThemeColor != null
+                          ? Color(themeData.customThemeColor!)
+                          : null),
+              themeMode: themeData.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+              locale: localeProvider.locale,
+              localizationsDelegates: const [
+                AppLocalizationsDelegate(),
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: const [
+                Locale('en'),
+                Locale('hi'),
+                Locale('bn'),
+                Locale('mr'),
+                Locale('te'),
+                Locale('ta'),
+                Locale('gu'),
+                Locale('ur'),
+                Locale('kn'),
+                Locale('or'),
+                Locale('ml'),
+              ],
+              home: const ClockTamperedScreen(),
+              debugShowCheckedModeBanner: false,
+            ),
+          );
+        }
 
         return AppDensityProvider(
           density: appDensity,

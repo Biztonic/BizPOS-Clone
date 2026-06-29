@@ -175,6 +175,8 @@ class DashboardProvider with ChangeNotifier {
     // _syncService.addListener(_onSyncUpdate); // Removed to prevent UI jank during background syncs
 
     // Developer mode moved to init()
+    _checkClockTampered();
+    Timer.periodic(const Duration(minutes: 5), (_) => _updateLastKnownTime());
     
     debugPrint('✅ DashboardProvider Constructor END');
   }
@@ -3013,5 +3015,66 @@ class DashboardProvider with ChangeNotifier {
     if (v is double) return v.toInt();
     if (v is String) return int.tryParse(v) ?? fallback;
     return fallback;
+  }
+
+  bool _isClockTampered = false;
+  bool get isClockTampered => _isClockTampered;
+
+  void _checkClockTampered() {
+    try {
+      final box = Hive.box('settings');
+      final lastKnownMs = box.get('last_known_time') as int?;
+      final now = DateTime.now();
+      final nowMs = now.millisecondsSinceEpoch;
+
+      if (lastKnownMs != null && nowMs < lastKnownMs) {
+        _isClockTampered = true;
+        debugPrint('⚠️ DashboardProvider: Clock Tampering Detected! now=$nowMs, lastKnown=$lastKnownMs');
+      } else {
+        box.put('last_known_time', nowMs);
+      }
+    } catch (e) {
+      debugPrint('⚠️ DashboardProvider: Error checking clock tampering: $e');
+    }
+  }
+
+  void _updateLastKnownTime() {
+    if (_isClockTampered) return;
+    try {
+      final box = Hive.box('settings');
+      final lastKnownMs = box.get('last_known_time') as int?;
+      final now = DateTime.now();
+      final nowMs = now.millisecondsSinceEpoch;
+
+      if (lastKnownMs != null && nowMs < lastKnownMs) {
+        _isClockTampered = true;
+        notifyListeners();
+        debugPrint('⚠️ DashboardProvider: Clock Tampering Detected in background! now=$nowMs, lastKnown=$lastKnownMs');
+      } else {
+        box.put('last_known_time', nowMs);
+      }
+    } catch (e) {
+      debugPrint('⚠️ DashboardProvider: Error updating last known time: $e');
+    }
+  }
+
+  void recheckClockStatus() {
+    try {
+      final box = Hive.box('settings');
+      final lastKnownMs = box.get('last_known_time') as int?;
+      final now = DateTime.now();
+      final nowMs = now.millisecondsSinceEpoch;
+
+      if (lastKnownMs == null || nowMs >= lastKnownMs) {
+        _isClockTampered = false;
+        box.put('last_known_time', nowMs);
+        notifyListeners();
+        debugPrint('✅ DashboardProvider: Clock restored successfully!');
+      } else {
+        debugPrint('⚠️ DashboardProvider: Clock is still tampered.');
+      }
+    } catch (e) {
+      debugPrint('⚠️ DashboardProvider: Error rechecking clock status: $e');
+    }
   }
 }
