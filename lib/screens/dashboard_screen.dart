@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/dashboard_provider.dart';
 import 'package:biztonic_pos/providers/auth_provider.dart';
+import 'package:biztonic_pos/models/store.dart';
 import 'package:biztonic_pos/services/update_service.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
@@ -277,23 +278,36 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                     border: Border.all(color: AppColors.border(context)),
                     borderRadius: AppRadius.borderMd,
                   ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: provider.stores.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final store = provider.stores[index];
-                      return ListTile(
-                        title: Text(store.name, style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-                        subtitle: Text(store.status, style: AppTypography.labelMedium.copyWith(color: store.status == 'Active' ? AppColors.adaptiveSuccess(context) : AppColors.adaptiveWarning(context))),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                        onTap: () {
-                          provider.setActiveStoreId(store.id);
-                          provider.linkUserToStore(Provider.of<AuthProvider>(context, listen: false).user!.uid, store.id);
+                  child: Builder(
+                    builder: (context) {
+                      List<Store> allowedStores = provider.stores;
+                      if (provider.activeRole == 'Franchise Owner') {
+                        final uid = provider.userProfile?.uid;
+                        final email = provider.userProfile?.email;
+                        allowedStores = allowedStores.where((store) {
+                          return store.owner == uid || (email != null && store.ownerEmail == email);
+                        }).toList();
+                      }
+
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: allowedStores.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final store = allowedStores[index];
+                          return ListTile(
+                            title: Text(store.name, style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+                            subtitle: Text(store.status, style: AppTypography.labelMedium.copyWith(color: store.status == 'Active' ? AppColors.adaptiveSuccess(context) : AppColors.adaptiveWarning(context))),
+                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () {
+                              provider.setActiveStoreId(store.id);
+                              provider.linkUserToStore(Provider.of<AuthProvider>(context, listen: false).user!.uid, store.id);
+                            },
+                          );
                         },
                       );
-                    },
+                    }
                   ),
                 ),
               ],

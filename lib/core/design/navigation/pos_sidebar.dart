@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../../providers/dashboard_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../models/store.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../widgets/demo_target.dart';
 import '../tokens/app_colors.dart';
@@ -254,6 +255,20 @@ class _PosSidebarState extends State<PosSidebar> {
   }
 
   Widget _buildStoreSelector(BuildContext context, DashboardProvider dashboardProvider, AuthProvider authProvider) {
+    List<Store> allowedStores = dashboardProvider.stores;
+    if (dashboardProvider.activeRole == 'Franchise Owner') {
+      final uid = dashboardProvider.userProfile?.uid;
+      final email = dashboardProvider.userProfile?.email;
+      allowedStores = allowedStores.where((store) {
+        return store.owner == uid || (email != null && store.ownerEmail == email);
+      }).toList();
+    }
+
+    // Ensure activeStoreId is valid in the allowed list, otherwise default to null or first allowed
+    final activeId = allowedStores.any((s) => s.id == dashboardProvider.activeStoreId) 
+        ? dashboardProvider.activeStoreId 
+        : (allowedStores.isNotEmpty ? allowedStores.first.id : null);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.xs),
@@ -264,9 +279,9 @@ class _PosSidebarState extends State<PosSidebar> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           isExpanded: true,
-          value: dashboardProvider.activeStoreId,
+          value: activeId,
           hint: const Text("Select Store"),
-          items: dashboardProvider.stores.map((store) {
+          items: allowedStores.map((store) {
              return DropdownMenuItem(value: store.id, child: Text(store.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)));
           }).toList(),
           onChanged: (val) {

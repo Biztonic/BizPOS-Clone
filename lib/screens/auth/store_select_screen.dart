@@ -500,6 +500,12 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
         bool addonMatches = _selectedAddonFilter == 'All' || store.addons.contains(_selectedAddonFilter);
         return planMatches && addonMatches;
       }).toList();
+    } else if (dashboard.activeRole == 'Franchise Owner') {
+      final uid = dashboard.userProfile?.uid;
+      final email = dashboard.userProfile?.email;
+      displayedStores = displayedStores.where((store) {
+        return store.owner == uid || (email != null && store.ownerEmail == email);
+      }).toList();
     }
 
     return SliverList(
