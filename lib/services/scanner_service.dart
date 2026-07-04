@@ -34,14 +34,15 @@ class ScannerService {
     if (event is RawKeyDownEvent) {
       final now = DateTime.now();
       // If time between keys is too long, reset buffer (manual typing vs scanner)
-      if (now.difference(_lastKeyTime).inMilliseconds > 100) {
+      if (now.difference(_lastKeyTime).inMilliseconds > 150) {
         _buffer = '';
       }
       _lastKeyTime = now;
 
-      if (event.logicalKey == LogicalKeyboardKey.enter) {
-        if (_buffer.isNotEmpty) {
-          _scanController.add(_buffer);
+      if (event.logicalKey == LogicalKeyboardKey.enter || 
+          event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+        if (_buffer.trim().isNotEmpty) {
+          _scanController.add(_buffer.trim());
           _buffer = '';
         }
       } else {

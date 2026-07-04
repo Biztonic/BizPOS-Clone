@@ -29,6 +29,7 @@ class AppTextField extends StatelessWidget {
   final AppTextFieldVariant variant;
   final bool enabled;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
   final VoidCallback? onEditingComplete;
   final VoidCallback? onTap;
   final TextInputType? keyboardType;
@@ -58,6 +59,7 @@ class AppTextField extends StatelessWidget {
     this.variant = AppTextFieldVariant.outlined,
     this.enabled = true,
     this.onChanged,
+    this.onSubmitted,
     this.onEditingComplete,
     this.onTap,
     this.keyboardType,
@@ -114,6 +116,7 @@ class AppTextField extends StatelessWidget {
       readOnly: readOnly,
       enabled: enabled,
       onChanged: onChanged,
+      onFieldSubmitted: onSubmitted,
       onEditingComplete: onEditingComplete,
       onTap: onTap,
       keyboardType: keyboardType,

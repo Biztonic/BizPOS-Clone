@@ -776,7 +776,13 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       
       showDialog(context: context, barrierDismissible: false, builder: (ctx) => StatefulBuilder(
          builder: (context, setDialogState) {
-             var filteredMenu = menuItems.where((i) => i.name.toLowerCase().contains(searchQuery.toLowerCase())).toList();
+             var filteredMenu = menuItems.where((i) {
+               final q = searchQuery.trim().toLowerCase();
+               if (q.isEmpty) return true;
+               return i.name.toLowerCase().contains(q) ||
+                      (i.sku != null && i.sku!.toLowerCase().contains(q)) ||
+                      i.id.toLowerCase() == q;
+             }).toList();
              if (selectedCategory != 'All') {
                 filteredMenu = filteredMenu.where((i) => i.category == selectedCategory).toList();
              }
@@ -1406,7 +1412,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                     padding: const EdgeInsets.all(AppSpacing.md),
                                     child: TextField(
                                        decoration: InputDecoration(
-                                          hintText: "Search Menu...",
+                                          hintText: "Search Menu or Scan Barcode...",
                                           prefixIcon: const Icon(Icons.search),
                                           filled: true,
                                           fillColor: Theme.of(context).scaffoldBackgroundColor,
@@ -1414,6 +1420,36 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                           contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14)
                                        ),
                                        onChanged: (val) => setDialogState(() => searchQuery = val),
+                                       onSubmitted: (val) {
+                                          final q = val.trim().toLowerCase();
+                                          if (q.isNotEmpty) {
+                                             final exactMatch = menuItems.firstWhereOrNull(
+                                                (i) => (i.sku != null && i.sku!.trim().toLowerCase() == q) ||
+                                                       i.id.toLowerCase() == q ||
+                                                       i.name.toLowerCase() == q
+                                             );
+                                             final targetItem = exactMatch ?? (filteredMenu.length == 1 ? filteredMenu.first : null);
+                                             if (targetItem != null) {
+                                                setDialogState(() {
+                                                   final targetSeat = selectedSeatIndex == -1 ? null : selectedSeatIndex;
+                                                   final idx = currentOrderItems.indexWhere((x) => 
+                                                      x.item.id == targetItem.id && x.seatIndex == targetSeat
+                                                   );
+                                                   if (idx != -1) {
+                                                      currentOrderItems[idx] = currentOrderItems[idx].copyWith(
+                                                         quantity: currentOrderItems[idx].quantity + 1,
+                                                      );
+                                                   } else {
+                                                      currentOrderItems.add(OrderItem(
+                                                         item: targetItem, 
+                                                         quantity: 1,
+                                                         seatIndex: targetSeat
+                                                      ));
+                                                   }
+                                                });
+                                             }
+                                          }
+                                       },
                                     ),
                                  ),
                                  

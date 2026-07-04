@@ -11,6 +11,7 @@ import '../providers/dashboard_provider.dart';
 import '../providers/table_provider.dart';
 import '../features/inventory/presentation/providers/inventory_provider.dart';
 import '../features/inventory/domain/entities/inventory_entity.dart';
+import '../models/inventory_item.dart';
 import '../features/billing/presentation/providers/billing_provider.dart';
 import '../features/billing/domain/entities/order_entity.dart';
 import '../models/order_model.dart';
@@ -121,22 +122,59 @@ class _POSScreenState extends State<POSScreen> {
   }
 
   void _handleBarcodeScan(String barcode) {
+    final cleanBarcode = barcode.trim();
+    if (cleanBarcode.isEmpty) return;
+
     final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
     final billingProvider = Provider.of<BillingProvider>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+
+    // 1. Search in InventoryProvider (InventoryEntity list)
     final inventory = inventoryProvider.allItems;
-    
-    try {
-      final item = inventory.firstWhere(
-        (i) => i.id == barcode || i.name.toLowerCase() == barcode.toLowerCase(),
-      );
-      billingProvider.addToCart(item.id); 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Added ${item.name}"), duration: const Duration(milliseconds: 500)));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Item not found: $barcode"),
-        backgroundColor: AppColors.adaptiveError(context),
-      ));
+    InventoryEntity? foundEntity;
+    for (var i in inventory) {
+      if (i.id.toLowerCase() == cleanBarcode.toLowerCase() ||
+          (i.sku != null && i.sku!.trim().toLowerCase() == cleanBarcode.toLowerCase()) ||
+          i.name.toLowerCase() == cleanBarcode.toLowerCase()) {
+        foundEntity = i;
+        break;
+      }
     }
+
+    if (foundEntity != null) {
+      billingProvider.addToCart(foundEntity.id);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Added ${foundEntity.name}"), 
+        duration: const Duration(milliseconds: 500)
+      ));
+      return;
+    }
+
+    // 2. Fallback: Search in DashboardProvider (InventoryItem list)
+    final legacyInventory = dashboardProvider.storeInventory;
+    InventoryItem? foundItem;
+    for (var i in legacyInventory) {
+      if (i.id.toLowerCase() == cleanBarcode.toLowerCase() ||
+          (i.sku != null && i.sku!.trim().toLowerCase() == cleanBarcode.toLowerCase()) ||
+          i.name.toLowerCase() == cleanBarcode.toLowerCase()) {
+        foundItem = i;
+        break;
+      }
+    }
+
+    if (foundItem != null) {
+      billingProvider.addToCart(foundItem.id);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Added ${foundItem.name}"), 
+        duration: const Duration(milliseconds: 500)
+      ));
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text("Item not found for barcode / SKU: $barcode"),
+      backgroundColor: AppColors.adaptiveError(context),
+    ));
   }
 
   // Cart state is now managed by BillingProvider
@@ -248,6 +286,9 @@ class _POSScreenState extends State<POSScreen> {
               variant: AppTextFieldVariant.filled,
               onChanged: (val) {
                 Provider.of<InventoryProvider>(context, listen: false).setSearchQuery(val);
+              },
+              onSubmitted: (val) {
+                _handleBarcodeScan(val);
               },
             ),
           ),

@@ -125,17 +125,28 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
   }
 
   void _onBarcodeScanned(String barcode) {
+    final cleanBarcode = barcode.trim();
+    if (cleanBarcode.isEmpty) return;
+
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     final inventory = provider.storeInventory;
     
     try {
       final item = inventory.firstWhere(
-        (i) => i.id == barcode || i.name.toLowerCase() == barcode.toLowerCase(),
+        (i) => i.id.toLowerCase() == cleanBarcode.toLowerCase() ||
+               (i.sku != null && i.sku!.trim().toLowerCase() == cleanBarcode.toLowerCase()) ||
+               i.name.toLowerCase() == cleanBarcode.toLowerCase(),
       );
       _addToCart(item);
-      // Optional: Add visual feedback for scan in automotive theme
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Added ${item.name}"), 
+        duration: const Duration(milliseconds: 500)
+      ));
     } catch (e) {
-      // Ignore or show subtle error
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Item not found for barcode / SKU: $barcode"),
+        backgroundColor: AppColors.adaptiveError(context),
+      ));
     }
   }
 

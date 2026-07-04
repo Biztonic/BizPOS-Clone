@@ -27,7 +27,7 @@ class DisplaySettingsSection extends ConsumerWidget {
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           // Theme Color
-          Text(AppLocalizations.t(context, 'Theme Color'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Theme Color'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary(context))),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: Wrap(
@@ -66,7 +66,7 @@ class DisplaySettingsSection extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
           
           // Interface Style
-          Text(AppLocalizations.t(context, 'Interface Style'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Interface Style'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary(context))),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: Column(
@@ -74,7 +74,7 @@ class DisplaySettingsSection extends ConsumerWidget {
               children: [
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(AppLocalizations.t(context, 'Interface Layout'), style: AppTypography.bodyLarge),
+                  title: Text(AppLocalizations.t(context, 'Interface Layout'), style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary(context))),
                   leading: Container(
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
@@ -85,7 +85,7 @@ class DisplaySettingsSection extends ConsumerWidget {
                   ),
                   subtitle: Text(
                     (isMobile ? UIStyle.standard : themeState.uiStyle) == UIStyle.car_dashboard ? 'Automotive HUD' : 'Standard POS',
-                    style: AppTypography.bodySmall,
+                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -99,14 +99,18 @@ class DisplaySettingsSection extends ConsumerWidget {
                     child: DropdownButton<UIStyle>(
                       isExpanded: true,
                       value: isMobile ? UIStyle.standard : themeState.uiStyle,
-                      style: AppTypography.bodyMedium,
+                      dropdownColor: AppColors.surface(context),
+                      style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary(context)),
                       items: [
                         DropdownMenuItem(
                           value: UIStyle.standard, 
-                          child: Text(AppLocalizations.t(context, 'Standard'))
+                          child: Text(AppLocalizations.t(context, 'Standard'), style: TextStyle(color: AppColors.textPrimary(context)))
                         ),
                         if (!isMobile)
-                          DropdownMenuItem(value: UIStyle.car_dashboard, child: Text(AppLocalizations.t(context, 'Automotive (Landscape)'))),
+                          DropdownMenuItem(
+                            value: UIStyle.car_dashboard, 
+                            child: Text(AppLocalizations.t(context, 'Automotive (Landscape)'), style: TextStyle(color: AppColors.textPrimary(context)))
+                          ),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -123,12 +127,12 @@ class DisplaySettingsSection extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
           
           // Theme Mode Toggle (Added this as it was in DashboardProvider but missing in UI?)
-          Text(AppLocalizations.t(context, 'Theme Mode'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Theme Mode'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary(context))),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: SwitchListTile(
-              title: Text(AppLocalizations.t(context, 'Dark Mode'), style: AppTypography.bodyLarge),
-              subtitle: Text(AppLocalizations.t(context, 'Use a dark color scheme'), style: AppTypography.bodySmall),
+              title: Text(AppLocalizations.t(context, 'Dark Mode'), style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary(context))),
+              subtitle: Text(AppLocalizations.t(context, 'Use a dark color scheme'), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
               value: themeState.isDarkMode,
               onChanged: (val) => themeNotifier.toggleTheme(),
               secondary: Icon(themeState.isDarkMode ? Icons.dark_mode : Icons.light_mode, color: AppColors.primary),
@@ -139,7 +143,7 @@ class DisplaySettingsSection extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
           
           // Receipt Configuration
-          Text(AppLocalizations.t(context, 'Receipt Configuration'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Receipt Configuration'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary(context))),
           const SizedBox(height: AppSpacing.md),
           
           AppCard(
@@ -153,9 +157,9 @@ class DisplaySettingsSection extends ConsumerWidget {
                 ),
                 child: const Icon(Icons.receipt_long, color: AppColors.primary, size: 20),
               ),
-              title: Text(AppLocalizations.t(context, 'Configure Receipt Layout'), style: AppTypography.bodyLarge),
-              subtitle: Text(AppLocalizations.t(context, 'Customize header, footer, visibility & live preview'), style: AppTypography.bodySmall),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+              title: Text(AppLocalizations.t(context, 'Configure Receipt Layout'), style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary(context))),
+              subtitle: Text(AppLocalizations.t(context, 'Customize header, footer, visibility & live preview'), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+              trailing: Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary(context)),
               onTap: () {
                 Navigator.push(
                   context, 
