@@ -42,6 +42,7 @@ class POSScreen extends StatefulWidget {
 
 class _POSScreenState extends State<POSScreen> {
   final ScannerService _scannerService = ScannerService();
+  final TextEditingController _searchController = TextEditingController();
   String _currentWeight = "0.000";
   // POS Order State
   String _orderType = 'Takeaway'; // Default
@@ -74,6 +75,7 @@ class _POSScreenState extends State<POSScreen> {
   void dispose() {
     _scanSubscription?.cancel();
     _scannerService.dispose();
+    _searchController.dispose();
     // _scaleService.disconnect();
     super.dispose();
   }
@@ -143,6 +145,8 @@ class _POSScreenState extends State<POSScreen> {
 
     if (foundEntity != null) {
       billingProvider.addToCart(foundEntity.id);
+      _searchController.clear();
+      inventoryProvider.setSearchQuery('');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Added ${foundEntity.name}"), 
         duration: const Duration(milliseconds: 500)
@@ -164,6 +168,8 @@ class _POSScreenState extends State<POSScreen> {
 
     if (foundItem != null) {
       billingProvider.addToCart(foundItem.id);
+      _searchController.clear();
+      inventoryProvider.setSearchQuery('');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Added ${foundItem.name}"), 
         duration: const Duration(milliseconds: 500)
@@ -281,6 +287,7 @@ class _POSScreenState extends State<POSScreen> {
           Expanded(
             child: AppTextField(
               key: const Key('pos_search_field'),
+              controller: _searchController,
               hintText: "Search for burgers, fries...",
               prefixIcon: Icon(Icons.search, color: AppColors.textSecondary(context)),
               variant: AppTextFieldVariant.filled,
