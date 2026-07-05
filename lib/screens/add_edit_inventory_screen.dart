@@ -262,6 +262,7 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
 
       final newItem = InventoryItem(
         id: newItemId, 
+        storeId: widget.item?.storeId ?? provider.activeStoreId,
         name: _nameController.text.trim(),
         category: _selectedCategory ?? 'General',
         price: double.tryParse(_priceController.text) ?? 0.0,

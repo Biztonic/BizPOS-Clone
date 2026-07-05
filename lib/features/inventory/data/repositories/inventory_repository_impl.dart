@@ -97,7 +97,7 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
             .where((v) {
                if (v is! Map) return false;
                final vStoreId = (v['storeId'] ?? '').toString().trim();
-               final matchesStore = vStoreId == targetStoreId;
+               final matchesStore = vStoreId.isEmpty || vStoreId == targetStoreId;
                final notDeleted = v['deletedAt'] == null && v['isDeleted'] != true && v['isDeleted'] != 1;
                final matchesCategory = category == null || category == 'All' || v['category'] == category;
                return matchesStore && notDeleted && matchesCategory;

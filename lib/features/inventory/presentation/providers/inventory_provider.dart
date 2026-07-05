@@ -222,7 +222,21 @@ class InventoryProvider extends ChangeNotifier {
     final result = await _repository.getItems(storeId);
     
     if (result.isSuccess) {
-      _items = result.data ?? [];
+      final rawItems = result.data ?? [];
+      final healedItems = <InventoryEntity>[];
+      
+      for (final item in rawItems) {
+        if (item.storeId == null || item.storeId!.isEmpty) {
+          final healed = item.copyWith(storeId: storeId);
+          healedItems.add(healed);
+          // Async self-healing save in background
+          _repository.insertItem(healed);
+        } else {
+          healedItems.add(item);
+        }
+      }
+
+      _items = healedItems;
       await _loadCategories(storeId);
       await _loadStats(storeId);
     } else {
@@ -259,7 +273,8 @@ class InventoryProvider extends ChangeNotifier {
     }
 
     final isNew = item.id.isEmpty;
-    final targetItem = isNew ? item.copyWith(id: const Uuid().v4()) : item;
+    final itemStoreId = (item.storeId != null && item.storeId!.isNotEmpty) ? item.storeId : storeId;
+    final targetItem = (isNew ? item.copyWith(id: const Uuid().v4()) : item).copyWith(storeId: itemStoreId);
     final deviceId = _syncService.deviceId ?? 'UNKNOWN';
 
     // 1. Optimistic UI Update

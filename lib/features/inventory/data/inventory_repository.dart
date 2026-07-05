@@ -77,8 +77,8 @@ class InventoryRepository {
     String sql = 'SELECT * FROM inventory WHERE deletedAt IS NULL';
     List<dynamic> args = [];
 
-    if (storeId != null) {
-      sql += ' AND storeId = ?';
+    if (storeId != null && storeId.isNotEmpty) {
+      sql += ' AND (storeId = ? OR storeId IS NULL OR storeId = \'\')';
       args.add(storeId);
     }
     
