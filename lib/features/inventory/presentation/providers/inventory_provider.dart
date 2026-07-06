@@ -141,6 +141,10 @@ class InventoryProvider extends ChangeNotifier {
   /// This gives instant UI feedback without waiting for a full reload.
   void _handleOrderCreatedEvent(OrderCreatedEvent event) {
     try {
+      // If store inventory tracking is OFF, do not reduce stock after billing
+      final isStoreTracking = _storeProvider.activeStore?.trackInventory ?? true;
+      if (!isStoreTracking) return;
+
       // Extract order items from the event
       final order = event.order;
       List<dynamic> orderItems;
@@ -187,8 +191,9 @@ class InventoryProvider extends ChangeNotifier {
   void _recalcStats() {
     if (_items.isEmpty) return;
     final totalItems = _items.length;
-    final lowStock = _items.where((e) => e.trackStock && e.quantity <= e.lowStockThreshold && e.quantity > 0).length;
-    final outOfStock = _items.where((e) => e.trackStock && e.quantity <= 0).length;
+    final isStoreTracking = _storeProvider.activeStore?.trackInventory ?? true;
+    final lowStock = isStoreTracking ? _items.where((e) => e.trackStock && e.quantity <= e.lowStockThreshold && e.quantity > 0).length : 0;
+    final outOfStock = isStoreTracking ? _items.where((e) => e.trackStock && e.quantity <= 0).length : 0;
     final totalCostValue = _items.fold<double>(0, (sum, e) => sum + (e.cost * e.quantity));
     final totalRetailValue = _items.fold<double>(0, (sum, e) => sum + (e.price * e.quantity));
     final categoriesCount = _items.map((e) => e.category).toSet().length;

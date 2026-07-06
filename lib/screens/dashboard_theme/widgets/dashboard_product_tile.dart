@@ -41,8 +41,10 @@ class _DashboardProductTileState extends State<DashboardProductTile> {
 
   @override
   Widget build(BuildContext context) {
-    // Stock Logic
-    final bool trackStock = widget.item.trackStock;
+    // Store & Stock Logic
+    final store = Provider.of<DashboardProvider>(context, listen: false).activeStore;
+    final bool isStoreTracking = store?.trackInventory ?? true;
+    final bool trackStock = isStoreTracking && widget.item.trackStock;
     final int qty = widget.item.quantity;
     final bool isOutOfStock = trackStock && qty <= 0;
     final bool isLowStock = trackStock && qty > 0 && qty < 10;

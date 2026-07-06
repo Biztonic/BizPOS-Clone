@@ -1465,7 +1465,8 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
             final item = products[index];
             final qty = _cart[item.id] ?? 0;
             
-            int currentStock = item.trackStock ? provider.getItemStock(item.id) : 9999;
+            bool isTracking = (provider.activeStore?.trackInventory ?? true) && item.trackStock;
+            int currentStock = isTracking ? provider.getItemStock(item.id) : 9999;
             if (_isEditMode && _stockChanges.containsKey(item.id)) {
                currentStock = _stockChanges[item.id]!;
             } else {
