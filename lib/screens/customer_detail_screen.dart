@@ -245,7 +245,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> with Single
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                            Text(
-                             "#${order.id.substring(0, 8).toUpperCase()}",
+                             "#${order.shortId}",
                              style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
                            ),
                            Text(

@@ -581,7 +581,7 @@ class _SalesScreenState extends State<SalesScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '#${order.id.substring(0, 5).toUpperCase()}', 
+                        '#${order.shortId}', 
                         style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: AppSpacing.xs),

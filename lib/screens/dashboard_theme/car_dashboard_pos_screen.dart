@@ -758,8 +758,9 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
         );
       }).toList();
 
+      final orderId = provider.syncService.generateUniqueId('ORD');
       final order = OrderModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(), 
+        id: orderId, 
         storeId: provider.activeStoreId ?? 'unknown',
         items: items,
         total: total,
@@ -792,7 +793,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
              ScaffoldMessenger.of(context).showSnackBar(
                SnackBar(
                  backgroundColor: AppColors.success,
-                 content: Text("Order #${order.id.substring(order.id.length - 4)} Sent to Kitchen"),
+                 content: Text("Order #${order.shortId} Sent to Kitchen"),
                )
              );
          }

@@ -566,7 +566,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "#${order.id.substring(order.id.length - 6).toUpperCase()} • ₹${order.total.toStringAsFixed(0)}",
+                                    "#${order.shortId} • ₹${order.total.toStringAsFixed(0)}",
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold, 
                                       fontSize: 16,

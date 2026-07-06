@@ -498,7 +498,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                     return ListTile(
                        leading: const Icon(Icons.receipt_long),
                        title: Text("₹${order.total}"),
-                       subtitle: Text("#${order.id.substring(0,6)} • ${DateFormat('HH:mm').format(order.date)}"),
+                       subtitle: Text("#${order.shortId} • ${DateFormat('HH:mm').format(order.date)}"),
                        trailing: const Icon(Icons.chevron_right),
                        onTap: () {
                           Navigator.pop(ctx);
@@ -751,7 +751,7 @@ class _DashboardInsightsScreenState extends ConsumerState<DashboardInsightsScree
                                child: Icon(Icons.receipt, color: AppColors.adaptivePrimary(context)),
                             ),
                             title: Text("₹${order.total.toStringAsFixed(0)}", style: TextStyle(color: AppColors.textPrimary(context), fontWeight: FontWeight.bold, fontSize: 18)),
-                            subtitle: Text("#${order.id.substring(0,6)} • ${DateFormat('HH:mm').format(order.date)}", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 14)),
+                            subtitle: Text("#${order.shortId} • ${DateFormat('HH:mm').format(order.date)}", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 14)),
                             trailing: isRefund 
                                ? Builder(
                                    builder: (context) {

@@ -186,6 +186,13 @@ class OrderModel {
   // Immutability Check: Terminal states that prevent further editing
   bool get isImmutable => ['Completed', 'Cancelled', 'Refunded', 'VOID'].contains(status);
 
+  /// Clean, collision-free short display ID (e.g. C6A38F90)
+  String get shortId {
+    final clean = id.startsWith('ORD_') ? id.substring(4) : id;
+    if (clean.length <= 8) return clean.toUpperCase();
+    return clean.substring(0, 8).toUpperCase();
+  }
+
   OrderModel({
     required this.id,
     required this.storeId,

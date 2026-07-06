@@ -175,7 +175,7 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('#${order.id.substring(0, 5)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text('#${order.shortId}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                     if (order.tableName != null || order.tableId != null)
                       Text(order.tableName ?? order.tableId!, style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context), fontWeight: FontWeight.w500)),
                   ],

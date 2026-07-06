@@ -75,7 +75,7 @@ class LastFiveBillsDialog extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("#${order.id.substring(0, 8).toUpperCase()}", style: const TextStyle(color: CarDashboardTheme.neonBlue, fontWeight: FontWeight.bold)),
+              Text("#${order.shortId}", style: const TextStyle(color: CarDashboardTheme.neonBlue, fontWeight: FontWeight.bold)),
               const SizedBox(height: AppSpacing.xs),
               Text(DateFormat('hh:mm a').format(order.date), style: const TextStyle(color: AppColors.textHintDark, fontSize: 12)),
             ],
@@ -158,7 +158,7 @@ class RefundDialog extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Order #${order.id.substring(0, 8).toUpperCase()}", style: const TextStyle(color: AppColors.surfaceLight, fontWeight: FontWeight.bold)),
+                Text("Order #${order.shortId}", style: const TextStyle(color: AppColors.surfaceLight, fontWeight: FontWeight.bold)),
                 Text("${order.items.length} Items ï¿½ ${DateFormat('hh:mm a').format(order.date)}", style: const TextStyle(color: AppColors.textHintDark, fontSize: 12)),
               ],
             ),
