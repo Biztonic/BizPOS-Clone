@@ -112,5 +112,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-
     - assets/logo.jpg
+    - assets/flavors/standard/
+    - assets/flavors/automotive/
+    - assets/flavors/restaurant/
