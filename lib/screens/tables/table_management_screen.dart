@@ -1272,7 +1272,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
 
                                                                             await PrinterManagerService().printOrderKDS(
                                                                                OrderModel(
-                                                                                  id: existingOrder?.id ?? "KOT-${DateTime.now().millisecondsSinceEpoch}",
+                                                                                  id: existingOrder?.id ?? dashboardProvider.syncService.generateUniqueId('ORD'),
                                                                                   storeId: dashboardProvider.activeStoreId!,
                                                                                   items: itemsToPrint,
                                                                                   total: 0,
