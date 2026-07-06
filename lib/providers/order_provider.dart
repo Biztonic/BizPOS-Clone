@@ -253,6 +253,24 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
+  Future<OrderModel?> getOrder(String id) async {
+    final index = _orders.indexWhere((o) => o.id == id);
+    if (index != -1) {
+      return _orders[index];
+    }
+    try {
+      final repoOrder = await _repository.getOrder(id);
+      if (repoOrder != null) {
+        _orders.insert(0, repoOrder);
+        notifyListeners();
+        return repoOrder;
+      }
+    } catch (e) {
+      debugPrint('OrderProvider: Error fetching order $id: $e');
+    }
+    return null;
+  }
+
   Future<void> updateOrderStatus(String orderId, String newStatus) async {
     final index = _orders.indexWhere((o) => o.id == orderId);
     

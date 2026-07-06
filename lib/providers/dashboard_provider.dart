@@ -2274,6 +2274,10 @@ class DashboardProvider with ChangeNotifier {
      notifyListeners();
    }
 
+   Future<OrderModel?> getOrder(String id) async {
+     return await _orderProvider?.getOrder(id);
+   }
+
    // --- AUTH & USER LINKING ---
   Future<void> linkUserToStore(String uid, String storeId) async {
     await _db.collection('users').doc(uid).update({

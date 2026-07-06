@@ -457,23 +457,19 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             for (int i = 0; i < table.seats.length; i++) ...[
                Builder(
                  builder: (context) {
-                     bool isSeatOccupied = table.seats[i].orderId != null;
-                     bool isOccupied = isSeatOccupied || table.isOccupied; // Use isOccupied from TableModel
-                     bool shouldAnimate = false;
+                      bool isSeatOccupied = table.seats[i].orderId != null;
+                      bool isTableOccupied = table.isOccupied;
+                      bool isOccupied = isSeatOccupied || (isTableOccupied && table.billingMode != 'per-seat');
+                      bool shouldAnimate = isOccupied;
+                      
+                      if (!isOccupied && effectiveIsReserved) {
+                         int bookedCount = table.bookedSeats ?? table.seats.length;
+                         if (i < bookedCount) {
+                            shouldAnimate = true;
+                         }
+                      }
                      
-                     int bookedCount = table.bookedSeats ?? table.seats.length;
-                     
-                     if (table.isOccupied && table.orderId != null) {
-                           if (i < bookedCount) shouldAnimate = true;
-                     } else if (isSeatOccupied) {
-                           shouldAnimate = true;
-                     } else if (effectiveIsReserved) {
-                        if (i < bookedCount) {
-                           shouldAnimate = true;
-                        }
-                     }
-                    
-                    return _buildChair(i, table.seats.length, table.shape, size, chairSize, chairDistance, isOccupied, shouldAnimate, table.isOccupied);
+                     return _buildChair(i, table.seats.length, table.shape, size, chairSize, chairDistance, isOccupied, shouldAnimate, table.isOccupied);
                  }
                )
             ],
@@ -729,10 +725,34 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       _showQuickOrderDialog(table);
   }
 
-   void _showQuickOrderDialog(TableModel table) {
+   Future<void> _showQuickOrderDialog(TableModel table) async {
       final tableProvider = Provider.of<TableProvider>(context, listen: false);
       final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
       
+      // Load existing table-level order asynchronously from local DB if not in memory
+      OrderModel? tableOrder;
+      if (table.orderId != null) {
+          tableOrder = dashboardProvider.orders.where((o) => o.id == table.orderId).firstOrNull;
+          if (tableOrder == null) {
+              tableOrder = await dashboardProvider.getOrder(table.orderId!);
+          }
+      }
+
+      // Load existing seat-level orders asynchronously from local DB if not in memory
+      List<OrderModel?> seatOrders = List.filled(table.seats.length, null);
+      for (int i = 0; i < table.seats.length; i++) {
+          final s = table.seats[i];
+          if (s.orderId != null && s.orderId != table.orderId) {
+              var sOrder = dashboardProvider.orders.where((o) => o.id == s.orderId).firstOrNull;
+              if (sOrder == null) {
+                  sOrder = await dashboardProvider.getOrder(s.orderId!);
+              }
+              seatOrders[i] = sOrder;
+          }
+      }
+
+      if (!mounted) return;
+
       // Initialize Draft Order State
       List<InventoryItem> menuItems = List.from(dashboardProvider.storeInventory);
       List<OrderItem> currentOrderItems = [];
@@ -742,29 +762,21 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       int? selectedSeatIndex = -1; 
       List<int> billSelectedSeats = []; 
       
-      OrderModel? existingOrder;
+      OrderModel? existingOrder = tableOrder;
       
       void loadExistingOrders() {
           currentOrderItems.clear(); 
           
-          if (table.orderId != null) {
-              existingOrder = dashboardProvider.orders.where((o) => o.id == table.orderId).firstOrNull;
-              if (existingOrder != null) {
-                 currentOrderItems.addAll(existingOrder!.items);
-              }
+          if (existingOrder != null) {
+             currentOrderItems.addAll(existingOrder!.items);
           }
           
           for (int i = 0; i < table.seats.length; i++) {
-              final s = table.seats[i];
-              if (s.orderId != null && s.orderId != table.orderId) {
-                  try {
-                      final sOrder = dashboardProvider.orders.where((o) => o.id == s.orderId).firstOrNull;
-                      if (sOrder != null) {
-                          for (var item in sOrder.items) {
-                              currentOrderItems.add(item.copyWith(seatIndex: i));
-                          }
-                      }
-                  } catch (_) { }
+              final sOrder = seatOrders[i];
+              if (sOrder != null) {
+                  for (var item in sOrder.items) {
+                      currentOrderItems.add(item.copyWith(seatIndex: i));
+                  }
               }
           }
       }
