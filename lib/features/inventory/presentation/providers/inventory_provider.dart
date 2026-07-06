@@ -27,6 +27,7 @@ class InventoryProvider extends ChangeNotifier {
   final SyncService _syncService;
 
   StreamSubscription? _orderCreatedSub;
+  StreamSubscription? _orderRefundedSub;
   StreamSubscription? _syncCompletedSub;
 
   InventoryProvider({
@@ -44,6 +45,11 @@ class InventoryProvider extends ChangeNotifier {
     // Listen to OrderCreatedEvent to decrement stock instantly after checkout
     _orderCreatedSub = EventBus.instance.on<OrderCreatedEvent>((event) {
       _handleOrderCreatedEvent(event);
+    });
+
+    // Listen to OrderRefundedEvent to restore stock instantly after refund
+    _orderRefundedSub = EventBus.instance.on<OrderRefundedEvent>((event) {
+      _handleOrderRefundedEvent(event);
     });
 
     // Listen to SyncCompletedEvent to reload inventory from cache/DB
@@ -133,8 +139,44 @@ class InventoryProvider extends ChangeNotifier {
   void dispose() {
     _storeProvider.removeListener(_onStoreChanged);
     _orderCreatedSub?.cancel();
+    _orderRefundedSub?.cancel();
     _syncCompletedSub?.cancel();
     super.dispose();
+  }
+
+  /// Restore stock in-memory for each item in the refunded order.
+  void _handleOrderRefundedEvent(OrderRefundedEvent event) {
+    try {
+      final isStoreTracking = _storeProvider.activeStore?.trackInventory ?? true;
+      if (!isStoreTracking) return;
+
+      bool didUpdate = false;
+      for (final orderItem in event.items) {
+        String itemId;
+        int qty;
+        if (orderItem is OrderItem) {
+          itemId = orderItem.item.id;
+          qty = orderItem.quantity;
+        } else {
+          itemId = (orderItem as dynamic).itemId as String;
+          qty = (orderItem as dynamic).quantity as int;
+        }
+
+        final idx = _items.indexWhere((e) => e.id == itemId);
+        if (idx != -1 && _items[idx].trackStock) {
+          final currentQty = _items[idx].quantity;
+          _items[idx] = _items[idx].copyWith(quantity: currentQty + qty);
+          didUpdate = true;
+        }
+      }
+
+      if (didUpdate) {
+        _recalcStats();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('InventoryProvider: Error handling OrderRefundedEvent: $e');
+    }
   }
 
   /// Decrement stock in-memory for each item in the order.

@@ -380,9 +380,16 @@ class OrderProvider with ChangeNotifier {
          );
       }
 
+      // Publish OrderRefundedEvent to the Event Bus
+      EventBus.instance.fire(OrderRefundedEvent(
+        orderId: orderId,
+        storeId: currentOrder.storeId,
+        refundAmount: currentOrder.total,
+        items: currentOrder.items,
+      ));
+
       // We already optimistically updated the UI, so no need to do it again here.
     } catch (e) {
-
       rethrow;
     }
   }

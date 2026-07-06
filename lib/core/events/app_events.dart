@@ -37,11 +37,13 @@ class OrderRefundedEvent {
   final String orderId;
   final String storeId;
   final double refundAmount;
+  final List<dynamic> items;
 
   OrderRefundedEvent({
     required this.orderId,
     required this.storeId,
     required this.refundAmount,
+    this.items = const [],
   });
 }
 
