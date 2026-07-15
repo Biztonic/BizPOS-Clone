@@ -11,3 +11,4 @@ export 'builder/announcement_builder.dart';
 export 'policy/announcement_policy.dart';
 export 'scheduler/announcement_scheduler.dart';
 export 'executor/announcement_executor.dart';
+export 'models/marketing_audio.dart';

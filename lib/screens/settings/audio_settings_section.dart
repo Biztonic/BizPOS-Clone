@@ -5,6 +5,7 @@ import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_radius.dart';
 import '../../core/design/components/atoms/app_card.dart';
+import 'package:file_picker/file_picker.dart';
 
 class AudioSettingsSection extends StatefulWidget {
   final bool isSubView;
@@ -22,6 +23,28 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  Future<void> _uploadMarketingAudio() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['mp3', 'wav', 'm4a'],
+        withData: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        final bytes = file.bytes;
+        final name = file.name;
+        if (bytes != null) {
+          await AnnouncementService().addMarketingAudio(name, bytes);
+          setState(() {
+            _settings = AnnouncementService().settings;
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   void _loadSettings() {
@@ -212,12 +235,35 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                     labelText: 'Touch Interaction Sound',
                     border: OutlineInputBorder(),
                   ),
-                  value: _settings.interactionSound,
+                  value: (() {
+                    final val = _settings.interactionSound;
+                    if (val == 'click') return '1';
+                    if (val == 'beep') return '6';
+                    if (val == 'chime') return '11';
+                    return val;
+                  })(),
                   items: const [
                     DropdownMenuItem(value: 'none', child: Text('None (Muted)')),
-                    DropdownMenuItem(value: 'click', child: Text('Subtle Click')),
-                    DropdownMenuItem(value: 'beep', child: Text('Standard Beep')),
-                    DropdownMenuItem(value: 'chime', child: Text('Tactile Chime')),
+                    DropdownMenuItem(value: '1', child: Text('Sound 1: Subtle Click')),
+                    DropdownMenuItem(value: '2', child: Text('Sound 2: Tech Click')),
+                    DropdownMenuItem(value: '3', child: Text('Sound 3: High Tick')),
+                    DropdownMenuItem(value: '4', child: Text('Sound 4: Wood Click')),
+                    DropdownMenuItem(value: '5', child: Text('Sound 5: Pop Click')),
+                    DropdownMenuItem(value: '6', child: Text('Sound 6: Standard Beep')),
+                    DropdownMenuItem(value: '7', child: Text('Sound 7: High Beep')),
+                    DropdownMenuItem(value: '8', child: Text('Sound 8: Low Beep')),
+                    DropdownMenuItem(value: '9', child: Text('Sound 9: Double Beep')),
+                    DropdownMenuItem(value: '10', child: Text('Sound 10: Triple Beep')),
+                    DropdownMenuItem(value: '11', child: Text('Sound 11: Ascending Chime')),
+                    DropdownMenuItem(value: '12', child: Text('Sound 12: Descending Chime')),
+                    DropdownMenuItem(value: '13', child: Text('Sound 13: Major Triad Chord')),
+                    DropdownMenuItem(value: '14', child: Text('Sound 14: Ding Dong Alert')),
+                    DropdownMenuItem(value: '15', child: Text('Sound 15: Ring Chime')),
+                    DropdownMenuItem(value: '16', child: Text('Sound 16: Sci-Fi Sweep Up')),
+                    DropdownMenuItem(value: '17', child: Text('Sound 17: Sci-Fi Sweep Down')),
+                    DropdownMenuItem(value: '18', child: Text('Sound 18: Retro Laser')),
+                    DropdownMenuItem(value: '19', child: Text('Sound 19: Alert Ping')),
+                    DropdownMenuItem(value: '20', child: Text('Sound 20: Digital Alarm Pulse')),
                   ],
                   onChanged: (val) {
                     if (val != null) {
@@ -229,6 +275,132 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                     }
                   },
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // 4. Marketing Announcements (Local Offline Storage)
+          Text('Marketing Announcements', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Upload custom audio promos. All files are stored locally on this device and never uploaded to the cloud.',
+            style: AppTypography.bodySmall.copyWith(
+              color: isDark ? AppColors.textHintDark : AppColors.textSecondary(context),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Marketing Play Mode',
+                    border: OutlineInputBorder(),
+                  ),
+                  value: _settings.marketingPlayMode,
+                  items: const [
+                    DropdownMenuItem(value: 'none', child: Text('Disabled (Muted)')),
+                    DropdownMenuItem(value: 'loop', child: Text('Continuous Loop (Rotation)')),
+                    DropdownMenuItem(value: 'interval', child: Text('Scheduled Interval')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _settings = _settings.copyWith(marketingPlayMode: val);
+                        _saveSettings();
+                      });
+                    }
+                  },
+                ),
+                if (_settings.marketingPlayMode == 'interval') ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  DropdownButtonFormField<int>(
+                    decoration: const InputDecoration(
+                      labelText: 'Play Interval',
+                      border: OutlineInputBorder(),
+                    ),
+                    value: _settings.marketingIntervalSeconds,
+                    items: const [
+                      DropdownMenuItem(value: 60, child: Text('Every 1 Minute')),
+                      DropdownMenuItem(value: 300, child: Text('Every 5 Minutes (Default)')),
+                      DropdownMenuItem(value: 600, child: Text('Every 10 Minutes')),
+                      DropdownMenuItem(value: 1800, child: Text('Every 30 Minutes')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _settings = _settings.copyWith(marketingIntervalSeconds: val);
+                          _saveSettings();
+                        });
+                      }
+                    },
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                const Divider(),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Local Audio Tracks (${AnnouncementService().marketingAudios.length})',
+                      style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.adaptivePrimary(context),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadius.borderSm,
+                        ),
+                      ),
+                      icon: const Icon(Icons.upload_file, size: 18),
+                      label: const Text('Add Audio Track'),
+                      onPressed: _uploadMarketingAudio,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                if (AnnouncementService().marketingAudios.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                    child: Center(
+                      child: Text(
+                        'No local audio tracks uploaded yet.',
+                        style: AppTypography.bodyMedium.copyWith(color: AppColors.secondary),
+                      ),
+                    ),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: AnnouncementService().marketingAudios.length,
+                    separatorBuilder: (_, __) => const Divider(),
+                    itemBuilder: (context, index) {
+                      final audio = AnnouncementService().marketingAudios[index];
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.audiotrack, color: AppColors.secondary),
+                        title: Text(audio.name, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                          'Size: ${(audio.bytes.lengthInBytes / (1024 * 1024)).toStringAsFixed(2)} MB • Local Storage',
+                          style: AppTypography.bodySmall,
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                          onPressed: () async {
+                            await AnnouncementService().deleteMarketingAudio(audio.id);
+                            setState(() {
+                              _settings = AnnouncementService().settings;
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),

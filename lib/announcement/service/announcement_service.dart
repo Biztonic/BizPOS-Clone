@@ -1,9 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:path_provider/path_provider.dart';
+
 import '../models/announcement.dart';
 import '../models/announcement_type.dart';
 import '../models/announcement_log.dart';
+import '../models/marketing_audio.dart';
 import '../settings/announcement_settings.dart';
 import '../builder/announcement_builder.dart';
 import '../policy/announcement_policy.dart';
@@ -33,6 +39,14 @@ class AnnouncementService {
 
   final List<AnnouncementLog> _logs = [];
   final Map<AnnouncementType, DateTime> _lastTriggered = {};
+  
+  // Local marketing audio storage
+  final List<MarketingAudio> _marketingAudios = [];
+  List<MarketingAudio> get marketingAudios => List.unmodifiable(_marketingAudios);
+
+  Timer? _marketingTimer;
+  int _currentMarketingIndex = 0;
+  AudioPlayer? _nativeMarketingPlayer;
 
   Future<void> init({
     AudioEngine? audioEngine,
@@ -56,6 +70,19 @@ class AnnouncementService {
       );
 
       _scheduler = AnnouncementScheduler(queue: _queue);
+
+      // Load marketing tracks from local Hive box
+      _marketingAudios.clear();
+      final mBox = await Hive.openBox('marketing_audio');
+      for (var key in mBox.keys) {
+        final map = mBox.get(key);
+        if (map is Map) {
+          _marketingAudios.add(MarketingAudio.fromMap(map));
+        }
+      }
+
+      // Start scheduler if configured
+      startMarketingScheduler();
 
       debugPrint('📣 [AnnouncementService] Layered architecture initialized');
     } catch (e) {
@@ -105,7 +132,7 @@ class AnnouncementService {
       if (sound == 'none') return;
 
       if (kIsWeb) {
-        playWebBeep(sound, _settings.volume * 0.3);
+        playWebBeep(sound, _settings.volume * 0.45); // Louder interaction volume
         return;
       }
 
@@ -114,11 +141,130 @@ class AnnouncementService {
     } catch (_) {}
   }
 
+  // --- Marketing Audio Storage & Scheduling ---
+
+  Future<void> addMarketingAudio(String name, Uint8List bytes) async {
+    try {
+      final id = DateTime.now().millisecondsSinceEpoch.toString();
+      final audio = MarketingAudio(id: id, name: name, bytes: bytes);
+      _marketingAudios.add(audio);
+
+      final mBox = Hive.box('marketing_audio');
+      await mBox.put(id, audio.toMap());
+
+      restartMarketingScheduler();
+    } catch (_) {}
+  }
+
+  Future<void> deleteMarketingAudio(String id) async {
+    try {
+      _marketingAudios.removeWhere((audio) => audio.id == id);
+      final mBox = Hive.box('marketing_audio');
+      await mBox.delete(id);
+
+      restartMarketingScheduler();
+    } catch (_) {}
+  }
+
+  void restartMarketingScheduler() {
+    stopMarketingScheduler();
+    startMarketingScheduler();
+  }
+
+  void startMarketingScheduler() {
+    if (_settings.marketingPlayMode == 'none' || _marketingAudios.isEmpty) {
+      return;
+    }
+
+    _currentMarketingIndex = 0;
+    if (_settings.marketingPlayMode == 'loop') {
+      _playNextMarketingLoop();
+    } else if (_settings.marketingPlayMode == 'interval') {
+      _marketingTimer = Timer.periodic(
+        Duration(seconds: _settings.marketingIntervalSeconds),
+        (_) => _playNextMarketingInterval(),
+      );
+    }
+  }
+
+  void stopMarketingScheduler() {
+    _marketingTimer?.cancel();
+    _marketingTimer = null;
+    try {
+      _nativeMarketingPlayer?.stop();
+      _nativeMarketingPlayer?.dispose();
+      _nativeMarketingPlayer = null;
+    } catch (_) {}
+  }
+
+  void _playNextMarketingLoop() {
+    if (_settings.marketingPlayMode != 'loop' || _marketingAudios.isEmpty) return;
+
+    final audio = _marketingAudios[_currentMarketingIndex];
+    _currentMarketingIndex = (_currentMarketingIndex + 1) % _marketingAudios.length;
+
+    _playMarketingAudioItem(audio, onComplete: () {
+      if (_settings.marketingPlayMode == 'loop') {
+        // Wait 1 second and play next in rotation
+        Timer(const Duration(seconds: 1), _playNextMarketingLoop);
+      }
+    });
+  }
+
+  void _playNextMarketingInterval() {
+    if (_marketingAudios.isEmpty) return;
+
+    final audio = _marketingAudios[_currentMarketingIndex];
+    _currentMarketingIndex = (_currentMarketingIndex + 1) % _marketingAudios.length;
+    _playMarketingAudioItem(audio);
+  }
+
+  void _playMarketingAudioItem(MarketingAudio audio, {VoidCallback? onComplete}) {
+    if (!_settings.enableSounds) {
+      onComplete?.call();
+      return;
+    }
+
+    try {
+      if (kIsWeb) {
+        playWebAudioBytes(audio.bytes, _settings.volume);
+        // Fallback completion callback since Web Audio API Audio node doesn't easily expose triggers to Dart directly
+        Timer(const Duration(seconds: 8), () {
+          onComplete?.call();
+        });
+      } else {
+        getTemporaryDirectory().then((tempDir) {
+          final tempFile = File('${tempDir.path}/${audio.name}');
+          tempFile.writeAsBytes(audio.bytes).then((file) {
+            _nativeMarketingPlayer = AudioPlayer();
+            _nativeMarketingPlayer!.setVolume(_settings.volume);
+            _nativeMarketingPlayer!.play(DeviceFileSource(file.path)).then((_) {
+              _nativeMarketingPlayer!.onPlayerComplete.listen((_) {
+                _nativeMarketingPlayer?.dispose();
+                _nativeMarketingPlayer = null;
+                onComplete?.call();
+              });
+            });
+          });
+        });
+      }
+    } catch (_) {
+      onComplete?.call();
+    }
+  }
+
   void updateSettings(AnnouncementSettings newSettings) {
     try {
+      final modeChanged = _settings.marketingPlayMode != newSettings.marketingPlayMode ||
+          _settings.marketingIntervalSeconds != newSettings.marketingIntervalSeconds;
+
       _settings = newSettings;
       unawaited(_settings.save());
       debugPrint('📣 [AnnouncementService] Settings updated: profile=${newSettings.profile}');
+
+      if (modeChanged) {
+        restartMarketingScheduler();
+      }
     } catch (_) {}
   }
 
