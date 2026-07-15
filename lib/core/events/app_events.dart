@@ -228,3 +228,60 @@ class PlanLimitReachedEvent {
     required this.maxAllowed,
   });
 }
+
+// ─── Custom Cart & POS Events ───────────────────────────────
+class CartItemAddedEvent {
+  final String itemId;
+  final String? itemName;
+  CartItemAddedEvent({required this.itemId, this.itemName});
+}
+
+class CartItemRemovedEvent {
+  final String itemId;
+  final String? itemName;
+  CartItemRemovedEvent({required this.itemId, this.itemName});
+}
+
+class CartDiscountAppliedEvent {
+  final double discountAmount;
+  CartDiscountAppliedEvent({required this.discountAmount});
+}
+
+// ─── Custom Printer Connection Events ───────────────────────
+class PrinterConnectedEvent {
+  final String deviceName;
+  final String purpose;
+  PrinterConnectedEvent({required this.deviceName, required this.purpose});
+}
+
+class PrinterDisconnectedEvent {
+  final String deviceName;
+  final String purpose;
+  PrinterDisconnectedEvent({required this.deviceName, required this.purpose});
+}
+
+// ─── Custom Table & QR Events ───────────────────────────────
+class TableOccupiedEvent {
+  final String tableId;
+  final String tableName;
+  TableOccupiedEvent({required this.tableId, required this.tableName});
+}
+
+class TableClearedEvent {
+  final String tableId;
+  final String tableName;
+  TableClearedEvent({required this.tableId, required this.tableName});
+}
+
+class NewQrOrderEvent {
+  final String orderId;
+  final String tableName;
+  NewQrOrderEvent({required this.orderId, required this.tableName});
+}
+
+class KitchenReadyEvent {
+  final String orderId;
+  final String tableName;
+  KitchenReadyEvent({required this.orderId, required this.tableName});
+}
+

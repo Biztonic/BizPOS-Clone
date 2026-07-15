@@ -13,6 +13,8 @@ library;
 import 'package:flutter/foundation.dart';
 
 import 'package:biztonic_pos/services/sync_service.dart';
+import 'package:biztonic_pos/core/events/event_bus.dart';
+import 'package:biztonic_pos/core/events/app_events.dart';
 
 import '../../domain/entities/order_entity.dart';
 import '../../domain/repositories/billing_repository.dart';
@@ -52,6 +54,7 @@ class BillingProvider with ChangeNotifier {
   void addToCart(String itemId) {
     _cart[itemId] = (_cart[itemId] ?? 0) + 1;
     notifyListeners();
+    EventBus.instance.fire(CartItemAddedEvent(itemId: itemId));
   }
 
   void removeFromCart(String itemId) {
@@ -62,6 +65,7 @@ class BillingProvider with ChangeNotifier {
         _cart.remove(itemId);
       }
       notifyListeners();
+      EventBus.instance.fire(CartItemRemovedEvent(itemId: itemId));
     }
   }
 

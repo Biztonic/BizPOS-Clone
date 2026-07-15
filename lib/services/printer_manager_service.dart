@@ -10,6 +10,8 @@ import 'network_printer_service.dart';
 import 'universal_printer_service.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:biztonic_pos/core/events/event_bus.dart';
+import 'package:biztonic_pos/core/events/app_events.dart';
 
 enum PrinterPurpose {
   receipt,         // Main checkout receipt
@@ -157,6 +159,7 @@ class PrinterManagerService {
       _assignments[purpose] = device;
       await _saveAssignments();
       _updateOverallStatus();
+      EventBus.instance.fire(PrinterConnectedEvent(deviceName: device.name, purpose: purpose.name));
     }
   }
 
@@ -180,6 +183,7 @@ class PrinterManagerService {
       _assignments.remove(purpose);
       await _saveAssignments();
       _updateOverallStatus();
+      EventBus.instance.fire(PrinterDisconnectedEvent(deviceName: device.name, purpose: purpose.name));
     }
   }
   
@@ -194,33 +198,42 @@ class PrinterManagerService {
      final device = _assignments[purpose];
      if (device == null) return false;
 
+     EventBus.instance.fire(PrintRequestedEvent(documentType: purpose.name, data: {}));
+
+     bool result = false;
      switch (device.type) {
        case PrinterConnectionType.bluetooth:
           if (escPosBytes == null) return false;
           try {
             await _universalService.printWithRetry(escPosBytes, reconnectDevice: device);
-            return true;
+            result = true;
           } catch (e) {
             debugPrint('🖨️ PrinterManager: BT print failed: $e');
-            return false;
+            result = false;
           }
+          break;
        case PrinterConnectionType.network:
          if (escPosBytes == null) return false;
-         return await _networkService.printRawData(escPosBytes);
+         result = await _networkService.printRawData(escPosBytes);
+         break;
        case PrinterConnectionType.usb:
           if (escPosBytes == null) return false;
           try {
             await _universalService.printWithRetry(escPosBytes, reconnectDevice: device);
-            return true;
+            result = true;
           } catch (e) {
             debugPrint('🖨️ PrinterManager: USB print failed: $e');
-            return false;
+            result = false;
           }
+          break;
        case PrinterConnectionType.system:
          // NOTE: Native/System printing (via 'printing' package) is deferred — thermal printers handle all current use cases.
-         return true; // Mock success
+         result = true; // Mock success
+         break;
      }
-     return false;
+
+     EventBus.instance.fire(PrintCompletedEvent(success: result));
+     return result;
   }
 
   Future<void> printOrderReceipt(OrderModel order, Store? store, {String cashierName = "Cashier"}) async {

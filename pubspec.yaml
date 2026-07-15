@@ -33,6 +33,8 @@ dependencies:
   usb_serial: ^0.5.2
   battery_plus: ^6.2.1 # Updated for Android 14 compatibility
   esc_pos_utils_plus: ^2.0.4
+  audioplayers: ^6.0.0
+  flutter_tts: ^4.0.0
   
   # UI Components
   cupertino_icons: ^1.0.2
@@ -116,3 +118,4 @@ flutter:
     - assets/flavors/standard/
     - assets/flavors/automotive/
     - assets/flavors/restaurant/
+    - lib/announcement/localization/

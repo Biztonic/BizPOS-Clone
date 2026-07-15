@@ -22,6 +22,8 @@ import 'widgets/dashboard_product_tile.dart';
 import 'widgets/calculator_widget.dart';
 import '../../services/scanner_service.dart';
 import '../../services/printer_manager_service.dart';
+import '../../core/events/event_bus.dart';
+import '../../core/events/app_events.dart';
 
 class CarDashboardPOSScreen extends StatefulWidget {
   const CarDashboardPOSScreen({super.key});
@@ -155,6 +157,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       _cart[item.id] = (_cart[item.id] ?? 0) + 1;
       _updateRPM();
     });
+    EventBus.instance.fire(CartItemAddedEvent(itemId: item.id, itemName: item.name));
   }
 
   void _removeFromCart(String itemId) {
@@ -168,6 +171,7 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       }
       _updateRPM();
     });
+    EventBus.instance.fire(CartItemRemovedEvent(itemId: itemId));
   }
 
   void _updateRPM() {
