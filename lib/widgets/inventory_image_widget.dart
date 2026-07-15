@@ -23,7 +23,10 @@ class InventoryImageWidget extends StatelessWidget {
   /// Returns the pixel-density-aware cache dimension for image decoding.
   /// This forces Flutter's image codec to decode at 2x display size (for retina),
   /// saving massive amounts of GPU memory on low-end devices.
-  int _cacheSize(double displaySize) => (displaySize * 2).toInt();
+  int? _cacheSize(double displaySize) {
+    if (displaySize.isInfinite || displaySize.isNaN) return null;
+    return (displaySize * 2).toInt();
+  }
 
   static ImageProvider getImageProvider(dynamic item) {
     final String? localImage = item.localImage;
