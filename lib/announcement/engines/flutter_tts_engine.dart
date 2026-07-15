@@ -105,17 +105,35 @@ class IosTtsEngine implements VoiceEngine {
 }
 
 class WebSpeechEngine implements VoiceEngine {
+  final FlutterTts _flutterTts = FlutterTts();
+
   @override
   Future<void> speak(String text, {double volume = 1.0, double rate = 1.0, String lang = 'en'}) async {
-    // Print to logs in web environment
-    debugPrint('🌐 WebSpeech: "$text" (lang: $lang, volume: $volume, rate: $rate)');
+    try {
+      final ttsLang = lang == 'hi' ? 'hi-IN' : (lang == 'mr' ? 'mr-IN' : 'en-US');
+      await _flutterTts.setLanguage(ttsLang);
+      await _flutterTts.setVolume(volume);
+      await _flutterTts.setSpeechRate(rate * 0.5);
+      await _flutterTts.speak(text);
+      debugPrint('🌐 WebSpeech: "$text" (lang: $ttsLang, volume: $volume, rate: $rate)');
+    } catch (e) {
+      debugPrint('❌ WebSpeech synthesis failed: $e');
+    }
   }
 
   @override
-  Future<void> stop() async {}
+  Future<void> stop() async {
+    try {
+      await _flutterTts.stop();
+    } catch (_) {}
+  }
 
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() async {
+    try {
+      await _flutterTts.stop();
+    } catch (_) {}
+  }
 }
 
 class NoVoiceEngine implements VoiceEngine {

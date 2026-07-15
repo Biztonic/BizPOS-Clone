@@ -23,6 +23,7 @@ import 'settings/product_settings_section.dart';
 import 'settings/user_settings_section.dart';
 import 'settings/payment_settings_section.dart';
 import 'settings/display_settings_section.dart';
+import 'settings/audio_settings_section.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -125,6 +126,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         'color': AppColors.adaptivePrimary(context),
         'roles': null, // All
         'key': 'settings.language'
+      },
+      {
+        'icon': Icons.volume_up,
+        'label': 'Audio Announcements',
+        'widgetBuilder': () => const AudioSettingsSection(isSubView: true),
+        'color': AppColors.adaptiveSuccess(context),
+        'roles': null, // All
+        'key': 'settings.announcements'
       },
     ];
 
