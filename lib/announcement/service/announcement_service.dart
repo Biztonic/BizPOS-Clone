@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import '../models/announcement.dart';
 import '../models/announcement_type.dart';
 import '../models/announcement_log.dart';
@@ -14,6 +15,7 @@ import '../engines/voice_engine.dart';
 import '../engines/haptic_engine.dart';
 import '../engines/flutter_audio_engine.dart';
 import '../engines/flutter_tts_engine.dart';
+import '../engines/web_audio_helper.dart' if (dart.library.js) '../engines/web_audio_helper_web.dart';
 
 class AnnouncementService {
   static final AnnouncementService _instance = AnnouncementService._internal();
@@ -26,11 +28,11 @@ class AnnouncementService {
   late final AnnouncementExecutor _executor;
   late AnnouncementSettings _settings;
 
-  final List<AnnouncementLog> _logs = [];
-  final Map<AnnouncementType, DateTime> _lastTriggered = {};
-
   AnnouncementSettings get settings => _settings;
   List<AnnouncementLog> get logs => List.unmodifiable(_logs);
+
+  final List<AnnouncementLog> _logs = [];
+  final Map<AnnouncementType, DateTime> _lastTriggered = {};
 
   Future<void> init({
     AudioEngine? audioEngine,
@@ -94,6 +96,22 @@ class AnnouncementService {
     } catch (e) {
       debugPrint('❌ [AnnouncementService] Error scheduling announcement: $e');
     }
+  }
+
+  void playInteractionSound() {
+    try {
+      if (!_settings.enableSounds) return;
+      final sound = _settings.interactionSound;
+      if (sound == 'none') return;
+
+      if (kIsWeb) {
+        playWebBeep(sound, _settings.volume * 0.3);
+        return;
+      }
+
+      // Trigger system touch sound on mobile devices
+      SystemSound.play(SystemSoundType.click);
+    } catch (_) {}
   }
 
   void updateSettings(AnnouncementSettings newSettings) {

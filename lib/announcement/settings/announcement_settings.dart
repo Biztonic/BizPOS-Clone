@@ -7,6 +7,7 @@ class AnnouncementSettings {
   final double speechRate; // 0.5 to 2.0
   final String language; // 'en', 'hi', 'mr'
   final String profile; // 'Silent', 'Basic', 'Business', 'Verbose'
+  final String interactionSound; // 'click', 'chime', 'beep', 'none'
 
   const AnnouncementSettings({
     this.enableSounds = true,
@@ -15,6 +16,7 @@ class AnnouncementSettings {
     this.speechRate = 1.0,
     this.language = 'en',
     this.profile = 'Business',
+    this.interactionSound = 'click',
   });
 
   factory AnnouncementSettings.load() {
@@ -27,6 +29,7 @@ class AnnouncementSettings {
         speechRate: (box.get('announcement_speech_rate', defaultValue: 1.0) as num).toDouble(),
         language: box.get('announcement_language', defaultValue: 'en') as String,
         profile: box.get('announcement_profile', defaultValue: 'Business') as String,
+        interactionSound: box.get('announcement_interaction_sound', defaultValue: 'click') as String,
       );
     } catch (_) {
       return const AnnouncementSettings();
@@ -42,6 +45,7 @@ class AnnouncementSettings {
       await box.put('announcement_speech_rate', speechRate);
       await box.put('announcement_language', language);
       await box.put('announcement_profile', profile);
+      await box.put('announcement_interaction_sound', interactionSound);
     } catch (_) {
       // Fail-soft, do not crash business logic
     }
@@ -54,6 +58,7 @@ class AnnouncementSettings {
     double? speechRate,
     String? language,
     String? profile,
+    String? interactionSound,
   }) {
     return AnnouncementSettings(
       enableSounds: enableSounds ?? this.enableSounds,
@@ -62,6 +67,7 @@ class AnnouncementSettings {
       speechRate: speechRate ?? this.speechRate,
       language: language ?? this.language,
       profile: profile ?? this.profile,
+      interactionSound: interactionSound ?? this.interactionSound,
     );
   }
 }

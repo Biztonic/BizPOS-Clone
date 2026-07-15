@@ -194,10 +194,7 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                       value: 'Basic',
                       child: Text('Basic (Payments & Critical alarms only)'),
                     ),
-                    DropdownMenuItem(
-                      value: 'Business',
-                      child: Text('Business (Alarms, payments, printer, sync - default)'),
-                    ),
+                    DropdownMenuItem(value: 'Business', child: Text('Business (Alarms, payments, printer, sync - default)')),
                     DropdownMenuItem(value: 'Verbose', child: Text('Verbose (Announce everything including cart)')),
                   ],
                   onChanged: (val) {
@@ -205,6 +202,29 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                       setState(() {
                         _settings = _settings.copyWith(profile: val);
                         _saveSettings();
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Touch Interaction Sound',
+                    border: OutlineInputBorder(),
+                  ),
+                  value: _settings.interactionSound,
+                  items: const [
+                    DropdownMenuItem(value: 'none', child: Text('None (Muted)')),
+                    DropdownMenuItem(value: 'click', child: Text('Subtle Click')),
+                    DropdownMenuItem(value: 'beep', child: Text('Standard Beep')),
+                    DropdownMenuItem(value: 'chime', child: Text('Tactile Chime')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _settings = _settings.copyWith(interactionSound: val);
+                        _saveSettings();
+                        AnnouncementService().playInteractionSound();
                       });
                     }
                   },

@@ -13,6 +13,7 @@ import 'core/design/density/app_density.dart';
 import 'l10n/app_localizations.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/dependency_injection/dependency_injector.dart';
+import 'announcement/announcement.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -135,6 +136,14 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
             ],
             routerConfig: _router,
             debugShowCheckedModeBanner: false,
+            builder: (context, child) {
+              return Listener(
+                onPointerDown: (_) {
+                  AnnouncementService().playInteractionSound();
+                },
+                child: child!,
+              );
+            },
           ),
         );
       },

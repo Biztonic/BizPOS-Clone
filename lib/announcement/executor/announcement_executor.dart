@@ -54,8 +54,15 @@ class AnnouncementExecutor {
               announcement.channel == AnnouncementChannel.soundAndVoice) &&
           announcement.ttsText != null &&
           announcement.ttsText!.isNotEmpty) {
+        final fallback = announcement.metadata['englishFallback'] as String?;
         await voiceEngine
-            .speak(announcement.ttsText!, volume: volume, rate: speechRate, lang: language)
+            .speak(
+              announcement.ttsText!,
+              volume: volume,
+              rate: speechRate,
+              lang: language,
+              englishFallback: fallback,
+            )
             .timeout(const Duration(seconds: 8), onTimeout: () {});
       }
 
