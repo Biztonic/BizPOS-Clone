@@ -304,7 +304,7 @@ class _POSScreenState extends State<POSScreen> {
           const SizedBox(width: AppSpacing.md),
           // Scale Display
           // Scale Display (Only for Grocery/Supermarket)
-          if (storeType == 'Grocery' || storeType == 'Supermarket')
+          if (Provider.of<DashboardProvider>(context, listen: false).hasAddon('barcode_scanner'))
             Container(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs, vertical: 12),
               decoration: BoxDecoration(

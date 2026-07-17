@@ -138,7 +138,7 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
                         content: Text(val ? "Connected to $name" : "Disconnected from $name"),
                         backgroundColor: val ? AppColors.success : AppColors.textSecondary(context),
                         behavior: SnackBarBehavior.floating,
-                        width: 400,
+                        width: MediaQuery.of(context).size.width > 600 ? 400 : null,
                       ),
                     );
                   },

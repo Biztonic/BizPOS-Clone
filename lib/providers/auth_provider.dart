@@ -76,14 +76,13 @@ class AuthProvider with ChangeNotifier {
     if (_user != null) return _user;
     if (_isOfflineLoggedIn) {
        // Use the cached real Firebase UID for this specific offline user
-       final offlineEmail = OfflineService().getOfflineLoginEmail();
-       final cachedUid = OfflineService().getCachedUserId(email: offlineEmail) ?? 'offline_user';
-       final cachedProfile = OfflineService().getCachedCredentials(email: offlineEmail);
-       return OfflineUser(
-         uid: cachedUid,
-         email: cachedProfile?['email'] ?? offlineEmail,
-         displayName: "Offline User",
-       );
+        final offlineEmail = OfflineService().getOfflineLoginEmail();
+        final cachedUid = OfflineService().getCachedUserId(email: offlineEmail) ?? 'offline_user';
+        return OfflineUser(
+          uid: cachedUid,
+          email: offlineEmail ?? 'offline_user@biztonic.pos',
+          displayName: "Offline User",
+        );
     }
     return null;
   }
@@ -129,8 +128,8 @@ class AuthProvider with ChangeNotifier {
       }
 
       if (isNetworkError) {
-        final cached = OfflineService().getCachedCredentials(email: email);
-        if (cached != null && cached['email'] == email.toLowerCase().trim() && cached['password'] == password) {
+        final isValid = OfflineService().verifyOfflinePassword(email, password);
+        if (isValid) {
              _isOfflineLoggedIn = true;
              await OfflineService().setOfflineLoginState(true, email: email);
              _isLoading = false;

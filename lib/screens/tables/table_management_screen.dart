@@ -1668,8 +1668,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             return AlertDialog(
               shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
               title: Text(AppLocalizations.t(context, 'Book a Table'), style: const TextStyle(fontWeight: FontWeight.bold)),
-              content: SizedBox(
-                 width: 400,
+              content: Container(
+                 constraints: const BoxConstraints(maxWidth: 400),
                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,

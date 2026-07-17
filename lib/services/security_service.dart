@@ -1,46 +1,53 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecurityService {
   static final SecurityService _instance = SecurityService._internal();
   factory SecurityService() => _instance;
   SecurityService._internal();
 
-  // Keys for storage
+  static const _secureStorage = FlutterSecureStorage();
   static const _hiveKeyName = 'hive_encryption_key';
   static const _sqlKeyName = 'sql_encryption_key';
 
   /// Get or Create 32-byte Hive Encryption Key (as List<int>)
   Future<List<int>> getHiveKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? keyStr = prefs.getString(_hiveKeyName);
-    
-    if (keyStr == null) {
-
-      // Use local random generation instead of Hive.generateSecureKey() to avoid dependency
-      final newKey = _generateRandomKey(32);
-      await prefs.setString(_hiveKeyName, base64UrlEncode(newKey));
-      return newKey;
-    } else {
-      return base64Url.decode(keyStr);
+    try {
+      String? keyStr = await _secureStorage.read(key: _hiveKeyName);
+      
+      if (keyStr == null) {
+        final newKey = _generateRandomKey(32);
+        await _secureStorage.write(key: _hiveKeyName, value: base64UrlEncode(newKey));
+        return newKey;
+      } else {
+        return base64Url.decode(keyStr);
+      }
+    } catch (e) {
+      debugPrint('⚠️ SecurityService: Secure Storage read failed: $e. Generating fallback ephemeral key.');
+      final fallbackKey = _generateRandomKey(32);
+      return fallbackKey;
     }
   }
 
   /// Get or Create SQL Encryption Key (String password)
   Future<String> getSqlKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? keyStr = prefs.getString(_sqlKeyName);
-    
-    if (keyStr == null) {
-
-      // Generate a strong random password
+    try {
+      String? keyStr = await _secureStorage.read(key: _sqlKeyName);
+      
+      if (keyStr == null) {
+        final newKeyBytes = _generateRandomKey(32);
+        final newKeyStr = base64UrlEncode(newKeyBytes);
+        await _secureStorage.write(key: _sqlKeyName, value: newKeyStr);
+        return newKeyStr;
+      }
+      return keyStr;
+    } catch (e) {
+      debugPrint('⚠️ SecurityService: Secure Storage read failed: $e. Generating fallback ephemeral SQL key.');
       final newKeyBytes = _generateRandomKey(32);
-      final newKeyStr = base64UrlEncode(newKeyBytes);
-      await prefs.setString(_sqlKeyName, newKeyStr);
-      return newKeyStr;
+      return base64UrlEncode(newKeyBytes);
     }
-    return keyStr;
   }
 
   List<int> _generateRandomKey(int length) {

@@ -388,7 +388,7 @@ class SyncService with ChangeNotifier {
       final offlineEmail = OfflineService().getOfflineLoginEmail();
       if (offlineEmail == null) return;
       
-      final creds = OfflineService().getCachedCredentials(email: offlineEmail);
+      final creds = await OfflineService().getCachedCredentials(email: offlineEmail);
       if (creds == null) return;
       
       final email = creds['email'];

@@ -52,6 +52,7 @@ import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
 
 class DashboardProvider with ChangeNotifier {
   static bool isTesting = false;
+  Timer? _timeUpdateTimer;
   late final FirebaseFirestore _db = getFirestore();
   final FirebaseAuth? _auth;
   final SyncService _syncService = SyncService();
@@ -177,7 +178,9 @@ class DashboardProvider with ChangeNotifier {
 
     // Developer mode moved to init()
     _checkClockTampered();
-    Timer.periodic(const Duration(minutes: 5), (_) => _updateLastKnownTime());
+    if (!isTesting) {
+      _timeUpdateTimer = Timer.periodic(const Duration(minutes: 5), (_) => _updateLastKnownTime());
+    }
     
     debugPrint('✅ DashboardProvider Constructor END');
   }
@@ -199,6 +202,7 @@ class DashboardProvider with ChangeNotifier {
     if (_authProvider != null) _authProvider!.removeListener(_onAuthChange);
     
     _countersSubscription?.cancel();
+    _timeUpdateTimer?.cancel();
     super.dispose();
   }
 
@@ -965,9 +969,9 @@ class DashboardProvider with ChangeNotifier {
       }
   }
 
-  Future<String> addStore(String name, String owner, {String? address, String? phone, String? franchiseCode}) async {
+  Future<String> addStore(String name, String owner, {String? address, String? phone, String? franchiseCode, String storeType = 'Restaurant'}) async {
       if (_storeProvider != null) {
-          return await _storeProvider!.addStore(name, owner, address: address, phone: phone, franchiseCode: franchiseCode);
+          return await _storeProvider!.addStore(name, owner, address: address, phone: phone, franchiseCode: franchiseCode, storeType: storeType);
       }
       return '';
   }
@@ -993,6 +997,25 @@ class DashboardProvider with ChangeNotifier {
       debugPrint('🔒 hasAddon($key): BLOCKED - activeStore is null');
       return false;
     }
+
+    // Resolve feature status based on store type configurations
+    final type = activeStore!.storeType;
+    final config = _storeTypeConfigs[type];
+    if (config is Map && config.containsKey(key)) {
+      final isEnabled = config[key] == true;
+      debugPrint('🔑 hasAddon($key): RESOLVED by storeType $type config = $isEnabled');
+      return isEnabled;
+    }
+
+    // Default templates if no custom config exists yet
+    if (type == 'Restaurant') {
+      if (['table_reservation', 'kds_management', 'employee_management'].contains(key)) return true;
+      if (['barcode_scanner'].contains(key)) return false;
+    } else if (type == 'Grocery' || type == 'Supermarket') {
+      if (['barcode_scanner', 'customer_management', 'supplier_management', 'data_center'].contains(key)) return true;
+      if (['table_reservation', 'kds_management'].contains(key)) return false;
+    }
+
     if (activeStore!.subscriptionPlan != 'Standard') {
       debugPrint('🔒 hasAddon($key): BLOCKED - store is on ${activeStore!.subscriptionPlan} plan (not Standard)');
       return false;
@@ -1207,7 +1230,8 @@ class DashboardProvider with ChangeNotifier {
        _superAdmins.clear();
 
        // 4. AUTH SIGN OUT (Last step)
-        await _auth?.signOut();
+       await OfflineService().clearCredentials(); 
+       await _auth?.signOut();
        await DatabaseHelper.switchUser(null);
        
        notifyListeners();
@@ -2297,20 +2321,68 @@ class DashboardProvider with ChangeNotifier {
 
   void reportDemoTarget(String step, Rect rect, String instruction) {}
 
-  // --- STUBS ---
+  // --- STORE TYPE CONFIGS ---
+  Map<String, dynamic> _storeTypeConfigs = {};
+  Map<String, dynamic> get storeTypeConfigs => _storeTypeConfigs;
+
   void _listenToGlobalSettings() {
     try {
+      // Optimistically load from local cache first
+      if (Hive.isBoxOpen('store_type_configs')) {
+        final box = Hive.box('store_type_configs');
+        _storeTypeConfigs = Map<String, dynamic>.from(box.get('configs', defaultValue: {}));
+      }
+
       _db.collection('settings').doc('global').snapshots().listen((snap) {
          if (snap.exists) {
-           // Process global settings update if needed
-           notifyListeners();
+           final data = snap.data();
+           if (data != null && data['store_type_configs'] != null) {
+             final configs = Map<String, dynamic>.from(data['store_type_configs']);
+             _storeTypeConfigs = configs;
+             if (Hive.isBoxOpen('store_type_configs')) {
+               Hive.box('store_type_configs').put('configs', configs);
+             }
+             notifyListeners();
+           }
          }
       }, onError: (e) {
         debugPrint('⚠️ DashboardProvider: Error in global settings stream: $e');
       });
     } catch (e) {
-      debugPrint('⚠️ DashboardProvider: Failed to listen to global settings (Firebase not initialized): $e');
+      debugPrint('⚠️ DashboardProvider: Failed to listen to global settings: $e');
     }
+  }
+
+  Future<void> saveStoreTypeConfig(String type, Map<String, dynamic> config) async {
+    try {
+      _storeTypeConfigs[type] = config;
+      if (Hive.isBoxOpen('store_type_configs')) {
+        await Hive.box('store_type_configs').put('configs', _storeTypeConfigs);
+      }
+      
+      await _db.collection('settings').doc('global').set({
+        'store_types': FieldValue.arrayUnion([type]),
+        'store_type_configs': {
+          type: config
+        }
+      }, SetOptions(merge: true));
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> deleteStoreTypeConfig(String type) async {
+    try {
+      _storeTypeConfigs.remove(type);
+      if (Hive.isBoxOpen('store_type_configs')) {
+        await Hive.box('store_type_configs').put('configs', _storeTypeConfigs);
+      }
+      
+      await _db.collection('settings').doc('global').update({
+        'store_types': FieldValue.arrayRemove([type]),
+        'store_type_configs.$type': FieldValue.delete()
+      });
+      notifyListeners();
+    } catch (_) {}
   }
   void _listenToPlatformLimits() {}
   void _listenToSyncStatus() {
@@ -3059,10 +3131,20 @@ class DashboardProvider with ChangeNotifier {
       final now = DateTime.now();
       final nowMs = now.millisecondsSinceEpoch;
 
-      if (lastKnownMs != null && nowMs < lastKnownMs) {
+      // Threshold: January 1, 2025 (1735689600000 ms)
+      const int thresholdMs = 1735689600000;
+
+      if (nowMs < thresholdMs) {
+        // System clock reset to default/epoch time (e.g. 1970/2020) due to offline boot.
+        _isClockTampered = false;
+        debugPrint('ℹ️ DashboardProvider: Clock reset detected (before 2025). Bypassing tamper check.');
+      } else if (lastKnownMs != null && nowMs < lastKnownMs) {
+        // Clock is in realistic range but went backward relative to last known time.
+        // This indicates a manual rollback to bypass subscription.
         _isClockTampered = true;
         debugPrint('⚠️ DashboardProvider: Clock Tampering Detected! now=$nowMs, lastKnown=$lastKnownMs');
       } else {
+        _isClockTampered = false;
         box.put('last_known_time', nowMs);
       }
     } catch (e) {
@@ -3078,7 +3160,11 @@ class DashboardProvider with ChangeNotifier {
       final now = DateTime.now();
       final nowMs = now.millisecondsSinceEpoch;
 
-      if (lastKnownMs != null && nowMs < lastKnownMs) {
+      const int thresholdMs = 1735689600000;
+
+      if (nowMs < thresholdMs) {
+        _isClockTampered = false;
+      } else if (lastKnownMs != null && nowMs < lastKnownMs) {
         _isClockTampered = true;
         notifyListeners();
         debugPrint('⚠️ DashboardProvider: Clock Tampering Detected in background! now=$nowMs, lastKnown=$lastKnownMs');
@@ -3097,9 +3183,13 @@ class DashboardProvider with ChangeNotifier {
       final now = DateTime.now();
       final nowMs = now.millisecondsSinceEpoch;
 
-      if (lastKnownMs == null || nowMs >= lastKnownMs) {
+      const int thresholdMs = 1735689600000;
+
+      if (nowMs < thresholdMs || lastKnownMs == null || nowMs >= lastKnownMs) {
         _isClockTampered = false;
-        box.put('last_known_time', nowMs);
+        if (nowMs >= thresholdMs) {
+          box.put('last_known_time', nowMs);
+        }
         notifyListeners();
         debugPrint('✅ DashboardProvider: Clock restored successfully!');
       } else {

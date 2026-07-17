@@ -22,6 +22,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:intl/intl.dart';
+import 'package:biztonic_pos/utils/encryption_utils.dart';
+import 'package:crypto/crypto.dart';
 
 Map<String, dynamic> _decodeJsonBackup(String json) => jsonDecode(json) as Map<String, dynamic>;
 
@@ -378,7 +380,7 @@ class StoreProvider with ChangeNotifier {
 
   // --- ACTIONS ---
 
-  Future<String> addStore(String name, String ownerEmail, {String? address, String? phone, String? franchiseCode}) async {
+  Future<String> addStore(String name, String ownerEmail, {String? address, String? phone, String? franchiseCode, String storeType = 'Restaurant'}) async {
       final uid = _effectiveUid;
       final email = ownerEmail.toLowerCase().trim();
       final userEmail = _effectiveEmail;
@@ -563,7 +565,7 @@ class StoreProvider with ChangeNotifier {
          owner: uid ?? name,
          ownerEmail: email,
          status: 'Active',
-         storeType: 'Restaurant',
+         storeType: storeType,
          subscriptionPlan: subscriptionPlan,
          addons: addons,
          purchasedAddons: addons, // Sync purchased addons
@@ -1219,8 +1221,13 @@ class StoreProvider with ChangeNotifier {
        final jsonString = jsonEncode(backupData);
        final fileName = "bizpos_backup_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.json";
        
+       // Encrypt the backup using key derived from user's persistent UID
+       final userUid = _auth?.currentUser?.uid ?? OfflineService().getCachedUserId() ?? 'unknown_user';
+       final derivationKey = sha256.convert(utf8.encode(userUid + "BIZTONIC_BACKUP_SECRET_2026")).toString();
+       final encryptedString = BackupEncryption.encrypt(jsonString, derivationKey);
+
         if (kIsWeb) {
-          final blob = html.Blob([jsonString], 'application/json');
+          final blob = html.Blob([encryptedString], 'text/plain');
           final url = html.Url.createObjectUrlFromBlob(blob);
           final anchor = html.document.createElement('a') as html.AnchorElement
             ..href = url
@@ -1235,7 +1242,7 @@ class StoreProvider with ChangeNotifier {
           final backupDirPath = await _getBackupPath();
           final path = "$backupDirPath/$fileName";
           final file = io.File(path);
-          await file.writeAsString(jsonString);
+          await file.writeAsString(encryptedString);
           debugPrint("Backup saved to: $path");
         }
      } catch (e) {
@@ -1265,10 +1272,21 @@ class StoreProvider with ChangeNotifier {
           if (!kIsWeb) jsonString = await io.File(file).readAsString();
        }
        
-       if (jsonString != null && jsonString.isNotEmpty) {
-          final dbHelper = DatabaseHelper();
-          final db = await dbHelper.database;
-          final Map<String, dynamic> backupData = await compute(_decodeJsonBackup, jsonString);
+        if (jsonString != null && jsonString.isNotEmpty) {
+           final userUid = _auth?.currentUser?.uid ?? OfflineService().getCachedUserId() ?? 'unknown_user';
+           final derivationKey = sha256.convert(utf8.encode(userUid + "BIZTONIC_BACKUP_SECRET_2026")).toString();
+           
+           String decryptedJson;
+           try {
+             decryptedJson = BackupEncryption.decrypt(jsonString, derivationKey);
+           } catch (e) {
+             debugPrint('⚠️ restoreLocalBackup: Decryption failed ($e). Attempting direct JSON parse as legacy fallback.');
+             decryptedJson = jsonString;
+           }
+
+           final dbHelper = DatabaseHelper();
+           final db = await dbHelper.database;
+           final Map<String, dynamic> backupData = await compute(_decodeJsonBackup, decryptedJson);
           
           await dbHelper.clearAll(); // Wipe SQLite database
                     final batch = db.batch();

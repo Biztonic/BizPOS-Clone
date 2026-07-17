@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hive/hive.dart';
 
 import 'package:biztonic_pos/services/firestore_helper.dart';
 import 'package:biztonic_pos/services/offline_service.dart';
@@ -151,18 +152,38 @@ class StoreRepository with StoreRepositoryMixin {
 
   // --- Global Store Types ---
   Future<List<String>> fetchStoreTypes() async {
-    final doc = await _db.collection('settings').doc('global').get();
-    if (doc.exists && doc.data()?['store_types'] != null) {
-      return List<String>.from(doc.data()!['store_types']);
+    if (Hive.isBoxOpen('store_type_configs')) {
+      final configs = Hive.box('store_type_configs').get('configs') as Map?;
+      if (configs != null && configs.isNotEmpty) {
+        return configs.keys.map((e) => e.toString()).toList();
+      }
     }
-    return [];
+    try {
+      final doc = await _db.collection('settings').doc('global').get();
+      if (doc.exists && doc.data()?['store_types'] != null) {
+        return List<String>.from(doc.data()!['store_types']);
+      }
+    } catch (_) {}
+    return ['Restaurant', 'Grocery', 'Supermarket', 'Retail'];
   }
 
   Future<Map<String, dynamic>> fetchStoreTypeConfigs() async {
-    final doc = await _db.collection('settings').doc('global').get();
-    if (doc.exists && doc.data()?['store_type_configs'] != null) {
-      return Map<String, dynamic>.from(doc.data()!['store_type_configs']);
+    if (Hive.isBoxOpen('store_type_configs')) {
+      final configs = Hive.box('store_type_configs').get('configs') as Map?;
+      if (configs != null && configs.isNotEmpty) {
+        return Map<String, dynamic>.from(configs);
+      }
     }
+    try {
+      final doc = await _db.collection('settings').doc('global').get();
+      if (doc.exists && doc.data()?['store_type_configs'] != null) {
+        final configs = Map<String, dynamic>.from(doc.data()!['store_type_configs']);
+        if (Hive.isBoxOpen('store_type_configs')) {
+          Hive.box('store_type_configs').put('configs', configs);
+        }
+        return configs;
+      }
+    } catch (_) {}
     return {};
   }
 

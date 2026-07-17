@@ -192,8 +192,7 @@ class _StationLockScreenState extends State<StationLockScreen> {
         return Dialog(
           backgroundColor: Colors.transparent,
           child: Container(
-            width: 400,
-            constraints: const BoxConstraints(maxHeight: 500),
+            constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E293B) : AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(24),

@@ -1,11 +1,23 @@
 // ignore_for_file: unused_field
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 // import 'dart:io'; // Removed for Web Compatibility 
+import 'package:crypto/crypto.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/order_model.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+
+enum ConnectionQuality {
+  offline,
+  localNetwork,
+  internet,
+  backendAvailable
+}
 
 class OfflineService {
   static bool isTesting = false;
@@ -19,9 +31,17 @@ class OfflineService {
   // Connectivity Stream
   final StreamController<bool> _connectivityController = StreamController<bool>.broadcast();
   Stream<bool> get connectivityStream => _connectivityController.stream;
+
+  // Connection Quality Stream
+  final StreamController<ConnectionQuality> _connectionQualityController = StreamController<ConnectionQuality>.broadcast();
+  Stream<ConnectionQuality> get connectionQualityStream => _connectionQualityController.stream;
+
+  ConnectionQuality _connectionQuality = ConnectionQuality.offline;
+  ConnectionQuality get connectionQuality => _connectionQuality;
+
   Timer? _connectivityTimer;
-  bool _isOnline = true;
-  bool get isOnline => _isOnline;
+  
+  bool get isOnline => _connectionQuality == ConnectionQuality.internet || _connectionQuality == ConnectionQuality.backendAvailable;
 
   Box? _authBox;
   Box? _syncBox;
@@ -45,51 +65,78 @@ class OfflineService {
     _startConnectivityMonitor();
     
     // Initial check
-    _isOnline = await _checkConnection();
-    _connectivityController.add(_isOnline);
+    _connectionQuality = await _checkConnectionQuality();
+    _connectivityController.add(isOnline);
+    _connectionQualityController.add(_connectionQuality);
   }
   
   void _startConnectivityMonitor() {
     // 1. Listen to OS-level connectivity changes (Instant feedback)
     _connectivity.onConnectivityChanged.listen((results) {
-      // results is List<ConnectivityResult> in newer versions
-      // Handle both single and list for safety if version varies
-       _checkConnection().then((connected) {
-         if (connected != _isOnline) {
-           _isOnline = connected;
-           _connectivityController.add(_isOnline);
-         }
-       });
+      _runConnectivityCheck();
     });
 
     // 2. Periodic Poll (For "Connected to WiFi but no Internet" cases on Mobile)
     if (!isTesting) {
       _connectivityTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-         bool connected = await _checkConnection();
-         if (connected != _isOnline) {
-           _isOnline = connected;
-           _connectivityController.add(_isOnline);
-         }
+         await _runConnectivityCheck();
       });
     }
   }
-  
-  Future<bool> _checkConnection() async {
-    // 1. Check Network Interface First (Cheap)
-    var connectivityResult = await _connectivity.checkConnectivity();
-    // Support List<ConnectivityResult> (new) and ConnectivityResult (old) just in case
-    bool hasNetwork = false;
-     hasNetwork = connectivityResult.any((r) => r != ConnectivityResult.none);
-  
-    if (!hasNetwork) return false; // Definitely offline
 
-    // 2. Platform Specific Internet Check
-    if (kIsWeb) {
-      return true; 
-    } else {
-      // Simple fallback or rely on connectivity for now to avoid dart:io dependency issues
-      return true;
+  Future<void> _runConnectivityCheck() async {
+     final oldQuality = _connectionQuality;
+     final oldIsOnline = isOnline;
+     
+     _connectionQuality = await _checkConnectionQuality();
+     
+     if (isOnline != oldIsOnline) {
+       _connectivityController.add(isOnline);
+     }
+     if (_connectionQuality != oldQuality) {
+       _connectionQualityController.add(_connectionQuality);
+       debugPrint('📶 Connectivity: Connection quality changed to ${_connectionQuality.name}');
+     }
+  }
+  
+  Future<ConnectionQuality> _checkConnectionQuality() async {
+    try {
+      var connectivityResult = await _connectivity.checkConnectivity();
+      bool hasNetwork = connectivityResult.any((r) => r != ConnectivityResult.none);
+      if (!hasNetwork) return ConnectionQuality.offline;
+
+      if (kIsWeb) {
+        return ConnectionQuality.backendAvailable; // Web browser handles online state natively
+      }
+
+      // 1. Try generate_204 to confirm WAN internet routing
+      try {
+        final wanResponse = await Dio(BaseOptions(connectTimeout: const Duration(seconds: 2)))
+            .get('https://clients3.google.com/generate_204');
+        if (wanResponse.statusCode != 204) {
+          return ConnectionQuality.localNetwork;
+        }
+      } catch (_) {
+        return ConnectionQuality.localNetwork; // Interface works, but WAN check failed
+      }
+
+      // 2. Try Firestore/Firebase backend endpoint to confirm backend is available
+      try {
+        final backendResponse = await Dio(BaseOptions(connectTimeout: const Duration(seconds: 2)))
+            .head('https://firestore.googleapis.com');
+        return ConnectionQuality.backendAvailable;
+      } catch (_) {
+        return ConnectionQuality.internet; // Internet works, but Firebase backend is blocked/unreachable
+      }
+    } catch (_) {
+      return ConnectionQuality.offline;
     }
+  }
+
+  // Deprecated legacy helper, mapped for backward compatibility
+  Future<bool> _checkConnection() async {
+    final quality = await _checkConnectionQuality();
+    return quality == ConnectionQuality.internet || quality == ConnectionQuality.backendAvailable;
   }
 
   void dispose() {
@@ -98,18 +145,104 @@ class OfflineService {
   }
 
   // --- Auth Cache (Multi-User Isolated) ---
+  static const _secureStorage = FlutterSecureStorage();
+  static const int _maxFailedAttempts = 5;
 
   /// Cache credentials keyed by email so multiple users can coexist offline.
   Future<void> cacheCredentials(String email, String password, {String? uid}) async {
+    if (!Hive.isBoxOpen(_authBoxName)) await Hive.openBox(_authBoxName);
     final box = Hive.box(_authBoxName);
     final emailKey = email.toLowerCase().trim();
-    await box.put('cred_$emailKey', password);
+
+    // 1. Generate salt and hash for secure offline check
+    final salt = _generateRandomSalt(16);
+    final hash = _hashPassword(password, salt);
+    await box.put('salt_$emailKey', salt);
+    await box.put('hash_$emailKey', hash);
+
+    // 2. Save raw password securely in FlutterSecureStorage for background sync auto-login
+    try {
+      await _secureStorage.write(key: 'cred_$emailKey', value: password);
+    } catch (e) {
+      debugPrint('⚠️ OfflineService: Secure Storage write failed for credentials: $e');
+    }
+
+    // 3. Reset failed attempts count upon successful online login/credentials caching
+    await box.put('failed_attempts_$emailKey', 0);
+
     await box.put('last_login', DateTime.now().toIso8601String());
     await box.put('last_login_email', emailKey);
     if (uid != null) {
       await box.put('uid_$emailKey', uid);
       await box.put('cached_uid', uid); // Keep global fallback for backward compat
     }
+  }
+
+  String _generateRandomSalt(int length) {
+    final rand = Random.secure();
+    final values = List<int>.generate(length, (i) => rand.nextInt(256));
+    return base64UrlEncode(values);
+  }
+
+  String _hashPassword(String password, String salt) {
+    final bytes = utf8.encode(password + salt);
+    return sha256.convert(bytes).toString();
+  }
+
+  /// Verify offline credentials using salted SHA-256 hashes synchronously from Hive cache.
+  bool verifyOfflinePassword(String email, String password) {
+    if (isOfflineLockedOut(email)) {
+      debugPrint('🔒 OfflineService: Offline login locked out for $email due to too many failed attempts.');
+      return false;
+    }
+
+    if (!Hive.isBoxOpen(_authBoxName)) return false;
+    final box = Hive.box(_authBoxName);
+    final emailKey = email.toLowerCase().trim();
+    final salt = box.get('salt_$emailKey');
+    final hash = box.get('hash_$emailKey');
+
+    if (salt == null || hash == null) {
+      incrementFailedAttempts(email);
+      return false;
+    }
+
+    final attemptHash = _hashPassword(password, salt.toString());
+    final isValid = attemptHash == hash.toString();
+
+    if (isValid) {
+      resetFailedAttempts(email);
+      return true;
+    } else {
+      incrementFailedAttempts(email);
+      return false;
+    }
+  }
+
+  /// Check if offline login is currently locked out for [email].
+  bool isOfflineLockedOut(String email) {
+    if (!Hive.isBoxOpen(_authBoxName)) return false;
+    final box = Hive.box(_authBoxName);
+    final emailKey = email.toLowerCase().trim();
+    final failedCount = box.get('failed_attempts_$emailKey', defaultValue: 0) as int;
+    return failedCount >= _maxFailedAttempts;
+  }
+
+  /// Reset failed attempts count (e.g. on online login).
+  Future<void> resetFailedAttempts(String email) async {
+    if (!Hive.isBoxOpen(_authBoxName)) await Hive.openBox(_authBoxName);
+    final box = Hive.box(_authBoxName);
+    final emailKey = email.toLowerCase().trim();
+    await box.put('failed_attempts_$emailKey', 0);
+  }
+
+  /// Increment failed attempts count.
+  Future<void> incrementFailedAttempts(String email) async {
+    if (!Hive.isBoxOpen(_authBoxName)) await Hive.openBox(_authBoxName);
+    final box = Hive.box(_authBoxName);
+    final emailKey = email.toLowerCase().trim();
+    final current = box.get('failed_attempts_$emailKey', defaultValue: 0) as int;
+    await box.put('failed_attempts_$emailKey', current + 1);
   }
 
   /// Cache the real Firebase UID for offline login sessions (keyed by email).
@@ -134,17 +267,19 @@ class OfflineService {
     return box.get('cached_uid');
   }
 
-  /// Retrieve cached credentials for a specific [email].
-  /// Returns null if no credentials are cached for this email.
-  Map<String, String>? getCachedCredentials({String? email}) {
+  /// Retrieve cached credentials from FlutterSecureStorage asynchronously.
+  Future<Map<String, String>?> getCachedCredentials({String? email}) async {
     if (!Hive.isBoxOpen(_authBoxName)) return null;
     final box = Hive.box(_authBoxName);
-    // Resolve which email to look up
     final emailKey = (email ?? box.get('last_login_email'))?.toString().toLowerCase().trim();
     if (emailKey == null) return null;
-    final password = box.get('cred_$emailKey');
-    if (password != null) {
-      return {'email': emailKey, 'password': password.toString()};
+    try {
+      final password = await _secureStorage.read(key: 'cred_$emailKey');
+      if (password != null) {
+        return {'email': emailKey, 'password': password};
+      }
+    } catch (e) {
+      debugPrint('⚠️ OfflineService: Secure Storage read failed for credentials: $e');
     }
     return null;
   }
@@ -159,8 +294,8 @@ class OfflineService {
   }
 
   bool getOfflineLoginState() {
-     if (!Hive.isBoxOpen(_authBoxName)) return false;
-     return Hive.box(_authBoxName).get('is_offline_logged_in', defaultValue: false);
+    if (!Hive.isBoxOpen(_authBoxName)) return false;
+    return Hive.box(_authBoxName).get('is_offline_logged_in', defaultValue: false);
   }
 
   /// Get the email of the offline-logged-in user.
@@ -173,8 +308,6 @@ class OfflineService {
   Future<void> clearCredentials() async {
     if (Hive.isBoxOpen(_authBoxName)) {
        final box = Hive.box(_authBoxName);
-       // Only clear session flags, NOT per-email credential caches.
-       // This allows other users' offline caches to survive.
        await box.delete('is_offline_logged_in');
        await box.delete('offline_email');
        await box.delete('cached_uid');

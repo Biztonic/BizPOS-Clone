@@ -372,7 +372,7 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Center(
         child: Container(
-          width: 360,
+          constraints: const BoxConstraints(maxWidth: 360),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E293B) : AppColors.surfaceLight,
             borderRadius: BorderRadius.circular(24),
@@ -411,8 +411,9 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
 
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                   children: [
                     // Header with back option
                     Row(
@@ -526,7 +527,8 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
                   ],
                 ),
               ),
-            ],
+            ),
+          ],
           ),
         ),
       ),

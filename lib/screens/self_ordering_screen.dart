@@ -171,8 +171,8 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppLocalizations.t(context, 'Confirm Order')),
-        content: SizedBox(
-          width: 400,
+        content: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

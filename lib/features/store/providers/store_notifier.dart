@@ -132,7 +132,7 @@ class StoreNotifier extends _$StoreNotifier {
     }
   }
 
-  Future<String> addStore(String name, String ownerEmail, {String? address, String? phone}) async {
+  Future<String> addStore(String name, String ownerEmail, {String? address, String? phone, String storeType = 'Restaurant'}) async {
     final user = FirebaseAuth.instance.currentUser;
     final email = ownerEmail.toLowerCase().trim();
 
@@ -164,7 +164,7 @@ class StoreNotifier extends _$StoreNotifier {
         owner: user?.uid ?? name,
         ownerEmail: email,
         status: 'Active',
-        storeType: 'Restaurant',
+        storeType: storeType,
         subscriptionPlan: subscriptionPlan,
         addons: addons,
         purchasedAddons: addons,

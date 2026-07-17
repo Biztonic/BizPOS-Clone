@@ -54,8 +54,8 @@ class AuthRepository {
       await _offlineService.setOfflineLoginState(false);
     } catch (e) {
       if (await _isNetworkError(e)) {
-        final cached = _offlineService.getCachedCredentials(email: email);
-        if (cached != null && cached['email'] == email.toLowerCase().trim() && cached['password'] == password) {
+        final isValid = _offlineService.verifyOfflinePassword(email, password);
+        if (isValid) {
           await _offlineService.setOfflineLoginState(true, email: email);
           return;
         }

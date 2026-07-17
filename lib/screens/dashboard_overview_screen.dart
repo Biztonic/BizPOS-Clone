@@ -538,21 +538,27 @@ class _PremiumKpiCardState extends State<_PremiumKpiCard> {
                         ],
                       ),
                       const Spacer(),
-                      Text(
-                        widget.data.value,
-                        style: AppTypography.headlineMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
-                          color: Colors.white,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          widget.data.value,
+                          style: AppTypography.headlineMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        widget.data.title.toUpperCase(),
-                        style: AppTypography.labelSmall.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white.withOpacity(0.7),
-                          letterSpacing: 1.2,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          widget.data.title.toUpperCase(),
+                          style: AppTypography.labelSmall.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white.withOpacity(0.7),
+                            letterSpacing: 1.2,
+                          ),
                         ),
                       ),
                     ],
