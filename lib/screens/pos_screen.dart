@@ -7,6 +7,7 @@ import '../core/design/components/molecules/app_empty_state.dart';
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/table_provider.dart';
 import '../features/inventory/presentation/providers/inventory_provider.dart';

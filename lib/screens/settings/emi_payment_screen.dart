@@ -7,7 +7,6 @@ import 'package:biztonic_pos/providers/dashboard_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/core/design/tokens/app_typography.dart';
-import 'package:biztonic_pos/utils/localization.dart';
 import 'package:go_router/go_router.dart';
 
 class EmiPaymentScreen extends StatefulWidget {

@@ -1888,7 +1888,7 @@ class DashboardProvider with ChangeNotifier {
     });
     
     // Refresh local hardware state
-    await _fetchStoreHardwares(request.storeId);
+    await fetchStoreHardwares();
   }
 
   Future<void> fetchEmployees({bool refresh = false}) async {
