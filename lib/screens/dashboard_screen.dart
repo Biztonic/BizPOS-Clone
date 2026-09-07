@@ -11,6 +11,7 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'settings/subscription_reminder_dialog.dart';
+import '../widgets/emi_reminder_popup.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Widget child;
@@ -31,7 +32,28 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     WidgetsBinding.instance.addPostFrameCallback((_) {
        UpdateService.checkUpdate(context);
        _checkSubscriptionReminder();
+       _checkEmiReminders();
     });
+  }
+
+  void _checkEmiReminders() {
+    final provider = Provider.of<DashboardProvider>(context, listen: false);
+    for (var hw in provider.storeHardwares) {
+      if (hw.status != 'Assigned') continue;
+      
+      final daysOverdue = DateTime.now().difference(hw.nextEmiDueDate).inDays;
+      // Trigger logic based on daysOverdue
+      if (daysOverdue >= -2) {
+        // -2 to -1 is "2 days before"
+        // 0 is "due today"
+        // >0 is "overdue"
+        // Show popup
+        showDialog(
+          context: context,
+          builder: (context) => EmiReminderPopup(hardware: hw, daysOverdue: daysOverdue),
+        );
+      }
+    }
   }
 
   @override

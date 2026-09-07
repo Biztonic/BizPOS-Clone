@@ -13,6 +13,15 @@ class SubscriptionRequest {
   final int durationInDays; // NEW
   final bool isAddonOnly; // NEW
 
+  // HARDWARE EMI & PAYMENT FIELDS
+  final String requestType; // 'software', 'hardware_emi'
+  final String? hardwareId;
+  final int? emiCount;
+  final String? paymentReference;
+  final String? receiptUrl;
+  final double? requestedAmount;
+  final String? paymentMode;
+
   SubscriptionRequest({
     required this.id,
     required this.storeId,
@@ -27,6 +36,13 @@ class SubscriptionRequest {
     this.selectedAddons = const [], // NEW
     this.durationInDays = 30, // NEW
     this.isAddonOnly = false, // NEW
+    this.requestType = 'software',
+    this.hardwareId,
+    this.emiCount,
+    this.paymentReference,
+    this.receiptUrl,
+    this.requestedAmount,
+    this.paymentMode,
   });
 
   factory SubscriptionRequest.fromMap(Map<String, dynamic> data, String id) {
@@ -44,6 +60,13 @@ class SubscriptionRequest {
       selectedAddons: List<String>.from(data['selectedAddons'] ?? []), // NEW
       durationInDays: data['durationInDays'] ?? 30, // NEW
       isAddonOnly: data['isAddonOnly'] ?? false, // NEW
+      requestType: data['requestType'] ?? 'software',
+      hardwareId: data['hardwareId'],
+      emiCount: data['emiCount'],
+      paymentReference: data['paymentReference'],
+      receiptUrl: data['receiptUrl'],
+      requestedAmount: data['requestedAmount'] != null ? (data['requestedAmount'] as num).toDouble() : null,
+      paymentMode: data['paymentMode'],
     );
   }
 
@@ -73,6 +96,13 @@ class SubscriptionRequest {
       'selectedAddons': selectedAddons, // NEW
       'durationInDays': durationInDays, // NEW
       'isAddonOnly': isAddonOnly, // NEW
+      'requestType': requestType,
+      'hardwareId': hardwareId,
+      'emiCount': emiCount,
+      'paymentReference': paymentReference,
+      'receiptUrl': receiptUrl,
+      'requestedAmount': requestedAmount,
+      'paymentMode': paymentMode,
     };
   }
 }

@@ -37,9 +37,12 @@ import '../screens/admin/release_management_screen.dart';
 import '../screens/auth/station_lock_screen.dart';
 import '../screens/admin/subscription_approval_screen.dart';
 import '../screens/admin/subscriptions_overview_screen.dart';
+import '../screens/admin/hardware_master_screen.dart';
 import '../screens/language_screen.dart';
 import '../screens/settings/biz_store_screen.dart';
 import '../screens/settings/addon_detail_screen.dart';
+import '../screens/settings/emi_payment_screen.dart';
+import '../models/store_hardware.dart';
 import '../screens/reports/unified_sales_report_screen.dart';
 import '../screens/reports/inventory_reports_screen.dart';
 import '../screens/reports/customer_reports_screen.dart';
@@ -208,6 +211,17 @@ class AppRouter {
               builder: (context, state) => const FeatureGuard(featureKey: 'inventory', child: InventoryScreen()),
             ),
             GoRoute(
+              path: '/settings/bizstore',
+              builder: (context, state) => const BizStoreScreen(),
+            ),
+            GoRoute(
+              path: '/settings/emi_payment',
+              builder: (context, state) {
+                final hardware = state.extra as StoreHardware;
+                return EmiPaymentScreen(hardware: hardware);
+              },
+            ),
+            GoRoute(
               path: '/printer',
               builder: (context, state) => const PrinterScreen(),
             ),
@@ -277,6 +291,10 @@ class AppRouter {
             GoRoute(
               path: '/admin/approvals',
               builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: SubscriptionApprovalScreen()),
+            ),
+            GoRoute(
+              path: '/admin/hardware',
+              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: HardwareMasterScreen()),
             ),
             GoRoute(
               path: '/languages',

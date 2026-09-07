@@ -116,6 +116,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/logo.jpg
+    - assets/sounds/
     - assets/flavors/standard/
     - assets/flavors/automotive/
     - assets/flavors/restaurant/

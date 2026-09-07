@@ -163,7 +163,10 @@ class SyncCollectionRegistry {
 
   /// Returns the Firestore path for a collection.
   /// All collections are now root-level.
-  static String getFirestorePath(String collection) => collection;
+  static String getFirestorePath(String collection) {
+    if (collection == employees) return users;
+    return collection;
+  }
 
   /// Returns true if this collection uses `storeId` field filtering
   /// (as opposed to document ID matching like settings).

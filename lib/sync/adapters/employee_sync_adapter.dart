@@ -9,6 +9,16 @@ class EmployeeSyncAdapter extends SyncAdapter {
   String get collection => SyncCollectionRegistry.employees;
 
   @override
+  Query buildQuery(FirebaseFirestore db, String storeId, DateTime? lastSyncTime) {
+    // Cloud employees are stored in 'users' collection
+    Query query = db.collection(SyncCollectionRegistry.users).where('storeId', isEqualTo: storeId);
+    if (lastSyncTime != null) {
+      query = query.where('updatedAt', isGreaterThan: Timestamp.fromDate(lastSyncTime));
+    }
+    return query;
+  }
+
+  @override
   Future<void> insertFromCloud(
     Map<String, dynamic> data,
     String docId,

@@ -156,7 +156,10 @@ class StatsEngine {
 
   Future<int> _getCloudCount(String collection, String storeId) async {
     try {
-      Query query = _db.collection(collection).where('storeId', isEqualTo: storeId);
+      // Cloud employees are stored in the 'users' collection
+      final queryCollection = collection == SyncCollectionRegistry.employees ? SyncCollectionRegistry.users : collection;
+      
+      Query query = _db.collection(queryCollection).where('storeId', isEqualTo: storeId);
       final snapshot = await query.get();
       
       // Filter out logically deleted docs if they are returned

@@ -70,6 +70,13 @@ class AdminDashboardScreen extends StatelessWidget {
         gradient: const [Color(0xFF8B5CF6), Color(0xFFA855F7)],
       ),
       _AdminMenuItem(
+        icon: Icons.devices_other,
+        label: 'Hardware Master',
+        description: 'Manage connected hardware devices',
+        routePath: '/admin/hardware',
+        gradient: const [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+      ),
+      _AdminMenuItem(
         icon: Icons.account_balance_wallet_rounded,
         label: 'Subscriptions',
         description: 'View revenue, active plans and history',

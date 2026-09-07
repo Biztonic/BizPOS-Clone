@@ -222,31 +222,62 @@ class _POSScreenState extends State<POSScreen> {
           ),
         ],
       ),
-      rightPanel: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).shadowColor.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(-4, 0),
+      rightPanel: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).shadowColor.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(-4, 0),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Selector3<BillingProvider, DashboardProvider, InventoryProvider, _PosCartData>(
-          selector: (_, b, d, i) => _PosCartData(
-            cartItemCount: b.cart.length,
-            cartTotalQuantity: b.cart.values.fold(0, (a, b) => a + (b as int? ?? 0)),
-            activeStoreId: d.activeStoreId ?? 'unknown',
-            inventoryLength: i.allItems.length,
+            child: Selector3<BillingProvider, DashboardProvider, InventoryProvider, _PosCartData>(
+              selector: (_, b, d, i) => _PosCartData(
+                cartItemCount: b.cart.length,
+                cartTotalQuantity: b.cart.values.fold(0, (a, b) => a + (b as int? ?? 0)),
+                activeStoreId: d.activeStoreId ?? 'unknown',
+                inventoryLength: i.allItems.length,
+              ),
+              builder: (context, data, _) {
+                final billingProvider = Provider.of<BillingProvider>(context, listen: false);
+                final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+                final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
+                return _buildCartSection(billingProvider, dashboardProvider, inventoryProvider);
+              },
+            ),
           ),
-          builder: (context, data, _) {
-            final billingProvider = Provider.of<BillingProvider>(context, listen: false);
-            final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
-            final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
-            return _buildCartSection(billingProvider, dashboardProvider, inventoryProvider);
-          },
-        ),
+          if (context.select<DashboardProvider, bool>((p) => p.isEmiLocked))
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.8),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.lock, color: Colors.redAccent, size: 64),
+                    const SizedBox(height: 16),
+                    const Text("⚠ EMI Payment Overdue", style: TextStyle(color: Colors.redAccent, fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    const Text("Your hardware EMI is overdue.\nBilling has been temporarily disabled.", style: TextStyle(color: Colors.white, fontSize: 16), textAlign: TextAlign.center),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: () => context.go('/settings/bizstore'), // Navigates to BizStore to trigger popup or pay
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      ),
+                      child: const Text("Pay EMI Now"),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
       bottomBar: isMobile
           ? Selector3<BillingProvider, DashboardProvider, InventoryProvider, _PosCartData>(

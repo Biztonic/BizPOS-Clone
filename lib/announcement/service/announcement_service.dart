@@ -137,7 +137,12 @@ class AnnouncementService {
       }
 
       // Trigger system touch sound on mobile devices
-      SystemSound.play(SystemSoundType.click);
+      HapticFeedback.lightImpact();
+      String asset = 'assets/sounds/click.wav';
+      if (sound == '6') asset = 'assets/sounds/beep.wav';
+      else if (sound == '11') asset = 'assets/sounds/chime.wav';
+      else if (sound != '1') asset = 'assets/sounds/beep.wav'; // fallback to beep for custom profiles
+      _executor.audioEngine.playSound(asset, _settings.volume * 0.45);
     } catch (_) {}
   }
 
@@ -149,21 +154,29 @@ class AnnouncementService {
       final audio = MarketingAudio(id: id, name: name, bytes: bytes);
       _marketingAudios.add(audio);
 
-      final mBox = Hive.box('marketing_audio');
+      final mBox = Hive.isBoxOpen('marketing_audio') 
+          ? Hive.box('marketing_audio') 
+          : await Hive.openBox('marketing_audio');
       await mBox.put(id, audio.toMap());
 
       restartMarketingScheduler();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('❌ AnnouncementService: Failed to add marketing audio: $e');
+    }
   }
 
   Future<void> deleteMarketingAudio(String id) async {
     try {
       _marketingAudios.removeWhere((audio) => audio.id == id);
-      final mBox = Hive.box('marketing_audio');
+      final mBox = Hive.isBoxOpen('marketing_audio') 
+          ? Hive.box('marketing_audio') 
+          : await Hive.openBox('marketing_audio');
       await mBox.delete(id);
 
       restartMarketingScheduler();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('❌ AnnouncementService: Failed to delete marketing audio: $e');
+    }
   }
 
   void restartMarketingScheduler() {

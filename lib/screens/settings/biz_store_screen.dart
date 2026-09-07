@@ -417,6 +417,11 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           child: _buildModernPlanHeader(activeStore, isStandard, isSuperAdmin, isDark, hasPending),
         ),
 
+        // Active Hardware EMIs
+        SliverToBoxAdapter(
+          child: _buildHardwareEMISection(provider, isDark),
+        ),
+
         // Featured Hero Banner
         SliverToBoxAdapter(
           child: _buildFeaturedHero(context, isDark),
@@ -713,6 +718,56 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHardwareEMISection(DashboardProvider provider, bool isDark) {
+    if (provider.storeHardwares.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Hardware & EMI Status",
+            style: AppTypography.titleMedium.copyWith(color: isDark ? Colors.white : Colors.black87),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ...provider.storeHardwares.map((hw) {
+            final buyback = hw.calculateBuybackValue(DateTime.now());
+            return Card(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Hardware ID: ${hw.hardwareId}", style: AppTypography.titleSmall.copyWith(color: isDark ? Colors.white : Colors.black87)),
+                        Text(hw.status, style: TextStyle(color: hw.status == 'Assigned' ? AppColors.success : AppColors.error)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text("Remaining EMIs: ${hw.totalEmis - hw.emisPaid} / ${hw.totalEmis}", style: AppTypography.bodySmall.copyWith(color: isDark ? Colors.white70 : Colors.black54)),
+                    Text("Remaining Amount: ₹${hw.remainingAmount}", style: AppTypography.bodySmall.copyWith(color: isDark ? Colors.white70 : Colors.black54)),
+                    Text("Next Due: ${hw.nextEmiDueDate.toString().split(' ')[0]}", style: AppTypography.bodySmall.copyWith(color: isDark ? Colors.white70 : Colors.black54)),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                      child: Text("Buyback Guarantee Value: ₹${buyback.toStringAsFixed(2)}", style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
       ),
     );
   }

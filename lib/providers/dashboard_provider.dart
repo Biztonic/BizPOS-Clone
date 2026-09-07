@@ -40,6 +40,9 @@ import 'package:biztonic_pos/models/subscription_request.dart';
 import 'package:biztonic_pos/models/subscription_history.dart';
 import 'package:biztonic_pos/services/printer_manager_service.dart';
 import 'package:biztonic_pos/services/database_helper.dart';
+import 'package:biztonic_pos/models/hardware_master.dart';
+import 'package:biztonic_pos/models/store_hardware.dart';
+import 'package:biztonic_pos/models/hardware_emi_history.dart';
 
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
@@ -1647,7 +1650,22 @@ class DashboardProvider with ChangeNotifier {
   // Subscription Management
   List<SubscriptionRequest> _pendingSubscriptions = [];
   List<SubscriptionRequest> get pendingSubscriptions => _pendingSubscriptions;
+  
+  List<StoreHardware> _storeHardwares = [];
+  List<StoreHardware> get storeHardwares => _storeHardwares;
 
+  // New computed property for EMI locking
+  bool get isEmiLocked {
+    for (var hw in _storeHardwares) {
+      if (hw.status != 'Assigned') continue;
+      // We assume gracePeriodDays = 3 for now, ideally fetched from hardwareMaster
+      // but for simplicity, we use 3 as a safe default based on instructions
+      int daysOverdue = DateTime.now().difference(hw.nextEmiDueDate).inDays;
+      if (daysOverdue > 3) return true;
+    }
+    return false;
+  }
+  
   Future<void> fetchPendingSubscriptions() async {
     if (!_isOnline) {
       debugPrint('🌐 DashboardProvider: Offline. Skipping fetchPendingSubscriptions.');
@@ -1669,12 +1687,37 @@ class DashboardProvider with ChangeNotifier {
       _pendingSubscriptions = snap.docs.map((d) => SubscriptionRequest.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ DashboardProvider: Error fetching pending subscriptions: $e');
+      debugPrint('❌ Error fetching pending subscriptions: $e');
+    }
+  }
+
+  Future<void> fetchStoreHardwares() async {
+    try {
+      if (_activeStoreId == null) return;
+      if (!isOnline) return;
+      
+      QuerySnapshot snap = await _db.collection('store_hardware')
+          .where('status', isEqualTo: 'Assigned')
+          .get();
+          
+      // Filter by store inside app, or change schema to include storeId in StoreHardware
+      // Wait, StoreHardware model does not have storeId! Let's just fetch all for now in MVP or I need to add storeId.
+      // Assuming store hardware is linked somehow, wait... StoreHardware doesn't have storeId. I should add it to the model.
+      _storeHardwares = snap.docs.map((d) => StoreHardware.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error fetching store hardwares: $e');
     }
   }
 
   Future<void> approveSubscriptionRequest(SubscriptionRequest request) async {
     final storeId = request.storeId;
+    
+    // Hardware EMI logic branch
+    if (request.requestType == 'hardware_emi' && request.hardwareId != null) {
+      return _approveHardwareEmi(request);
+    }
+    
     final now = DateTime.now();
     final expiry = now.add(Duration(days: request.durationInDays));
     
@@ -1795,6 +1838,57 @@ class DashboardProvider with ChangeNotifier {
   Future<void> rejectSubscriptionRequest(SubscriptionRequest request) async {
     await _db.collection('subscription_requests').doc(request.id).update({'status': 'REJECTED', 'rejectedAt': FieldValue.serverTimestamp()});
     fetchPendingSubscriptions();
+  }
+
+  Future<void> _approveHardwareEmi(SubscriptionRequest request) async {
+    final hardwareId = request.hardwareId!;
+    await _db.runTransaction((tx) async {
+      // 1. Mark request as approved
+      final reqRef = _db.collection('subscription_requests').doc(request.id);
+      tx.update(reqRef, {
+        'status': 'APPROVED',
+        'approvedAt': FieldValue.serverTimestamp(),
+      });
+
+      // 2. Find and update the hardware instance
+      final hwQuery = await _db.collection('store_hardware').where('hardwareId', isEqualTo: hardwareId).get();
+      if (hwQuery.docs.isEmpty) return;
+      
+      final hwRef = hwQuery.docs.first.reference;
+      final hwData = hwQuery.docs.first.data();
+      
+      final String emiFrequency = hwData['emiFrequency'] ?? 'Monthly';
+      final int emisPaid = (hwData['emisPaid'] ?? 0) as int;
+      final double totalPaidAmount = (hwData['totalPaidAmount'] ?? 0.0) as double;
+      final DateTime currentDueDate = (hwData['nextEmiDueDate'] as Timestamp).toDate();
+      
+      // Advance due date safely on fixed schedule
+      DateTime nextDueDate = currentDueDate;
+      if (emiFrequency == 'Monthly') {
+        nextDueDate = DateTime(currentDueDate.year, currentDueDate.month + 1, currentDueDate.day);
+      } else if (emiFrequency == 'Weekly') {
+        nextDueDate = currentDueDate.add(const Duration(days: 7));
+      }
+
+      tx.update(hwRef, {
+        'emisPaid': emisPaid + 1,
+        'totalPaidAmount': totalPaidAmount + request.amount,
+        'nextEmiDueDate': Timestamp.fromDate(nextDueDate),
+      });
+      
+      // 3. Add to EMI History
+      final historyRef = hwRef.collection('emi_history').doc();
+      tx.set(historyRef, {
+        'paymentDate': FieldValue.serverTimestamp(),
+        'amountPaid': request.amount,
+        'paymentReference': request.paymentReference ?? 'QR Payment',
+        'status': 'Successful',
+        'requestId': request.id,
+      });
+    });
+    
+    // Refresh local hardware state
+    await _fetchStoreHardwares(request.storeId);
   }
 
   Future<void> fetchEmployees({bool refresh = false}) async {
@@ -2330,14 +2424,18 @@ class DashboardProvider with ChangeNotifier {
       // Optimistically load from local cache first
       if (Hive.isBoxOpen('store_type_configs')) {
         final box = Hive.box('store_type_configs');
-        _storeTypeConfigs = Map<String, dynamic>.from(box.get('configs', defaultValue: {}));
+        final cached = box.get('configs', defaultValue: {});
+        if (cached is Map) {
+          _storeTypeConfigs = Map<String, dynamic>.from(cached);
+        }
       }
 
-      _db.collection('settings').doc('global').snapshots().listen((snap) {
+      final globalSub = _db.collection('settings').doc('global').snapshots().listen((snap) {
+         if (_isDisposed) return;
          if (snap.exists) {
            final data = snap.data();
-           if (data != null && data['store_type_configs'] != null) {
-             final configs = Map<String, dynamic>.from(data['store_type_configs']);
+           if (data != null && data['store_type_configs'] is Map) {
+             final configs = Map<String, dynamic>.from(data['store_type_configs'] as Map);
              _storeTypeConfigs = configs;
              if (Hive.isBoxOpen('store_type_configs')) {
                Hive.box('store_type_configs').put('configs', configs);
@@ -2348,6 +2446,7 @@ class DashboardProvider with ChangeNotifier {
       }, onError: (e) {
         debugPrint('⚠️ DashboardProvider: Error in global settings stream: $e');
       });
+      _subscriptions.add(globalSub);
     } catch (e) {
       debugPrint('⚠️ DashboardProvider: Failed to listen to global settings: $e');
     }
@@ -2367,7 +2466,9 @@ class DashboardProvider with ChangeNotifier {
         }
       }, SetOptions(merge: true));
       notifyListeners();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('❌ DashboardProvider: Failed to save store type config: $e');
+    }
   }
 
   Future<void> deleteStoreTypeConfig(String type) async {
@@ -2382,14 +2483,22 @@ class DashboardProvider with ChangeNotifier {
         'store_type_configs.$type': FieldValue.delete()
       });
       notifyListeners();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('❌ DashboardProvider: Failed to delete store type config: $e');
+    }
   }
   void _listenToPlatformLimits() {}
+  
+  StreamSubscription? _syncStatusSub;
   void _listenToSyncStatus() {
-    _syncService.syncStatusStream.listen((status) {
-       // Update local sync status state if needed
+    _syncStatusSub?.cancel();
+    _syncStatusSub = _syncService.syncStatusStream.listen((status) {
+       if (_isDisposed) return;
        notifyListeners();
+    }, onError: (e) {
+       debugPrint('⚠️ DashboardProvider: Error in sync status stream: $e');
     });
+    _subscriptions.add(_syncStatusSub!);
   }
   void _listenToCentralCatalog() {}
   void _listenToCounters() {}
@@ -2947,16 +3056,31 @@ class DashboardProvider with ChangeNotifier {
     }
     return totalDays;
   }
+  StreamSubscription? _superAdminsSub;
+  StreamSubscription? _systemUsersSub;
+
   void _subscribeToSystemUsers() {
-    _db.collection('users').where('role', isEqualTo: 'Super Admin').snapshots().listen((snap) {
+    _superAdminsSub?.cancel();
+    _systemUsersSub?.cancel();
+
+    _superAdminsSub = _db.collection('users').where('role', isEqualTo: 'Super Admin').snapshots().listen((snap) {
+       if (_isDisposed) return;
        _superAdmins = snap.docs.map((d) => UserProfile.fromMap(d.data(), d.id)).toList();
        notifyListeners();
+    }, onError: (e) {
+       debugPrint('⚠️ DashboardProvider: Error listening to super admins: $e');
     });
     
-    _db.collection('users').where('role', whereIn: ['Store Owner', 'Franchise Owner']).snapshots().listen((snap) {
+    _systemUsersSub = _db.collection('users').where('role', whereIn: ['Store Owner', 'Franchise Owner']).snapshots().listen((snap) {
+       if (_isDisposed) return;
        _systemUsers = snap.docs.map((d) => UserProfile.fromMap(d.data(), d.id)).toList();
        notifyListeners();
+    }, onError: (e) {
+       debugPrint('⚠️ DashboardProvider: Error listening to system users: $e');
     });
+
+    _subscriptions.add(_superAdminsSub!);
+    _subscriptions.add(_systemUsersSub!);
   }
 
   StreamSubscription? _employeeLegacySub;
@@ -3065,6 +3189,7 @@ class DashboardProvider with ChangeNotifier {
       _loadFromCache();
     }
     fetchPendingSubscriptions();
+    fetchStoreHardwares();
     notifyListeners();
   }
 

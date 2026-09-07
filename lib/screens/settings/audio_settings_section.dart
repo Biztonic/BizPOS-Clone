@@ -139,10 +139,9 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Slider(
-                  value: _settings.volume,
+                  value: _settings.volume.clamp(0.0, 1.0),
                   min: 0.0,
                   max: 1.0,
-                  divisions: 10,
                   activeColor: AppColors.adaptivePrimary(context),
                   onChanged: _settings.enableVoice || _settings.enableSounds
                       ? (val) {
@@ -159,10 +158,9 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Slider(
-                  value: _settings.speechRate,
+                  value: _settings.speechRate.clamp(0.5, 2.0),
                   min: 0.5,
                   max: 2.0,
-                  divisions: 6,
                   activeColor: AppColors.adaptivePrimary(context),
                   onChanged: _settings.enableVoice
                       ? (val) {
@@ -189,7 +187,7 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                     labelText: 'Voice Language',
                     border: OutlineInputBorder(),
                   ),
-                  value: _settings.language,
+                  value: ['en', 'hi', 'mr'].contains(_settings.language) ? _settings.language : 'en',
                   items: const [
                     DropdownMenuItem(value: 'en', child: Text('English (US)')),
                     DropdownMenuItem(value: 'hi', child: Text('हिन्दी (Hindi)')),
@@ -210,7 +208,7 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                     labelText: 'Announcement Filter Profile',
                     border: OutlineInputBorder(),
                   ),
-                  value: _settings.profile,
+                  value: ['Silent', 'Basic', 'Business', 'Verbose'].contains(_settings.profile) ? _settings.profile : 'Business',
                   items: const [
                     DropdownMenuItem(value: 'Silent', child: Text('Silent (Suppress all voice)')),
                     DropdownMenuItem(
@@ -237,10 +235,12 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                   ),
                   value: (() {
                     final val = _settings.interactionSound;
-                    if (val == 'click') return '1';
-                    if (val == 'beep') return '6';
-                    if (val == 'chime') return '11';
-                    return val;
+                    var mapped = val;
+                    if (val == 'click') mapped = '1';
+                    if (val == 'beep') mapped = '6';
+                    if (val == 'chime') mapped = '11';
+                    final valid = ['none', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20'];
+                    return valid.contains(mapped) ? mapped : '1';
                   })(),
                   items: const [
                     DropdownMenuItem(value: 'none', child: Text('None (Muted)')),
@@ -299,7 +299,7 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                     labelText: 'Marketing Play Mode',
                     border: OutlineInputBorder(),
                   ),
-                  value: _settings.marketingPlayMode,
+                  value: ['none', 'loop', 'interval'].contains(_settings.marketingPlayMode) ? _settings.marketingPlayMode : 'none',
                   items: const [
                     DropdownMenuItem(value: 'none', child: Text('Disabled (Muted)')),
                     DropdownMenuItem(value: 'loop', child: Text('Continuous Loop (Rotation)')),
@@ -321,7 +321,7 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                       labelText: 'Play Interval',
                       border: OutlineInputBorder(),
                     ),
-                    value: _settings.marketingIntervalSeconds,
+                    value: [60, 300, 600, 1800].contains(_settings.marketingIntervalSeconds) ? _settings.marketingIntervalSeconds : 300,
                     items: const [
                       DropdownMenuItem(value: 60, child: Text('Every 1 Minute')),
                       DropdownMenuItem(value: 300, child: Text('Every 5 Minutes (Default)')),
