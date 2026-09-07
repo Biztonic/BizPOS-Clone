@@ -1,5 +1,6 @@
 import 'dart:math';
 import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_typography.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
