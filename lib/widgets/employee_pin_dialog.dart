@@ -13,6 +13,7 @@ import '../core/design/tokens/app_typography.dart';
 import '../providers/dashboard_provider.dart';
 import '../utils/pin_utils.dart';
 import '../services/firestore_helper.dart';
+import '../announcement/service/announcement_service.dart';
 
 class EmployeePinDialog extends StatefulWidget {
   final Map<String, dynamic>? employee;
@@ -162,6 +163,7 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
   }
 
   void _handleNumberPress(String value) {
+    AnnouncementService().playKeypadSound();
     if (_pinController.text.length < 4) {
       setState(() {
         _pinController.text += value;
@@ -174,6 +176,7 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
   }
 
   void _handleBackspace() {
+    AnnouncementService().playKeypadSound();
     if (_pinController.text.isNotEmpty) {
       setState(() {
         _pinController.text = _pinController.text.substring(0, _pinController.text.length - 1);
@@ -183,6 +186,7 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
   }
 
   void _handleClear() {
+    AnnouncementService().playKeypadSound();
     setState(() {
       _pinController.clear();
       _errorMessage = null;
@@ -314,6 +318,7 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
 
       throw AppLocalizations.t(context, 'Employee profile not found');
     } catch (e) {
+      AnnouncementService().playAlertSound();
       if (mounted) {
         setState(() {
           _errorMessage = e.toString();
@@ -327,6 +332,7 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
   }
 
   Future<void> _finalizeLogin(String uid, Map userData) async {
+    AnnouncementService().playSuccessSound();
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     provider.setLoading(true);
 

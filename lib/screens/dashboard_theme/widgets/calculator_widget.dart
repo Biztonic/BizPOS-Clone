@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/dashboard_provider.dart';
 import 'package:math_expressions/math_expressions.dart' as math;
 import '../../../utils/car_dashboard_theme.dart';
+import '../../../announcement/service/announcement_service.dart';
 
 class CalculatorWidget extends StatefulWidget {
   final bool isDarkMode;
@@ -126,6 +127,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
 
   // --- CALCULATOR LOGIC ---
   void _onBtnTap(String text) {
+     AnnouncementService().playKeypadSound();
      setState(() {
         if (_input == '0' && text != '.') _input = '';
         _input += text;
@@ -133,6 +135,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
   }
 
   void _clear() {
+     AnnouncementService().playRemoveQtySound();
      setState(() {
         _input = '0';
         _result = '';
@@ -140,6 +143,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
   }
 
   void _delete() {
+     AnnouncementService().playKeypadSound();
      setState(() {
         if (_input.isNotEmpty) {
            _input = _input.substring(0, _input.length - 1);
@@ -149,6 +153,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
   }
 
   void _insertValue(String val) {
+     AnnouncementService().playKeypadSound();
      setState(() {
         if (_input == '0') _input = '';
         _input += val;
@@ -180,6 +185,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
        math.ContextModel cm = math.ContextModel();
        double eval = exp.evaluate(math.EvaluationType.REAL, cm);
        
+       AnnouncementService().playSuccessSound();
        setState(() {
           _result = _input;
           if (eval % 1 == 0) {
@@ -196,6 +202,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
           if (_input.endsWith('.0')) _input = _input.substring(0, _input.length - 2);
        });
      } catch (e) {
+       AnnouncementService().playAlertSound();
        setState(() {
           _result = "Error";
        });

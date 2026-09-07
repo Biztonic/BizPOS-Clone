@@ -6,7 +6,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../models/announcement.dart';
 import '../models/announcement_type.dart';
 import '../models/announcement_log.dart';
 import '../models/marketing_audio.dart';
@@ -22,6 +21,16 @@ import '../engines/haptic_engine.dart';
 import '../engines/flutter_audio_engine.dart';
 import '../engines/flutter_tts_engine.dart';
 import '../engines/web_audio_helper.dart' if (dart.library.js) '../engines/web_audio_helper_web.dart';
+
+enum PosTouchAction {
+  tap,        // Standard UI navigation, tabs, dialog buttons, card click
+  scanItem,   // High-tech barcode scan blip
+  addQty,     // Item added to cart / quantity incremented (rising chime)
+  removeQty,  // Item removed / quantity decremented / cart cleared (descending pop)
+  keypad,     // PIN pad / numeric keypad / calculator button (tactile switch)
+  success,    // Checkout / payment / login / operation successful (major chord)
+  alert,      // Error / invalid PIN / warning / out of stock (alert pip)
+}
 
 class AnnouncementService {
   static final AnnouncementService _instance = AnnouncementService._internal();
@@ -40,6 +49,10 @@ class AnnouncementService {
   final List<AnnouncementLog> _logs = [];
   final Map<AnnouncementType, DateTime> _lastTriggered = {};
   
+  // Touch action audio tracking & debouncing
+  Timer? _pendingTapTimer;
+  DateTime _lastActionTime = DateTime.fromMillisecondsSinceEpoch(0);
+
   // Local marketing audio storage
   final List<MarketingAudio> _marketingAudios = [];
   List<MarketingAudio> get marketingAudios => List.unmodifiable(_marketingAudios);
@@ -125,24 +138,98 @@ class AnnouncementService {
     }
   }
 
+  /// Play distinct sound and coordinated tactile feedback for specific user touch actions.
+  void playActionSound(PosTouchAction action) {
+    try {
+      if (!_settings.enableSounds) return;
+      _pendingTapTimer?.cancel();
+      _lastActionTime = DateTime.now();
+
+      String asset;
+      double volMultiplier;
+
+      switch (action) {
+        case PosTouchAction.tap:
+          asset = 'assets/sounds/click.wav';
+          if (_settings.interactionSound == '6') {
+            asset = 'assets/sounds/beep.wav';
+          } else if (_settings.interactionSound == '11') {
+            asset = 'assets/sounds/chime.wav';
+          }
+          volMultiplier = 0.40;
+          HapticFeedback.selectionClick();
+          break;
+        case PosTouchAction.scanItem:
+          asset = 'assets/sounds/scan.wav';
+          volMultiplier = 0.70;
+          HapticFeedback.mediumImpact();
+          break;
+        case PosTouchAction.addQty:
+          asset = 'assets/sounds/add.wav';
+          volMultiplier = 0.60;
+          HapticFeedback.lightImpact();
+          break;
+        case PosTouchAction.removeQty:
+          asset = 'assets/sounds/delete.wav';
+          volMultiplier = 0.50;
+          HapticFeedback.mediumImpact();
+          break;
+        case PosTouchAction.keypad:
+          asset = 'assets/sounds/keypad.wav';
+          volMultiplier = 0.45;
+          HapticFeedback.lightImpact();
+          break;
+        case PosTouchAction.success:
+          asset = 'assets/sounds/success.wav';
+          volMultiplier = 0.80;
+          HapticFeedback.heavyImpact();
+          break;
+        case PosTouchAction.alert:
+          asset = 'assets/sounds/alert.wav';
+          volMultiplier = 0.65;
+          HapticFeedback.vibrate();
+          break;
+      }
+
+      final volume = (_settings.volume * volMultiplier).clamp(0.0, 1.0);
+
+      if (kIsWeb) {
+        playWebSynthSound(asset, volume);
+        return;
+      }
+
+      _executor.audioEngine.playSound(asset, volume);
+    } catch (_) {}
+  }
+
+  void playTapSound() => playActionSound(PosTouchAction.tap);
+  void playScanSound() => playActionSound(PosTouchAction.scanItem);
+  void playAddQtySound() => playActionSound(PosTouchAction.addQty);
+  void playRemoveQtySound() => playActionSound(PosTouchAction.removeQty);
+  void playKeypadSound() => playActionSound(PosTouchAction.keypad);
+  void playSuccessSound() => playActionSound(PosTouchAction.success);
+  void playAlertSound() => playActionSound(PosTouchAction.alert);
+
+  /// Called on global pointer down in app.dart.
+  /// Debounced slightly so specialized action buttons play their unique sound cleanly.
   void playInteractionSound() {
     try {
       if (!_settings.enableSounds) return;
       final sound = _settings.interactionSound;
       if (sound == 'none') return;
 
-      if (kIsWeb) {
-        playWebBeep(sound, _settings.volume * 0.45); // Louder interaction volume
+      // Suppress generic tap sound if an action sound was played recently
+      if (DateTime.now().difference(_lastActionTime).inMilliseconds < 120) {
         return;
       }
 
-      // Trigger system touch sound on mobile devices
-      HapticFeedback.lightImpact();
-      String asset = 'assets/sounds/click.wav';
-      if (sound == '6') asset = 'assets/sounds/beep.wav';
-      else if (sound == '11') asset = 'assets/sounds/chime.wav';
-      else if (sound != '1') asset = 'assets/sounds/beep.wav'; // fallback to beep for custom profiles
-      _executor.audioEngine.playSound(asset, _settings.volume * 0.45);
+      _pendingTapTimer?.cancel();
+      _pendingTapTimer = Timer(const Duration(milliseconds: 40), () {
+        if (DateTime.now().difference(_lastActionTime).inMilliseconds < 120) {
+          return;
+        }
+        playActionSound(PosTouchAction.tap);
+      });
     } catch (_) {}
   }
 

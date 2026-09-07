@@ -27,7 +27,7 @@ class MockVoiceEngine implements VoiceEngine {
   bool isStopped = false;
 
   @override
-  Future<void> speak(String text, {double? volume, double? rate, String? lang}) async {
+  Future<void> speak(String text, {double volume = 1.0, double rate = 1.0, String lang = 'en', String? englishFallback}) async {
     spokenTexts.add(text);
   }
 
@@ -149,6 +149,17 @@ void main() {
 
       // Verify that announcements were merged
       expect(receivedLogs.any((l) => l.type == AnnouncementType.itemAdded), true);
+    });
+
+    test('PosTouchAction enum and action sounds coverage', () {
+      expect(PosTouchAction.values.length, 7);
+      expect(PosTouchAction.values, contains(PosTouchAction.tap));
+      expect(PosTouchAction.values, contains(PosTouchAction.scanItem));
+      expect(PosTouchAction.values, contains(PosTouchAction.addQty));
+      expect(PosTouchAction.values, contains(PosTouchAction.removeQty));
+      expect(PosTouchAction.values, contains(PosTouchAction.keypad));
+      expect(PosTouchAction.values, contains(PosTouchAction.success));
+      expect(PosTouchAction.values, contains(PosTouchAction.alert));
     });
   });
 }

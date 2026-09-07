@@ -277,16 +277,24 @@ class AnnouncementBuilder {
   String? _getSoundAssetForType(AnnouncementType type) {
     switch (type) {
       case AnnouncementType.itemAdded:
-        return 'assets/sounds/item_added.mp3';
+        return 'assets/sounds/add.wav';
+      case AnnouncementType.itemRemoved:
+        return 'assets/sounds/delete.wav';
       case AnnouncementType.paymentSuccess:
-        return 'assets/sounds/payment_success.mp3';
+        return 'assets/sounds/success.wav';
       case AnnouncementType.paymentFailed:
-        return 'assets/sounds/payment_failed.mp3';
       case AnnouncementType.printerDisconnected:
       case AnnouncementType.offline:
-        return 'assets/sounds/warning.mp3';
+      case AnnouncementType.outOfStock:
+      case AnnouncementType.stockLow:
+        return 'assets/sounds/alert.wav';
+      case AnnouncementType.printerConnected:
+      case AnnouncementType.online:
+      case AnnouncementType.syncCompleted:
+      case AnnouncementType.loginSuccess:
+        return 'assets/sounds/chime.wav';
       default:
-        return 'assets/sounds/notification.mp3';
+        return 'assets/sounds/beep.wav';
     }
   }
 }

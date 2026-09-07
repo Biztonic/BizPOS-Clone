@@ -15,6 +15,7 @@ import 'package:flutter/foundation.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
+import 'package:biztonic_pos/announcement/service/announcement_service.dart';
 
 import '../../domain/entities/order_entity.dart';
 import '../../domain/repositories/billing_repository.dart';
@@ -72,6 +73,7 @@ class BillingProvider with ChangeNotifier {
   void clearCart() {
     _cart.clear();
     notifyListeners();
+    AnnouncementService().playRemoveQtySound();
   }
 
   double calculateCartTotal(List<dynamic> inventory) {

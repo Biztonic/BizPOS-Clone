@@ -1,7 +1,6 @@
 import '../models/announcement.dart';
 import '../models/announcement_type.dart';
 import '../models/announcement_priority.dart';
-import '../settings/announcement_settings.dart';
 
 class AnnouncementPolicy {
   // Cooldown durations for spammy items

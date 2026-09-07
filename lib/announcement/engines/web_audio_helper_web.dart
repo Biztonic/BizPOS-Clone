@@ -133,17 +133,40 @@ void playWebSynthSound(String assetPath, double volume) {
     double duration = 0.15;
     double freq1 = 800;
     double freq2 = 0; 
+    String oscType = "sine";
 
-    if (assetPath.contains('payment_success')) {
+    if (assetPath.contains('success') || assetPath.contains('chime')) {
       freq1 = 523.25; 
       freq2 = 659.25; 
-      duration = 0.4;
-    } else if (assetPath.contains('payment_failed') || assetPath.contains('warning')) {
-      freq1 = 300;
-      duration = 0.3;
-    } else if (assetPath.contains('item_added')) {
-      freq1 = 987.77; 
-      duration = 0.08;
+      duration = 0.35;
+      oscType = "sine";
+    } else if (assetPath.contains('alert') || assetPath.contains('warning') || assetPath.contains('failed')) {
+      freq1 = 440;
+      freq2 = 330;
+      duration = 0.25;
+      oscType = "triangle";
+    } else if (assetPath.contains('add')) {
+      freq1 = 700;
+      freq2 = 1050;
+      duration = 0.10;
+      oscType = "sine";
+    } else if (assetPath.contains('delete') || assetPath.contains('removed')) {
+      freq1 = 500;
+      freq2 = 300;
+      duration = 0.10;
+      oscType = "triangle";
+    } else if (assetPath.contains('scan') || assetPath.contains('beep')) {
+      freq1 = 1760;
+      duration = 0.06;
+      oscType = "sine";
+    } else if (assetPath.contains('keypad')) {
+      freq1 = 1400;
+      duration = 0.025;
+      oscType = "square";
+    } else if (assetPath.contains('click') || assetPath.contains('tap')) {
+      freq1 = 1200;
+      duration = 0.035;
+      oscType = "square";
     }
 
     js.context.callMethod('eval', [
@@ -156,10 +179,11 @@ void playWebSynthSound(String assetPath, double volume) {
         var playTone = function(freq, time, dur) {
           var osc = ctx.createOscillator();
           var gain = ctx.createGain();
+          osc.type = "$oscType";
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.frequency.setValueAtTime(freq, time);
-          gain.gain.setValueAtTime($volume * 0.40, time); // Louder alert sounds
+          gain.gain.setValueAtTime($volume * 0.40, time);
           gain.gain.exponentialRampToValueAtTime(0.01, time + dur);
           osc.start(time);
           osc.stop(time + dur);

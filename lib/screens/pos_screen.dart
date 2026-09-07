@@ -23,6 +23,7 @@ import '../widgets/demo_target.dart'; // Import DemoTarget
 import '../models/table_model.dart'; // NEW
 // NEW
 import '../services/printer_manager_service.dart';
+import '../announcement/service/announcement_service.dart';
 import '../utils/theme.dart';
 import '../core/design/tokens/app_typography.dart';
 import '../core/design/components/atoms/app_text_field.dart';
@@ -145,6 +146,7 @@ class _POSScreenState extends State<POSScreen> {
     }
 
     if (foundEntity != null) {
+      AnnouncementService().playScanSound();
       billingProvider.addToCart(foundEntity.id);
       _searchController.clear();
       inventoryProvider.setSearchQuery('');
@@ -168,6 +170,7 @@ class _POSScreenState extends State<POSScreen> {
     }
 
     if (foundItem != null) {
+      AnnouncementService().playScanSound();
       billingProvider.addToCart(foundItem.id);
       _searchController.clear();
       inventoryProvider.setSearchQuery('');
@@ -178,6 +181,7 @@ class _POSScreenState extends State<POSScreen> {
       return;
     }
 
+    AnnouncementService().playAlertSound();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text("Item not found for barcode / SKU: $barcode"),
       backgroundColor: AppColors.adaptiveError(context),

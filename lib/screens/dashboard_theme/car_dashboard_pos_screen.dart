@@ -24,6 +24,7 @@ import '../../services/scanner_service.dart';
 import '../../services/printer_manager_service.dart';
 import '../../core/events/event_bus.dart';
 import '../../core/events/app_events.dart';
+import '../../announcement/service/announcement_service.dart';
 
 class CarDashboardPOSScreen extends StatefulWidget {
   const CarDashboardPOSScreen({super.key});
@@ -139,12 +140,14 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
                (i.sku != null && i.sku!.trim().toLowerCase() == cleanBarcode.toLowerCase()) ||
                i.name.toLowerCase() == cleanBarcode.toLowerCase(),
       );
+      AnnouncementService().playScanSound();
       _addToCart(item);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Added ${item.name}"), 
         duration: const Duration(milliseconds: 500)
       ));
     } catch (e) {
+      AnnouncementService().playAlertSound();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Item not found for barcode / SKU: $barcode"),
         backgroundColor: AppColors.adaptiveError(context),
