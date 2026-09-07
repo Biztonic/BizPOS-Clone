@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/sync/adapters/sync_adapter.dart';
 import 'package:biztonic_pos/models/user_profile.dart';

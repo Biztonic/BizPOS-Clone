@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:biztonic_pos/models/store_hardware.dart';
 import 'package:biztonic_pos/features/store/domain/entities/subscription_request.dart';
 import 'package:provider/provider.dart';
@@ -29,16 +30,17 @@ class _EmiPaymentScreenState extends State<EmiPaymentScreen> {
       final store = provider.activeStore;
       
       final emiAmount = widget.hardware.remainingAmount / (widget.hardware.totalEmis - widget.hardware.emisPaid);
+      final currentUser = FirebaseAuth.instance.currentUser;
       
       final request = SubscriptionRequest(
         id: '', 
         storeId: store?.id ?? '',
         storeName: store?.name ?? '',
-        ownerEmail: provider.auth.currentUser?.email ?? '',
+        ownerEmail: currentUser?.email ?? '',
         planType: 'Hardware EMI',
         billingCycle: 'Fixed',
         amount: emiAmount,
-        userId: provider.auth.currentUser?.uid ?? '',
+        userId: currentUser?.uid ?? '',
         createdAt: DateTime.now(),
         requestType: 'hardware_emi',
         hardwareId: widget.hardware.hardwareId,
