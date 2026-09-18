@@ -76,7 +76,8 @@ class AppShadows {
   ];
 
   /// Picks the correct shadow based on brightness.
-  static List<BoxShadow> adaptive(BuildContext context, {List<BoxShadow> light = md, List<BoxShadow> dark = darkSm}) {
+  static List<BoxShadow> adaptive(BuildContext context,
+      {List<BoxShadow> light = md, List<BoxShadow> dark = darkSm}) {
     return Theme.of(context).brightness == Brightness.dark ? dark : light;
   }
 }

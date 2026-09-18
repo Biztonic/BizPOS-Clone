@@ -29,11 +29,11 @@ class RoleModel {
       description: map['description'],
       storeAccessMode: map['storeAccessMode'] ?? 'single',
       version: map['version'] ?? 1,
-      updatedAt: map['updatedAt'] != null 
-        ? (map['updatedAt'] is String 
-            ? DateTime.parse(map['updatedAt']) 
-            : (map['updatedAt'] as DateTime)) 
-        : null,
+      updatedAt: map['updatedAt'] != null
+          ? (map['updatedAt'] is String
+              ? DateTime.parse(map['updatedAt'])
+              : (map['updatedAt'] as DateTime))
+          : null,
     );
   }
 
@@ -49,4 +49,3 @@ class RoleModel {
     };
   }
 }
-

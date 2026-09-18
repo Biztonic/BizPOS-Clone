@@ -19,57 +19,55 @@ class DevicesSettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
-
     final content = ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-          _buildDeviceItem(
+        _buildDeviceItem(
+          context,
+          icon: Icons.print_outlined,
+          title: "Printers",
+          subtitle: "Manage Receipt, KDS, and Label Printers",
+          color: AppColors.primary,
+          destination: const PrinterScreen(),
+        ),
+        _buildDeviceItem(
+          context,
+          icon: Icons.qr_code_scanner_outlined,
+          title: "Barcode Scanners",
+          subtitle: "Configure external scanners and behavior",
+          color: AppColors.success,
+          destination: const BarcodeScannerSettingsScreen(),
+        ),
+        FeatureGuard(
+          featureKey: 'kds_management',
+          lockedChild: const SizedBox.shrink(),
+          child: _buildDeviceItem(
             context,
-            icon: Icons.print_outlined,
-            title: "Printers",
-            subtitle: "Manage Receipt, KDS, and Label Printers",
-            color: AppColors.primary,
-            destination: const PrinterScreen(),
+            icon: Icons.monitor_outlined,
+            title: "Displays",
+            subtitle: "Customer facing displays and Kiosks",
+            color: AppColors.warning,
+            destination: const DisplayHardwareSettingsScreen(),
           ),
-          _buildDeviceItem(
-            context,
-            icon: Icons.qr_code_scanner_outlined,
-            title: "Barcode Scanners",
-            subtitle: "Configure external scanners and behavior",
-            color: AppColors.success,
-            destination: const BarcodeScannerSettingsScreen(),
-          ),
-          FeatureGuard(
-            featureKey: 'kds_management',
-            lockedChild: const SizedBox.shrink(),
-            child: _buildDeviceItem(
-              context,
-              icon: Icons.monitor_outlined,
-              title: "Displays",
-              subtitle: "Customer facing displays and Kiosks",
-              color: AppColors.warning,
-              destination: const DisplayHardwareSettingsScreen(),
-            ),
-          ),
-          _buildDeviceItem(
-            context,
-            icon: Icons.credit_card_outlined,
-            title: "Card Terminals",
-            subtitle: "Payment terminal integration settings",
-            color: AppColors.primaryLight,
-            destination: null, // Coming Soon
-          ),
-          _buildDeviceItem(
-            context,
-            icon: Icons.scale_outlined,
-            title: "Scales",
-            subtitle: "Digital weighing scale integration",
-            color: AppColors.primary,
-            destination: null, // Coming Soon
-          ),
-        ],
-      );
+        ),
+        _buildDeviceItem(
+          context,
+          icon: Icons.credit_card_outlined,
+          title: "Card Terminals",
+          subtitle: "Payment terminal integration settings",
+          color: AppColors.primaryLight,
+          destination: null, // Coming Soon
+        ),
+        _buildDeviceItem(
+          context,
+          icon: Icons.scale_outlined,
+          title: "Scales",
+          subtitle: "Digital weighing scale integration",
+          color: AppColors.primary,
+          destination: null, // Coming Soon
+        ),
+      ],
+    );
 
     if (isSubView) return content;
 
@@ -132,7 +130,10 @@ class DevicesSettingsSection extends StatelessWidget {
                     Text(
                       subtitle,
                       style: AppTypography.bodySmall.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -141,7 +142,10 @@ class DevicesSettingsSection extends StatelessWidget {
               Icon(
                 Icons.chevron_right,
                 size: AppIconography.md,
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withValues(alpha: 0.3),
               ),
             ],
           ),
@@ -150,7 +154,3 @@ class DevicesSettingsSection extends StatelessWidget {
     );
   }
 }
-
-
-
-

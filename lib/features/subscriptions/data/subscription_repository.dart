@@ -7,40 +7,46 @@ class SubscriptionRepository {
 
   Future<Map<String, dynamic>?> findPendingSubscription(String email) async {
     final emailList = {email.trim(), email.toLowerCase().trim()}.toList();
-    
+
     final searchFields = [
-      'ownerEmail', 'userId', 'customerEmail', 'email', 
-      'customer_email', 'buyer_email', 'contactEmail'
+      'ownerEmail',
+      'userId',
+      'customerEmail',
+      'email',
+      'customer_email',
+      'buyer_email',
+      'contactEmail'
     ];
-    
+
     for (final field in searchFields) {
       try {
-        final q = await _db.collection('subscription_requests')
+        final q = await _db
+            .collection('subscription_requests')
             .where(field, whereIn: emailList)
             .get();
-            
+
         final pendingDocs = q.docs.where((doc) {
-           final data = doc.data();
-           return data['status'] == 'PENDING';
+          final data = doc.data();
+          return data['status'] == 'PENDING';
         }).toList();
-        
+
         if (pendingDocs.isNotEmpty) {
-           // Sort by createdAt descending
-           try {
-             pendingDocs.sort((a, b) {
-               final tA = a.get('createdAt');
-               final tB = b.get('createdAt');
-               if (tA == null || tB == null) return 0;
-               return (tB as dynamic).compareTo(tA);
-             });
-           } catch (e) {
-      debugPrint('Error fetching subscriptions: $e');
-    }
-           
-           final doc = pendingDocs.first;
-           final data = doc.data();
-           data['id'] = doc.id;
-           return data;
+          // Sort by createdAt descending
+          try {
+            pendingDocs.sort((a, b) {
+              final tA = a.get('createdAt');
+              final tB = b.get('createdAt');
+              if (tA == null || tB == null) return 0;
+              return (tB as dynamic).compareTo(tA);
+            });
+          } catch (e) {
+            debugPrint('Error fetching subscriptions: $e');
+          }
+
+          final doc = pendingDocs.first;
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
         }
       } catch (e) {
         debugPrint('⚠️ SubscriptionRepository: Search on $field failed: $e');
@@ -49,7 +55,16 @@ class SubscriptionRepository {
     return null;
   }
 
-  Future<void> approveSubscriptionRequest(String requestId, String storeId, String storeName) async {
+  Future<DocumentReference> createSubscriptionRequest(
+      Map<String, dynamic> requestData) async {
+    final safeData = Map<String, dynamic>.from(requestData);
+    safeData['status'] = 'PENDING';
+    safeData['createdAt'] = FieldValue.serverTimestamp();
+    return await _db.collection('subscription_requests').add(safeData);
+  }
+
+  Future<void> approveSubscriptionRequest(
+      String requestId, String storeId, String storeName) async {
     await _db.collection('subscription_requests').doc(requestId).update({
       'status': 'APPROVED',
       'storeId': storeId,
@@ -58,8 +73,13 @@ class SubscriptionRepository {
     });
   }
 
-  Future<void> addSubscriptionHistory(String storeId, String planName, DateTime? expiry) async {
-    await _db.collection('stores').doc(storeId).collection('subscription_history').add({
+  Future<void> addSubscriptionHistory(
+      String storeId, String planName, DateTime? expiry) async {
+    await _db
+        .collection('stores')
+        .doc(storeId)
+        .collection('subscription_history')
+        .add({
       'planName': planName,
       'startDate': FieldValue.serverTimestamp(),
       'endDate': expiry,

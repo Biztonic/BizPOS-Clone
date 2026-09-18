@@ -15,10 +15,12 @@ class BarcodeScannerSettingsScreen extends StatefulWidget {
   const BarcodeScannerSettingsScreen({super.key});
 
   @override
-  State<BarcodeScannerSettingsScreen> createState() => _BarcodeScannerSettingsScreenState();
+  State<BarcodeScannerSettingsScreen> createState() =>
+      _BarcodeScannerSettingsScreenState();
 }
 
-class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScreen> {
+class _BarcodeScannerSettingsScreenState
+    extends State<BarcodeScannerSettingsScreen> {
   bool _autoEnter = true;
   bool _playSound = true;
   bool _vibrateOnScan = true;
@@ -37,8 +39,6 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return PosScaffold(
       title: "Barcode Scanners",
       showSidebar: false,
@@ -57,7 +57,9 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
           const SizedBox(height: AppSpacing.md),
 
           // --- Connected Scanners Section ---
-          Text(AppLocalizations.t(context, 'Connected Scanners'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Connected Scanners'),
+              style: AppTypography.titleSmall
+                  .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: Column(
@@ -94,7 +96,9 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
           const SizedBox(height: AppSpacing.xl),
 
           // --- Scan Mode ---
-          Text(AppLocalizations.t(context, 'Scan Mode'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Scan Mode'),
+              style: AppTypography.titleSmall
+                  .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             padding: EdgeInsets.zero,
@@ -102,7 +106,10 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
               children: [
                 RadioListTile<String>(
                   title: Text('Keyboard Wedge', style: AppTypography.bodyLarge),
-                  subtitle: Text(AppLocalizations.t(context, 'Scanner sends keystrokes like a keyboard'), style: AppTypography.bodySmall),
+                  subtitle: Text(
+                      AppLocalizations.t(
+                          context, 'Scanner sends keystrokes like a keyboard'),
+                      style: AppTypography.bodySmall),
                   value: 'Keyboard Wedge',
                   groupValue: _scanMode,
                   activeColor: AppColors.primary,
@@ -111,7 +118,10 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
                 const Divider(height: 1),
                 RadioListTile<String>(
                   title: Text('Camera Scanner', style: AppTypography.bodyLarge),
-                  subtitle: Text(AppLocalizations.t(context, 'Use device camera to scan barcodes'), style: AppTypography.bodySmall),
+                  subtitle: Text(
+                      AppLocalizations.t(
+                          context, 'Use device camera to scan barcodes'),
+                      style: AppTypography.bodySmall),
                   value: 'Camera',
                   groupValue: _scanMode,
                   activeColor: AppColors.primary,
@@ -124,31 +134,45 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
           const SizedBox(height: AppSpacing.xl),
 
           // --- Scanner Behavior ---
-          Text(AppLocalizations.t(context, 'Scanner Behavior'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Scanner Behavior'),
+              style: AppTypography.titleSmall
+                  .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: [
                 SwitchListTile(
-                  title: Text(AppLocalizations.t(context, 'Auto Enter'), style: AppTypography.bodyLarge),
-                  subtitle: Text(AppLocalizations.t(context, 'Automatically submit after scan'), style: AppTypography.bodySmall),
+                  title: Text(AppLocalizations.t(context, 'Auto Enter'),
+                      style: AppTypography.bodyLarge),
+                  subtitle: Text(
+                      AppLocalizations.t(
+                          context, 'Automatically submit after scan'),
+                      style: AppTypography.bodySmall),
                   activeColor: AppColors.primary,
                   value: _autoEnter,
                   onChanged: (val) => setState(() => _autoEnter = val),
                 ),
                 const Divider(height: 1),
                 SwitchListTile(
-                  title: Text(AppLocalizations.t(context, 'Play Sound'), style: AppTypography.bodyLarge),
-                  subtitle: Text(AppLocalizations.t(context, 'Beep sound on successful scan'), style: AppTypography.bodySmall),
+                  title: Text(AppLocalizations.t(context, 'Play Sound'),
+                      style: AppTypography.bodyLarge),
+                  subtitle: Text(
+                      AppLocalizations.t(
+                          context, 'Beep sound on successful scan'),
+                      style: AppTypography.bodySmall),
                   activeColor: AppColors.primary,
                   value: _playSound,
                   onChanged: (val) => setState(() => _playSound = val),
                 ),
                 const Divider(height: 1),
                 SwitchListTile(
-                  title: Text(AppLocalizations.t(context, 'Vibrate on Scan'), style: AppTypography.bodyLarge),
-                  subtitle: Text(AppLocalizations.t(context, 'Haptic feedback on scan (mobile only)'), style: AppTypography.bodySmall),
+                  title: Text(AppLocalizations.t(context, 'Vibrate on Scan'),
+                      style: AppTypography.bodyLarge),
+                  subtitle: Text(
+                      AppLocalizations.t(
+                          context, 'Haptic feedback on scan (mobile only)'),
+                      style: AppTypography.bodySmall),
                   activeColor: AppColors.primary,
                   value: _vibrateOnScan,
                   onChanged: (val) => setState(() => _vibrateOnScan = val),
@@ -156,19 +180,26 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
               ],
             ),
           ),
-          
+
           const SizedBox(height: AppSpacing.xl),
 
           // --- Prefix & Suffix ---
-          Text(AppLocalizations.t(context, 'Prefix & Suffix'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Prefix & Suffix'),
+              style: AppTypography.titleSmall
+                  .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(AppLocalizations.t(context, 'Configure special scanner characters'),
+                Text(
+                  AppLocalizations.t(
+                      context, 'Configure special scanner characters'),
                   style: AppTypography.bodySmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.7),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -200,7 +231,9 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
           const SizedBox(height: AppSpacing.xl),
 
           // --- Test Scanner ---
-          Text(AppLocalizations.t(context, 'Test Scanner'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Test Scanner'),
+              style: AppTypography.titleSmall
+                  .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: Column(
@@ -208,7 +241,8 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
                 AppTextField(
                   controller: _testController,
                   labelText: AppLocalizations.t(context, 'Scan a barcode here'),
-                  hintText: AppLocalizations.t(context, 'Focus this field and scan...'),
+                  hintText: AppLocalizations.t(
+                      context, 'Focus this field and scan...'),
                   onChanged: (val) {},
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -221,12 +255,14 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.check_circle, color: AppColors.success, size: 20),
+                        Icon(Icons.check_circle,
+                            color: AppColors.success, size: 20),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
                             'Scanned: ${_testController.text}',
-                            style: AppTypography.bodyMedium.copyWith(color: AppColors.success),
+                            style: AppTypography.bodyMedium
+                                .copyWith(color: AppColors.success),
                           ),
                         ),
                       ],
@@ -240,7 +276,10 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
 
           // --- Info Card ---
           AppCard(
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.3),
+            backgroundColor: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHigh
+                .withValues(alpha: 0.3),
             child: Column(
               children: [
                 Icon(
@@ -249,10 +288,15 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
                   size: 24,
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Text(AppLocalizations.t(context, 'Connect your scanner via USB or Bluetooth. It will work as a keyboard input.'),
+                Text(
+                  AppLocalizations.t(context,
+                      'Connect your scanner via USB or Bluetooth. It will work as a keyboard input.'),
                   textAlign: TextAlign.center,
                   style: AppTypography.bodySmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -272,12 +316,15 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
     required IconData icon,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         children: [
           AppIconography.iconContainer(
             icon: icon,
-            color: connected ? AppColors.success : AppColors.textSecondary(context),
+            color: connected
+                ? AppColors.success
+                : AppColors.textSecondary(context),
             size: AppIconography.md,
             containerSize: AppIconography.containerMd,
             borderRadius: AppRadius.sm,
@@ -287,25 +334,40 @@ class _BarcodeScannerSettingsScreenState extends State<BarcodeScannerSettingsScr
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
-                Text(type, style: AppTypography.bodySmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                )),
+                Text(name,
+                    style: AppTypography.bodyLarge
+                        .copyWith(fontWeight: FontWeight.w600)),
+                Text(type,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant
+                          .withValues(alpha: 0.6),
+                    )),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
             decoration: BoxDecoration(
               color: connected
                   ? AppColors.success.withValues(alpha: 0.15)
-                  : Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.3),
+                  : Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHigh
+                      .withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Text(
               connected ? 'Connected' : 'Not Connected',
               style: AppTypography.labelSmall.copyWith(
-                color: connected ? AppColors.success : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                color: connected
+                    ? AppColors.success
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.5),
                 fontWeight: FontWeight.w600,
               ),
             ),

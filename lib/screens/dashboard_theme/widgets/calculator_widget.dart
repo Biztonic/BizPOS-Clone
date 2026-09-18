@@ -20,7 +20,7 @@ class CalculatorWidget extends StatefulWidget {
   final double? cashInHand;
 
   const CalculatorWidget({
-    super.key, 
+    super.key,
     required this.isDarkMode,
     this.onClose,
     this.todaysSale,
@@ -36,7 +36,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
   // --- CALCULATOR STATE ---
   String _input = '0';
   String _result = '';
-  
+
   // --- CONVERTER STATE ---
   String _selectedCategory = 'Length';
   String _fromUnit = 'Meter';
@@ -55,11 +55,35 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
   };
 
   final Map<String, Map<String, double>> _factors = {
-     'Length': { 'Meter': 1, 'Centimeter': 0.01, 'Kilometer': 1000, 'Mile': 1609.34, 'Inch': 0.0254, 'Foot': 0.3048 },
-     'Weight': { 'Kilogram': 1000, 'Gram': 1, 'Milligram': 0.001, 'Pound': 453.592, 'Ounce': 28.3495 },
-     'Volume': { 'Liter': 1000, 'Milliliter': 1, 'Gallon': 3785.41, 'Cup': 236.588 },
-     'Speed':  { 'Km/h': 1, 'Mph': 1.60934, 'Meter/s': 3.6 }, 
-     'Area':   { 'Sq Meter': 1, 'Sq Kilometer': 1000000, 'Sq Foot': 0.092903, 'Acre': 4046.86, 'Hectare': 10000 },
+    'Length': {
+      'Meter': 1,
+      'Centimeter': 0.01,
+      'Kilometer': 1000,
+      'Mile': 1609.34,
+      'Inch': 0.0254,
+      'Foot': 0.3048
+    },
+    'Weight': {
+      'Kilogram': 1000,
+      'Gram': 1,
+      'Milligram': 0.001,
+      'Pound': 453.592,
+      'Ounce': 28.3495
+    },
+    'Volume': {
+      'Liter': 1000,
+      'Milliliter': 1,
+      'Gallon': 3785.41,
+      'Cup': 236.588
+    },
+    'Speed': {'Km/h': 1, 'Mph': 1.60934, 'Meter/s': 3.6},
+    'Area': {
+      'Sq Meter': 1,
+      'Sq Kilometer': 1000000,
+      'Sq Foot': 0.092903,
+      'Acre': 4046.86,
+      'Hectare': 10000
+    },
   };
 
   @override
@@ -75,138 +99,148 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
   }
 
   void _convert() {
-     if (!mounted) return;
-     if (_converterController.text.isEmpty) {
-        setState(() => _conversionResult = '');
-        return;
-     }
+    if (!mounted) return;
+    if (_converterController.text.isEmpty) {
+      setState(() => _conversionResult = '');
+      return;
+    }
 
-     double val = double.tryParse(_converterController.text) ?? 0;
-     double res = 0;
-     
-     // Safety Checks
-     if (!_units.containsKey(_selectedCategory)) return;
+    double val = double.tryParse(_converterController.text) ?? 0;
+    double res = 0;
 
-     if (_selectedCategory == 'Temperature') {
-        if (_fromUnit == 'Celsius') {
-           if (_toUnit == 'Fahrenheit') {
-             res = (val * 9/5) + 32;
-           } else if (_toUnit == 'Kelvin') res = val + 273.15;
-           else res = val;
-        } else if (_fromUnit == 'Fahrenheit') {
-           if (_toUnit == 'Celsius') {
-             res = (val - 32) * 5/9;
-           } else if (_toUnit == 'Kelvin') res = (val - 32) * 5/9 + 273.15;
-           else res = val;
-        } else if (_fromUnit == 'Kelvin') {
-           if (_toUnit == 'Celsius') {
-             res = val - 273.15;
-           } else if (_toUnit == 'Fahrenheit') res = (val - 273.15) * 9/5 + 32;
-           else res = val;
-        }
-     } else {
-        final catFactors = _factors[_selectedCategory];
-        if (catFactors == null) return;
-        
-        final fromF = catFactors[_fromUnit];
-        final toF = catFactors[_toUnit];
-        
-        if (fromF == null || toF == null) return;
+    // Safety Checks
+    if (!_units.containsKey(_selectedCategory)) return;
 
-        double toBase = val * fromF;
-        res = toBase / toF;
-     }
+    if (_selectedCategory == 'Temperature') {
+      if (_fromUnit == 'Celsius') {
+        if (_toUnit == 'Fahrenheit') {
+          res = (val * 9 / 5) + 32;
+        } else if (_toUnit == 'Kelvin')
+          res = val + 273.15;
+        else
+          res = val;
+      } else if (_fromUnit == 'Fahrenheit') {
+        if (_toUnit == 'Celsius') {
+          res = (val - 32) * 5 / 9;
+        } else if (_toUnit == 'Kelvin')
+          res = (val - 32) * 5 / 9 + 273.15;
+        else
+          res = val;
+      } else if (_fromUnit == 'Kelvin') {
+        if (_toUnit == 'Celsius') {
+          res = val - 273.15;
+        } else if (_toUnit == 'Fahrenheit')
+          res = (val - 273.15) * 9 / 5 + 32;
+        else
+          res = val;
+      }
+    } else {
+      final catFactors = _factors[_selectedCategory];
+      if (catFactors == null) return;
 
-     setState(() {
-        _conversionResult = res % 1 == 0 ? res.toInt().toString() : res.toStringAsFixed(4);
-        if (_conversionResult.contains('.') && double.tryParse(_conversionResult) != null) {
-           _conversionResult = double.parse(_conversionResult).toString(); 
-        }
-     });
+      final fromF = catFactors[_fromUnit];
+      final toF = catFactors[_toUnit];
+
+      if (fromF == null || toF == null) return;
+
+      double toBase = val * fromF;
+      res = toBase / toF;
+    }
+
+    setState(() {
+      _conversionResult =
+          res % 1 == 0 ? res.toInt().toString() : res.toStringAsFixed(4);
+      if (_conversionResult.contains('.') &&
+          double.tryParse(_conversionResult) != null) {
+        _conversionResult = double.parse(_conversionResult).toString();
+      }
+    });
   }
 
   // --- CALCULATOR LOGIC ---
   void _onBtnTap(String text) {
-     AnnouncementService().playKeypadSound();
-     setState(() {
-        if (_input == '0' && text != '.') _input = '';
-        _input += text;
-     });
+    AnnouncementService().playKeypadSound();
+    setState(() {
+      if (_input == '0' && text != '.') _input = '';
+      _input += text;
+    });
   }
 
   void _clear() {
-     AnnouncementService().playRemoveQtySound();
-     setState(() {
-        _input = '0';
-        _result = '';
-     });
+    AnnouncementService().playRemoveQtySound();
+    setState(() {
+      _input = '0';
+      _result = '';
+    });
   }
 
   void _delete() {
-     AnnouncementService().playKeypadSound();
-     setState(() {
-        if (_input.isNotEmpty) {
-           _input = _input.substring(0, _input.length - 1);
-           if (_input.isEmpty) _input = '0';
-        }
-     });
+    AnnouncementService().playKeypadSound();
+    setState(() {
+      if (_input.isNotEmpty) {
+        _input = _input.substring(0, _input.length - 1);
+        if (_input.isEmpty) _input = '0';
+      }
+    });
   }
 
   void _insertValue(String val) {
-     AnnouncementService().playKeypadSound();
-     setState(() {
-        if (_input == '0') _input = '';
-        _input += val;
-     });
+    AnnouncementService().playKeypadSound();
+    setState(() {
+      if (_input == '0') _input = '';
+      _input += val;
+    });
   }
 
   void _evaluate() {
-     try {
-       String finalInput = _input.replaceAll('x', '*').replaceAll('÷', '/');
-       
-       // --- NATIVE PERCENTAGE LOGIC ---
-       // 1. Handle "X + Y%" pattern -> "X + (X * Y / 100)"
-       // Using Regex to find numbers followed by operators followed by percentage
-       final regex = RegExp(r'(\d+\.?\d*)\s*([\+\-\*\/])\s*(\d+\.?\d*)\s*%');
-       while (regex.hasMatch(finalInput)) {
-          final match = regex.firstMatch(finalInput)!;
-          final x = match.group(1);
-          final op = match.group(2);
-          final y = match.group(3);
-          final replacement = "$x $op ($x * $y / 100)";
-          finalInput = finalInput.replaceFirst(match.group(0)!, replacement);
-       }
-       
-       // 2. Handle standalone percentages "10%" -> "10/100"
-       finalInput = finalInput.replaceAllMapped(RegExp(r'(\d+\.?\d*)\s*%'), (m) => "(${m.group(1)}/100)");
+    try {
+      String finalInput = _input.replaceAll('x', '*').replaceAll('÷', '/');
 
-       math.Parser p = math.Parser();
-       math.Expression exp = p.parse(finalInput);
-       math.ContextModel cm = math.ContextModel();
-       double eval = exp.evaluate(math.EvaluationType.REAL, cm);
-       
-       AnnouncementService().playSuccessSound();
-       setState(() {
-          _result = _input;
-          if (eval % 1 == 0) {
-             _input = eval.toInt().toString();
+      // --- NATIVE PERCENTAGE LOGIC ---
+      // 1. Handle "X + Y%" pattern -> "X + (X * Y / 100)"
+      // Using Regex to find numbers followed by operators followed by percentage
+      final regex = RegExp(r'(\d+\.?\d*)\s*([\+\-\*\/])\s*(\d+\.?\d*)\s*%');
+      while (regex.hasMatch(finalInput)) {
+        final match = regex.firstMatch(finalInput)!;
+        final x = match.group(1);
+        final op = match.group(2);
+        final y = match.group(3);
+        final replacement = "$x $op ($x * $y / 100)";
+        finalInput = finalInput.replaceFirst(match.group(0)!, replacement);
+      }
+
+      // 2. Handle standalone percentages "10%" -> "10/100"
+      finalInput = finalInput.replaceAllMapped(
+          RegExp(r'(\d+\.?\d*)\s*%'), (m) => "(${m.group(1)}/100)");
+
+      math.Parser p = math.Parser();
+      math.Expression exp = p.parse(finalInput);
+      math.ContextModel cm = math.ContextModel();
+      double eval = exp.evaluate(math.EvaluationType.REAL, cm);
+
+      AnnouncementService().playSuccessSound();
+      setState(() {
+        _result = _input;
+        if (eval % 1 == 0) {
+          _input = eval.toInt().toString();
+        } else {
+          // Avoid long decimals
+          if (eval.toString().split('.').last.length > 4) {
+            _input = eval.toStringAsFixed(4);
           } else {
-             // Avoid long decimals
-             if (eval.toString().split('.').last.length > 4) {
-                _input = eval.toStringAsFixed(4);
-             } else {
-                _input = eval.toString();
-             }
+            _input = eval.toString();
           }
-          // Remove trailing .0 if present
-          if (_input.endsWith('.0')) _input = _input.substring(0, _input.length - 2);
-       });
-     } catch (e) {
-       AnnouncementService().playAlertSound();
-       setState(() {
-          _result = "Error";
-       });
-     }
+        }
+        // Remove trailing .0 if present
+        if (_input.endsWith('.0'))
+          _input = _input.substring(0, _input.length - 2);
+      });
+    } catch (e) {
+      AnnouncementService().playAlertSound();
+      setState(() {
+        _result = "Error";
+      });
+    }
   }
 
   @override
@@ -220,319 +254,630 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
     // LIVE DATA FROM PROVIDER
     final provider = context.watch<DashboardProvider>();
     final orders = provider.orders;
-    
+
     // 1. Last Sale
-    final lastOrder = orders.isNotEmpty ? orders.last : null; 
-    final lastSaleAmount = lastOrder != null ? "₹${lastOrder.total.toStringAsFixed(0)}" : "₹0";
+    final lastOrder = orders.isNotEmpty ? orders.last : null;
+    final lastSaleAmount =
+        lastOrder != null ? "₹${lastOrder.total.toStringAsFixed(0)}" : "₹0";
 
     // 2. Orders (Today)
     final now = DateTime.now();
     final todayOrders = orders.where((o) {
-       return o.date.year == now.year && o.date.month == now.month && o.date.day == now.day;
+      return o.date.year == now.year &&
+          o.date.month == now.month &&
+          o.date.day == now.day;
     }).toList();
     final ordersCount = todayOrders.length.toString();
 
-    final cashOrders = todayOrders.where((o) => o.paymentMethod == 'Cash').toList();
+    final cashOrders =
+        todayOrders.where((o) => o.paymentMethod == 'Cash').toList();
     final cashTotal = cashOrders.fold(0.0, (sum, o) => sum + o.total);
     final cashDisplay = "₹${cashTotal.toStringAsFixed(0)}";
 
     return Scaffold(
-      backgroundColor: bgColor, 
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-             Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                child: Row(
-                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   children: [
-                      Text(AppLocalizations.t(context, 'Tools & Calculator'), style: TextStyle(color: textColor, fontSize: 24, fontWeight: FontWeight.bold)),
-                      InkWell(
-                         onTap: () => Navigator.pop(context),
-                         borderRadius: AppRadius.borderSm,
-                         child: Container(
-                            width: 36, 
-                            height: 36,
-                            decoration: BoxDecoration(
-                               color: AppColors.error.withOpacity(0.12),
-                               borderRadius: AppRadius.borderSm,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(AppLocalizations.t(context, 'Tools & Calculator'),
+                      style: TextStyle(
+                          color: textColor,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold)),
+                  InkWell(
+                    onTap: () => Navigator.pop(context),
+                    borderRadius: AppRadius.borderSm,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.12),
+                        borderRadius: AppRadius.borderSm,
+                      ),
+                      child: const Icon(Icons.close,
+                          color: AppColors.error, size: 20),
+                    ),
+                  )
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: Container(
+                      padding: const EdgeInsets.only(
+                          left: AppSpacing.lg,
+                          bottom: AppSpacing.lg,
+                          right: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Container(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.black.withOpacity(0.25)
+                                      : Colors.black.withOpacity(0.04),
+                                  borderRadius: AppRadius.borderMd,
+                                  border: Border.all(
+                                      color: isDark
+                                          ? Colors.white.withOpacity(0.05)
+                                          : Colors.black.withOpacity(0.05))),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(_result,
+                                      style: TextStyle(
+                                          fontSize: 20,
+                                          color: textColor.withOpacity(0.5))),
+                                  Flexible(
+                                    child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.bottomRight,
+                                        child: Text(_input,
+                                            style: TextStyle(
+                                                fontSize: 80,
+                                                fontWeight: FontWeight.bold,
+                                                color: textColor))),
+                                  ),
+                                ],
+                              ),
                             ),
-                            child: const Icon(Icons.close, color: AppColors.error, size: 20),
-                         ),
-                      )
-                   ],
-                ),
-             ),
-             Expanded(
-                child: Row(
-                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                   children: [
-                      Expanded(
-                         flex: 4,
-                         child: Container(
-                            padding: const EdgeInsets.only(left: AppSpacing.lg, bottom: AppSpacing.lg, right: 12),
-                            child: Column(
-                               crossAxisAlignment: CrossAxisAlignment.stretch,
-                               children: [
-                                  Expanded(
-                                     flex: 3,
-                                     child: Container(
-                                        padding: const EdgeInsets.all(AppSpacing.md),
-                                        decoration: BoxDecoration(
-                                           color: isDark ? Colors.black.withOpacity(0.25) : Colors.black.withOpacity(0.04),
-                                           borderRadius: AppRadius.borderMd,
-                                           border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05))
-                                        ),
-                                        child: Column(
-                                           mainAxisAlignment: MainAxisAlignment.end,
-                                           crossAxisAlignment: CrossAxisAlignment.end,
-                                           children: [
-                                              Text(_result, style: TextStyle(fontSize: 20, color: textColor.withOpacity(0.5))),
-                                              Flexible(
-                                                 child: FittedBox(
-                                                    fit: BoxFit.scaleDown, 
-                                                    alignment: Alignment.bottomRight,
-                                                    child: Text(_input, style: TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: textColor))
-                                                 ),
-                                              ),
-                                           ],
-                                        ),
-                                     ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          SizedBox(
+                            height: 70,
+                            child: Row(
+                              children: [
+                                _buildSmartKey("Last Sale", lastSaleAmount,
+                                    AppColors.success),
+                                const SizedBox(width: AppSpacing.sm),
+                                _buildSmartKey(
+                                    "Orders", ordersCount, AppColors.warning),
+                                const SizedBox(width: AppSpacing.sm),
+                                _buildSmartKey("Cash", cashDisplay,
+                                    AppColors.primaryLight),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Expanded(
+                            flex: 4,
+                            child: Container(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              decoration: BoxDecoration(
+                                  color: panelColor,
+                                  borderRadius: AppRadius.borderMd,
+                                  border: Border.all(
+                                      color: CarDashboardTheme.borderColor(
+                                          isDark))),
+                              child: Column(
+                                children: [
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: _units.keys
+                                          .map((String cat) => Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: AppSpacing.sm),
+                                                child: ChoiceChip(
+                                                  label: Text(cat,
+                                                      style: const TextStyle(
+                                                          fontSize: 12)),
+                                                  selected:
+                                                      _selectedCategory == cat,
+                                                  onSelected: (bool sel) {
+                                                    if (sel) {
+                                                      setState(() {
+                                                        _selectedCategory = cat;
+                                                        List<String>? newUnits =
+                                                            _units[cat];
+                                                        if (newUnits != null &&
+                                                            newUnits
+                                                                .isNotEmpty) {
+                                                          _fromUnit =
+                                                              newUnits.first;
+                                                          _toUnit =
+                                                              newUnits.length >
+                                                                      1
+                                                                  ? newUnits[1]
+                                                                  : newUnits[0];
+                                                        }
+                                                        _convert();
+                                                      });
+                                                    }
+                                                  },
+                                                  selectedColor: primary,
+                                                  labelStyle: TextStyle(
+                                                    color:
+                                                        _selectedCategory == cat
+                                                            ? Colors.white
+                                                            : textColor,
+                                                    fontWeight:
+                                                        _selectedCategory == cat
+                                                            ? FontWeight.bold
+                                                            : FontWeight.normal,
+                                                  ),
+                                                  backgroundColor: isDark
+                                                      ? Colors.white
+                                                          .withOpacity(0.05)
+                                                      : Colors.black
+                                                          .withOpacity(0.04),
+                                                  side: BorderSide.none,
+                                                  shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          AppRadius.borderSm),
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                ),
+                                              ))
+                                          .toList(),
+                                    ),
                                   ),
                                   const SizedBox(height: AppSpacing.md),
-                                  SizedBox(
-                                     height: 70,
-                                     child: Row(
-                                        children: [
-                                           _buildSmartKey("Last Sale", lastSaleAmount, AppColors.success),
-                                           const SizedBox(width: AppSpacing.sm),
-                                           _buildSmartKey("Orders", ordersCount, AppColors.warning),
-                                           const SizedBox(width: AppSpacing.sm),
-                                           _buildSmartKey("Cash", cashDisplay, AppColors.primaryLight),
-                                        ],
-                                     ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
                                   Expanded(
-                                     flex: 4,
-                                     child: Container(
-                                        padding: const EdgeInsets.all(AppSpacing.md),
-                                        decoration: BoxDecoration(
-                                           color: panelColor,
-                                           borderRadius: AppRadius.borderMd,
-                                           border: Border.all(color: CarDashboardTheme.borderColor(isDark))
-                                        ),
-                                        child: Column(
-                                           children: [
-                                              SingleChildScrollView(
-                                                 scrollDirection: Axis.horizontal,
-                                                 child: Row(
-                                                    children: _units.keys.map((String cat) => Padding(
-                                                       padding: const EdgeInsets.only(right: AppSpacing.sm),
-                                                       child: ChoiceChip(
-                                                          label: Text(cat, style: const TextStyle(fontSize: 12)),
-                                                          selected: _selectedCategory == cat,
-                                                          onSelected: (bool sel) {
-                                                             if (sel) {
-                                                               setState(() { 
-                                                                _selectedCategory = cat; 
-                                                                List<String>? newUnits = _units[cat];
-                                                                if (newUnits != null && newUnits.isNotEmpty) {
-                                                                   _fromUnit = newUnits.first;
-                                                                   _toUnit = newUnits.length > 1 ? newUnits[1] : newUnits[0];
-                                                                }
-                                                                _convert();
-                                                             });
-                                                             }
-                                                          },
-                                                          selectedColor: primary,
-                                                          labelStyle: TextStyle(
-                                                            color: _selectedCategory == cat ? Colors.white : textColor,
-                                                            fontWeight: _selectedCategory == cat ? FontWeight.bold : FontWeight.normal,
-                                                          ),
-                                                          backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04),
-                                                          side: BorderSide.none,
-                                                          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
-                                                          visualDensity: VisualDensity.compact,
-                                                       ),
-                                                    )).toList(),
-                                                 ),
-                                              ),
-                                              const SizedBox(height: AppSpacing.md),
-                                              Expanded(
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Container(
+                                                margin:
+                                                    const EdgeInsets.fromLTRB(
+                                                        8, 0, 4, 0),
+                                                decoration: BoxDecoration(
+                                                  color: isDark
+                                                      ? const Color(0xFF1E1E1E)
+                                                      : AppColors.surfaceLight,
+                                                  borderRadius:
+                                                      AppRadius.borderSm,
+                                                  border: Border.all(
+                                                      color: isDark
+                                                          ? Colors.white
+                                                              .withOpacity(0.04)
+                                                          : Colors.black
+                                                              .withOpacity(
+                                                                  0.04)),
+                                                ),
                                                 child: Stack(
-                                                  alignment: Alignment.center,
                                                   children: [
-                                                    Row(
-                                                      children: [
-                                                        Expanded(
-                                                          child: Container(
-                                                            margin: const EdgeInsets.fromLTRB(8, 0, 4, 0),
-                                                            decoration: BoxDecoration(
-                                                              color: isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight,
-                                                              borderRadius: AppRadius.borderSm,
-                                                              border: Border.all(color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04)),
-                                                            ),
-                                                            child: Stack(
-                                                              children: [
-                                                                _buildWheelPicker(_units[_selectedCategory] ?? [], _fromUnit, AppColors.error, (val) { setState(() { _fromUnit = val; _convert(); }); }),
-                                                                IgnorePointer(
-                                                                  child: Container(
-                                                                    decoration: BoxDecoration(
-                                                                      borderRadius: AppRadius.borderSm,
-                                                                      gradient: LinearGradient(
-                                                                        begin: Alignment.topCenter,
-                                                                        end: Alignment.bottomCenter,
-                                                                        colors: [
-                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.95), 
-                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.0), 
-                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.0), 
-                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.95)
-                                                                        ],
-                                                                        stops: const [0.0, 0.25, 0.75, 1.0],
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        Expanded(
-                                                          child: Column(
-                                                            mainAxisAlignment: MainAxisAlignment.center,
-                                                            children: [
-                                                              TextField(
-                                                                 controller: _converterController,
-                                                                 textAlign: TextAlign.center,
-                                                                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: textColor.withOpacity(0.8)),
-                                                                 keyboardType: TextInputType.number,
-                                                                 decoration: InputDecoration(
-                                                                    hintText: "0", hintStyle: TextStyle(fontSize: 32, color: textColor.withOpacity(0.1)),
-                                                                    border: InputBorder.none, isDense: true,
-                                                                    contentPadding: EdgeInsets.zero
-                                                                 ),
-                                                              ),
-                                                              Container(
-                                                                height: 2, 
-                                                                width: 50, 
-                                                                color: primary.withOpacity(0.4), 
-                                                                margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm)
-                                                              ),
-                                                              FittedBox(
-                                                                child: Text(
-                                                                   _conversionResult.isEmpty ? "0" : _conversionResult,
-                                                                   style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: primary),
-                                                                ),
-                                                              )
+                                                    _buildWheelPicker(
+                                                        _units[_selectedCategory] ??
+                                                            [],
+                                                        _fromUnit,
+                                                        AppColors.error, (val) {
+                                                      setState(() {
+                                                        _fromUnit = val;
+                                                        _convert();
+                                                      });
+                                                    }),
+                                                    IgnorePointer(
+                                                      child: Container(
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              AppRadius
+                                                                  .borderSm,
+                                                          gradient:
+                                                              LinearGradient(
+                                                            begin: Alignment
+                                                                .topCenter,
+                                                            end: Alignment
+                                                                .bottomCenter,
+                                                            colors: [
+                                                              (isDark
+                                                                      ? const Color(
+                                                                          0xFF1E1E1E)
+                                                                      : AppColors
+                                                                          .surfaceLight)
+                                                                  .withOpacity(
+                                                                      0.95),
+                                                              (isDark
+                                                                      ? const Color(
+                                                                          0xFF1E1E1E)
+                                                                      : AppColors
+                                                                          .surfaceLight)
+                                                                  .withOpacity(
+                                                                      0.0),
+                                                              (isDark
+                                                                      ? const Color(
+                                                                          0xFF1E1E1E)
+                                                                      : AppColors
+                                                                          .surfaceLight)
+                                                                  .withOpacity(
+                                                                      0.0),
+                                                              (isDark
+                                                                      ? const Color(
+                                                                          0xFF1E1E1E)
+                                                                      : AppColors
+                                                                          .surfaceLight)
+                                                                  .withOpacity(
+                                                                      0.95)
+                                                            ],
+                                                            stops: const [
+                                                              0.0,
+                                                              0.25,
+                                                              0.75,
+                                                              1.0
                                                             ],
                                                           ),
                                                         ),
-                                                        Expanded(
-                                                          child: Container(
-                                                            margin: const EdgeInsets.fromLTRB(4, 0, 8, 0),
-                                                            decoration: BoxDecoration(
-                                                              color: isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight,
-                                                              borderRadius: AppRadius.borderSm,
-                                                              border: Border.all(color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04)),
-                                                            ),
-                                                            child: Stack(
-                                                              children: [
-                                                                _buildWheelPicker(_units[_selectedCategory] ?? [], _toUnit, AppColors.primaryLightAccent, (val) { setState(() { _toUnit = val; _convert(); }); }),
-                                                                IgnorePointer(
-                                                                  child: Container(
-                                                                    decoration: BoxDecoration(
-                                                                      borderRadius: AppRadius.borderSm,
-                                                                      gradient: LinearGradient(
-                                                                        begin: Alignment.topCenter,
-                                                                        end: Alignment.bottomCenter,
-                                                                        colors: [
-                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.95), 
-                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.0), 
-                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.0), 
-                                                                           (isDark ? const Color(0xFF1E1E1E) : AppColors.surfaceLight).withOpacity(0.95)
-                                                                        ],
-                                                                        stops: const [0.0, 0.25, 0.75, 1.0],
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
+                                                      ),
                                                     ),
                                                   ],
                                                 ),
                                               ),
-                                           ],
+                                            ),
+                                            Expanded(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  TextField(
+                                                    controller:
+                                                        _converterController,
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                        fontSize: 32,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: textColor
+                                                            .withOpacity(0.8)),
+                                                    keyboardType:
+                                                        TextInputType.number,
+                                                    decoration: InputDecoration(
+                                                        hintText: "0",
+                                                        hintStyle: TextStyle(
+                                                            fontSize: 32,
+                                                            color: textColor
+                                                                .withOpacity(
+                                                                    0.1)),
+                                                        border:
+                                                            InputBorder.none,
+                                                        isDense: true,
+                                                        contentPadding:
+                                                            EdgeInsets.zero),
+                                                  ),
+                                                  Container(
+                                                      height: 2,
+                                                      width: 50,
+                                                      color: primary
+                                                          .withOpacity(0.4),
+                                                      margin: const EdgeInsets
+                                                          .symmetric(
+                                                          vertical:
+                                                              AppSpacing.sm)),
+                                                  FittedBox(
+                                                    child: Text(
+                                                      _conversionResult.isEmpty
+                                                          ? "0"
+                                                          : _conversionResult,
+                                                      style: TextStyle(
+                                                          fontSize: 32,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: primary),
+                                                    ),
+                                                  )
+                                                ],
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Container(
+                                                margin:
+                                                    const EdgeInsets.fromLTRB(
+                                                        4, 0, 8, 0),
+                                                decoration: BoxDecoration(
+                                                  color: isDark
+                                                      ? const Color(0xFF1E1E1E)
+                                                      : AppColors.surfaceLight,
+                                                  borderRadius:
+                                                      AppRadius.borderSm,
+                                                  border: Border.all(
+                                                      color: isDark
+                                                          ? Colors.white
+                                                              .withOpacity(0.04)
+                                                          : Colors.black
+                                                              .withOpacity(
+                                                                  0.04)),
+                                                ),
+                                                child: Stack(
+                                                  children: [
+                                                    _buildWheelPicker(
+                                                        _units[_selectedCategory] ??
+                                                            [],
+                                                        _toUnit,
+                                                        AppColors
+                                                            .primaryLightAccent,
+                                                        (val) {
+                                                      setState(() {
+                                                        _toUnit = val;
+                                                        _convert();
+                                                      });
+                                                    }),
+                                                    IgnorePointer(
+                                                      child: Container(
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              AppRadius
+                                                                  .borderSm,
+                                                          gradient:
+                                                              LinearGradient(
+                                                            begin: Alignment
+                                                                .topCenter,
+                                                            end: Alignment
+                                                                .bottomCenter,
+                                                            colors: [
+                                                              (isDark
+                                                                      ? const Color(
+                                                                          0xFF1E1E1E)
+                                                                      : AppColors
+                                                                          .surfaceLight)
+                                                                  .withOpacity(
+                                                                      0.95),
+                                                              (isDark
+                                                                      ? const Color(
+                                                                          0xFF1E1E1E)
+                                                                      : AppColors
+                                                                          .surfaceLight)
+                                                                  .withOpacity(
+                                                                      0.0),
+                                                              (isDark
+                                                                      ? const Color(
+                                                                          0xFF1E1E1E)
+                                                                      : AppColors
+                                                                          .surfaceLight)
+                                                                  .withOpacity(
+                                                                      0.0),
+                                                              (isDark
+                                                                      ? const Color(
+                                                                          0xFF1E1E1E)
+                                                                      : AppColors
+                                                                          .surfaceLight)
+                                                                  .withOpacity(
+                                                                      0.95)
+                                                            ],
+                                                            stops: const [
+                                                              0.0,
+                                                              0.25,
+                                                              0.75,
+                                                              1.0
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                     ),
-                                  )
-                               ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                         ),
+                          )
+                        ],
                       ),
-                      Expanded(
-                         flex: 5,
-                         child: Container(
-                            padding: const EdgeInsets.only(right: AppSpacing.lg, bottom: AppSpacing.lg, top: 0, left: 12),
-                            child: Row(
+                    ),
+                  ),
+                  Expanded(
+                    flex: 5,
+                    child: Container(
+                      padding: const EdgeInsets.only(
+                          right: AppSpacing.lg,
+                          bottom: AppSpacing.lg,
+                          top: 0,
+                          left: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Column(
                               children: [
-                                 Expanded(
-                                   flex: 3,
-                                   child: Column(
-                                     children: [
-                                       Expanded(child: Row(children: [ 
-                                          Expanded(child: _buildBtn('C', AppColors.error.withOpacity(0.12), AppColors.error, onTap: _clear)), 
-                                          const SizedBox(width: AppSpacing.sm), 
-                                          Expanded(child: _buildBtn(const Icon(Icons.backspace_outlined, color: AppColors.warning, size: 20), AppColors.warning.withOpacity(0.12), AppColors.warning, onTap: _delete)), 
-                                          const SizedBox(width: AppSpacing.sm), 
-                                          Expanded(child: _buildBtn('%', isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.04), textColor)) 
-                                       ])),
-                                       const SizedBox(height: AppSpacing.sm),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('7', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('8', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('9', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)) ])),
-                                       const SizedBox(height: AppSpacing.sm),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('4', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('5', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('6', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)) ])),
-                                       const SizedBox(height: AppSpacing.sm),
-                                       Expanded(child: Row(children: [ Expanded(child: _buildBtn('1', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('2', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), const SizedBox(width: AppSpacing.sm), Expanded(child: _buildBtn('3', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)) ])),
-                                       const SizedBox(height: AppSpacing.sm),
-                                       Expanded(child: Row(children: [ 
-                                          Expanded(child: _buildBtn('0', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), 
-                                          const SizedBox(width: AppSpacing.sm), 
-                                          Expanded(child: _buildBtn('.', isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03), textColor)), 
-                                          const SizedBox(width: AppSpacing.sm), 
-                                          Expanded(child: _buildBtn('=', AppColors.success, Colors.white, onTap: _evaluate)),
-                                       ])),
-                                     ],
-                                   ),
-                                 ),
-                                 const SizedBox(width: AppSpacing.sm),
-                                 Expanded(
-                                   flex: 1,
-                                   child: Column(
-                                     children: [
-                                       Expanded(child: _buildBtn('÷', primary.withOpacity(0.12), primary)),
-                                       const SizedBox(height: AppSpacing.sm),
-                                       Expanded(child: _buildBtn('x', primary.withOpacity(0.12), primary)),
-                                       const SizedBox(height: AppSpacing.sm),
-                                       Expanded(child: _buildBtn('-', primary.withOpacity(0.12), primary)),
-                                       const SizedBox(height: AppSpacing.sm),
-                                       Expanded(
-                                         flex: 2, 
-                                         child: _buildBtn('+', primary.withOpacity(0.12), primary, fontSize: 32),
-                                       ),
-                                     ], 
-                                   ),
-                                 ),
+                                Expanded(
+                                    child: Row(children: [
+                                  Expanded(
+                                      child: _buildBtn(
+                                          'C',
+                                          AppColors.error.withOpacity(0.12),
+                                          AppColors.error,
+                                          onTap: _clear)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                      child: _buildBtn(
+                                          const Icon(Icons.backspace_outlined,
+                                              color: AppColors.warning,
+                                              size: 20),
+                                          AppColors.warning.withOpacity(0.12),
+                                          AppColors.warning,
+                                          onTap: _delete)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '%',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.08)
+                                              : Colors.black.withOpacity(0.04),
+                                          textColor))
+                                ])),
+                                const SizedBox(height: AppSpacing.sm),
+                                Expanded(
+                                    child: Row(children: [
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '7',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.black.withOpacity(0.03),
+                                          textColor)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '8',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.black.withOpacity(0.03),
+                                          textColor)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '9',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.black.withOpacity(0.03),
+                                          textColor))
+                                ])),
+                                const SizedBox(height: AppSpacing.sm),
+                                Expanded(
+                                    child: Row(children: [
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '4',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.black.withOpacity(0.03),
+                                          textColor)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '5',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.black.withOpacity(0.03),
+                                          textColor)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '6',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.black.withOpacity(0.03),
+                                          textColor))
+                                ])),
+                                const SizedBox(height: AppSpacing.sm),
+                                Expanded(
+                                    child: Row(children: [
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '1',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.black.withOpacity(0.03),
+                                          textColor)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '2',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.black.withOpacity(0.03),
+                                          textColor)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '3',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.black.withOpacity(0.03),
+                                          textColor))
+                                ])),
+                                const SizedBox(height: AppSpacing.sm),
+                                Expanded(
+                                    child: Row(children: [
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '0',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.black.withOpacity(0.03),
+                                          textColor)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '.',
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.black.withOpacity(0.03),
+                                          textColor)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                      child: _buildBtn(
+                                          '=', AppColors.success, Colors.white,
+                                          onTap: _evaluate)),
+                                ])),
                               ],
                             ),
-                         ),
-                      )
-                   ],
-                ),
-             )
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            flex: 1,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                    child: _buildBtn('÷',
+                                        primary.withOpacity(0.12), primary)),
+                                const SizedBox(height: AppSpacing.sm),
+                                Expanded(
+                                    child: _buildBtn('x',
+                                        primary.withOpacity(0.12), primary)),
+                                const SizedBox(height: AppSpacing.sm),
+                                Expanded(
+                                    child: _buildBtn('-',
+                                        primary.withOpacity(0.12), primary)),
+                                const SizedBox(height: AppSpacing.sm),
+                                Expanded(
+                                  flex: 2,
+                                  child: _buildBtn(
+                                      '+', primary.withOpacity(0.12), primary,
+                                      fontSize: 32),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            )
           ],
         ),
       ),
@@ -540,98 +885,105 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
   }
 
   Widget _buildSmartKey(String label, String value, Color color) {
-     return Expanded(
-        child: InkWell(
-           onTap: () => _insertValue(value.replaceAll(RegExp(r'[^0-9.]'), '')), 
-           borderRadius: AppRadius.borderSm,
-           child: Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                 color: color.withOpacity(0.08),
-                 borderRadius: AppRadius.borderSm,
-                 border: Border.all(color: color.withOpacity(0.15))
-              ),
-              child: Column(
-                 mainAxisAlignment: MainAxisAlignment.center,
-                 children: [
-                    Text(label, style: TextStyle(color: color.withOpacity(0.7), fontWeight: FontWeight.w600, fontSize: 11)),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
-                 ],
-              ),
-           ),
+    return Expanded(
+      child: InkWell(
+        onTap: () => _insertValue(value.replaceAll(RegExp(r'[^0-9.]'), '')),
+        borderRadius: AppRadius.borderSm,
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+              color: color.withOpacity(0.08),
+              borderRadius: AppRadius.borderSm,
+              border: Border.all(color: color.withOpacity(0.15))),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(label,
+                  style: TextStyle(
+                      color: color.withOpacity(0.7),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11)),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(value,
+                  style: TextStyle(
+                      color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
         ),
-     );
-  }
-  
-  Widget _buildWheelPicker(List<String> items, String selected, Color selectedColor, Function(String) onChanged) {
-     final itemIndex = items.indexOf(selected);
-     return ListWheelScrollView.useDelegate(
-        itemExtent: 50,
-        perspective: 0.003,
-        diameterRatio: 1.2,
-        physics: const FixedExtentScrollPhysics(),
-        controller: FixedExtentScrollController(initialItem: itemIndex != -1 ? itemIndex : 0),
-        onSelectedItemChanged: (index) {
-           if (index >= 0 && index < items.length) {
-              onChanged(items[index]);
-           }
-        },
-        childDelegate: ListWheelChildBuilderDelegate(
-          builder: (context, index) {
-             final isSelected = items[index] == selected;
-             final color = isSelected ? selectedColor : AppColors.textSecondary(context);
-             return Center(
-               child: Text(
-                 items[index],
-                 style: TextStyle(
-                    fontSize: isSelected ? 20 : 14, 
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: color
-                 ),
-               ),
-             );
-          },
-          childCount: items.length,
-        ),
-     );
+      ),
+    );
   }
 
-  Widget _buildBtn(dynamic content, Color bg, Color txtColor, {double? fontSize, VoidCallback? onTap}) {
-     return Material(
-        color: Colors.transparent,
-        child: InkWell(
-           onTap: onTap ?? () {
+  Widget _buildWheelPicker(List<String> items, String selected,
+      Color selectedColor, Function(String) onChanged) {
+    final itemIndex = items.indexOf(selected);
+    return ListWheelScrollView.useDelegate(
+      itemExtent: 50,
+      perspective: 0.003,
+      diameterRatio: 1.2,
+      physics: const FixedExtentScrollPhysics(),
+      controller: FixedExtentScrollController(
+          initialItem: itemIndex != -1 ? itemIndex : 0),
+      onSelectedItemChanged: (index) {
+        if (index >= 0 && index < items.length) {
+          onChanged(items[index]);
+        }
+      },
+      childDelegate: ListWheelChildBuilderDelegate(
+        builder: (context, index) {
+          final isSelected = items[index] == selected;
+          final color =
+              isSelected ? selectedColor : AppColors.textSecondary(context);
+          return Center(
+            child: Text(
+              items[index],
+              style: TextStyle(
+                  fontSize: isSelected ? 20 : 14,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: color),
+            ),
+          );
+        },
+        childCount: items.length,
+      ),
+    );
+  }
+
+  Widget _buildBtn(dynamic content, Color bg, Color txtColor,
+      {double? fontSize, VoidCallback? onTap}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap ??
+            () {
               if (content == 'C') {
-                 _clear();
-              } else if (content is String && (content == '⌫' || content == 'delete')) {
-                 _delete();
+                _clear();
+              } else if (content is String &&
+                  (content == '⌫' || content == 'delete')) {
+                _delete();
               } else if (content == '=') {
-                 _evaluate();
+                _evaluate();
               } else if (content is String) {
-                 _onBtnTap(content);
+                _onBtnTap(content);
               }
-           },
-           borderRadius: AppRadius.borderSm,
-           child: Ink(
-              decoration: BoxDecoration(
-                 color: bg,
-                 borderRadius: AppRadius.borderSm,
-              ),
-              child: Center(
-                 child: content is Widget 
-                     ? content 
-                     : Text(
-                         content.toString(), 
-                         style: TextStyle(
-                            fontSize: fontSize ?? 24, 
-                            fontWeight: FontWeight.bold, 
-                            color: txtColor
-                         )
-                       ),
-              ),
-           ),
+            },
+        borderRadius: AppRadius.borderSm,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: AppRadius.borderSm,
+          ),
+          child: Center(
+            child: content is Widget
+                ? content
+                : Text(content.toString(),
+                    style: TextStyle(
+                        fontSize: fontSize ?? 24,
+                        fontWeight: FontWeight.bold,
+                        color: txtColor)),
+          ),
         ),
-     );
+      ),
+    );
   }
 }

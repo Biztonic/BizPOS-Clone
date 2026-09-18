@@ -7,10 +7,10 @@ class AppColors {
   static const Color primary = Color(0xFF6366F1); // Modern Indigo 500
   static const Color primaryLight = Color(0xFF818CF8); // Indigo 400
   static const Color primaryDark = Color(0xFF4338CA); // Indigo 700
-  
+
   // Secondary / Accents
   static const Color secondary = Color(0xFF94A3B8); // Slate 400
-  
+
   // Semantic Colors - Softened for a premium feel
   static const Color success = Color(0xFF10B981); // Emerald 500
   static const Color warning = Color(0xFFF59E0B); // Amber 500
@@ -20,7 +20,7 @@ class AppColors {
   // Backgrounds & Surfaces (Light) - Soft Slate backgrounds
   static const Color backgroundLight = Color(0xFFF8FAFC); // Slate 50
   static const Color surfaceLight = Color(0xFFFFFFFF);
-  
+
   // Backgrounds & Surfaces (Dark) - Deep Slate
   static const Color backgroundDark = Color(0xFF0F172A); // Slate 900
   static const Color surfaceDark = Color(0xFF1E293B); // Slate 800
@@ -114,7 +114,8 @@ class AppColors {
         : const Color(0xFF64748B); // Slate 500 for dark mode
   }
 
-  static bool isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
+  static bool isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
   static const Color transparent = Colors.transparent;
 
   static LinearGradient authGradient(BuildContext context) {
@@ -123,8 +124,15 @@ class AppColors {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: dark
-          ? [const Color(0xFF020617), const Color(0xFF0F172A), const Color(0xFF020617)] // Dark slate gradient
-          : [const Color(0xFF6366F1), const Color(0xFF818CF8)], // Indigo gradient
+          ? [
+              const Color(0xFF020617),
+              const Color(0xFF0F172A),
+              const Color(0xFF020617)
+            ] // Dark slate gradient
+          : [
+              const Color(0xFF6366F1),
+              const Color(0xFF818CF8)
+            ], // Indigo gradient
     );
   }
 

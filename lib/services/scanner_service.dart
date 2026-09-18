@@ -14,7 +14,8 @@ class ScannerService {
   factory ScannerService() => _instance;
   ScannerService._internal();
 
-  final StreamController<String> _scanController = StreamController<String>.broadcast();
+  final StreamController<String> _scanController =
+      StreamController<String>.broadcast();
   Stream<String> get scanStream => _scanController.stream;
 
   // Buffer for HID keyboard input

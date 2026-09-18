@@ -43,7 +43,7 @@ class PosDataTable extends StatefulWidget {
   final int? sortColumnIndex;
   final bool sortAscending;
   final Function(int columnIndex, bool ascending)? onSort;
-  
+
   // Pagination
   final int? currentPage;
   final int? totalPages;
@@ -86,15 +86,18 @@ class _PosDataTableState extends State<PosDataTable> {
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
         setState(() {
-          _focusedRowIndex = (_focusedRowIndex + 1).clamp(0, widget.rows.length - 1);
+          _focusedRowIndex =
+              (_focusedRowIndex + 1).clamp(0, widget.rows.length - 1);
         });
         _scrollToFocusedRow();
       } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
         setState(() {
-          _focusedRowIndex = (_focusedRowIndex - 1).clamp(0, widget.rows.length - 1);
+          _focusedRowIndex =
+              (_focusedRowIndex - 1).clamp(0, widget.rows.length - 1);
         });
         _scrollToFocusedRow();
-      } else if (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.space) {
+      } else if (event.logicalKey == LogicalKeyboardKey.enter ||
+          event.logicalKey == LogicalKeyboardKey.space) {
         if (_focusedRowIndex >= 0 && _focusedRowIndex < widget.rows.length) {
           widget.rows[_focusedRowIndex].onTap?.call();
         }
@@ -106,16 +109,18 @@ class _PosDataTableState extends State<PosDataTable> {
     final densityConfig = AppDensityProvider.configOf(context);
     final rowHeight = densityConfig.rowHeight;
     final offset = _focusedRowIndex * rowHeight;
-    
+
     // Simplistic scroll alignment
     if (_verticalController.hasClients) {
       final currentOffset = _verticalController.offset;
       final viewportHeight = _verticalController.position.viewportDimension;
-      
+
       if (offset < currentOffset) {
-         _verticalController.animateTo(offset, duration: const Duration(milliseconds: 100), curve: Curves.easeOut);
+        _verticalController.animateTo(offset,
+            duration: const Duration(milliseconds: 100), curve: Curves.easeOut);
       } else if (offset + rowHeight > currentOffset + viewportHeight) {
-         _verticalController.animateTo((offset + rowHeight) - viewportHeight, duration: const Duration(milliseconds: 100), curve: Curves.easeOut);
+        _verticalController.animateTo((offset + rowHeight) - viewportHeight,
+            duration: const Duration(milliseconds: 100), curve: Curves.easeOut);
       }
     }
   }
@@ -136,14 +141,16 @@ class _PosDataTableState extends State<PosDataTable> {
             height: densityConfig.rowHeight,
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
-              border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
+              border: Border(
+                  bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
             ),
             child: Scrollbar(
               controller: _horizontalController,
               child: SingleChildScrollView(
                 controller: _horizontalController,
                 scrollDirection: Axis.horizontal,
-                physics: const ClampingScrollPhysics(), // Prevent bounce on header
+                physics:
+                    const ClampingScrollPhysics(), // Prevent bounce on header
                 child: Row(
                   children: List.generate(widget.columns.length, (index) {
                     final col = widget.columns[index];
@@ -153,33 +160,38 @@ class _PosDataTableState extends State<PosDataTable> {
               ),
             ),
           ),
-          
+
           // Body
           Expanded(
-            child: widget.isLoading 
-              ? const Center(child: CircularProgressIndicator())
-              : widget.rows.isEmpty 
-                ? Center(child: Text('No data available', style: AppTypography.bodyMedium.copyWith(color: theme.colorScheme.onSurfaceVariant)))
-                : Scrollbar(
-                  controller: _verticalController,
-                  child: SingleChildScrollView(
-                    controller: _verticalController,
-                    child: SingleChildScrollView(
-                      // Sync horizontal scroll with header if needed, but Flutter's native DataTable handles this better internally. 
-                      // For this custom implementation, we'll keep it simple or require fixed flex columns.
-                      // Note: In a true enterprise grid, you'd use a synchronized horizontal scroll or flex layouts.
-                      // For POS, Flex layout is preferred so it always fills the screen width without horizontal scroll.
-                      scrollDirection: Axis.horizontal,
-                      child: Column(
-                        children: List.generate(widget.rows.length, (index) {
-                          final row = widget.rows[index];
-                          final isFocused = _focusedRowIndex == index;
-                          return _buildRow(row, index, isFocused, densityConfig, theme);
-                        }),
+            child: widget.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : widget.rows.isEmpty
+                    ? Center(
+                        child: Text('No data available',
+                            style: AppTypography.bodyMedium.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant)))
+                    : Scrollbar(
+                        controller: _verticalController,
+                        child: SingleChildScrollView(
+                          controller: _verticalController,
+                          child: SingleChildScrollView(
+                            // Sync horizontal scroll with header if needed, but Flutter's native DataTable handles this better internally.
+                            // For this custom implementation, we'll keep it simple or require fixed flex columns.
+                            // Note: In a true enterprise grid, you'd use a synchronized horizontal scroll or flex layouts.
+                            // For POS, Flex layout is preferred so it always fills the screen width without horizontal scroll.
+                            scrollDirection: Axis.horizontal,
+                            child: Column(
+                              children:
+                                  List.generate(widget.rows.length, (index) {
+                                final row = widget.rows[index];
+                                final isFocused = _focusedRowIndex == index;
+                                return _buildRow(row, index, isFocused,
+                                    densityConfig, theme);
+                              }),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
           ),
 
           // Pagination Footer
@@ -190,12 +202,17 @@ class _PosDataTableState extends State<PosDataTable> {
     );
   }
 
-  Widget _buildHeaderCell(PosDataColumn col, int index, DensityConfig densityConfig, ThemeData theme) {
+  Widget _buildHeaderCell(PosDataColumn col, int index,
+      DensityConfig densityConfig, ThemeData theme) {
     Widget content = Row(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: col.numeric ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment:
+          col.numeric ? MainAxisAlignment.end : MainAxisAlignment.start,
       children: [
-        if (col.icon != null) ...[col.icon!, const SizedBox(width: AppSpacing.xs)],
+        if (col.icon != null) ...[
+          col.icon!,
+          const SizedBox(width: AppSpacing.xs)
+        ],
         Text(
           col.label,
           style: AppTypography.labelLarge.copyWith(
@@ -207,10 +224,14 @@ class _PosDataTableState extends State<PosDataTable> {
           const SizedBox(width: AppSpacing.xs),
           Icon(
             widget.sortColumnIndex == index
-              ? (widget.sortAscending ? Icons.arrow_upward : Icons.arrow_downward)
-              : Icons.sort,
+                ? (widget.sortAscending
+                    ? Icons.arrow_upward
+                    : Icons.arrow_downward)
+                : Icons.sort,
             size: 16,
-            color: widget.sortColumnIndex == index ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            color: widget.sortColumnIndex == index
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
           ),
         ]
       ],
@@ -219,10 +240,11 @@ class _PosDataTableState extends State<PosDataTable> {
     if (col.sortable) {
       content = InkWell(
         onTap: () {
-           if (widget.onSort != null) {
-              final isAscending = widget.sortColumnIndex == index ? !widget.sortAscending : true;
-              widget.onSort!(index, isAscending);
-           }
+          if (widget.onSort != null) {
+            final isAscending =
+                widget.sortColumnIndex == index ? !widget.sortAscending : true;
+            widget.onSort!(index, isAscending);
+          }
         },
         child: Padding(
           padding: densityConfig.contentPadding,
@@ -242,7 +264,8 @@ class _PosDataTableState extends State<PosDataTable> {
     );
   }
 
-  Widget _buildRow(PosDataRow row, int index, bool isFocused, DensityConfig densityConfig, ThemeData theme) {
+  Widget _buildRow(PosDataRow row, int index, bool isFocused,
+      DensityConfig densityConfig, ThemeData theme) {
     return InkWell(
       onTap: () {
         setState(() {
@@ -254,10 +277,15 @@ class _PosDataTableState extends State<PosDataTable> {
       child: Container(
         height: densityConfig.rowHeight,
         decoration: BoxDecoration(
-          color: isFocused 
-              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.5) 
-              : (row.selected ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2) : null),
-          border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5))),
+          color: isFocused
+              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.5)
+              : (row.selected
+                  ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2)
+                  : null),
+          border: Border(
+              bottom: BorderSide(
+                  color:
+                      theme.colorScheme.outlineVariant.withValues(alpha: 0.5))),
         ),
         child: Row(
           children: List.generate(row.cells.length, (cellIndex) {
@@ -267,7 +295,9 @@ class _PosDataTableState extends State<PosDataTable> {
               child: Padding(
                 padding: densityConfig.contentPadding,
                 child: Align(
-                  alignment: col.numeric ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: col.numeric
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: row.cells[cellIndex],
                 ),
               ),
@@ -284,7 +314,8 @@ class _PosDataTableState extends State<PosDataTable> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+        border:
+            Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,

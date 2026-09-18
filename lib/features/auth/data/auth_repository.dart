@@ -18,13 +18,15 @@ class AuthRepository {
     final user = _auth.currentUser;
     if (user != null) {
       final profile = await _offlineService.getCachedUserProfile(uid: user.uid);
-      return AppUser.fromFirebaseUser(user, profile: profile != null ? Map<String, dynamic>.from(profile) : null);
+      return AppUser.fromFirebaseUser(user,
+          profile: profile != null ? Map<String, dynamic>.from(profile) : null);
     }
 
     final isOffline = _offlineService.getOfflineLoginState();
     if (isOffline) {
       final email = _offlineService.getOfflineLoginEmail();
-      final uid = _offlineService.getCachedUserId(email: email) ?? 'offline_user';
+      final uid =
+          _offlineService.getCachedUserId(email: email) ?? 'offline_user';
       final profile = await _offlineService.getCachedUserProfile(uid: uid);
       return AppUser.offline(
         uid: uid,
@@ -39,13 +41,14 @@ class AuthRepository {
 
   Future<void> signInWithEmail(String email, String password) async {
     try {
-      final credential = await _auth.signInWithEmailAndPassword(email: email, password: password);
-      
+      final credential = await _auth.signInWithEmailAndPassword(
+          email: email, password: password);
+
       final user = credential.user;
       if (user != null) {
         await _offlineService.cacheCredentials(email, password, uid: user.uid);
         await _offlineService.cacheUserId(user.uid, email: email);
-        
+
         final doc = await _firestore.collection('users').doc(user.uid).get();
         if (doc.exists) {
           await _offlineService.cacheUserProfile(doc.data()!, uid: user.uid);
@@ -64,8 +67,10 @@ class AuthRepository {
     }
   }
 
-  Future<void> signUpWithEmail(String email, String password, String mobile) async {
-    final credential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+  Future<void> signUpWithEmail(
+      String email, String password, String mobile) async {
+    final credential = await _auth.createUserWithEmailAndPassword(
+        email: email, password: password);
     final user = credential.user;
     if (user != null) {
       final name = email.split('@')[0];
@@ -85,7 +90,8 @@ class AuthRepository {
     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
     if (googleUser == null) return null;
 
-    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser.authentication;
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
@@ -101,8 +107,11 @@ class AuthRepository {
         'name': user.displayName ?? user.email?.split('@')[0],
         'lastLogin': FieldValue.serverTimestamp(),
       };
-      await _firestore.collection('users').doc(user.uid).set(profileData, SetOptions(merge: true));
-      
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .set(profileData, SetOptions(merge: true));
+
       final doc = await _firestore.collection('users').doc(user.uid).get();
       if (doc.exists) {
         await _offlineService.cacheUserProfile(doc.data()!, uid: user.uid);
@@ -126,19 +135,21 @@ class AuthRepository {
   Future<bool> checkIfNewCustomer(String email) async {
     final inputEmail = email.trim();
     final cleanEmail = inputEmail.toLowerCase();
-    
-    final query = await _firestore.collection('users')
-        .where('email', whereIn: [inputEmail, cleanEmail])
-        .get();
+
+    final query = await _firestore
+        .collection('users')
+        .where('email', whereIn: [inputEmail, cleanEmail]).get();
 
     bool hasActiveUser = false;
     bool hasPendingActivation = false;
 
     for (var doc in query.docs) {
       final data = doc.data();
-      final bool needsPwd = data['needsInitialPassword'] == true || data['needsInitialPassword'] == 'true';
+      final bool needsPwd = data['needsInitialPassword'] == true ||
+          data['needsInitialPassword'] == 'true';
       final bool isPlaceholderId = doc.id.contains('@');
-      final bool lacksRealUid = data['uid'] == null || data['uid'] == '' || data['uid'] == doc.id;
+      final bool lacksRealUid =
+          data['uid'] == null || data['uid'] == '' || data['uid'] == doc.id;
 
       if (needsPwd || (isPlaceholderId && lacksRealUid)) {
         hasPendingActivation = true;
@@ -150,13 +161,13 @@ class AuthRepository {
     if (query.docs.isEmpty) {
       final docIdsToCheck = {inputEmail, cleanEmail};
       for (final docId in docIdsToCheck) {
-         final directDoc = await _firestore.collection('users').doc(docId).get();
-         if (directDoc.exists) {
-            final data = directDoc.data();
-            if (data?['needsInitialPassword'] == true || data?['uid'] == docId) {
-              hasPendingActivation = true;
-            }
-         }
+        final directDoc = await _firestore.collection('users').doc(docId).get();
+        if (directDoc.exists) {
+          final data = directDoc.data();
+          if (data?['needsInitialPassword'] == true || data?['uid'] == docId) {
+            hasPendingActivation = true;
+          }
+        }
       }
     }
 
@@ -205,7 +216,7 @@ class AuthRepository {
 
   Future<void> updateUserProfile(String uid, Map<String, dynamic> data) async {
     await _firestore.collection('users').doc(uid).update(data);
-    
+
     // Refresh cache
     final doc = await _firestore.collection('users').doc(uid).get();
     if (doc.exists) {
@@ -224,7 +235,7 @@ class AuthRepository {
     } catch (e) {
       debugPrint("AuthRepository: Online fetch failed, trying cache: $e");
     }
-    
+
     final cached = await _offlineService.getCachedUserProfile(uid: uid);
     return cached != null ? Map<String, dynamic>.from(cached) : null;
   }
@@ -234,8 +245,11 @@ class AuthRepository {
       return (e.code == 'network-request-failed' || e.code == 'unavailable');
     }
     final msg = e.toString().toLowerCase();
-    return msg.contains('network') || msg.contains('socket') || 
-           msg.contains('timeout') || msg.contains('unreachable') ||
-           msg.contains('connection') || msg.contains('errno');
+    return msg.contains('network') ||
+        msg.contains('socket') ||
+        msg.contains('timeout') ||
+        msg.contains('unreachable') ||
+        msg.contains('connection') ||
+        msg.contains('errno');
   }
 }

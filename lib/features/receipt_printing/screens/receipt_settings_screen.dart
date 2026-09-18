@@ -29,11 +29,12 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_isInit) {
-      final store = Provider.of<DashboardProvider>(context, listen: false).activeStore;
+      final store =
+          Provider.of<DashboardProvider>(context, listen: false).activeStore;
       if (store != null) {
         _settings = store.receipt;
         _upsellController.text = _settings.upsellMessage;
-        _headerController.text = _settings.customHeaderMessage; 
+        _headerController.text = _settings.customHeaderMessage;
         _qrController.text = _settings.qrData;
       } else {
         _settings = ReceiptSettings();
@@ -41,7 +42,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       _isInit = false;
     }
   }
-  
+
   @override
   void dispose() {
     _upsellController.dispose();
@@ -63,14 +64,15 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       customHeaderMessage: _headerController.text,
       qrData: _qrController.text,
     );
-    
+
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     final store = provider.activeStore;
     if (store != null) {
       final updatedStore = store.copyWith(receipt: finalSettings);
       await provider.updateStoreSettings(updatedStore);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Receipt Settings Saved")));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Receipt Settings Saved")));
       }
     }
   }
@@ -78,7 +80,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final store = Provider.of<DashboardProvider>(context).activeStore;
-    
+
     if (store == null) {
       return const Scaffold(body: Center(child: Text("No Active Store")));
     }
@@ -90,7 +92,9 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       qrData: _qrController.text,
     );
     final previewContent = _buildPreviewContent(store, liveSettings);
-    final config = _settings.receiptWidth == 58 ? ReceiptConfig.mm58() : ReceiptConfig.mm80();
+    final config = _settings.receiptWidth == 58
+        ? ReceiptConfig.mm58()
+        : ReceiptConfig.mm80();
 
     return Scaffold(
       appBar: AppBar(
@@ -110,18 +114,20 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       ),
     );
   }
-  
+
   // Dummy Content Builder
   ReceiptContent _buildPreviewContent(Store store, ReceiptSettings settings) {
     // Mock Totals
     double grandTotal = 444.15;
-    
+
     // Dynamic QR Logic (Mirroring UniversalPrinterService)
     String? effectiveQrData;
     if (settings.showQr) {
-      if (store.payment.upiId.isNotEmpty) { 
+      if (store.payment.upiId.isNotEmpty) {
         final String pa = store.payment.upiId;
-        final String pn = Uri.encodeComponent(store.payment.upiName.isNotEmpty ? store.payment.upiName : store.name);
+        final String pn = Uri.encodeComponent(store.payment.upiName.isNotEmpty
+            ? store.payment.upiName
+            : store.name);
         final String am = grandTotal.toStringAsFixed(2);
         effectiveQrData = "upi://pay?pa=$pa&pn=$pn&am=$am&cu=INR";
       } else if (settings.qrData.isNotEmpty) {
@@ -129,47 +135,68 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       }
     }
 
-     return ReceiptContent(
-       header: ReceiptHeader(
-         storeName: settings.showStoreName ? store.name : '',
-         address: settings.showAddress ? (store.address ?? '') : null,
-         phone: settings.showPhone ? (store.phone ?? '') : null,
-         gstin: settings.showTaxDetails ? '27ABCDE1234F1Z5' : null,
-         customMessage: settings.customHeaderMessage.isNotEmpty ? settings.customHeaderMessage : null,
-       ),
-       billInfo: ReceiptBillInfo(
-         billNo: settings.showOrderNo ? '1001' : '',
-         date: DateTime.now(),
-         cashierName: 'Admin',
-         tokenNo: settings.showTokenNo ? '12' : null,
-       ),
-       items: [
-         ReceiptItem(name: "Chicken Burger", quantity: 2, price: 150.00, amount: 300.00),
-         ReceiptItem(name: "Coke Zero (300ml)", quantity: 1, price: 50.00, amount: 50.00),
-         ReceiptItem(name: "French Fries Lrg", quantity: 1, price: 120.00, amount: 120.00),
-       ],
-       summary: ReceiptKeyValSummary(rows: [
-         ReceiptKeyVal(label: 'Subtotal', value: '470.00'),
-         if (settings.showDiscount)
-            ReceiptKeyVal(label: 'Discount (10%)', value: '-47.00'),
-         if (settings.showTaxDetails) ...[
-            ReceiptKeyVal(label: 'CGST (2.5%)', value: '10.58'),
-            ReceiptKeyVal(label: 'SGST (2.5%)', value: '10.58'),
-         ],
-       ], grandTotal: ReceiptKeyVal(label: 'Grand Total', value: grandTotal.toStringAsFixed(2), isLarge: true)),
-       payment: ReceiptKeyValSummary(rows: [
-          ReceiptKeyVal(label: 'Cash', value: '500.00'),
-          ReceiptKeyVal(label: 'Change', value: '55.85'),
-       ]),
-       footer: settings.showFooter ? ReceiptFooter(
-         message: settings.upsellMessage.isNotEmpty ? settings.upsellMessage : "Thank You Visit Again !!!",
-         poweredBy: "Powered by Biztonic",
-         qrData: effectiveQrData,
-       ) : null,
-     );
+    return ReceiptContent(
+      header: ReceiptHeader(
+        storeName: settings.showStoreName ? store.name : '',
+        address: settings.showAddress ? (store.address ?? '') : null,
+        phone: settings.showPhone ? (store.phone ?? '') : null,
+        gstin: settings.showTaxDetails ? '27ABCDE1234F1Z5' : null,
+        customMessage: settings.customHeaderMessage.isNotEmpty
+            ? settings.customHeaderMessage
+            : null,
+      ),
+      billInfo: ReceiptBillInfo(
+        billNo: settings.showOrderNo ? '1001' : '',
+        date: DateTime.now(),
+        cashierName: 'Admin',
+        tokenNo: settings.showTokenNo ? '12' : null,
+      ),
+      items: [
+        ReceiptItem(
+            name: "Chicken Burger", quantity: 2, price: 150.00, amount: 300.00),
+        ReceiptItem(
+            name: "Coke Zero (300ml)",
+            quantity: 1,
+            price: 50.00,
+            amount: 50.00),
+        ReceiptItem(
+            name: "French Fries Lrg",
+            quantity: 1,
+            price: 120.00,
+            amount: 120.00),
+      ],
+      summary: ReceiptKeyValSummary(
+          rows: [
+            ReceiptKeyVal(label: 'Subtotal', value: '470.00'),
+            if (settings.showDiscount)
+              ReceiptKeyVal(label: 'Discount (10%)', value: '-47.00'),
+            if (settings.showTaxDetails) ...[
+              ReceiptKeyVal(label: 'CGST (2.5%)', value: '10.58'),
+              ReceiptKeyVal(label: 'SGST (2.5%)', value: '10.58'),
+            ],
+          ],
+          grandTotal: ReceiptKeyVal(
+              label: 'Grand Total',
+              value: grandTotal.toStringAsFixed(2),
+              isLarge: true)),
+      payment: ReceiptKeyValSummary(rows: [
+        ReceiptKeyVal(label: 'Cash', value: '500.00'),
+        ReceiptKeyVal(label: 'Change', value: '55.85'),
+      ]),
+      footer: settings.showFooter
+          ? ReceiptFooter(
+              message: settings.upsellMessage.isNotEmpty
+                  ? settings.upsellMessage
+                  : "Thank You Visit Again !!!",
+              poweredBy: "Powered by Biztonic",
+              qrData: effectiveQrData,
+            )
+          : null,
+    );
   }
 
-  Widget _buildDesktopLayout(ReceiptContent content, ReceiptConfig config, ReceiptSettings settings) {
+  Widget _buildDesktopLayout(
+      ReceiptContent content, ReceiptConfig config, ReceiptSettings settings) {
     return Row(
       children: [
         Expanded(
@@ -201,7 +228,8 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
     );
   }
 
-  Widget _buildMobileLayout(ReceiptContent content, ReceiptConfig config, ReceiptSettings settings) {
+  Widget _buildMobileLayout(
+      ReceiptContent content, ReceiptConfig config, ReceiptSettings settings) {
     return DefaultTabController(
       length: 2,
       child: Column(
@@ -215,18 +243,20 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
           Expanded(
             child: TabBarView(
               children: [
-                ListView(padding: const EdgeInsets.all(AppSpacing.md), children: _buildControlList()),
+                ListView(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    children: _buildControlList()),
                 Container(
-                   color: AppColors.textSecondary(context),
-                   alignment: Alignment.topCenter,
-                   child: SingleChildScrollView(
-                     padding: const EdgeInsets.all(AppSpacing.xxs),
-                     child: ReceiptPreviewWidget(
-                        content: content,
-                        config: config,
-                        settings: settings,
-                     ),
-                   ),
+                  color: AppColors.textSecondary(context),
+                  alignment: Alignment.topCenter,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpacing.xxs),
+                    child: ReceiptPreviewWidget(
+                      content: content,
+                      config: config,
+                      settings: settings,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -238,14 +268,19 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
 
   List<Widget> _buildControlList() {
     return [
-      const Text('Layout & Dimensions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
+      const Text('Layout & Dimensions',
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryLight)),
       const SizedBox(height: AppSpacing.md),
       ListTile(
         title: const Text("Printer Width"),
         trailing: DropdownButton<int>(
           value: _settings.receiptWidth,
           onChanged: (val) {
-            if (val != null) _updateSetting(_settings.copyWith(receiptWidth: val));
+            if (val != null)
+              _updateSetting(_settings.copyWith(receiptWidth: val));
           },
           items: const [
             DropdownMenuItem(value: 58, child: Text("58mm")),
@@ -253,17 +288,21 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
           ],
         ),
       ),
-      
       const Divider(height: 30),
-      const Text('Print Configuration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
+      const Text('Print Configuration',
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryLight)),
       const SizedBox(height: AppSpacing.md),
       ListTile(
         title: const Text("Print Action"),
         subtitle: const Text("Choose which receipts to print automatically"),
         trailing: DropdownButton<String>(
-          value: _settings.printAction, 
+          value: _settings.printAction,
           onChanged: (val) {
-             if (val != null) _updateSetting(_settings.copyWith(printAction: val));
+            if (val != null)
+              _updateSetting(_settings.copyWith(printAction: val));
           },
           items: const [
             DropdownMenuItem(value: 'Main', child: Text("Main Receipt Only")),
@@ -272,21 +311,24 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
           ],
         ),
       ),
-
-
-
       const Divider(height: 30),
-      const Text('Header & Branding', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
+      const Text('Header & Branding',
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryLight)),
       const SizedBox(height: AppSpacing.md),
       SwitchListTile(
         title: const Text("Show Store Name"),
         value: _settings.showStoreName,
-        onChanged: (val) => _updateSetting(_settings.copyWith(showStoreName: val)),
+        onChanged: (val) =>
+            _updateSetting(_settings.copyWith(showStoreName: val)),
       ),
       SwitchListTile(
         title: const Text("Show Address"),
         value: _settings.showAddress,
-        onChanged: (val) => _updateSetting(_settings.copyWith(showAddress: val)),
+        onChanged: (val) =>
+            _updateSetting(_settings.copyWith(showAddress: val)),
       ),
       SwitchListTile(
         title: const Text("Show Phone Number"),
@@ -294,47 +336,61 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
         onChanged: (val) => _updateSetting(_settings.copyWith(showPhone: val)),
       ),
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         child: TextField(
-           controller: _headerController,
-           decoration: const InputDecoration(labelText: "Custom Header Message"),
-           onChanged: (val) {
-              setState(() {});
-           },
+          controller: _headerController,
+          decoration: const InputDecoration(labelText: "Custom Header Message"),
+          onChanged: (val) {
+            setState(() {});
+          },
         ),
       ),
-
       const Divider(height: 30),
-      const Text('Order Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
+      const Text('Order Details',
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryLight)),
       const SizedBox(height: AppSpacing.md),
       SwitchListTile(
         title: const Text("Show Bill/Order Number"),
         value: _settings.showOrderNo,
-        onChanged: (val) => _updateSetting(_settings.copyWith(showOrderNo: val)),
+        onChanged: (val) =>
+            _updateSetting(_settings.copyWith(showOrderNo: val)),
       ),
       SwitchListTile(
         title: const Text("Show Token Number (Big)"),
         subtitle: const Text("Useful for QSR/Counter Service"),
         value: _settings.showTokenNo,
-        onChanged: (val) => _updateSetting(_settings.copyWith(showTokenNo: val)),
+        onChanged: (val) =>
+            _updateSetting(_settings.copyWith(showTokenNo: val)),
       ),
-      
       const Divider(height: 30),
-      const Text('Financials', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
+      const Text('Financials',
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryLight)),
       const SizedBox(height: AppSpacing.md),
       SwitchListTile(
         title: const Text("Show Tax Breakdown"),
         value: _settings.showTaxDetails,
-        onChanged: (val) => _updateSetting(_settings.copyWith(showTaxDetails: val)),
+        onChanged: (val) =>
+            _updateSetting(_settings.copyWith(showTaxDetails: val)),
       ),
       SwitchListTile(
         title: const Text("Show Discount"),
         value: _settings.showDiscount,
-        onChanged: (val) => _updateSetting(_settings.copyWith(showDiscount: val)),
+        onChanged: (val) =>
+            _updateSetting(_settings.copyWith(showDiscount: val)),
       ),
-
       const Divider(height: 30),
-      const Text('Footer & Marketing', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
+      const Text('Footer & Marketing',
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryLight)),
       const SizedBox(height: AppSpacing.md),
       SwitchListTile(
         title: const Text("Show Footer Message"),
@@ -345,15 +401,15 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: TextField(
-             controller: _upsellController,
-             decoration: const InputDecoration(labelText: "Custom Footer Message"),
-             onChanged: (val) {
-                // Force rebuild to update preview
-                setState(() {});
-             },
+            controller: _upsellController,
+            decoration:
+                const InputDecoration(labelText: "Custom Footer Message"),
+            onChanged: (val) {
+              // Force rebuild to update preview
+              setState(() {});
+            },
           ),
         ),
-      
       SwitchListTile(
         title: const Text("Show QR Code"),
         value: _settings.showQr,
@@ -363,14 +419,13 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: TextField(
-             controller: _qrController,
-             decoration: const InputDecoration(labelText: "QR Data / Link"),
-             onChanged: (val) {
-                setState(() {});
-             },
+            controller: _qrController,
+            decoration: const InputDecoration(labelText: "QR Data / Link"),
+            onChanged: (val) {
+              setState(() {});
+            },
           ),
         ),
-      
       const SizedBox(height: AppSpacing.xs),
     ];
   }

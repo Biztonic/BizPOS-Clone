@@ -134,8 +134,7 @@ class AnnouncementBuilder {
     final langMap = _localizations[lang] ??
         _localizations['en'] ??
         _fallbackLocalizations['en']!;
-    String template =
-        langMap[key] ?? _fallbackLocalizations['en']![key] ?? key;
+    String template = langMap[key] ?? _fallbackLocalizations['en']![key] ?? key;
 
     metadata.forEach((k, v) {
       template = template.replaceAll('{$k}', v.toString());

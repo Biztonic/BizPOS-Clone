@@ -8,7 +8,7 @@ import '../providers/store_provider.dart';
 
 class ImportItemDialog extends StatefulWidget {
   final InventoryItem item;
-  
+
   const ImportItemDialog({super.key, required this.item});
 
   @override
@@ -27,7 +27,7 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
     super.initState();
     // Default price to 0 or simple check, prompt implies "in central catalogue item there should not be price"
     // So we leave it empty for the user to fill, or 0. The image shows a cursor | implying empty/focus.
-    _priceController = TextEditingController(); 
+    _priceController = TextEditingController();
     _qtyController = TextEditingController();
     _costController = TextEditingController();
   }
@@ -56,9 +56,10 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(AppLocalizations.t(context, 'Add Item to Store'), style: AppTypography.titleLarge),
+                  Text(AppLocalizations.t(context, 'Add Item to Store'),
+                      style: AppTypography.titleLarge),
                   IconButton(
-                    icon: const Icon(Icons.close), 
+                    icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -68,16 +69,23 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Set the price and quantity for "${widget.item.name}" in your store.',
-                style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
+                style: AppTypography.bodyMedium
+                    .copyWith(color: AppColors.textSecondary(context)),
               ),
               const SizedBox(height: AppSpacing.lg),
-              
+
               // Item Name Display
               Row(
                 children: [
-                  SizedBox(width: 80, child: Text(AppLocalizations.t(context, 'Item'), style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
+                  SizedBox(
+                      width: 80,
+                      child: Text(AppLocalizations.t(context, 'Item'),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.end)),
                   const SizedBox(width: AppSpacing.md),
-                  Text(widget.item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(widget.item.name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
@@ -85,19 +93,26 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
               // Price
               Row(
                 children: [
-                   SizedBox(width: 80, child: Text(AppLocalizations.t(context, 'Price (₹)'), style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
-                   const SizedBox(width: AppSpacing.md),
-                   Expanded(
-                     child: TextFormField(
-                       controller: _priceController,
-                       keyboardType: TextInputType.number,
-                       decoration: const InputDecoration(
-                         border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
-                         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                       ),
-                       validator: (v) => v == null || v.isEmpty ? 'Price is required' : null,
-                     ),
-                   )
+                  SizedBox(
+                      width: 80,
+                      child: Text(AppLocalizations.t(context, 'Price (₹)'),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.end)),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(
+                            borderRadius: AppRadius.borderMd),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      ),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Price is required' : null,
+                    ),
+                  )
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
@@ -105,39 +120,54 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
               // Quantity
               Row(
                 children: [
-                   SizedBox(width: 80, child: Text(AppLocalizations.t(context, 'Quantity'), style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
-                   const SizedBox(width: AppSpacing.md),
-                   Expanded(
-                     child: TextFormField(
-                       controller: _qtyController,
-                       keyboardType: TextInputType.number,
-                       decoration: const InputDecoration(
-                         border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
-                         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                       ),
-                       validator: (v) => v == null || v.isEmpty ? 'Quantity is required' : null,
-                     ),
-                   )
+                  SizedBox(
+                      width: 80,
+                      child: Text(AppLocalizations.t(context, 'Quantity'),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.end)),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _qtyController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(
+                            borderRadius: AppRadius.borderMd),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      ),
+                      validator: (v) => v == null || v.isEmpty
+                          ? 'Quantity is required'
+                          : null,
+                    ),
+                  )
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              
+
               // Cost
               Row(
                 children: [
-                   SizedBox(width: 80, child: Text(AppLocalizations.t(context, 'Cost of Goods (₹)'), style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
-                   const SizedBox(width: AppSpacing.md),
-                   Expanded(
-                     child: TextFormField(
-                       controller: _costController,
-                       keyboardType: TextInputType.number,
-                       decoration: const InputDecoration(
-                         hintText: 'Optional',
-                         border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
-                         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                       ),
-                     ),
-                   )
+                  SizedBox(
+                      width: 80,
+                      child: Text(
+                          AppLocalizations.t(context, 'Cost of Goods (₹)'),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.end)),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _costController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        hintText: 'Optional',
+                        border: OutlineInputBorder(
+                            borderRadius: AppRadius.borderMd),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      ),
+                    ),
+                  )
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
@@ -145,40 +175,53 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
               // Counter
               Row(
                 children: [
-                   SizedBox(width: 80, child: Text(AppLocalizations.t(context, 'Counter'), style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
-                   const SizedBox(width: AppSpacing.md),
-                   Expanded(
-                     child: Consumer<StoreProvider>(
-                       builder: (context, provider, child) {
-                         final counters = provider.counters;
-                         
-                         // If no counters found, show warning or default
-                         if (counters.isEmpty) {
-                           return Padding(
-                             padding: const EdgeInsets.only(top: 12),
-                             child: Text(AppLocalizations.t(context, 'No counters found. Add in Settings.'), style: const TextStyle(color: AppColors.error, fontSize: 13)),
-                           );
-                         }
+                  SizedBox(
+                      width: 80,
+                      child: Text(AppLocalizations.t(context, 'Counter'),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.end)),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Consumer<StoreProvider>(
+                        builder: (context, provider, child) {
+                      final counters = provider.counters;
 
-                         return DropdownButtonFormField<String>(
-                           value: _selectedCounter != 'No specific counter' ? _selectedCounter : null,
-                           hint: Text(AppLocalizations.t(context, 'Select Counter')),
-                           items: counters.map<DropdownMenuItem<String>>((c) {
-                             return DropdownMenuItem(value: c.id, child: Text(c.name));
-                           }).toList(),
-                           onChanged: (v) => setState(() => _selectedCounter = v!),
-                           decoration: const InputDecoration(
-                             border: OutlineInputBorder(borderRadius: AppRadius.borderMd),
-                             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                           ),
-                         );
-                       }
-                     ),
-                   )
+                      // If no counters found, show warning or default
+                      if (counters.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                              AppLocalizations.t(context,
+                                  'No counters found. Add in Settings.'),
+                              style: const TextStyle(
+                                  color: AppColors.error, fontSize: 13)),
+                        );
+                      }
+
+                      return DropdownButtonFormField<String>(
+                        value: _selectedCounter != 'No specific counter'
+                            ? _selectedCounter
+                            : null,
+                        hint:
+                            Text(AppLocalizations.t(context, 'Select Counter')),
+                        items: counters.map<DropdownMenuItem<String>>((c) {
+                          return DropdownMenuItem(
+                              value: c.id, child: Text(c.name));
+                        }).toList(),
+                        onChanged: (v) => setState(() => _selectedCounter = v!),
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(
+                              borderRadius: AppRadius.borderMd),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                        ),
+                      );
+                    }),
+                  )
                 ],
               ),
               const SizedBox(height: AppSpacing.xl),
-              
+
               // Actions
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -203,15 +246,14 @@ class _ImportItemDialogState extends State<ImportItemDialog> {
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
-       final result = {
-         'price': double.tryParse(_priceController.text) ?? 0.0,
-         'quantity': int.tryParse(_qtyController.text) ?? 0,
-         'cost': double.tryParse(_costController.text),
-         'counter': _selectedCounter == 'No specific counter' ? null : _selectedCounter,
-       };
-       Navigator.pop(context, result);
+      final result = {
+        'price': double.tryParse(_priceController.text) ?? 0.0,
+        'quantity': int.tryParse(_qtyController.text) ?? 0,
+        'cost': double.tryParse(_costController.text),
+        'counter':
+            _selectedCounter == 'No specific counter' ? null : _selectedCounter,
+      };
+      Navigator.pop(context, result);
     }
   }
 }
-
-

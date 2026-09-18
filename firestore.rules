@@ -49,7 +49,13 @@ service cloud.firestore {
       allow read: if (isAuthenticated() && (request.auth.uid == uid || isSuperAdmin())) || 
                    (resource.data.needsInitialPassword == true || resource.data.needsInitialPassword == 'true');
       
-      allow create: if isAuthenticated() && (request.auth.uid == uid || isSuperAdmin());
+      allow create: if isAuthenticated() && (
+        isSuperAdmin() || (
+          request.auth.uid == uid &&
+          (!('role' in request.resource.data) || 
+           (request.resource.data.role != 'Super Admin' && request.resource.data.role != 'super_admin'))
+        )
+      );
       allow update: if isSuperAdmin() || (
         isAuthenticated() && request.auth.uid == uid && 
         (!('storeId' in request.resource.data) || request.resource.data.storeId == resource.data.storeId) &&
@@ -118,7 +124,11 @@ service cloud.firestore {
     match /subscription_requests/{docId} {
       // Allow unauthenticated read of pending requests to facilitate onboarding detection
       allow read: if isAuthenticated() || resource.data.status == 'PENDING';
-      allow write: if isAuthenticated();
+      // Regular authenticated users can only submit new PENDING requests
+      allow create: if isAuthenticated() && 
+                    (!('status' in request.resource.data) || request.resource.data.status == 'PENDING');
+      // Only Super Admin can approve, modify, or delete subscription requests
+      allow update, delete: if isSuperAdmin();
     }
 
     match /subscription_history/{histId} {
@@ -143,13 +153,14 @@ service cloud.firestore {
     }
     // 7. Root Collections with storeId filtering
     match /orders/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
+      allow read: if isAuthenticated() && (isSuperAdmin() || 
                            (resource.data.storeId != null && storeAccess(resource.data.storeId)));
       allow create: if isAuthenticated() && (isSuperAdmin() || 
                            (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
       allow update: if isAuthenticated() && (isSuperAdmin() || 
                            (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
                             request.resource.data.storeId == resource.data.storeId));
+      allow delete: if isSuperAdmin();
     }
     match /inventory/{id} {
       allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
@@ -170,31 +181,34 @@ service cloud.firestore {
                             request.resource.data.storeId == resource.data.storeId));
     }
     match /inventory_movements/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
+      allow read: if isAuthenticated() && (isSuperAdmin() || 
                            (resource.data.storeId != null && storeAccess(resource.data.storeId)));
       allow create: if isAuthenticated() && (isSuperAdmin() || 
                            (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
       allow update: if isAuthenticated() && (isSuperAdmin() || 
                            (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
                             request.resource.data.storeId == resource.data.storeId));
+      allow delete: if isSuperAdmin();
     }
     match /business_events/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
+      allow read: if isAuthenticated() && (isSuperAdmin() || 
                            (resource.data.storeId != null && storeAccess(resource.data.storeId)));
       allow create: if isAuthenticated() && (isSuperAdmin() || 
                            (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
       allow update: if isAuthenticated() && (isSuperAdmin() || 
                            (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
                             request.resource.data.storeId == resource.data.storeId));
+      allow delete: if isSuperAdmin();
     }
     match /activity_logs/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
+      allow read: if isAuthenticated() && (isSuperAdmin() || 
                            (resource.data.storeId != null && storeAccess(resource.data.storeId)));
       allow create: if isAuthenticated() && (isSuperAdmin() || 
                            (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
       allow update: if isAuthenticated() && (isSuperAdmin() || 
                            (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
                             request.resource.data.storeId == resource.data.storeId));
+      allow delete: if isSuperAdmin();
     }
 
     match /counters/{id} {

@@ -31,7 +31,8 @@ class StoreState {
     return StoreState(
       stores: stores ?? this.stores,
       activeStore: clearActiveStore ? null : (activeStore ?? this.activeStore),
-      activeStoreId: clearActiveStore ? null : (activeStoreId ?? this.activeStoreId),
+      activeStoreId:
+          clearActiveStore ? null : (activeStoreId ?? this.activeStoreId),
       counters: counters ?? this.counters,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),

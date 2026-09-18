@@ -1,4 +1,3 @@
-
 Future<String> getDatabasePath(String dbName) async {
   return 'biztonic_pos.db';
 }

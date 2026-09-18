@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:biztonic_pos/services/database_helper.dart';
 
 class IdempotencyService {
@@ -25,7 +26,14 @@ class IdempotencyService {
     required String entityId,
     required String deviceId,
   }) async {
-    if (kIsWeb) return true;
+    if (kIsWeb) {
+      return _checkAndReserveKeyWeb(
+        key: key,
+        entityType: entityType,
+        entityId: entityId,
+        deviceId: deviceId,
+      );
+    }
     final db = await DatabaseHelper().database;
 
     try {
@@ -58,7 +66,14 @@ class IdempotencyService {
     required String entityId,
     required String deviceId,
   }) async {
-    if (kIsWeb) return true;
+    if (kIsWeb) {
+      return _checkAndReserveKeyWeb(
+        key: key,
+        entityType: entityType,
+        entityId: entityId,
+        deviceId: deviceId,
+      );
+    }
     try {
       await txn.insert(
         'idempotency_keys',
@@ -78,5 +93,34 @@ class IdempotencyService {
       }
       rethrow;
     }
+  }
+
+  Future<bool> _checkAndReserveKeyWeb({
+    required String key,
+    required String entityType,
+    required String entityId,
+    required String deviceId,
+  }) async {
+    const boxName = 'idempotency_keys';
+    Box box;
+    if (!Hive.isBoxOpen(boxName)) {
+      box = await Hive.openBox(boxName);
+    } else {
+      box = Hive.box(boxName);
+    }
+
+    final existing = box.get(key);
+    if (existing != null) {
+      return false; // Already reserved/processed (duplicate)
+    }
+
+    await box.put(key, {
+      'key': key,
+      'entityType': entityType,
+      'entityId': entityId,
+      'deviceId': deviceId,
+      'createdAt': DateTime.now().toIso8601String(),
+    });
+    return true; // Successfully reserved (new)
   }
 }

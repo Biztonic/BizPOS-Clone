@@ -87,7 +87,8 @@ class LimitsEnforcer {
         ));
       }
 
-      debugPrint('📊 [LimitsEnforcer] Plan: $plan | Today: $_todayOrderCount/$_dailyLimit | Month: $_monthlyOrderCount/$_monthlyLimit');
+      debugPrint(
+          '📊 [LimitsEnforcer] Plan: $plan | Today: $_todayOrderCount/$_dailyLimit | Month: $_monthlyOrderCount/$_monthlyLimit');
     } catch (e) {
       debugPrint('📊 [LimitsEnforcer] Error checking limits: $e');
     }
@@ -100,7 +101,8 @@ class LimitsEnforcer {
       final db = await repo.database;
 
       final now = DateTime.now();
-      final todayStart = DateTime(now.year, now.month, now.day).toIso8601String();
+      final todayStart =
+          DateTime(now.year, now.month, now.day).toIso8601String();
       final monthStart = DateTime(now.year, now.month, 1).toIso8601String();
 
       // Single query with conditional counting

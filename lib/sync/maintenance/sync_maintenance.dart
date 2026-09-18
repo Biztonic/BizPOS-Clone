@@ -38,7 +38,8 @@ class SyncMaintenanceEngine {
   ///
   /// This repairs the "lost write" scenario where a local write succeeded
   /// but the queue entry was lost (crash, box corruption, etc.).
-  Future<int> repairUnsyncedItems(String module, {bool forceAll = false}) async {
+  Future<int> repairUnsyncedItems(String module,
+      {bool forceAll = false}) async {
     final storeId = _getActiveStoreId();
     final boxName = SyncCollectionRegistry.getBoxName(module, storeId: storeId);
     if (boxName == null) return 0;
@@ -106,7 +107,8 @@ class SyncMaintenanceEngine {
 
     for (var mod in SyncCollectionRegistry.heavyDataModules) {
       try {
-        final boxName = SyncCollectionRegistry.getBoxName(mod, storeId: storeId);
+        final boxName =
+            SyncCollectionRegistry.getBoxName(mod, storeId: storeId);
         if (boxName == null) continue;
 
         final box = await Hive.openBox(boxName);
@@ -131,7 +133,8 @@ class SyncMaintenanceEngine {
 
     // Clear settings for this store too
     try {
-      final sBox = await Hive.openBox(SyncCollectionRegistry.boxSettingsGeneral);
+      final sBox =
+          await Hive.openBox(SyncCollectionRegistry.boxSettingsGeneral);
       await sBox.delete('store_settings_$storeId');
       await sBox.delete('last_sync_time_$storeId');
     } catch (e) {
@@ -172,10 +175,10 @@ class SyncMaintenanceEngine {
   /// Repairs all pull modules by scanning for unsynced items and re-queuing them.
   Future<void> repairAllModules() async {
     int totalRepaired = 0;
-    
+
     // 1. Purge corrupted queue entries first
     await purgeCorruptedQueueEntries();
-    
+
     // 2. Repair orphaned transaction journals
     await repairTransactionJournals();
 
@@ -186,7 +189,8 @@ class SyncMaintenanceEngine {
     for (var module in SyncCollectionRegistry.pullModules) {
       totalRepaired += await repairUnsyncedItems(module);
     }
-    debugPrint('🔧 [Maintenance] repairAllModules complete: $totalRepaired items repaired');
+    debugPrint(
+        '🔧 [Maintenance] repairAllModules complete: $totalRepaired items repaired');
   }
 
   /// Purges sync queue entries that are structurally invalid or corrupted
@@ -215,10 +219,12 @@ class SyncMaintenanceEngine {
 
       if (keysToRemove.isNotEmpty) {
         await queueBox.deleteAll(keysToRemove);
-        debugPrint('⚠️ [Maintenance] Purged ${keysToRemove.length} corrupted sync queue entries');
+        debugPrint(
+            '⚠️ [Maintenance] Purged ${keysToRemove.length} corrupted sync queue entries');
       }
     } catch (e) {
-      debugPrint('⚠️ [Maintenance] Failed to purge corrupted queue entries: $e');
+      debugPrint(
+          '⚠️ [Maintenance] Failed to purge corrupted queue entries: $e');
     }
   }
 
@@ -226,10 +232,11 @@ class SyncMaintenanceEngine {
   Future<void> repairTransactionJournals() async {
     try {
       final db = await DatabaseHelper().database;
-      
+
       // Transactions older than 1 hour that are still PENDING are considered abandoned
-      final oneHourAgo = DateTime.now().subtract(const Duration(hours: 1)).toIso8601String();
-      
+      final oneHourAgo =
+          DateTime.now().subtract(const Duration(hours: 1)).toIso8601String();
+
       final pendingTxs = await db.query(
         'transaction_journal',
         where: 'status = ? AND createdAt < ?',
@@ -238,7 +245,8 @@ class SyncMaintenanceEngine {
 
       if (pendingTxs.isEmpty) return;
 
-      debugPrint('🔧 [Maintenance] Found ${pendingTxs.length} corrupted/interrupted transactions. Repairing...');
+      debugPrint(
+          '🔧 [Maintenance] Found ${pendingTxs.length} corrupted/interrupted transactions. Repairing...');
 
       final batch = db.batch();
       for (var tx in pendingTxs) {
@@ -254,8 +262,9 @@ class SyncMaintenanceEngine {
         );
       }
       await batch.commit(noResult: true);
-      
-      debugPrint('⚠️ [Maintenance] Marked ${pendingTxs.length} orphaned transactions as FAILED');
+
+      debugPrint(
+          '⚠️ [Maintenance] Marked ${pendingTxs.length} orphaned transactions as FAILED');
     } catch (e) {
       debugPrint('⚠️ [Maintenance] Transaction journal repair failed: $e');
     }
@@ -265,10 +274,11 @@ class SyncMaintenanceEngine {
   Future<void> pruneTransactionJournals() async {
     try {
       final db = await DatabaseHelper().database;
-      
+
       // Entries older than 30 days
-      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30)).toIso8601String();
-      
+      final thirtyDaysAgo =
+          DateTime.now().subtract(const Duration(days: 30)).toIso8601String();
+
       final count = await db.delete(
         'transaction_journal',
         where: '(status = ? OR status = ?) AND createdAt < ?',
@@ -276,7 +286,8 @@ class SyncMaintenanceEngine {
       );
 
       if (count > 0) {
-        debugPrint('🧹 [Maintenance] Pruned $count old transaction journal entries');
+        debugPrint(
+            '🧹 [Maintenance] Pruned $count old transaction journal entries');
       }
     } catch (e) {
       debugPrint('⚠️ [Maintenance] Transaction journal pruning failed: $e');
@@ -287,7 +298,8 @@ class SyncMaintenanceEngine {
   Future<void> clearStoreMetadata(String? storeId) async {
     if (storeId == null) return;
     try {
-      final sBox = await Hive.openBox(SyncCollectionRegistry.boxSettingsGeneral);
+      final sBox =
+          await Hive.openBox(SyncCollectionRegistry.boxSettingsGeneral);
       for (var module in SyncCollectionRegistry.pullModules) {
         await sBox.delete('last_sync_${module}_$storeId');
       }

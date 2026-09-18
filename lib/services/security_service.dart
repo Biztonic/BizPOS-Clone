@@ -16,16 +16,18 @@ class SecurityService {
   Future<List<int>> getHiveKey() async {
     try {
       String? keyStr = await _secureStorage.read(key: _hiveKeyName);
-      
+
       if (keyStr == null) {
         final newKey = _generateRandomKey(32);
-        await _secureStorage.write(key: _hiveKeyName, value: base64UrlEncode(newKey));
+        await _secureStorage.write(
+            key: _hiveKeyName, value: base64UrlEncode(newKey));
         return newKey;
       } else {
         return base64Url.decode(keyStr);
       }
     } catch (e) {
-      debugPrint('⚠️ SecurityService: Secure Storage read failed: $e. Generating fallback ephemeral key.');
+      debugPrint(
+          '⚠️ SecurityService: Secure Storage read failed: $e. Generating fallback ephemeral key.');
       final fallbackKey = _generateRandomKey(32);
       return fallbackKey;
     }
@@ -35,7 +37,7 @@ class SecurityService {
   Future<String> getSqlKey() async {
     try {
       String? keyStr = await _secureStorage.read(key: _sqlKeyName);
-      
+
       if (keyStr == null) {
         final newKeyBytes = _generateRandomKey(32);
         final newKeyStr = base64UrlEncode(newKeyBytes);
@@ -44,7 +46,8 @@ class SecurityService {
       }
       return keyStr;
     } catch (e) {
-      debugPrint('⚠️ SecurityService: Secure Storage read failed: $e. Generating fallback ephemeral SQL key.');
+      debugPrint(
+          '⚠️ SecurityService: Secure Storage read failed: $e. Generating fallback ephemeral SQL key.');
       final newKeyBytes = _generateRandomKey(32);
       return base64UrlEncode(newKeyBytes);
     }

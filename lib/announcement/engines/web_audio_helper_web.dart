@@ -132,15 +132,17 @@ void playWebSynthSound(String assetPath, double volume) {
   try {
     double duration = 0.15;
     double freq1 = 800;
-    double freq2 = 0; 
+    double freq2 = 0;
     String oscType = "sine";
 
     if (assetPath.contains('success') || assetPath.contains('chime')) {
-      freq1 = 523.25; 
-      freq2 = 659.25; 
+      freq1 = 523.25;
+      freq2 = 659.25;
       duration = 0.35;
       oscType = "sine";
-    } else if (assetPath.contains('alert') || assetPath.contains('warning') || assetPath.contains('failed')) {
+    } else if (assetPath.contains('alert') ||
+        assetPath.contains('warning') ||
+        assetPath.contains('failed')) {
       freq1 = 440;
       freq2 = 330;
       duration = 0.25;

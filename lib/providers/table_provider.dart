@@ -42,11 +42,21 @@ class TableProvider with ChangeNotifier {
     try {
       final floorBoxName = 'cache_floors_$_activeStoreId';
       final floorBox = await Hive.openBox(floorBoxName);
-      _floors = floorBox.toMap().entries.map((entry) => Floor.fromMap(_deepSanitize(entry.value as Map), entry.key.toString())).toList();
+      _floors = floorBox
+          .toMap()
+          .entries
+          .map((entry) => Floor.fromMap(
+              _deepSanitize(entry.value as Map), entry.key.toString()))
+          .toList();
 
       final tableBoxName = 'cache_tables_$_activeStoreId';
       final tableBox = await Hive.openBox(tableBoxName);
-      _tables = tableBox.toMap().entries.map((entry) => TableModel.fromMap(_deepSanitize(entry.value as Map), entry.key.toString())).toList();
+      _tables = tableBox
+          .toMap()
+          .entries
+          .map((entry) => TableModel.fromMap(
+              _deepSanitize(entry.value as Map), entry.key.toString()))
+          .toList();
 
       if (_tables.isEmpty) {
         await fetchTablesAndFloorsFromCloud(_activeStoreId!);
@@ -63,7 +73,9 @@ class TableProvider with ChangeNotifier {
   Map<String, dynamic> _deepSanitize(Map map) {
     return map.map((key, value) {
       if (value is Map) return MapEntry(key.toString(), _deepSanitize(value));
-      if (value is List) return MapEntry(key.toString(), value.map((e) => e is Map ? _deepSanitize(e) : e).toList());
+      if (value is List)
+        return MapEntry(key.toString(),
+            value.map((e) => e is Map ? _deepSanitize(e) : e).toList());
       return MapEntry(key.toString(), value);
     });
   }
@@ -71,19 +83,28 @@ class TableProvider with ChangeNotifier {
   Future<void> fetchTablesAndFloorsFromCloud(String storeId) async {
     try {
       // Use root collections with storeId filtering to align with SyncService and multi-store architecture
-      final floorSnap = await _db.collection('floors').where('storeId', isEqualTo: storeId).get();
+      final floorSnap = await _db
+          .collection('floors')
+          .where('storeId', isEqualTo: storeId)
+          .get();
       if (floorSnap.docs.isNotEmpty) {
-        _floors = floorSnap.docs.map((d) => Floor.fromMap(d.data(), d.id)).toList();
+        _floors =
+            floorSnap.docs.map((d) => Floor.fromMap(d.data(), d.id)).toList();
         final box = await Hive.openBox('cache_floors_$storeId');
         await box.clear();
         for (var f in _floors) {
           await box.put(f.id, f.toMap());
         }
       }
-      
-      final tableSnap = await _db.collection('tables').where('storeId', isEqualTo: storeId).get();
+
+      final tableSnap = await _db
+          .collection('tables')
+          .where('storeId', isEqualTo: storeId)
+          .get();
       if (tableSnap.docs.isNotEmpty) {
-        _tables = tableSnap.docs.map((d) => TableModel.fromMap(d.data(), d.id)).toList();
+        _tables = tableSnap.docs
+            .map((d) => TableModel.fromMap(d.data(), d.id))
+            .toList();
         final box = await Hive.openBox('cache_tables_$storeId');
         await box.clear();
         for (var t in _tables) {
@@ -100,18 +121,17 @@ class TableProvider with ChangeNotifier {
   Future<void> addFloor(Floor floor) async {
     final storeId = floor.storeId.isNotEmpty ? floor.storeId : _activeStoreId;
     if (storeId == null || storeId.isEmpty) return;
-    
+
     final id = floor.id.isEmpty ? _syncService.generateId() : floor.id;
     final f = floor.copyWith(id: id, storeId: storeId);
-    
+
     await _syncService.performLocalWrite(
-      collection: 'floors',
-      docId: id,
-      data: f.toMap(),
-      action: 'create',
-      localCacheBox: 'cache_floors_$storeId'
-    );
-    
+        collection: 'floors',
+        docId: id,
+        data: f.toMap(),
+        action: 'create',
+        localCacheBox: 'cache_floors_$storeId');
+
     _floors.add(f);
     notifyListeners();
   }
@@ -121,16 +141,15 @@ class TableProvider with ChangeNotifier {
     if (storeId == null || storeId.isEmpty) return;
 
     await _syncService.performLocalWrite(
-      collection: 'floors',
-      docId: floor.id,
-      data: floor.toMap(),
-      action: 'update',
-      localCacheBox: 'cache_floors_$storeId'
-    );
+        collection: 'floors',
+        docId: floor.id,
+        data: floor.toMap(),
+        action: 'update',
+        localCacheBox: 'cache_floors_$storeId');
 
     final i = _floors.indexWhere((x) => x.id == floor.id);
     if (i != -1) _floors[i] = floor;
-    
+
     notifyListeners();
   }
 
@@ -139,12 +158,11 @@ class TableProvider with ChangeNotifier {
     if (storeId == null || storeId.isEmpty) return;
 
     await _syncService.performLocalWrite(
-      collection: 'floors',
-      docId: id,
-      data: {},
-      action: 'delete',
-      localCacheBox: 'cache_floors_$storeId'
-    );
+        collection: 'floors',
+        docId: id,
+        data: {},
+        action: 'delete',
+        localCacheBox: 'cache_floors_$storeId');
 
     _floors.removeWhere((x) => x.id == id);
     notifyListeners();
@@ -157,14 +175,13 @@ class TableProvider with ChangeNotifier {
 
     final id = table.id.isEmpty ? _syncService.generateId() : table.id;
     final t = table.copyWith(id: id, storeId: storeId);
-    
+
     await _syncService.performLocalWrite(
-      collection: 'tables',
-      docId: id,
-      data: t.toMap(),
-      action: 'create',
-      localCacheBox: 'cache_tables_$storeId'
-    );
+        collection: 'tables',
+        docId: id,
+        data: t.toMap(),
+        action: 'create',
+        localCacheBox: 'cache_tables_$storeId');
 
     _tables.add(t);
     notifyListeners();
@@ -175,16 +192,15 @@ class TableProvider with ChangeNotifier {
     if (storeId == null || storeId.isEmpty) return;
 
     await _syncService.performLocalWrite(
-      collection: 'tables',
-      docId: table.id,
-      data: table.toMap(),
-      action: 'update',
-      localCacheBox: 'cache_tables_$storeId'
-    );
+        collection: 'tables',
+        docId: table.id,
+        data: table.toMap(),
+        action: 'update',
+        localCacheBox: 'cache_tables_$storeId');
 
     final i = _tables.indexWhere((x) => x.id == table.id);
     if (i != -1) _tables[i] = table;
-    
+
     notifyListeners();
   }
 
@@ -193,12 +209,11 @@ class TableProvider with ChangeNotifier {
     if (storeId == null || storeId.isEmpty) return;
 
     await _syncService.performLocalWrite(
-      collection: 'tables',
-      docId: id,
-      data: {},
-      action: 'delete',
-      localCacheBox: 'cache_tables_$storeId'
-    );
+        collection: 'tables',
+        docId: id,
+        data: {},
+        action: 'delete',
+        localCacheBox: 'cache_tables_$storeId');
 
     _tables.removeWhere((x) => x.id == id);
     notifyListeners();
@@ -211,23 +226,20 @@ class TableProvider with ChangeNotifier {
     final i = _tables.indexWhere((x) => x.id == tableId);
     if (i != -1) {
       _tables[i] = _tables[i].copyWith(
-        status: 'Occupied', 
-        orderId: orderId,
-        billingMode: 'whole-table'
-      );
+          status: 'Occupied', orderId: orderId, billingMode: 'whole-table');
 
       await _syncService.performLocalWrite(
-        collection: 'tables',
-        docId: tableId,
-        data: _tables[i].toMap(),
-        action: 'update',
-        localCacheBox: 'cache_tables_$storeId'
-      );
+          collection: 'tables',
+          docId: tableId,
+          data: _tables[i].toMap(),
+          action: 'update',
+          localCacheBox: 'cache_tables_$storeId');
     }
     notifyListeners();
   }
 
-  Future<void> occupySeat(String tableId, int seatNumber, String orderId) async {
+  Future<void> occupySeat(
+      String tableId, int seatNumber, String orderId) async {
     final storeId = _activeStoreId;
     if (storeId == null || storeId.isEmpty) return;
 
@@ -238,18 +250,14 @@ class TableProvider with ChangeNotifier {
       if (sIdx != -1) {
         updatedSeats[sIdx] = TableSeat(number: seatNumber, orderId: orderId);
         _tables[i] = _tables[i].copyWith(
-          status: 'Occupied', 
-          seats: updatedSeats,
-          billingMode: 'per-seat'
-        );
+            status: 'Occupied', seats: updatedSeats, billingMode: 'per-seat');
 
         await _syncService.performLocalWrite(
-          collection: 'tables',
-          docId: tableId,
-          data: _tables[i].toMap(),
-          action: 'update',
-          localCacheBox: 'cache_tables_$storeId'
-        );
+            collection: 'tables',
+            docId: tableId,
+            data: _tables[i].toMap(),
+            action: 'update',
+            localCacheBox: 'cache_tables_$storeId');
       }
     }
     notifyListeners();
@@ -265,46 +273,42 @@ class TableProvider with ChangeNotifier {
       final sIdx = updatedSeats.indexWhere((s) => s.number == seatNumber);
       if (sIdx != -1) {
         updatedSeats[sIdx] = TableSeat(number: seatNumber, orderId: null);
-        
-        bool anyOccupied = updatedSeats.any((s) => s.orderId != null);
-        String newStatus = anyOccupied ? 'Occupied' : (_tables[i].orderId != null ? 'Occupied' : 'Available');
 
-        _tables[i] = _tables[i].copyWith(
-          status: newStatus, 
-          seats: updatedSeats
-        );
+        bool anyOccupied = updatedSeats.any((s) => s.orderId != null);
+        String newStatus = anyOccupied
+            ? 'Occupied'
+            : (_tables[i].orderId != null ? 'Occupied' : 'Available');
+
+        _tables[i] =
+            _tables[i].copyWith(status: newStatus, seats: updatedSeats);
 
         await _syncService.performLocalWrite(
-          collection: 'tables',
-          docId: tableId,
-          data: _tables[i].toMap(),
-          action: 'update',
-          localCacheBox: 'cache_tables_$storeId'
-        );
+            collection: 'tables',
+            docId: tableId,
+            data: _tables[i].toMap(),
+            action: 'update',
+            localCacheBox: 'cache_tables_$storeId');
       }
     }
     notifyListeners();
   }
 
-  Future<void> bookTable(String tableId, DateTime date, TimeOfDay time, int guests) async {
+  Future<void> bookTable(
+      String tableId, DateTime date, TimeOfDay time, int guests) async {
     final storeId = _activeStoreId;
     if (storeId == null || storeId.isEmpty) return;
 
     final i = _tables.indexWhere((x) => x.id == tableId);
     if (i != -1) {
-        _tables[i] = _tables[i].copyWith(
-          status: 'Booked', 
-          bookedTime: date,
-          bookedSeats: guests
-        );
+      _tables[i] = _tables[i]
+          .copyWith(status: 'Booked', bookedTime: date, bookedSeats: guests);
 
-        await _syncService.performLocalWrite(
+      await _syncService.performLocalWrite(
           collection: 'tables',
           docId: tableId,
           data: _tables[i].toMap(),
           action: 'update',
-          localCacheBox: 'cache_tables_$storeId'
-        );
+          localCacheBox: 'cache_tables_$storeId');
     }
     notifyListeners();
   }
@@ -315,21 +319,22 @@ class TableProvider with ChangeNotifier {
 
     final i = _tables.indexWhere((x) => x.id == id);
     if (i != -1) {
-       final clearedSeats = _tables[i].seats.map((s) => TableSeat(number: s.number, orderId: null)).toList();
-       _tables[i] = _tables[i].copyWith(
-         status: 'Available', 
-         orderId: null, 
-         bookedTime: null,
-         seats: clearedSeats
-       );
+      final clearedSeats = _tables[i]
+          .seats
+          .map((s) => TableSeat(number: s.number, orderId: null))
+          .toList();
+      _tables[i] = _tables[i].copyWith(
+          status: 'Available',
+          orderId: null,
+          bookedTime: null,
+          seats: clearedSeats);
 
-       await _syncService.performLocalWrite(
-         collection: 'tables',
-         docId: id,
-         data: _tables[i].toMap(),
-         action: 'update',
-         localCacheBox: 'cache_tables_$storeId'
-       );
+      await _syncService.performLocalWrite(
+          collection: 'tables',
+          docId: id,
+          data: _tables[i].toMap(),
+          action: 'update',
+          localCacheBox: 'cache_tables_$storeId');
     }
     notifyListeners();
   }

@@ -21,7 +21,12 @@ class _PromotionalSignageState extends State<PromotionalSignage> {
     "Download our App for Rewards",
     "New Arrival: Spicy Chicken Blast"
   ];
-  final List<Color> _colors = [AppColors.error, AppColors.primaryLight, AppColors.primaryLight, AppColors.warning];
+  final List<Color> _colors = [
+    AppColors.error,
+    AppColors.primaryLight,
+    AppColors.primaryLight,
+    AppColors.warning
+  ];
   Timer? _timer;
 
   @override
@@ -58,33 +63,41 @@ class _PromotionalSignageState extends State<PromotionalSignage> {
       body: AnimatedContainer(
         duration: const Duration(seconds: 1),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-              colors: [_colors[_currentIndex].withValues(alpha: 0.8), AppColors.textPrimaryLight],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight),
+          gradient: LinearGradient(colors: [
+            _colors[_currentIndex].withValues(alpha: 0.8),
+            AppColors.textPrimaryLight
+          ], begin: Alignment.topLeft, end: Alignment.bottomRight),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-               Icon(Icons.local_offer, size: 100, color: AppColors.surfaceLight.withValues(alpha: 0.8)),
-               const SizedBox(height: AppSpacing.xxl),
-               Padding(
-                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-                 child: Text(
-                   _promos[_currentIndex],
-                   textAlign: TextAlign.center,
-                   style: const TextStyle(
-                       color: AppColors.surfaceLight,
-                       fontSize: 64,
-                       fontWeight: FontWeight.bold,
-                       letterSpacing: 2,
-                       shadows: [Shadow(color: Colors.black26, offset: Offset(2,2), blurRadius: 4)]
-                   ),
-                 ),
-               ),
-               const SizedBox(height: AppSpacing.lg),
-               Text(AppLocalizations.t(context, 'Visit Counter for details'), style: const TextStyle(color: AppColors.textSecondaryDark, fontSize: 24))
+              Icon(Icons.local_offer,
+                  size: 100,
+                  color: AppColors.surfaceLight.withValues(alpha: 0.8)),
+              const SizedBox(height: AppSpacing.xxl),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                child: Text(
+                  _promos[_currentIndex],
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: AppColors.surfaceLight,
+                      fontSize: 64,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                      shadows: [
+                        Shadow(
+                            color: Colors.black26,
+                            offset: Offset(2, 2),
+                            blurRadius: 4)
+                      ]),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(AppLocalizations.t(context, 'Visit Counter for details'),
+                  style: const TextStyle(
+                      color: AppColors.textSecondaryDark, fontSize: 24))
             ],
           ),
         ),

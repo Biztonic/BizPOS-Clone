@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class StoreHardware {
   final String id;
   final String hardwareId;
@@ -45,11 +43,14 @@ class StoreHardware {
       purchaseDate: _parseDate(data['purchaseDate']),
       assignedDate: _parseDate(data['assignedDate']),
       nextEmiDueDate: _parseDate(data['nextEmiDueDate']),
-      lastPaymentDate: data['lastPaymentDate'] != null ? _parseDate(data['lastPaymentDate']) : null,
+      lastPaymentDate: data['lastPaymentDate'] != null
+          ? _parseDate(data['lastPaymentDate'])
+          : null,
       emisPaid: data['emisPaid'] ?? 0,
       totalEmis: data['totalEmis'] ?? 0,
       initialDownPayment: (data['initialDownPayment'] ?? 0).toDouble(),
-      buybackDepreciationPerDay: (data['buybackDepreciationPerDay'] ?? 0).toDouble(),
+      buybackDepreciationPerDay:
+          (data['buybackDepreciationPerDay'] ?? 0).toDouble(),
       originalPrice: (data['originalPrice'] ?? 0).toDouble(),
       remainingAmount: (data['remainingAmount'] ?? 0).toDouble(),
     );
@@ -115,7 +116,8 @@ class StoreHardware {
       emisPaid: emisPaid ?? this.emisPaid,
       totalEmis: totalEmis ?? this.totalEmis,
       initialDownPayment: initialDownPayment ?? this.initialDownPayment,
-      buybackDepreciationPerDay: buybackDepreciationPerDay ?? this.buybackDepreciationPerDay,
+      buybackDepreciationPerDay:
+          buybackDepreciationPerDay ?? this.buybackDepreciationPerDay,
       originalPrice: originalPrice ?? this.originalPrice,
       remainingAmount: remainingAmount ?? this.remainingAmount,
     );
@@ -124,11 +126,11 @@ class StoreHardware {
   double calculateBuybackValue(DateTime currentDate) {
     int daysPassed = currentDate.difference(purchaseDate).inDays;
     if (daysPassed < 0) daysPassed = 0;
-    
+
     // Original Price - (Days Passed × Depreciation) - Pending EMI
     double depreciation = daysPassed * buybackDepreciationPerDay;
     double buyback = originalPrice - depreciation - remainingAmount;
-    
+
     return buyback > 0 ? buyback : 0;
   }
 }

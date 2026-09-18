@@ -8,20 +8,18 @@ import '../features/inventory/domain/entities/inventory_entity.dart';
 import '../features/inventory/data/mappers/inventory_mapper.dart';
 import 'add_edit_inventory_screen.dart';
 import 'central_item_selection_dialog.dart';
-import '../l10n/app_localizations.dart'; 
+import '../l10n/app_localizations.dart';
 import '../widgets/inventory_image_widget.dart';
 import '../core/design/layouts/pos_scaffold.dart';
 import '../core/design/components/atoms/app_text_field.dart';
 import '../core/design/components/atoms/app_button.dart';
 import '../core/design/components/atoms/app_card.dart';
-import '../core/design/components/organisms/pos_data_table.dart';
 import '../core/design/components/molecules/app_empty_state.dart';
 import '../core/design/density/app_density.dart';
 import '../core/design/tokens/app_spacing.dart';
 import '../core/design/tokens/app_typography.dart';
 import '../core/design/tokens/app_colors.dart';
 import '../core/design/tokens/app_radius.dart';
-
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -58,11 +56,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
     final dashboardProvider = Provider.of<DashboardProvider>(context);
     final isDesktop = MediaQuery.of(context).size.width >= 1100;
     final density = AppDensityProvider.configOf(context);
-    
+
     return PosScaffold(
       title: AppLocalizations.t(context, 'inventory'),
       actions: [
-        if (dashboardProvider.activeStore?.addons.contains('central_catalog') == true)
+        if (dashboardProvider.activeStore?.addons.contains('central_catalog') ==
+            true)
           AppButton.secondary(
             label: isDesktop ? AppLocalizations.t(context, 'import') : null,
             icon: Icons.cloud_download,
@@ -87,7 +86,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
               child: AppTextField(
                 key: const Key('inventory_search_field'),
                 controller: _searchController,
-                hintText: '${AppLocalizations.t(context, 'search')} ${AppLocalizations.t(context, 'items')}...',
+                hintText:
+                    '${AppLocalizations.t(context, 'search')} ${AppLocalizations.t(context, 'items')}...',
                 prefixIcon: const Icon(Icons.search),
               ),
             ),
@@ -97,10 +97,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
           Selector<InventoryProvider, List<String>>(
             selector: (_, p) => p.categories,
             builder: (context, categories, _) {
-              if (categories.length <= 1) return const SliverToBoxAdapter(child: SizedBox.shrink());
-              final selectedCategory = Provider.of<InventoryProvider>(context).selectedCategory;
+              if (categories.length <= 1)
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
+              final selectedCategory =
+                  Provider.of<InventoryProvider>(context).selectedCategory;
               return SliverPadding(
-                padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.md, bottom: AppSpacing.md),
+                padding: const EdgeInsets.only(
+                    left: AppSpacing.md,
+                    right: AppSpacing.md,
+                    bottom: AppSpacing.md),
                 sliver: SliverToBoxAdapter(
                   child: SizedBox(
                     height: 38,
@@ -116,8 +121,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
                             label: Text(
                               cat,
                               style: TextStyle(
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                color: isSelected ? Colors.white : AppColors.textSecondary(context),
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppColors.textSecondary(context),
                               ),
                             ),
                             selected: isSelected,
@@ -128,12 +137,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
                               side: BorderSide(
                                 color: isSelected
                                     ? Colors.transparent
-                                    : AppColors.textHint(context).withValues(alpha: 0.2),
+                                    : AppColors.textHint(context)
+                                        .withValues(alpha: 0.2),
                               ),
                             ),
                             onSelected: (val) {
                               if (val) {
-                                Provider.of<InventoryProvider>(context, listen: false).setCategory(cat);
+                                Provider.of<InventoryProvider>(context,
+                                        listen: false)
+                                    .setCategory(cat);
                               }
                             },
                           ),
@@ -161,8 +173,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
           Selector<InventoryProvider, List<InventoryEntity>>(
             selector: (_, p) => p.filteredItems,
             builder: (context, filteredItems, _) {
-              final isLoading = Provider.of<InventoryProvider>(context, listen: false).isLoading;
-              if (isLoading) return const SliverToBoxAdapter(child: SizedBox.shrink());
+              final isLoading =
+                  Provider.of<InventoryProvider>(context, listen: false)
+                      .isLoading;
+              if (isLoading)
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
 
               if (filteredItems.isEmpty) {
                 return SliverFillRemaining(
@@ -191,7 +206,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
               );
             },
           ),
-          
+
           // Bottom spacing
           if (!isDesktop)
             const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
@@ -206,10 +221,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-
   Widget _buildTableView(BuildContext context, List<InventoryEntity> items) {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.xs),
       itemCount: items.length,
       itemBuilder: (context, index) {
         return Padding(
@@ -220,16 +235,20 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  Widget _buildDesktopInventoryCard(BuildContext context, InventoryEntity item) {
+  Widget _buildDesktopInventoryCard(
+      BuildContext context, InventoryEntity item) {
     final status = item.stockStatus;
-    final color = status == StockStatus.outOfStock 
-        ? AppColors.adaptiveError(context) 
-        : (status == StockStatus.lowStock ? AppColors.adaptiveWarning(context) : AppColors.adaptiveSuccess(context));
+    final color = status == StockStatus.outOfStock
+        ? AppColors.adaptiveError(context)
+        : (status == StockStatus.lowStock
+            ? AppColors.adaptiveWarning(context)
+            : AppColors.adaptiveSuccess(context));
 
     return AppCard(
       key: Key('inventory_item_desktop_${item.id}'),
       onTap: () {
-        AddEditInventoryScreen.showAsDialog(context, item: InventoryMapper.toLegacy(item));
+        AddEditInventoryScreen.showAsDialog(context,
+            item: InventoryMapper.toLegacy(item));
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
@@ -373,63 +392,67 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   void _showImportDialog(BuildContext context, DashboardProvider provider) {
     showDialog(
-      context: context, 
-      builder: (ctx) => const CentralItemSelectionDialog()
-    );
+        context: context, builder: (ctx) => const CentralItemSelectionDialog());
   }
 
   Widget _buildInventoryCard(BuildContext context, InventoryEntity item) {
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    final dashboardProvider =
+        Provider.of<DashboardProvider>(context, listen: false);
     final status = item.stockStatus;
-    final color = status == StockStatus.outOfStock 
-        ? AppColors.adaptiveError(context) 
-        : (status == StockStatus.lowStock ? AppColors.adaptiveWarning(context) : AppColors.adaptiveSuccess(context));
+    final color = status == StockStatus.outOfStock
+        ? AppColors.adaptiveError(context)
+        : (status == StockStatus.lowStock
+            ? AppColors.adaptiveWarning(context)
+            : AppColors.adaptiveSuccess(context));
 
     return AppCard(
       key: Key('inventory_item_${item.id}'),
       onTap: () {
-        AddEditInventoryScreen.showAsDialog(context, item: InventoryMapper.toLegacy(item));
+        AddEditInventoryScreen.showAsDialog(context,
+            item: InventoryMapper.toLegacy(item));
       },
       child: Row(
         children: [
           // Image
           InventoryImageWidget(item: InventoryMapper.toLegacy(item)),
           const SizedBox(width: AppSpacing.md),
-          
+
           // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.name, style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                Text(item.name,
+                    style: AppTypography.titleMedium
+                        .copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  '${AppLocalizations.t(context, 'category')}: ${item.category}', 
-                  style: AppTypography.labelMedium.copyWith(color: AppColors.textSecondary(context))
-                ),
+                    '${AppLocalizations.t(context, 'category')}: ${item.category}',
+                    style: AppTypography.labelMedium
+                        .copyWith(color: AppColors.textSecondary(context))),
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
-                    Text(
-                      '₹${item.price.toStringAsFixed(2)}', 
-                      style: AppTypography.titleMedium.copyWith(
-                        fontWeight: FontWeight.bold, 
-                        color: AppColors.adaptiveSuccess(context)
-                      )
-                    ),
+                    Text('₹${item.price.toStringAsFixed(2)}',
+                        style: AppTypography.titleMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.adaptiveSuccess(context))),
                     const Spacer(),
                     Builder(builder: (context) {
-                      final trackInventory = dashboardProvider.activeStore?.trackInventory ?? true;
+                      final trackInventory =
+                          dashboardProvider.activeStore?.trackInventory ?? true;
 
                       if (!trackInventory) {
-                        return _buildStatusBadge(context, 'Available', AppColors.adaptiveSuccess(context));
+                        return _buildStatusBadge(context, 'Available',
+                            AppColors.adaptiveSuccess(context));
                       }
 
                       return _buildStatusBadge(
-                        context, 
-                        status == StockStatus.inStock ? 'In Stock: ${item.quantity}' : status.value, 
-                        color
-                      );
+                          context,
+                          status == StockStatus.inStock
+                              ? 'In Stock: ${item.quantity}'
+                              : status.value,
+                          color);
                     }),
                   ],
                 )
@@ -437,33 +460,28 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textHint(context)),
+          Icon(Icons.arrow_forward_ios,
+              size: 14, color: AppColors.textHint(context)),
         ],
       ),
     );
   }
 
-
   Widget _buildStatusBadge(BuildContext context, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1), 
+        color: color.withValues(alpha: 0.1),
         borderRadius: AppRadius.borderXs,
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
-      child: Text(
-        text.toUpperCase(), 
-        style: AppTypography.labelSmall.copyWith(
-          color: color, 
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-        )
-      ),
+      child: Text(text.toUpperCase(),
+          style: AppTypography.labelSmall.copyWith(
+            color: color,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          )),
     );
   }
 }
-
-
-
-

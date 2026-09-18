@@ -69,18 +69,22 @@ class _AppCardState extends State<AppCard> {
         : (_isHovered && widget.onTap != null
             ? theme.colorScheme.primary.withValues(alpha: 0.5)
             : widget.borderColor);
-    final showBorder = widget.outlined || widget.isSelected || widget.borderColor != null || (_isHovered && widget.onTap != null);
+    final showBorder = widget.outlined ||
+        widget.isSelected ||
+        widget.borderColor != null ||
+        (_isHovered && widget.onTap != null);
 
     // Determine shadow
     final shadow = widget.isSelected
         ? AppShadows.md
-        : (widget.onTap != null 
+        : (widget.onTap != null
             ? (_isHovered ? AppShadows.md : AppShadows.sm)
             : AppShadows.none);
 
     final cardBgColor = widget.isSelected
         ? theme.colorScheme.primary.withValues(alpha: 0.05)
-        : (widget.backgroundColor ?? (isDark ? theme.cardTheme.color : AppColors.surfaceLight));
+        : (widget.backgroundColor ??
+            (isDark ? theme.cardTheme.color : AppColors.surfaceLight));
 
     Widget card;
     final isInteractive = widget.onTap != null;
@@ -92,7 +96,8 @@ class _AppCardState extends State<AppCard> {
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.borderLg,
           side: BorderSide(
-            color: effectiveBorderColor ?? theme.dividerColor.withValues(alpha: 0.15),
+            color: effectiveBorderColor ??
+                theme.dividerColor.withValues(alpha: 0.15),
             width: widget.isSelected ? 2 : 1,
           ),
         ),
@@ -104,15 +109,15 @@ class _AppCardState extends State<AppCard> {
         decoration: BoxDecoration(
           color: cardBgColor,
           borderRadius: AppRadius.borderLg,
-          boxShadow: AppShadows.adaptive(
-            context, 
-            light: shadow, 
-            dark: widget.isSelected || (_isHovered && widget.onTap != null) ? AppShadows.darkMd : AppShadows.darkSm
-          ),
+          boxShadow: AppShadows.adaptive(context,
+              light: shadow,
+              dark: widget.isSelected || (_isHovered && widget.onTap != null)
+                  ? AppShadows.darkMd
+                  : AppShadows.darkSm),
           border: Border.all(
-            color: isDark 
-                ? (_isHovered && widget.onTap != null 
-                    ? theme.colorScheme.primary.withValues(alpha: 0.3) 
+            color: isDark
+                ? (_isHovered && widget.onTap != null
+                    ? theme.colorScheme.primary.withValues(alpha: 0.3)
                     : AppColors.surfaceLight.withValues(alpha: 0.06))
                 : (_isHovered && widget.onTap != null
                     ? theme.colorScheme.primary.withValues(alpha: 0.15)

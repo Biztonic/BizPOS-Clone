@@ -17,7 +17,7 @@ class GoogleDriveService {
   Future<void> restoreSession() async {
     try {
       _currentUser = await _googleSignIn.signInSilently();
-    } catch (_) { /* Error ignored */ }
+    } catch (_) {/* Error ignored */}
   }
 
   /// Initiate the Google Sign-In flow
@@ -30,7 +30,6 @@ class GoogleDriveService {
       }
       return false; // User cancelled
     } catch (e) {
-
       rethrow;
     }
   }
@@ -40,11 +39,12 @@ class GoogleDriveService {
     try {
       await _googleSignIn.disconnect();
       _currentUser = null;
-    } catch (e) { /* Error ignored */ }
+    } catch (e) {/* Error ignored */}
   }
 
   /// Upload JSON content to Google Drive
-  Future<bool> uploadBackup(String jsonData, {String filename = 'backup.json'}) async {
+  Future<bool> uploadBackup(String jsonData,
+      {String filename = 'backup.json'}) async {
     if (_currentUser == null) return false;
 
     try {
@@ -73,7 +73,6 @@ class GoogleDriveService {
 
       return true;
     } catch (e) {
-
       return false;
     }
   }

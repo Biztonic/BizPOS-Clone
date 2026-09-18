@@ -29,8 +29,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   bool _statsInitialized = false;
   String _selectedPlanFilter = 'All';
   String _selectedAddonFilter = 'All';
-  bool _isInitSyncing = true; 
-
+  bool _isInitSyncing = true;
 
   @override
   void initState() {
@@ -41,14 +40,15 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dashboard = Provider.of<DashboardProvider>(context, listen: false);
       if (dashboard.stores.isEmpty && !dashboard.isLoading) {
-        debugPrint('??? StoreSelectScreen: No stores on mount. Triggering safety-net fetch...');
+        debugPrint(
+            '??? StoreSelectScreen: No stores on mount. Triggering safety-net fetch...');
         _triggerStoreFetch(dashboard);
       }
-      
+
       // Add a minimum 3-second grace period for initial sync to avoid "jumping" to No Stores view
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
-           setState(() => _isInitSyncing = false);
+          setState(() => _isInitSyncing = false);
         }
       });
     });
@@ -70,23 +70,25 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_statsInitialized) {
-       final dashboard = Provider.of<DashboardProvider>(context, listen: false);
-       if (dashboard.activeRole == 'Super Admin') {
-          _statsFuture = dashboard.fetchGlobalSubscriptionStats();
-       } else if (dashboard.stores.length == 1 && _expandedStoreId == null) {
-          // Auto-expand only if store supports employees
-          final store = dashboard.stores.first;
-          final canShowEmployees = store.subscriptionPlan == 'Standard' || store.purchasedAddons.contains('employee_management');
-          if (canShowEmployees) {
-            _expandedStoreId = store.id;
-            _fetchEmployees(_expandedStoreId!, dashboard);
-          }
-       }
-       _statsInitialized = true;
+      final dashboard = Provider.of<DashboardProvider>(context, listen: false);
+      if (dashboard.activeRole == 'Super Admin') {
+        _statsFuture = dashboard.fetchGlobalSubscriptionStats();
+      } else if (dashboard.stores.length == 1 && _expandedStoreId == null) {
+        // Auto-expand only if store supports employees
+        final store = dashboard.stores.first;
+        final canShowEmployees = store.subscriptionPlan == 'Standard' ||
+            store.purchasedAddons.contains('employee_management');
+        if (canShowEmployees) {
+          _expandedStoreId = store.id;
+          _fetchEmployees(_expandedStoreId!, dashboard);
+        }
+      }
+      _statsInitialized = true;
     }
   }
 
-  Future<void> _fetchEmployees(String storeId, DashboardProvider provider) async {
+  Future<void> _fetchEmployees(
+      String storeId, DashboardProvider provider) async {
     setState(() => _isLoadingEmployees = true);
     final employees = await provider.fetchEmployeesForStore(storeId);
     if (mounted) {
@@ -97,9 +99,11 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
     }
   }
 
-  Future<void> _handleStoreClick(Store store, DashboardProvider provider) async {
-    final canShowEmployees = store.subscriptionPlan == 'Standard' || store.purchasedAddons.contains('employee_management');
-    
+  Future<void> _handleStoreClick(
+      Store store, DashboardProvider provider) async {
+    final canShowEmployees = store.subscriptionPlan == 'Standard' ||
+        store.purchasedAddons.contains('employee_management');
+
     if (!canShowEmployees) {
       _enterStoreDirectly(store, provider);
       return;
@@ -115,7 +119,8 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
     }
   }
 
-  Future<void> _enterStoreDirectly(Store store, DashboardProvider provider) async {
+  Future<void> _enterStoreDirectly(
+      Store store, DashboardProvider provider) async {
     await provider.setActiveStoreId(store.id);
     if (mounted) context.go('/dashboard');
   }
@@ -148,8 +153,10 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
             elevation: 0,
             backgroundColor: AppColors.surface(context),
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: AppSpacing.lg, bottom: AppSpacing.md),
-              title: Text(AppLocalizations.t(context, 'Select Your Store'),
+              titlePadding: const EdgeInsets.only(
+                  left: AppSpacing.lg, bottom: AppSpacing.md),
+              title: Text(
+                AppLocalizations.t(context, 'Select Your Store'),
                 style: AppTypography.titleLarge.copyWith(
                   color: AppColors.textPrimary(context),
                 ),
@@ -168,34 +175,36 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                   shape: BoxShape.rectangle,
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.logout, color: AppColors.error, size: 20),
+                  icon: const Icon(Icons.logout,
+                      color: AppColors.error, size: 20),
                   onPressed: () => auth.signOut(),
                   tooltip: 'Logout',
                 ),
               )
             ],
           ),
-          
-          if (dashboard.isLoading || (_isInitSyncing && dashboard.stores.isEmpty))
+          if (dashboard.isLoading ||
+              (_isInitSyncing && dashboard.stores.isEmpty))
             SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(AppLocalizations.t(context, 'Syncing your stores...'), style: TextStyle(color: AppColors.textSecondary(context), fontWeight: FontWeight.w500)),
-                  ],
-                )
-              )
-            )
+                child: Center(
+                    child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: AppSpacing.lg),
+                Text(AppLocalizations.t(context, 'Syncing your stores...'),
+                    style: TextStyle(
+                        color: AppColors.textSecondary(context),
+                        fontWeight: FontWeight.w500)),
+              ],
+            )))
           else if (dashboard.stores.isEmpty)
             SliverFillRemaining(child: _buildNoStoresView(context, dashboard))
           else if (dashboard.activeRole == 'Super Admin')
-            SliverToBoxAdapter(child: _buildSuperAdminDashboard(context, dashboard, isDark))
+            SliverToBoxAdapter(
+                child: _buildSuperAdminDashboard(context, dashboard, isDark))
           else
             SliverToBoxAdapter(child: _buildOwnerHeader(dashboard, isDark)),
-
           if (!dashboard.isLoading && dashboard.stores.isNotEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
@@ -207,129 +216,162 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   }
 
   Widget _buildOwnerHeader(DashboardProvider dashboard, bool isDark) {
-     return Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: Column(
-           crossAxisAlignment: CrossAxisAlignment.start,
-           children: [
-              Text(AppLocalizations.t(context, 'Welcome back!'),
-                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context), fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(AppLocalizations.t(context, 'Choose a store to manage'),
-                style: AppTypography.headlineSmall.copyWith(color: AppColors.textPrimary(context)),
-              ),
-           ],
-        ),
-     );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.t(context, 'Welcome back!'),
+            style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary(context),
+                fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            AppLocalizations.t(context, 'Choose a store to manage'),
+            style: AppTypography.headlineSmall
+                .copyWith(color: AppColors.textPrimary(context)),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildSuperAdminDashboard(BuildContext context, DashboardProvider dashboard, bool isDark) {
-     return FutureBuilder<Map<String, dynamic>>(
-       future: _statsFuture,
-       builder: (context, snapshot) {
+  Widget _buildSuperAdminDashboard(
+      BuildContext context, DashboardProvider dashboard, bool isDark) {
+    return FutureBuilder<Map<String, dynamic>>(
+        future: _statsFuture,
+        builder: (context, snapshot) {
           final stats = snapshot.data ?? {};
-          final isStatsLoading = snapshot.connectionState == ConnectionState.waiting;
-          
+          final isStatsLoading =
+              snapshot.connectionState == ConnectionState.waiting;
+
           return Column(
-             crossAxisAlignment: CrossAxisAlignment.start,
-             children: [
-                if (isStatsLoading) const LinearProgressIndicator(minHeight: 2),
-                const SizedBox(height: AppSpacing.md),
-                if (stats.isNotEmpty) ...[
-                  _buildInsightsGrid(stats, isDark),
-                  _buildFilterSection(stats, isDark),
-                ],
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                  child: Text(AppLocalizations.t(context, 'All Active Stores'),
-                    style: AppTypography.titleLarge.copyWith(color: AppColors.textPrimary(context)),
-                  ),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isStatsLoading) const LinearProgressIndicator(minHeight: 2),
+              const SizedBox(height: AppSpacing.md),
+              if (stats.isNotEmpty) ...[
+                _buildInsightsGrid(stats, isDark),
+                _buildFilterSection(stats, isDark),
+              ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: Text(
+                  AppLocalizations.t(context, 'All Active Stores'),
+                  style: AppTypography.titleLarge
+                      .copyWith(color: AppColors.textPrimary(context)),
                 ),
-             ],
+              ),
+            ],
           );
-       }
-     );
+        });
   }
 
   Widget _buildInsightsGrid(Map<String, dynamic> stats, bool isDark) {
     final totalStores = stats['totalStores'] ?? 0;
     final activeSubs = stats['activeSubs'] ?? 0;
-    final planDistribution = stats['planDistribution'] as Map<String, int>? ?? {};
+    final planDistribution =
+        stats['planDistribution'] as Map<String, int>? ?? {};
     final activeAddonsMap = stats['activeAddons'] as Map<String, int>? ?? {};
     final totalAddons = activeAddonsMap.values.fold(0, (a, b) => a + b);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 900 ? 4 : (constraints.maxWidth > 600 ? 2 : 2);
-        final padding = constraints.maxWidth > 600 ? 24.0 : 16.0;
+    return LayoutBuilder(builder: (context, constraints) {
+      final crossAxisCount =
+          constraints.maxWidth > 900 ? 4 : (constraints.maxWidth > 600 ? 2 : 2);
+      final padding = constraints.maxWidth > 600 ? 24.0 : 16.0;
 
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: padding),
-          child: Column(
-            children: [
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.6,
-                children: [
-                  _buildInsightCard("Total Stores", totalStores.toString(), Icons.store_rounded, AppColors.primary),
-                  _buildInsightCard("Active Subs", activeSubs.toString(), Icons.verified_user_rounded, AppColors.success),
-                  _buildInsightCard("Standard Plans", (planDistribution['Standard'] ?? 0).toString(), Icons.star_rounded, AppColors.warning),
-                  _buildInsightCard("Total Add-ons", totalAddons.toString(), Icons.extension_rounded, AppColors.primary),
-                ],
-              ),
-              if (constraints.maxWidth > 700) ...[
-                const SizedBox(height: AppSpacing.lg),
-                _buildPlanDistributionCard(planDistribution, totalStores, isDark),
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: padding),
+        child: Column(
+          children: [
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.6,
+              children: [
+                _buildInsightCard("Total Stores", totalStores.toString(),
+                    Icons.store_rounded, AppColors.primary),
+                _buildInsightCard("Active Subs", activeSubs.toString(),
+                    Icons.verified_user_rounded, AppColors.success),
+                _buildInsightCard(
+                    "Standard Plans",
+                    (planDistribution['Standard'] ?? 0).toString(),
+                    Icons.star_rounded,
+                    AppColors.warning),
+                _buildInsightCard("Total Add-ons", totalAddons.toString(),
+                    Icons.extension_rounded, AppColors.primary),
               ],
+            ),
+            if (constraints.maxWidth > 700) ...[
+              const SizedBox(height: AppSpacing.lg),
+              _buildPlanDistributionCard(planDistribution, totalStores, isDark),
             ],
-          ),
-        );
-      }
-    );
+          ],
+        ),
+      );
+    });
   }
 
-  Widget _buildInsightCard(String title, String value, IconData icon, Color color) {
+  Widget _buildInsightCard(
+      String title, String value, IconData icon, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Theme.of(context).colorScheme.onPrimary,
+        color: isDark
+            ? const Color(0xFF1E293B)
+            : Theme.of(context).colorScheme.onPrimary,
         borderRadius: BorderRadius.zero,
         boxShadow: [
-          BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: isDark ? 0.2 : 0.05), blurRadius: 20, offset: const Offset(0, 8))
+          BoxShadow(
+              color: Theme.of(context)
+                  .shadowColor
+                  .withValues(alpha: isDark ? 0.2 : 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 8))
         ],
         border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-           Container(
-             padding: const EdgeInsets.all(AppSpacing.sm),
-             decoration: BoxDecoration(
-               color: color.withValues(alpha: 0.1),
-               borderRadius: BorderRadius.zero,
-             ),
-             child: Icon(icon, color: color, size: 24),
-           ),
-           const Spacer(),
-           Text(value, style: AppTypography.headlineMedium.copyWith(color: AppColors.textPrimary(context))),
-           Text(title, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
-        ]
-      ),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.zero,
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const Spacer(),
+            Text(value,
+                style: AppTypography.headlineMedium
+                    .copyWith(color: AppColors.textPrimary(context))),
+            Text(title,
+                style: AppTypography.labelSmall
+                    .copyWith(color: AppColors.textSecondary(context))),
+          ]),
     );
   }
 
-  Widget _buildPlanDistributionCard(Map<String, int> distribution, int total, bool isDark) {
+  Widget _buildPlanDistributionCard(
+      Map<String, int> distribution, int total, bool isDark) {
     List<PieChartSectionData> pieSections = [];
     int colorIndex = 0;
-    final colors = [AppColors.primary, AppColors.warning, AppColors.success, AppColors.error, AppColors.primaryLight];
-    
+    final colors = [
+      AppColors.primary,
+      AppColors.warning,
+      AppColors.success,
+      AppColors.error,
+      AppColors.primaryLight
+    ];
+
     distribution.forEach((plan, count) {
       if (count > 0) {
         pieSections.add(PieChartSectionData(
@@ -337,7 +379,10 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
           value: count.toDouble(),
           title: '$count',
           radius: 40,
-          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
+          titleStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppColors.surfaceLight),
         ));
         colorIndex++;
       }
@@ -348,7 +393,12 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: BorderRadius.zero,
-        boxShadow: [BoxShadow(color: AppColors.textPrimaryLight.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 8))],
+        boxShadow: [
+          BoxShadow(
+              color: AppColors.textPrimaryLight.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 8))
+        ],
       ),
       child: Row(
         children: [
@@ -356,33 +406,49 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(AppLocalizations.t(context, 'Plan Overview'), style: AppTypography.titleLarge),
+                Text(AppLocalizations.t(context, 'Plan Overview'),
+                    style: AppTypography.titleLarge),
                 const SizedBox(height: AppSpacing.sm),
-                Text(AppLocalizations.t(context, 'Distribution of active subscriptions across all stores'), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+                Text(
+                    AppLocalizations.t(context,
+                        'Distribution of active subscriptions across all stores'),
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.textSecondary(context))),
                 const SizedBox(height: AppSpacing.lg),
                 Wrap(
                   spacing: 16,
                   children: distribution.entries.map((e) {
-                     final idx = distribution.keys.toList().indexOf(e.key);
-                     return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                           Container(width: 12, height: 12, decoration: BoxDecoration(color: colors[idx % colors.length], shape: BoxShape.rectangle)),
-                           const SizedBox(width: AppSpacing.sm),
-                           Text("${e.key}: ${e.value}", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-                        ],
-                     );
+                    final idx = distribution.keys.toList().indexOf(e.key);
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                                color: colors[idx % colors.length],
+                                shape: BoxShape.rectangle)),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text("${e.key}: ${e.value}",
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w500)),
+                      ],
+                    );
                   }).toList(),
                 ),
               ],
             ),
           ),
           SizedBox(
-            width: 140, height: 140,
+            width: 140,
+            height: 140,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                PieChart(PieChartData(sectionsSpace: 4, centerSpaceRadius: 35, sections: pieSections)),
+                PieChart(PieChartData(
+                    sectionsSpace: 4,
+                    centerSpaceRadius: 35,
+                    sections: pieSections)),
                 Text("$total", style: AppTypography.headlineSmall),
               ],
             ),
@@ -401,20 +467,29 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildFilterRow("Active Plan", ['All', 'Standard', 'Basic'], _selectedPlanFilter, (v) => setState(() => _selectedPlanFilter = v), isDark),
+          _buildFilterRow(
+              "Active Plan",
+              ['All', 'Standard', 'Basic'],
+              _selectedPlanFilter,
+              (v) => setState(() => _selectedPlanFilter = v),
+              isDark),
           const SizedBox(height: AppSpacing.md),
-          _buildFilterRow("Add-on Feature", addonList, _selectedAddonFilter, (v) => setState(() => _selectedAddonFilter = v), isDark),
+          _buildFilterRow("Add-on Feature", addonList, _selectedAddonFilter,
+              (v) => setState(() => _selectedAddonFilter = v), isDark),
           const Divider(height: 48),
         ],
       ),
     );
   }
 
-  Widget _buildFilterRow(String title, List<String> options, String current, Function(String) onSelect, bool isDark) {
+  Widget _buildFilterRow(String title, List<String> options, String current,
+      Function(String) onSelect, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context), letterSpacing: 0.5)),
+        Text(title,
+            style: AppTypography.labelSmall.copyWith(
+                color: AppColors.textSecondary(context), letterSpacing: 0.5)),
         const SizedBox(height: AppSpacing.md),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -427,18 +502,33 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                   onTap: () => onSelect(opt),
                   borderRadius: BorderRadius.zero,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : AppColors.surface(context),
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.surface(context),
                       borderRadius: BorderRadius.zero,
-                      border: Border.all(color: isSelected ? AppColors.primary : AppColors.border(context)),
-                      boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))] : null,
+                      border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.border(context)),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4))
+                            ]
+                          : null,
                     ),
                     child: Text(
                       opt.replaceAll('_', ' ').toUpperCase(),
                       style: AppTypography.labelSmall.copyWith(
-                        color: isSelected ? Theme.of(context).colorScheme.onPrimary : AppColors.textSecondary(context)
-                      ),
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : AppColors.textSecondary(context)),
                     ),
                   ),
                 ),
@@ -451,15 +541,22 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   }
 
   Widget _buildNoStoresView(BuildContext context, DashboardProvider dashboard) {
-     return Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.storefront_outlined, size: 80, color: AppColors.textHint(context)),
+          Icon(Icons.storefront_outlined,
+              size: 80, color: AppColors.textHint(context)),
           const SizedBox(height: AppSpacing.lg),
-          Text(AppLocalizations.t(context, 'No stores found'), style: AppTypography.titleLarge.copyWith(color: AppColors.textHint(context))),
+          Text(AppLocalizations.t(context, 'No stores found'),
+              style: AppTypography.titleLarge
+                  .copyWith(color: AppColors.textHint(context))),
           const SizedBox(height: AppSpacing.sm),
-          Text(AppLocalizations.t(context, 'Get started by creating your first store'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+          Text(
+              AppLocalizations.t(
+                  context, 'Get started by creating your first store'),
+              style: AppTypography.bodyMedium
+                  .copyWith(color: AppColors.textSecondary(context))),
           const SizedBox(height: AppSpacing.xl),
           if (dashboard.activeRole == 'Store Owner')
             ElevatedButton(
@@ -467,44 +564,52 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl, vertical: AppSpacing.md),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero),
                 elevation: 0,
               ),
-              child: Text(AppLocalizations.t(context, 'Create Store'), style: AppTypography.labelLarge.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold)),
+              child: Text(AppLocalizations.t(context, 'Create Store'),
+                  style: AppTypography.labelLarge.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.bold)),
             ),
           const SizedBox(height: AppSpacing.md),
           TextButton.icon(
-             onPressed: () async {
+              onPressed: () async {
                 setState(() => _isInitSyncing = true);
                 try {
                   await _triggerStoreFetch(dashboard);
                 } finally {
                   if (mounted) setState(() => _isInitSyncing = false);
                 }
-             }, 
-             icon: const Icon(Icons.refresh, size: 18), 
-             label: Text(AppLocalizations.t(context, 'Refresh Stores'))
-          ),
+              },
+              icon: const Icon(Icons.refresh, size: 18),
+              label: Text(AppLocalizations.t(context, 'Refresh Stores'))),
         ],
       ),
     );
   }
 
-  Widget _buildStoreListSliver(BuildContext context, DashboardProvider dashboard, bool isDark) {
+  Widget _buildStoreListSliver(
+      BuildContext context, DashboardProvider dashboard, bool isDark) {
     List<Store> displayedStores = dashboard.stores;
 
     if (dashboard.activeRole == 'Super Admin') {
       displayedStores = displayedStores.where((store) {
-        bool planMatches = _selectedPlanFilter == 'All' || store.subscriptionPlan == _selectedPlanFilter;
-        bool addonMatches = _selectedAddonFilter == 'All' || store.addons.contains(_selectedAddonFilter);
+        bool planMatches = _selectedPlanFilter == 'All' ||
+            store.subscriptionPlan == _selectedPlanFilter;
+        bool addonMatches = _selectedAddonFilter == 'All' ||
+            store.addons.contains(_selectedAddonFilter);
         return planMatches && addonMatches;
       }).toList();
     } else if (dashboard.activeRole == 'Franchise Owner') {
       final uid = dashboard.userProfile?.uid;
       final email = dashboard.userProfile?.email;
       displayedStores = displayedStores.where((store) {
-        return store.owner == uid || (email != null && store.ownerEmail == email);
+        return store.owner == uid ||
+            (email != null && store.ownerEmail == email);
       }).toList();
     }
 
@@ -513,7 +618,7 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
         (context, index) {
           final store = displayedStores[index];
           final isExpanded = _expandedStoreId == store.id;
-          
+
           return AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             margin: const EdgeInsets.only(bottom: AppSpacing.xxs),
@@ -522,34 +627,46 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
               borderRadius: BorderRadius.zero,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.textPrimaryLight.withValues(alpha: isExpanded ? 0.1 : 0.05),
-                  blurRadius: isExpanded ? 30 : 15,
-                  offset: isExpanded ? const Offset(0, 12) : const Offset(0, 6)
-                )
+                    color: AppColors.textPrimaryLight
+                        .withValues(alpha: isExpanded ? 0.1 : 0.05),
+                    blurRadius: isExpanded ? 30 : 15,
+                    offset:
+                        isExpanded ? const Offset(0, 12) : const Offset(0, 6))
               ],
-              border: isExpanded ? Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2) : null,
+              border: isExpanded
+                  ? Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3), width: 2)
+                  : null,
             ),
             child: Column(
               children: [
                 ListTile(
                   contentPadding: const EdgeInsets.all(AppSpacing.xxs),
                   leading: Container(
-                    width: 60, height: 60,
+                    width: 60,
+                    height: 60,
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.zero,
                     ),
-                    child: store.image != null 
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.zero,
-                          child: CachedNetworkImage(imageUrl: store.image!, fit: BoxFit.cover, placeholder: (_, __) => const Icon(Icons.store, color: AppColors.primary)),
-                        )
-                      : const Icon(Icons.store, color: AppColors.primary, size: 30),
+                    child: store.image != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.zero,
+                            child: CachedNetworkImage(
+                                imageUrl: store.image!,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => const Icon(Icons.store,
+                                    color: AppColors.primary)),
+                          )
+                        : const Icon(Icons.store,
+                            color: AppColors.primary, size: 30),
                   ),
                   title: Row(
                     children: [
                       Expanded(
-                         child: Text(store.name, style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                        child: Text(store.name,
+                            style: AppTypography.titleMedium
+                                .copyWith(fontWeight: FontWeight.bold)),
                       ),
                       _buildPlanBadge(store.subscriptionPlan),
                     ],
@@ -558,16 +675,25 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                     padding: const EdgeInsets.only(top: AppSpacing.xs),
                     child: Text(
                       "Owner ID: ${store.owner.substring(0, 8)}... ï¿½ ${store.storeType}",
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.textSecondary(context)),
                     ),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (dashboard.activeRole == 'Super Admin')
-                        _buildActionButton(Icons.login_rounded, "ENTER", () => _enterStoreDirectly(store, dashboard), AppColors.primary),
+                        _buildActionButton(
+                            Icons.login_rounded,
+                            "ENTER",
+                            () => _enterStoreDirectly(store, dashboard),
+                            AppColors.primary),
                       const SizedBox(width: AppSpacing.sm),
-                      Icon(isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: AppColors.textHint(context)),
+                      Icon(
+                          isExpanded
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                          color: AppColors.textHint(context)),
                     ],
                   ),
                   onTap: () => _handleStoreClick(store, dashboard),
@@ -583,44 +709,50 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   }
 
   Widget _buildPlanBadge(String plan) {
-     final color = plan == 'Standard' ? AppColors.warning : AppColors.success;
-     return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
+    final color = plan == 'Standard' ? AppColors.warning : AppColors.success;
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.zero,
+      ),
+      child: Text(plan.toUpperCase(),
+          style: AppTypography.labelSmall.copyWith(
+              color: color, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+    );
+  }
+
+  Widget _buildActionButton(
+      IconData icon, String label, VoidCallback onTap, Color color) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.zero,
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.zero,
         ),
-        child: Text(
-          plan.toUpperCase(),
-          style: AppTypography.labelSmall.copyWith(color: color, fontWeight: FontWeight.bold, letterSpacing: 0.5)
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: AppSpacing.sm),
+            Text(label,
+                style: AppTypography.labelSmall
+                    .copyWith(fontWeight: FontWeight.bold, color: color)),
+          ],
         ),
-     );
-  }
-
-  Widget _buildActionButton(IconData icon, String label, VoidCallback onTap, Color color) {
-     return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.zero,
-        child: Container(
-           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.sm),
-           decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.zero,
-           ),
-           child: Row(
-              children: [
-                 Icon(icon, size: 16, color: color),
-                 const SizedBox(width: AppSpacing.sm),
-                 Text(label, style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.bold, color: color)),
-              ],
-           ),
-        ),
-     );
+      ),
+    );
   }
 
   Widget _buildEmployeeSection(Store store) {
     if (_isLoadingEmployees) {
-      return const Padding(padding: EdgeInsets.all(AppSpacing.xl), child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+      return const Padding(
+          padding: EdgeInsets.all(AppSpacing.xl),
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
     }
 
     final employees = _storeEmployees[store.id] ?? [];
@@ -630,7 +762,8 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       decoration: const BoxDecoration(
-        borderRadius: BorderRadius.only(bottomLeft: Radius.zero, bottomRight: Radius.zero),
+        borderRadius: BorderRadius.only(
+            bottomLeft: Radius.zero, bottomRight: Radius.zero),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,14 +774,22 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(AppLocalizations.t(context, 'EMPLOYEE PROFILES'), style: AppTypography.labelSmall.copyWith(color: AppColors.textHint(context), letterSpacing: 1)),
+                Text(AppLocalizations.t(context, 'EMPLOYEE PROFILES'),
+                    style: AppTypography.labelSmall.copyWith(
+                        color: AppColors.textHint(context), letterSpacing: 1)),
                 if (dashboard.activeRole != 'Employee')
-                  _buildActionButton(Icons.admin_panel_settings_rounded, "Enter as Admin", () => _enterStoreDirectly(store, dashboard), AppColors.textSecondary(context)),
+                  _buildActionButton(
+                      Icons.admin_panel_settings_rounded,
+                      "Enter as Admin",
+                      () => _enterStoreDirectly(store, dashboard),
+                      AppColors.textSecondary(context)),
               ],
             ),
           ),
           if (employees.isEmpty)
-            Text(AppLocalizations.t(context, 'No employee profiles found.'), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)))
+            Text(AppLocalizations.t(context, 'No employee profiles found.'),
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary(context)))
           else
             Wrap(
               spacing: 16,
@@ -660,22 +801,34 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
                   borderRadius: BorderRadius.zero,
                   child: Container(
                     width: 110,
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.md, horizontal: AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: AppColors.textSecondary(context).withValues(alpha: 0.03),
+                      color: AppColors.textSecondary(context)
+                          .withValues(alpha: 0.03),
                       borderRadius: BorderRadius.zero,
-                      border: Border.all(color: AppColors.textSecondary(context).withValues(alpha: 0.05)),
+                      border: Border.all(
+                          color: AppColors.textSecondary(context)
+                              .withValues(alpha: 0.05)),
                     ),
                     child: Column(
                       children: [
                         CircleAvatar(
                           radius: 28,
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                          child: Text(name[0].toUpperCase(), style: AppTypography.titleLarge.copyWith(color: AppColors.primary)),
+                          backgroundColor:
+                              AppColors.primary.withValues(alpha: 0.1),
+                          child: Text(name[0].toUpperCase(),
+                              style: AppTypography.titleLarge
+                                  .copyWith(color: AppColors.primary)),
                         ),
                         const SizedBox(height: AppSpacing.md),
-                        Text(name, style: AppTypography.labelLarge, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
-                        Text(emp['role'] ?? 'Staff', style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
+                        Text(name,
+                            style: AppTypography.labelLarge,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center),
+                        Text(emp['role'] ?? 'Staff',
+                            style: AppTypography.labelSmall.copyWith(
+                                color: AppColors.textSecondary(context))),
                       ],
                     ),
                   ),
@@ -687,10 +840,3 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
     );
   }
 }
-
-
-
-
-
-
-

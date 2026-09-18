@@ -122,8 +122,7 @@ class InventoryEntity {
   double get totalRetailValue => price * quantity;
 
   /// Profit margin percentage.
-  double get marginPercent =>
-      price > 0 ? ((price - cost) / price) * 100 : 0.0;
+  double get marginPercent => price > 0 ? ((price - cost) / price) * 100 : 0.0;
 
   // ─── CopyWith ──────────────────────────────────────────────
 
@@ -191,8 +190,7 @@ class InventoryEntity {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is InventoryEntity && id == other.id;
+      identical(this, other) || other is InventoryEntity && id == other.id;
 
   @override
   int get hashCode => id.hashCode;

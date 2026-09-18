@@ -19,10 +19,10 @@ class EmiReminderPopup extends StatelessWidget {
   Widget build(BuildContext context) {
     bool isOverdue = daysOverdue > 0;
     bool isDueToday = daysOverdue == 0;
-    
+
     String title = "EMI Reminder";
     Color headerColor = AppColors.primary;
-    
+
     if (isOverdue) {
       title = "⚠ EMI Payment Overdue";
       headerColor = AppColors.error;
@@ -55,7 +55,8 @@ class EmiReminderPopup extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: AppTypography.titleLarge.copyWith(color: headerColor),
+                    style:
+                        AppTypography.titleLarge.copyWith(color: headerColor),
                   ),
                 ),
               ],
@@ -84,7 +85,8 @@ class EmiReminderPopup extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.surfaceLight,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                   ),
                   child: const Text("Proceed to Pay"),
                 ),

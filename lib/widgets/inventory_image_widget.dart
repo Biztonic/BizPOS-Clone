@@ -49,15 +49,19 @@ class InventoryImageWidget extends StatelessWidget {
       final file = File(localImage);
       if (file.existsSync()) return FileImage(file);
     }
-    
+
     // 2. Check image field (might be a local path or URL)
     if (image != null && image.isNotEmpty) {
-      if (image.startsWith('/') || image.contains(':\\') || image.startsWith('file://')) {
+      if (image.startsWith('/') ||
+          image.contains(':\\') ||
+          image.startsWith('file://')) {
         if (kIsWeb) return NetworkImage(image);
         final file = File(image);
         if (file.existsSync()) return FileImage(file);
       }
-      if (image.startsWith('http://') || image.startsWith('https://') || image.startsWith('blob:')) {
+      if (image.startsWith('http://') ||
+          image.startsWith('https://') ||
+          image.startsWith('blob:')) {
         return CachedNetworkImageProvider(image);
       }
       if (kIsWeb) {
@@ -66,7 +70,7 @@ class InventoryImageWidget extends StatelessWidget {
       final file = File(image);
       if (file.existsSync()) return FileImage(file);
     }
-    
+
     return const CachedNetworkImageProvider("https://via.placeholder.com/300");
   }
 
@@ -75,7 +79,11 @@ class InventoryImageWidget extends StatelessWidget {
     final String? localImage = item.localImage;
     final String? image = item.image;
     final hasLocal = localImage != null && localImage.isNotEmpty;
-    final hasRemote = image != null && image.isNotEmpty && (image.startsWith('http://') || image.startsWith('https://') || image.startsWith('blob:'));
+    final hasRemote = image != null &&
+        image.isNotEmpty &&
+        (image.startsWith('http://') ||
+            image.startsWith('https://') ||
+            image.startsWith('blob:'));
 
     if (!hasLocal && !hasRemote) {
       return _buildPlaceholder(context);
@@ -177,10 +185,8 @@ class InventoryImageWidget extends StatelessWidget {
         color: AppColors.background(context),
         borderRadius: BorderRadius.circular(borderRadius),
       ),
-      child: Icon(Icons.inventory_2, color: AppColors.textHint(context), size: width * 0.4),
+      child: Icon(Icons.inventory_2,
+          color: AppColors.textHint(context), size: width * 0.4),
     );
   }
 }
-
-
-

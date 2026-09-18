@@ -23,7 +23,6 @@ class FinancialReportsScreen extends StatefulWidget {
 }
 
 class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
-
   DateTimeRange _dateRange = DateTimeRange(
     start: DateTime(DateTime.now().year, DateTime.now().month, 1),
     end: DateTime.now(),
@@ -72,19 +71,19 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: isDark 
-              ? ColorScheme.dark(
-                  primary: Theme.of(context).primaryColor,
-                  onPrimary: AppColors.surfaceLight,
-                  surface: AppColors.surface(context),
-                  onSurface: AppColors.surfaceLight,
-                )
-              : ColorScheme.light(
-                  primary: Theme.of(context).primaryColor,
-                  onPrimary: AppColors.surfaceLight,
-                  surface: AppColors.surfaceLight,
-                  onSurface: AppColors.textPrimaryLight,
-                ),
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: Theme.of(context).primaryColor,
+                    onPrimary: AppColors.surfaceLight,
+                    surface: AppColors.surface(context),
+                    onSurface: AppColors.surfaceLight,
+                  )
+                : ColorScheme.light(
+                    primary: Theme.of(context).primaryColor,
+                    onPrimary: AppColors.surfaceLight,
+                    surface: AppColors.surfaceLight,
+                    onSurface: AppColors.textPrimaryLight,
+                  ),
           ),
           child: child!,
         );
@@ -122,11 +121,13 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
         context: context,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Export successful'))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.t(context, 'Export successful'))));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Export failed: $e')));
       }
     }
   }
@@ -134,7 +135,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _stats == null) {
-      return const PosScaffold(showGlobalActions: false, mainContent: Center(child: CircularProgressIndicator()));
+      return const PosScaffold(
+          showGlobalActions: false,
+          mainContent: Center(child: CircularProgressIndicator()));
     }
 
     final totalRevenue = _stats?['totalSales'] ?? 0.0;
@@ -149,8 +152,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
 
     // Sort Category Stats
     final List<Map<String, dynamic>> sortedCategoryStats = List.from(
-      (categoryStats).map((e) => Map<String, dynamic>.from(e as Map))
-    );
+        (categoryStats).map((e) => Map<String, dynamic>.from(e as Map)));
     sortedCategoryStats.sort((a, b) {
       int cmp = 0;
       if (_categorySortBy == 'sales') {
@@ -164,9 +166,8 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
     });
 
     // Sort Day Stats
-    final List<Map<String, dynamic>> sortedDayStats = List.from(
-      (dayStats).map((e) => Map<String, dynamic>.from(e as Map))
-    );
+    final List<Map<String, dynamic>> sortedDayStats =
+        List.from((dayStats).map((e) => Map<String, dynamic>.from(e as Map)));
     sortedDayStats.sort((a, b) {
       int cmp = 0;
       if (_daySortBy == 'sales') {
@@ -180,289 +181,360 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
     });
 
     return PosScaffold(
-      showGlobalActions: false,
-      mainContent: Container(
-        color: AppColors.background(context),
-        child: CustomScrollView(
-        slivers: [
-          // APP BAR
-          SliverAppBar(
-            pinned: true,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.go('/reports'),
-            ),
-            title: Text(AppLocalizations.t(context, 'Financial Reports'), style: const TextStyle(fontWeight: FontWeight.bold)),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.file_download),
-                tooltip: "Export to Excel",
-                onPressed: _exportExcel,
-              ),
-            ],
-          ),
-
-          // DATE RANGE SELECTOR
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: InkWell(
-                onTap: _selectDateRange,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface(context),
-                    borderRadius: BorderRadius.zero,
-                    border: Border.all(color: AppColors.border(context)),
+        showGlobalActions: false,
+        mainContent: Container(
+          color: AppColors.background(context),
+          child: CustomScrollView(
+            slivers: [
+              // APP BAR
+              SliverAppBar(
+                pinned: true,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => context.go('/reports'),
+                ),
+                title: Text(AppLocalizations.t(context, 'Financial Reports'),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.file_download),
+                    tooltip: "Export to Excel",
+                    onPressed: _exportExcel,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.calendar_today, size: 18, color: Theme.of(context).primaryColor),
-                      const SizedBox(width: AppSpacing.md),
-                      Text(
-                        "${DateFormat('MMM dd, yyyy').format(_dateRange.start)} - ${DateFormat('MMM dd, yyyy').format(_dateRange.end)}",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
-                        ),
+                ],
+              ),
+
+              // DATE RANGE SELECTOR
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: InkWell(
+                    onTap: _selectDateRange,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface(context),
+                        borderRadius: BorderRadius.zero,
+                        border: Border.all(color: AppColors.border(context)),
                       ),
-                      const Spacer(),
-                      Icon(Icons.arrow_drop_down, color: isDark ? AppColors.textHintDark : AppColors.textSecondary(context)),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today,
+                              size: 18, color: Theme.of(context).primaryColor),
+                          const SizedBox(width: AppSpacing.md),
+                          Text(
+                            "${DateFormat('MMM dd, yyyy').format(_dateRange.start)} - ${DateFormat('MMM dd, yyyy').format(_dateRange.end)}",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.surfaceLight
+                                  : AppColors.textPrimaryLight,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(Icons.arrow_drop_down,
+                              color: isDark
+                                  ? AppColors.textHintDark
+                                  : AppColors.textSecondary(context)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // SUMMARY CARDS
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          ReportStatCard(
+                            title: "Net Revenue",
+                            value: "₹${totalRevenue.toStringAsFixed(0)}",
+                            icon: Icons.account_balance_wallet,
+                            baseColor: AppColors.success,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          ReportStatCard(
+                            title: "Cash Collected",
+                            value: "₹${cashPayments.toStringAsFixed(0)}",
+                            baseColor: AppColors.warning,
+                            icon: Icons.money,
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          ReportStatCard(
+                            title: "Card / Online",
+                            value: "₹${cardPayments.toStringAsFixed(0)}",
+                            baseColor: AppColors.primaryLight,
+                            icon: Icons.credit_card,
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
               ),
-            ),
-          ),
 
-          // SUMMARY CARDS
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   Row(
-                     children: [
-                       ReportStatCard(
-                         title: "Net Revenue", 
-                         value: "₹${totalRevenue.toStringAsFixed(0)}", 
-                         icon: Icons.account_balance_wallet,
-                         baseColor: AppColors.success,
-                       ),
-                     ],
-                   ),
-                   const SizedBox(height: AppSpacing.md),
-                   Row(
-                     children: [
-                       ReportStatCard(
-                         title: "Cash Collected", 
-                         value: "₹${cashPayments.toStringAsFixed(0)}", 
-                         baseColor: AppColors.warning, 
-                         icon: Icons.money,
-                       ),
-                       const SizedBox(width: AppSpacing.md),
-                       ReportStatCard(
-                         title: "Card / Online", 
-                         value: "₹${cardPayments.toStringAsFixed(0)}", 
-                         baseColor: AppColors.primaryLight, 
-                         icon: Icons.credit_card,
-                       ),
-                     ],
-                   ),
-                ],
-              ),
-            ),
-          ),
-
-          // BAR CHART
-          if (totalRevenue > 0)
-            SliverToBoxAdapter(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.surface(context),
-                  borderRadius: BorderRadius.zero,
-                  boxShadow: [
-                    BoxShadow(
-                      color: isDark ? Colors.black26 : AppColors.textPrimaryLight.withValues(alpha: 0.03), 
-                      blurRadius: 10, 
-                      offset: const Offset(0, 4)
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(AppLocalizations.t(context, 'Revenue vs Costs vs Profit'), 
-                      style: TextStyle(
-                        fontSize: 16, 
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
-                      )
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    SizedBox(
-                      height: 200,
-                      child: BarChart(
-                        BarChartData(
-                          alignment: BarChartAlignment.spaceAround,
-                          maxY: totalRevenue * 1.2,
-                          barTouchData: BarTouchData(enabled: false),
-                          titlesData: FlTitlesData(
-                            show: true,
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                  getTitlesWidget: (double value, TitleMeta meta) {
-                                    final style = AppTypography.labelMedium.copyWith(
-                                      color: AppColors.textSecondary(context),
-                                      fontWeight: FontWeight.bold,
-                                    );
-                                    Widget text;
-                                    switch (value.toInt()) {
-                                      case 0: text = Text(AppLocalizations.t(context, 'Revenue'), style: style); break;
-                                      case 1: text = Text(AppLocalizations.t(context, 'COGS'), style: style); break;
-                                      case 2: text = Text(AppLocalizations.t(context, 'Profit'), style: style); break;
-                                      default: text = Text('', style: style); break;
-                                    }
-                                    return SideTitleWidget(axisSide: meta.axisSide, child: text);
-                                  },
-                              ),
-                            ),
-                            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          ),
-                          gridData: const FlGridData(show: false),
-                          borderData: FlBorderData(show: false),
-                          barGroups: [
-                            BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: totalRevenue, color: AppColors.primaryLight, width: 22, borderRadius: BorderRadius.zero)]),
-                            BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: cogs, color: AppColors.error, width: 22, borderRadius: BorderRadius.zero)]),
-                            BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: grossProfit, color: AppColors.success, width: 22, borderRadius: BorderRadius.zero)]),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          // P&L TABLE
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(AppLocalizations.t(context, 'Profit & Loss (Estimated)'), 
-                    style: TextStyle(
-                      fontSize: 18, 
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
-                    )
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Container(
+              // BAR CHART
+              if (totalRevenue > 0)
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: AppColors.surface(context),
-                      borderRadius: AppRadius.borderSm,
+                      borderRadius: BorderRadius.zero,
                       boxShadow: [
                         BoxShadow(
-                          color: isDark ? Colors.black26 : AppColors.textPrimaryLight.withValues(alpha: 0.05), 
-                          blurRadius: 10, 
-                          offset: const Offset(0, 4)
-                        ),
+                            color: isDark
+                                ? Colors.black26
+                                : AppColors.textPrimaryLight
+                                    .withValues(alpha: 0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4)),
                       ],
                     ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildRowItem("Total Revenue", totalRevenue, isPositive: true),
-                        const Divider(height: 24),
-                        _buildRowItem("Cost of Goods Sold", cogs, isPositive: false),
-                        const Divider(height: 24),
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: isDark ? AppColors.success.withValues(alpha: 0.1) : AppColors.success.withValues(alpha: 0.08),
-                            borderRadius: AppRadius.borderSm,
-                            border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+                        Text(
+                            AppLocalizations.t(
+                                context, 'Revenue vs Costs vs Profit'),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? AppColors.surfaceLight
+                                  : AppColors.textPrimaryLight,
+                            )),
+                        const SizedBox(height: AppSpacing.xl),
+                        SizedBox(
+                          height: 200,
+                          child: BarChart(
+                            BarChartData(
+                              alignment: BarChartAlignment.spaceAround,
+                              maxY: totalRevenue * 1.2,
+                              barTouchData: BarTouchData(enabled: false),
+                              titlesData: FlTitlesData(
+                                show: true,
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget:
+                                        (double value, TitleMeta meta) {
+                                      final style =
+                                          AppTypography.labelMedium.copyWith(
+                                        color: AppColors.textSecondary(context),
+                                        fontWeight: FontWeight.bold,
+                                      );
+                                      Widget text;
+                                      switch (value.toInt()) {
+                                        case 0:
+                                          text = Text(
+                                              AppLocalizations.t(
+                                                  context, 'Revenue'),
+                                              style: style);
+                                          break;
+                                        case 1:
+                                          text = Text(
+                                              AppLocalizations.t(
+                                                  context, 'COGS'),
+                                              style: style);
+                                          break;
+                                        case 2:
+                                          text = Text(
+                                              AppLocalizations.t(
+                                                  context, 'Profit'),
+                                              style: style);
+                                          break;
+                                        default:
+                                          text = Text('', style: style);
+                                          break;
+                                      }
+                                      return SideTitleWidget(
+                                          axisSide: meta.axisSide, child: text);
+                                    },
+                                  ),
+                                ),
+                                leftTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
+                                topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
+                                rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
+                              ),
+                              gridData: const FlGridData(show: false),
+                              borderData: FlBorderData(show: false),
+                              barGroups: [
+                                BarChartGroupData(x: 0, barRods: [
+                                  BarChartRodData(
+                                      toY: totalRevenue,
+                                      color: AppColors.primaryLight,
+                                      width: 22,
+                                      borderRadius: BorderRadius.zero)
+                                ]),
+                                BarChartGroupData(x: 1, barRods: [
+                                  BarChartRodData(
+                                      toY: cogs,
+                                      color: AppColors.error,
+                                      width: 22,
+                                      borderRadius: BorderRadius.zero)
+                                ]),
+                                BarChartGroupData(x: 2, barRods: [
+                                  BarChartRodData(
+                                      toY: grossProfit,
+                                      color: AppColors.success,
+                                      width: 22,
+                                      borderRadius: BorderRadius.zero)
+                                ]),
+                              ],
+                            ),
                           ),
-                          child: _buildRowItem("Gross Profit", grossProfit, isPositive: true, isBold: true, isGrossProfit: true),
                         ),
                       ],
                     ),
-                  )
-                ],
+                  ),
+                ),
+
+              // P&L TABLE
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                          AppLocalizations.t(
+                              context, 'Profit & Loss (Estimated)'),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? AppColors.surfaceLight
+                                : AppColors.textPrimaryLight,
+                          )),
+                      const SizedBox(height: AppSpacing.md),
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface(context),
+                          borderRadius: AppRadius.borderSm,
+                          boxShadow: [
+                            BoxShadow(
+                                color: isDark
+                                    ? Colors.black26
+                                    : AppColors.textPrimaryLight
+                                        .withValues(alpha: 0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4)),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildRowItem("Total Revenue", totalRevenue,
+                                isPositive: true),
+                            const Divider(height: 24),
+                            _buildRowItem("Cost of Goods Sold", cogs,
+                                isPositive: false),
+                            const Divider(height: 24),
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.success.withValues(alpha: 0.1)
+                                    : AppColors.success.withValues(alpha: 0.08),
+                                borderRadius: AppRadius.borderSm,
+                                border: Border.all(
+                                    color: AppColors.success
+                                        .withValues(alpha: 0.2)),
+                              ),
+                              child: _buildRowItem("Gross Profit", grossProfit,
+                                  isPositive: true,
+                                  isBold: true,
+                                  isGrossProfit: true),
+                            ),
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
 
-          // Category-wise Profit
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-              child: _buildCategoryStatsCard(sortedCategoryStats),
-            ),
-          ),
+              // Category-wise Profit
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  child: _buildCategoryStatsCard(sortedCategoryStats),
+                ),
+              ),
 
-          // Day-wise Profit
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-              child: _buildDayStatsCard(sortedDayStats),
-            ),
+              // Day-wise Profit
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  child: _buildDayStatsCard(sortedDayStats),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      )
-    );
+        ));
   }
 
-  Widget _buildRowItem(String label, double amount, {bool isPositive = true, bool isBold = false, bool isGrossProfit = false}) {
+  Widget _buildRowItem(String label, double amount,
+      {bool isPositive = true,
+      bool isBold = false,
+      bool isGrossProfit = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     Color labelColor;
     Color amountColor;
-    
+
     if (isGrossProfit) {
       labelColor = AppColors.adaptiveSuccess(context);
       amountColor = AppColors.adaptiveSuccess(context);
     } else {
-      labelColor = isBold 
-          ? (isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight) 
-          : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary(context));
+      labelColor = isBold
+          ? (isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight)
+          : (isDark
+              ? AppColors.textSecondaryDark
+              : AppColors.textSecondary(context));
       amountColor = isPositive ? AppColors.success : AppColors.error;
     }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label, 
-          style: TextStyle(
-            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-            fontSize: isBold ? 16 : 14,
-            color: labelColor,
-          )
-        ),
-        Text(
-          "${isPositive ? '' : '- '}₹${amount.toStringAsFixed(2)}", 
-          style: TextStyle(
-            fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-            fontSize: isBold ? 18 : 16,
-            color: amountColor,
-          )
-        ),
+        Text(label,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+              fontSize: isBold ? 16 : 14,
+              color: labelColor,
+            )),
+        Text("${isPositive ? '' : '- '}₹${amount.toStringAsFixed(2)}",
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+              fontSize: isBold ? 18 : 16,
+              color: amountColor,
+            )),
       ],
     );
   }
 
   Widget _buildCategoryStatsCard(List<Map<String, dynamic>> categoryStats) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -470,7 +542,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
         borderRadius: AppRadius.borderSm,
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black26 : AppColors.textPrimaryLight.withValues(alpha: 0.05),
+            color: isDark
+                ? Colors.black26
+                : AppColors.textPrimaryLight.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -487,7 +561,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.surfaceLight
+                      : AppColors.textPrimaryLight,
                 ),
               ),
               PopupMenuButton<String>(
@@ -508,9 +584,18 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                   });
                 },
                 itemBuilder: (ctx) => [
-                  PopupMenuItem(value: 'sales', child: Text("Sort by Sales (${_categorySortBy == 'sales' && _categorySortDescending ? 'Asc' : 'Desc'})")),
-                  PopupMenuItem(value: 'profit', child: Text("Sort by Profit (${_categorySortBy == 'profit' && _categorySortDescending ? 'Asc' : 'Desc'})")),
-                  PopupMenuItem(value: 'category', child: Text("Sort by Name (${_categorySortBy == 'category' && _categorySortDescending ? 'Asc' : 'Desc'})")),
+                  PopupMenuItem(
+                      value: 'sales',
+                      child: Text(
+                          "Sort by Sales (${_categorySortBy == 'sales' && _categorySortDescending ? 'Asc' : 'Desc'})")),
+                  PopupMenuItem(
+                      value: 'profit',
+                      child: Text(
+                          "Sort by Profit (${_categorySortBy == 'profit' && _categorySortDescending ? 'Asc' : 'Desc'})")),
+                  PopupMenuItem(
+                      value: 'category',
+                      child: Text(
+                          "Sort by Name (${_categorySortBy == 'category' && _categorySortDescending ? 'Asc' : 'Desc'})")),
                 ],
               ),
             ],
@@ -520,7 +605,8 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                child: Text("No category data available", style: TextStyle(color: AppColors.textSecondary(context))),
+                child: Text("No category data available",
+                    style: TextStyle(color: AppColors.textSecondary(context))),
               ),
             )
           else ...[
@@ -533,16 +619,30 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
               children: [
                 TableRow(
                   children: [
-                    Text("Category", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textSecondary(context))),
-                    Text("Sales", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textSecondary(context)), textAlign: TextAlign.right),
-                    Text("Profit", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textSecondary(context)), textAlign: TextAlign.right),
+                    Text("Category",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: AppColors.textSecondary(context))),
+                    Text("Sales",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: AppColors.textSecondary(context)),
+                        textAlign: TextAlign.right),
+                    Text("Profit",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: AppColors.textSecondary(context)),
+                        textAlign: TextAlign.right),
                   ],
                 ),
                 ...categoryStats.map((stat) {
                   final sales = stat['sales'] as double;
                   final profit = stat['profit'] as double;
                   final profitPct = sales > 0 ? (profit / sales) * 100 : 0.0;
-                  
+
                   return TableRow(
                     children: [
                       Padding(
@@ -550,26 +650,33 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(stat['category'] as String, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                            Text("Margin: ${profitPct.toStringAsFixed(0)}%", style: TextStyle(color: AppColors.textSecondary(context), fontSize: 11)),
+                            Text(stat['category'] as String,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600, fontSize: 14)),
+                            Text("Margin: ${profitPct.toStringAsFixed(0)}%",
+                                style: TextStyle(
+                                    color: AppColors.textSecondary(context),
+                                    fontSize: 11)),
                           ],
                         ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text("₹${sales.toStringAsFixed(0)}", style: const TextStyle(fontSize: 14), textAlign: TextAlign.right),
+                        child: Text("₹${sales.toStringAsFixed(0)}",
+                            style: const TextStyle(fontSize: 14),
+                            textAlign: TextAlign.right),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text(
-                          "₹${profit.toStringAsFixed(0)}", 
-                          style: TextStyle(
-                            fontSize: 14, 
-                            fontWeight: FontWeight.w600,
-                            color: profit >= 0 ? AppColors.success : AppColors.error,
-                          ), 
-                          textAlign: TextAlign.right
-                        ),
+                        child: Text("₹${profit.toStringAsFixed(0)}",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: profit >= 0
+                                  ? AppColors.success
+                                  : AppColors.error,
+                            ),
+                            textAlign: TextAlign.right),
                       ),
                     ],
                   );
@@ -584,7 +691,7 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
 
   Widget _buildDayStatsCard(List<Map<String, dynamic>> dayStats) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -592,7 +699,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
         borderRadius: AppRadius.borderSm,
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black26 : AppColors.textPrimaryLight.withValues(alpha: 0.05),
+            color: isDark
+                ? Colors.black26
+                : AppColors.textPrimaryLight.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -609,7 +718,9 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.surfaceLight
+                      : AppColors.textPrimaryLight,
                 ),
               ),
               PopupMenuButton<String>(
@@ -630,9 +741,18 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                   });
                 },
                 itemBuilder: (ctx) => [
-                  PopupMenuItem(value: 'date', child: Text("Sort by Date (${_daySortBy == 'date' && _daySortDescending ? 'Asc' : 'Desc'})")),
-                  PopupMenuItem(value: 'sales', child: Text("Sort by Sales (${_daySortBy == 'sales' && _daySortDescending ? 'Asc' : 'Desc'})")),
-                  PopupMenuItem(value: 'profit', child: Text("Sort by Profit (${_daySortBy == 'profit' && _daySortDescending ? 'Asc' : 'Desc'})")),
+                  PopupMenuItem(
+                      value: 'date',
+                      child: Text(
+                          "Sort by Date (${_daySortBy == 'date' && _daySortDescending ? 'Asc' : 'Desc'})")),
+                  PopupMenuItem(
+                      value: 'sales',
+                      child: Text(
+                          "Sort by Sales (${_daySortBy == 'sales' && _daySortDescending ? 'Asc' : 'Desc'})")),
+                  PopupMenuItem(
+                      value: 'profit',
+                      child: Text(
+                          "Sort by Profit (${_daySortBy == 'profit' && _daySortDescending ? 'Asc' : 'Desc'})")),
                 ],
               ),
             ],
@@ -642,7 +762,8 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                child: Text("No daily data available", style: TextStyle(color: AppColors.textSecondary(context))),
+                child: Text("No daily data available",
+                    style: TextStyle(color: AppColors.textSecondary(context))),
               ),
             )
           else ...[
@@ -655,9 +776,23 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
               children: [
                 TableRow(
                   children: [
-                    Text("Date", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textSecondary(context))),
-                    Text("Sales", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textSecondary(context)), textAlign: TextAlign.right),
-                    Text("Profit", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textSecondary(context)), textAlign: TextAlign.right),
+                    Text("Date",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: AppColors.textSecondary(context))),
+                    Text("Sales",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: AppColors.textSecondary(context)),
+                        textAlign: TextAlign.right),
+                    Text("Profit",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: AppColors.textSecondary(context)),
+                        textAlign: TextAlign.right),
                   ],
                 ),
                 ...dayStats.map((stat) {
@@ -673,23 +808,27 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text(dateDisplay, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        child: Text(dateDisplay,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 13)),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text("₹${sales.toStringAsFixed(0)}", style: const TextStyle(fontSize: 13), textAlign: TextAlign.right),
+                        child: Text("₹${sales.toStringAsFixed(0)}",
+                            style: const TextStyle(fontSize: 13),
+                            textAlign: TextAlign.right),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text(
-                          "₹${profit.toStringAsFixed(0)}", 
-                          style: TextStyle(
-                            fontSize: 13, 
-                            fontWeight: FontWeight.w600,
-                            color: profit >= 0 ? AppColors.success : AppColors.error,
-                          ), 
-                          textAlign: TextAlign.right
-                        ),
+                        child: Text("₹${profit.toStringAsFixed(0)}",
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: profit >= 0
+                                  ? AppColors.success
+                                  : AppColors.error,
+                            ),
+                            textAlign: TextAlign.right),
                       ),
                     ],
                   );
@@ -702,4 +841,3 @@ class _FinancialReportsScreenState extends State<FinancialReportsScreen> {
     );
   }
 }
-

@@ -27,7 +27,8 @@ class ExportUtils {
 
       // Format Headers (Bold)
       for (int col = 0; col < headers.length; col++) {
-        var cell = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0));
+        var cell = sheetObject
+            .cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0));
         cell.cellStyle = CellStyle(bold: true);
       }
 
@@ -46,11 +47,14 @@ class ExportUtils {
       final fileBytes = excel.save();
       if (fileBytes == null) throw "Failed to generate Excel file";
 
-      final finalFileName = '${fileName}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      final finalFileName =
+          '${fileName}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
 
       if (kIsWeb) {
         // Trigger web download
-        final blob = html.Blob([fileBytes], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        final blob = html.Blob([
+          fileBytes
+        ], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         final url = html.Url.createObjectUrlFromBlob(blob);
         final anchor = html.document.createElement('a') as html.AnchorElement
           ..href = url
@@ -66,9 +70,8 @@ class ExportUtils {
         final file = io.File('${tempDir.path}/$finalFileName');
         await file.writeAsBytes(fileBytes);
         final box = context?.findRenderObject() as RenderBox?;
-        final sharePositionOrigin = box != null
-            ? box.localToGlobal(Offset.zero) & box.size
-            : null;
+        final sharePositionOrigin =
+            box != null ? box.localToGlobal(Offset.zero) & box.size : null;
 
         await SharePlus.instance.share(
           ShareParams(

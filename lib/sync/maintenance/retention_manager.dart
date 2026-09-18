@@ -87,8 +87,7 @@ class RetentionManager {
             '🧹 [RetentionManager] Deleted ${snapshot.docs.length} expired docs from $collection');
       }
     } catch (e) {
-      debugPrint(
-          '⚠️ [RetentionManager] Cleanup error ($collection): $e');
+      debugPrint('⚠️ [RetentionManager] Cleanup error ($collection): $e');
     }
   }
 }

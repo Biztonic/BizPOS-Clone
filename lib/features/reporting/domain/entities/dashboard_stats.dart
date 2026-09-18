@@ -1,4 +1,3 @@
-
 class DashboardStats {
   final double totalSales;
   final int totalOrders;
@@ -8,7 +7,7 @@ class DashboardStats {
   final int monthOrders;
   final double avgDailySale;
   final double avgOrderValue;
-  
+
   final List<Map<String, dynamic>> weeklySales;
   final List<Map<String, dynamic>> topProducts;
   final List<Map<String, dynamic>> actualSalesData;

@@ -29,7 +29,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
     final filteredLanguages = LocaleProvider.supportedLanguages.where((lang) {
       final name = lang['name']!.toLowerCase();
       final code = lang['code']!.toLowerCase();
-      return name.contains(_searchQuery.toLowerCase()) || code.contains(_searchQuery.toLowerCase());
+      return name.contains(_searchQuery.toLowerCase()) ||
+          code.contains(_searchQuery.toLowerCase());
     }).toList();
 
     final content = Column(
@@ -41,7 +42,9 @@ class _LanguageScreenState extends State<LanguageScreen> {
             decoration: InputDecoration(
               hintText: AppLocalizations.t(context, 'search'),
               prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: BorderSide.none),
+              border: OutlineInputBorder(
+                  borderRadius: AppRadius.borderSm,
+                  borderSide: BorderSide.none),
               filled: true,
               fillColor: AppColors.surfaceVariant(context),
             ),
@@ -68,23 +71,29 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
-                    color: isSelected 
-                      ? Theme.of(context).primaryColor
-                      : AppColors.surface(context),
+                    color: isSelected
+                        ? Theme.of(context).primaryColor
+                        : AppColors.surface(context),
                     borderRadius: AppRadius.borderSm,
                     border: Border.all(
-                      color: isSelected 
-                        ? Theme.of(context).primaryColor
-                        : (isDark ? AppColors.border(context) : AppColors.border(context)),
+                      color: isSelected
+                          ? Theme.of(context).primaryColor
+                          : (isDark
+                              ? AppColors.border(context)
+                              : AppColors.border(context)),
                       width: 2,
                     ),
-                    boxShadow: isSelected ? [
-                      BoxShadow(
-                        color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      )
-                    ] : [],
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: Theme.of(context)
+                                  .primaryColor
+                                  .withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            )
+                          ]
+                        : [],
                   ),
                   child: Stack(
                     children: [
@@ -97,7 +106,11 @@ class _LanguageScreenState extends State<LanguageScreen> {
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: isSelected ? AppColors.surfaceLight : (isDark ? AppColors.textSecondaryDark : AppColors.textPrimaryLight),
+                                color: isSelected
+                                    ? AppColors.surfaceLight
+                                    : (isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textPrimaryLight),
                               ),
                             ),
                             const SizedBox(height: AppSpacing.xs),
@@ -106,8 +119,14 @@ class _LanguageScreenState extends State<LanguageScreen> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                color: isSelected ? AppColors.surfaceLight : (isDark ? Colors.white60 : AppColors.textSecondaryLight),
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? AppColors.surfaceLight
+                                    : (isDark
+                                        ? Colors.white60
+                                        : AppColors.textSecondaryLight),
                               ),
                             ),
                           ],
@@ -117,7 +136,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
                         const Positioned(
                           top: AppSpacing.sm,
                           right: AppSpacing.sm,
-                          child: Icon(Icons.check_circle, color: AppColors.surfaceLight, size: 20),
+                          child: Icon(Icons.check_circle,
+                              color: AppColors.surfaceLight, size: 20),
                         ),
                     ],
                   ),
@@ -138,7 +158,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
         title: Text(AppLocalizations.t(context, 'language_settings')),
         elevation: 0,
         backgroundColor: AppColors.transparent,
-        foregroundColor: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
+        foregroundColor:
+            isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
       ),
       body: content,
     );
@@ -146,20 +167,30 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
   String _getNativeIndicator(String code) {
     switch (code) {
-      case 'en': return 'Aa';
-      case 'hi': return 'अ';
-      case 'bn': return 'অ';
-      case 'mr': return 'अ';
-      case 'te': return 'అ';
-      case 'ta': return 'அ';
-      case 'gu': return 'અ';
-      case 'ur': return 'ا';
-      case 'kn': return 'ಅ';
-      case 'or': return 'ଅ';
-      case 'ml': return 'അ';
-      default: return 'A';
+      case 'en':
+        return 'Aa';
+      case 'hi':
+        return 'अ';
+      case 'bn':
+        return 'অ';
+      case 'mr':
+        return 'अ';
+      case 'te':
+        return 'అ';
+      case 'ta':
+        return 'அ';
+      case 'gu':
+        return 'અ';
+      case 'ur':
+        return 'ا';
+      case 'kn':
+        return 'ಅ';
+      case 'or':
+        return 'ଅ';
+      case 'ml':
+        return 'അ';
+      default:
+        return 'A';
     }
   }
 }
-
-

@@ -45,17 +45,25 @@ class GlassPanel extends StatelessWidget {
         height: height,
         padding: padding ?? const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: color ?? CarDashboardTheme.overlayLight.withValues(alpha: opacity ?? 0.05), 
+          color: color ??
+              CarDashboardTheme.overlayLight.withValues(alpha: opacity ?? 0.05),
           borderRadius: BorderRadius.zero,
-          border: border ?? Border.all(color: borderColor ?? AppColors.surfaceLight.withValues(alpha: 0.1), width: 1.0),
-          gradient: gradient ?? (color != null ? null : CarDashboardTheme.glassGradient),
-          boxShadow: withGlow ? [
-            BoxShadow(
-              color: AppColors.textPrimaryLight.withValues(alpha: 0.2),
-              blurRadius: 10, // Reduced from 20
-              offset: const Offset(0, 5), // Reduced from 10
-            ) 
-          ] : null,
+          border: border ??
+              Border.all(
+                  color: borderColor ??
+                      AppColors.surfaceLight.withValues(alpha: 0.1),
+                  width: 1.0),
+          gradient: gradient ??
+              (color != null ? null : CarDashboardTheme.glassGradient),
+          boxShadow: withGlow
+              ? [
+                  BoxShadow(
+                    color: AppColors.textPrimaryLight.withValues(alpha: 0.2),
+                    blurRadius: 10, // Reduced from 20
+                    offset: const Offset(0, 5), // Reduced from 10
+                  )
+                ]
+              : null,
         ),
         child: child,
       ),
@@ -67,10 +75,7 @@ class GlassPanel extends StatelessWidget {
         child: content,
       );
     }
-    
+
     return content;
   }
 }
-
-
-

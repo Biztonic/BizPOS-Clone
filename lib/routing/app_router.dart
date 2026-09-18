@@ -61,18 +61,22 @@ class AppRouter {
   static GoRouter createRouter(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final routerNotifier = Provider.of<RouterNotifier>(context, listen: false);
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    final dashboardProvider =
+        Provider.of<DashboardProvider>(context, listen: false);
 
     return GoRouter(
       navigatorKey: appNavigatorKey,
       initialLocation: '/splash',
-      refreshListenable: Listenable.merge([authProvider, routerNotifier, dashboardProvider]),
-      redirect: (context, state) => _handleRedirect(context, state, authProvider),
+      refreshListenable:
+          Listenable.merge([authProvider, routerNotifier, dashboardProvider]),
+      redirect: (context, state) =>
+          _handleRedirect(context, state, authProvider),
       routes: _routes,
     );
   }
 
-  static String? _handleRedirect(BuildContext context, GoRouterState state, AuthProvider authProvider) {
+  static String? _handleRedirect(
+      BuildContext context, GoRouterState state, AuthProvider authProvider) {
     final isLoggedIn = authProvider.isLoggedIn;
     final isLoggingIn = state.uri.path == '/login';
     final isEmployeeLogin = state.uri.path == '/employee-login';
@@ -95,7 +99,6 @@ class AppRouter {
     if (!isLoggedIn && !isLoggingIn && !isSetPassword) return '/login';
 
     if (isLoggedIn) {
-
       final dashboard = Provider.of<DashboardProvider>(context, listen: false);
 
       if (authProvider.isLoggedIn && !dashboard.isInitialized) {
@@ -111,7 +114,10 @@ class AppRouter {
       final isSelectStore = state.uri.path == '/select-store';
 
       final isAdminPath = state.uri.path.startsWith('/admin');
-      if (dashboard.activeStoreId == null && !isCreateStore && !isSelectStore && !isAdminPath) {
+      if (dashboard.activeStoreId == null &&
+          !isCreateStore &&
+          !isSelectStore &&
+          !isAdminPath) {
         final isSuperAdmin = dashboard.isSuperAdmin;
         final hasStores = dashboard.hasAnyStore;
         final hasChecked = dashboard.hasCheckedStores;
@@ -178,7 +184,8 @@ class AppRouter {
             GoRoute(
               path: '/dashboard',
               builder: (context, state) {
-                final provider = Provider.of<DashboardProvider>(context, listen: false);
+                final provider =
+                    Provider.of<DashboardProvider>(context, listen: false);
                 final isMobile = Responsive.isMobile(context);
                 if (provider.uiStyle == UIStyle.car_dashboard && !isMobile) {
                   return const DashboardInsightsScreen();
@@ -192,9 +199,11 @@ class AppRouter {
                 featureKey: 'pos',
                 child: Builder(
                   builder: (context) {
-                    final provider = Provider.of<DashboardProvider>(context, listen: false);
+                    final provider =
+                        Provider.of<DashboardProvider>(context, listen: false);
                     final isMobile = Responsive.isMobile(context);
-                    if (provider.uiStyle == UIStyle.car_dashboard && !isMobile) {
+                    if (provider.uiStyle == UIStyle.car_dashboard &&
+                        !isMobile) {
                       return const CarDashboardPOSScreen();
                     }
                     TableModel? table;
@@ -208,7 +217,8 @@ class AppRouter {
             ),
             GoRoute(
               path: '/inventory',
-              builder: (context, state) => const FeatureGuard(featureKey: 'inventory', child: InventoryScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'inventory', child: InventoryScreen()),
             ),
             GoRoute(
               path: '/settings/bizstore',
@@ -227,7 +237,8 @@ class AppRouter {
             ),
             GoRoute(
               path: '/sales',
-              builder: (context, state) => const FeatureGuard(featureKey: 'reports', child: SalesScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'reports', child: SalesScreen()),
             ),
             GoRoute(
               path: '/staff-list',
@@ -236,73 +247,93 @@ class AppRouter {
                 if (state.extra is int) {
                   tabIndex = state.extra as int;
                 }
-                return FeatureGuard(featureKey: 'employees', child: EmployeesScreen(initialTabIndex: tabIndex));
+                return FeatureGuard(
+                    featureKey: 'employees',
+                    child: EmployeesScreen(initialTabIndex: tabIndex));
               },
             ),
-            GoRoute(path: '/users', builder: (context, state) => const UserManagementScreen()),
+            GoRoute(
+                path: '/users',
+                builder: (context, state) => const UserManagementScreen()),
             GoRoute(
               path: '/reports',
-              builder: (context, state) => const FeatureGuard(featureKey: 'reports', child: ReportsScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'reports', child: ReportsScreen()),
             ),
             GoRoute(
               path: '/kds',
-              builder: (context, state) => const FeatureGuard(featureKey: 'kds_management', child: KitchenDisplayScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'kds_management', child: KitchenDisplayScreen()),
             ),
             GoRoute(
               path: '/settings',
-              builder: (context, state) => const FeatureGuard(featureKey: 'settings', child: SettingsScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'settings', child: SettingsScreen()),
             ),
             GoRoute(
               path: '/stores',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: StoreManagementScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: StoreManagementScreen()),
             ),
             GoRoute(
               path: '/roles',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: UserRoleManagementScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: UserRoleManagementScreen()),
             ),
             GoRoute(
               path: '/admin',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: AdminDashboardScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: AdminDashboardScreen()),
             ),
             GoRoute(
               path: '/admin/limits',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: BasicPlanSettingsScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: BasicPlanSettingsScreen()),
             ),
             GoRoute(
               path: '/admin/manage-roles',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: ManageRolesScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: ManageRolesScreen()),
             ),
             GoRoute(
               path: '/admin/other-settings',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: OtherSettingsScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: OtherSettingsScreen()),
             ),
             GoRoute(
               path: '/admin/releases',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: ReleaseManagementScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: ReleaseManagementScreen()),
             ),
             GoRoute(
               path: '/admin/lock',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: StationLockScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: StationLockScreen()),
             ),
             GoRoute(
               path: '/admin/subscriptions',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: SubscriptionsOverviewScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: SubscriptionsOverviewScreen()),
             ),
             GoRoute(
               path: '/admin/approvals',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: SubscriptionApprovalScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: SubscriptionApprovalScreen()),
             ),
             GoRoute(
               path: '/admin/hardware',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: HardwareMasterScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: HardwareMasterScreen()),
             ),
             GoRoute(
               path: '/languages',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: LanguageScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: LanguageScreen()),
             ),
             GoRoute(
               path: '/biz-store',
-              builder: (context, state) => const FeatureGuard(featureKey: 'admin', child: BizStoreScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: BizStoreScreen()),
             ),
             GoRoute(
               path: '/biz-store/addon-detail',
@@ -323,15 +354,24 @@ class AppRouter {
                 return AddonDetailScreen(addonKey: key);
               },
             ),
-            GoRoute(path: '/reports/sales', builder: (context, state) => const UnifiedSalesReportScreen()),
-            GoRoute(path: '/reports/inventory', builder: (context, state) => const InventoryReportsScreen()),
-            GoRoute(path: '/reports/customers', builder: (context, state) => const CustomerReportsScreen()),
+            GoRoute(
+                path: '/reports/sales',
+                builder: (context, state) => const UnifiedSalesReportScreen()),
+            GoRoute(
+                path: '/reports/inventory',
+                builder: (context, state) => const InventoryReportsScreen()),
+            GoRoute(
+                path: '/reports/customers',
+                builder: (context, state) => const CustomerReportsScreen()),
             GoRoute(
               path: '/reports/financials',
-              builder: (context, state) => const FeatureGuard(featureKey: 'reports', child: FinancialReportsScreen()),
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'reports', child: FinancialReportsScreen()),
             ),
-            GoRoute(path: '/reports/audit', builder: (context, state) => const AuditLogScreen()),
-            
+            GoRoute(
+                path: '/reports/audit',
+                builder: (context, state) => const AuditLogScreen()),
+
             // --- Inject Dynamic Module Routes Here ---
             ...POSCoreRegistry.getGlobalRoutes().entries.map((entry) {
               return GoRoute(

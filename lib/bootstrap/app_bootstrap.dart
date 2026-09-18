@@ -23,15 +23,15 @@ class AppBootstrap {
   /// Each module is self-contained and implements POSModule.
   /// To add a new addon: create folder in lib/modules/, implement POSModule, add here.
   static List<POSModule> get allAvailableModules => [
-    TablesModule(),
-    DataCenterModule(),
-    SuppliersModule(),
-    KdsModule(),
-    IntegrationsModule(),
-    CrmModule(),
-    EmployeesModule(),
-    FranchiseModule(),
-  ];
+        TablesModule(),
+        DataCenterModule(),
+        SuppliersModule(),
+        KdsModule(),
+        IntegrationsModule(),
+        CrmModule(),
+        EmployeesModule(),
+        FranchiseModule(),
+      ];
 
   static Future<void> run(Widget app) async {
     await runZonedGuarded<Future<void>>(() async {

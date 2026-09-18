@@ -25,12 +25,12 @@ class CreateOrderUseCase extends UseCase<CreateOrderParams, bool> {
 
       // 2. Fire decoupled event (SyncEngine listens to this)
       EventBus.instance.fire(OrderCreatedEvent(
-         order: params.order,
-         storeId: params.storeId,
-         event: null,
-         movements: const [],
+        order: params.order,
+        storeId: params.storeId,
+        event: null,
+        movements: const [],
       ));
-      
+
       return true;
     } catch (e) {
       debugPrint('Error in CreateOrderUseCase: $e');
@@ -38,4 +38,3 @@ class CreateOrderUseCase extends UseCase<CreateOrderParams, bool> {
     }
   }
 }
-

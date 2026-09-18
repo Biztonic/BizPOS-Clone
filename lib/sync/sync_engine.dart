@@ -52,7 +52,8 @@ class SyncService with ChangeNotifier {
   SyncService._internal();
 
   // --- STREAMS ---
-  final StreamController<String> _syncStatusController = StreamController<String>.broadcast();
+  final StreamController<String> _syncStatusController =
+      StreamController<String>.broadcast();
   Stream<String> get syncStatusStream => _syncStatusController.stream;
 
   // --- ENGINE REFERENCES ---
@@ -134,13 +135,18 @@ class SyncService with ChangeNotifier {
   Map<String, int> _localCounts = {};
 
   int get localOrdersCount => _localCounts[SyncCollectionRegistry.orders] ?? 0;
-  int get localInventoryCount => _localCounts[SyncCollectionRegistry.inventory] ?? 0;
-  int get localCustomersCount => _localCounts[SyncCollectionRegistry.customers] ?? 0;
-  int get localSettingsCount => _localCounts[SyncCollectionRegistry.settings] ?? 0;
-  int get localEmployeesCount => _localCounts[SyncCollectionRegistry.employees] ?? 0;
+  int get localInventoryCount =>
+      _localCounts[SyncCollectionRegistry.inventory] ?? 0;
+  int get localCustomersCount =>
+      _localCounts[SyncCollectionRegistry.customers] ?? 0;
+  int get localSettingsCount =>
+      _localCounts[SyncCollectionRegistry.settings] ?? 0;
+  int get localEmployeesCount =>
+      _localCounts[SyncCollectionRegistry.employees] ?? 0;
   int get localTablesCount => _localCounts[SyncCollectionRegistry.tables] ?? 0;
   int get localFloorsCount => _localCounts[SyncCollectionRegistry.floors] ?? 0;
-  int get localSuppliersCount => _localCounts[SyncCollectionRegistry.suppliers] ?? 0;
+  int get localSuppliersCount =>
+      _localCounts[SyncCollectionRegistry.suppliers] ?? 0;
   int get localNotesCount => _localCounts[SyncCollectionRegistry.notes] ?? 0;
 
   int get cachedOrdersCount => localOrdersCount;
@@ -155,7 +161,9 @@ class SyncService with ChangeNotifier {
     for (var val in _queueBox!.values) {
       if (val is Map) {
         final itemStoreId = (val['activeStoreId'] ?? '').toString().trim();
-        final payloadStoreId = (val['payload'] is Map ? (val['payload']['storeId'] ?? '').toString().trim() : '');
+        final payloadStoreId = (val['payload'] is Map
+            ? (val['payload']['storeId'] ?? '').toString().trim()
+            : '');
         if (itemStoreId == _activeStoreId || payloadStoreId == _activeStoreId) {
           count++;
         }
@@ -163,6 +171,7 @@ class SyncService with ChangeNotifier {
     }
     return count;
   }
+
   int get failedUploadCount => _failedQueueBox?.length ?? 0;
 
   bool get _hasCloudAccess {
@@ -263,7 +272,6 @@ class SyncService with ChangeNotifier {
       _orchestrator = SyncOrchestrator(
         pullEngine: _pullEngine,
         outboundManager: _outboundManager,
-        
         limitsEngine: _limitsEngine,
         setStatus: (s) => _syncStatus = s,
         setLastError: (e) => lastSyncError = e,
@@ -324,7 +332,8 @@ class SyncService with ChangeNotifier {
         }
       });
     } catch (e) {
-      debugPrint('⚠️ SyncService: FirebaseAuth not initialized in _setupAuthListener: $e');
+      debugPrint(
+          '⚠️ SyncService: FirebaseAuth not initialized in _setupAuthListener: $e');
     }
   }
 
@@ -351,8 +360,11 @@ class SyncService with ChangeNotifier {
       final status = result.isNotEmpty ? result.first : ConnectivityResult.none;
       _updateConnectionStatus(status);
     });
-    Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> result) {
-      _updateConnectionStatus(result.isNotEmpty ? result.first : ConnectivityResult.none);
+    Connectivity()
+        .onConnectivityChanged
+        .listen((List<ConnectivityResult> result) {
+      _updateConnectionStatus(
+          result.isNotEmpty ? result.first : ConnectivityResult.none);
     });
   }
 
@@ -360,13 +372,15 @@ class SyncService with ChangeNotifier {
     bool wasOffline = !_isOnline;
     _isOnline = (result != ConnectivityResult.none);
     notifyListeners();
-    
+
     if (_isOnline) {
       if (!_hasCloudAccess && OfflineService().getOfflineLoginState()) {
-        _diagnostics.log("Network Restored ($result) but no cloud access. Attempting auto-login...");
+        _diagnostics.log(
+            "Network Restored ($result) but no cloud access. Attempting auto-login...");
         _checkAndPerformAutoCloudLogin().then((_) {
           if (_hasCloudAccess) {
-            _diagnostics.log("Auto-login succeeded after connection. Triggering sync...");
+            _diagnostics.log(
+                "Auto-login succeeded after connection. Triggering sync...");
             processSync();
           }
         });
@@ -381,35 +395,28 @@ class SyncService with ChangeNotifier {
     if (!_isOnline) return;
     try {
       if (_hasCloudAccess) return;
-      
-      final isOfflineLoggedIn = OfflineService().getOfflineLoginState();
-      if (!isOfflineLoggedIn) return;
-      
-      final offlineEmail = OfflineService().getOfflineLoginEmail();
-      if (offlineEmail == null) return;
-      
-      final creds = await OfflineService().getCachedCredentials(email: offlineEmail);
-      if (creds == null) return;
-      
-      final email = creds['email'];
-      final password = creds['password'];
-      if (email != null && password != null) {
-        debugPrint("🔄 SyncService: Device is online. Attempting auto-sign-in to Firebase Auth...");
-        _diagnostics.log("Attempting auto-sign-in to Firebase Auth for $email...");
-        final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-        debugPrint("✅ SyncService: Auto-signed in to Firebase Auth successfully.");
-        _diagnostics.log("Auto-sign-in to Firebase Auth succeeded.");
-        
-        if (credential.user != null) {
-          setUserId(credential.user!.uid);
-        }
+
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        debugPrint(
+            "🔄 SyncService: Device is online. Refreshing Firebase Auth token for ${currentUser.email}...");
+        _diagnostics
+            .log("Refreshing Firebase Auth token for ${currentUser.email}...");
+        await currentUser.getIdToken(true);
+        debugPrint(
+            "✅ SyncService: Firebase Auth token refreshed successfully.");
+        _diagnostics.log("Firebase Auth token refreshed successfully.");
+        setUserId(currentUser.uid);
+      } else {
+        // Zero raw password storage (Principle 9): Never attempt auto-login with plaintext passwords.
+        debugPrint(
+            "ℹ️ SyncService: Device is online, but no active Firebase Auth session found. Online credentials required.");
+        _diagnostics
+            .log("No active Firebase Auth session found for auto-login.");
       }
     } catch (e) {
-      debugPrint("⚠️ SyncService: Auto-sign-in to Firebase Auth failed: $e");
-      _diagnostics.log("Auto-sign-in to Firebase Auth failed: $e", isError: true);
+      debugPrint("⚠️ SyncService: Auth token refresh failed: $e");
+      _diagnostics.log("Auth token refresh failed: $e", isError: true);
     }
   }
 
@@ -433,13 +440,18 @@ class SyncService with ChangeNotifier {
   Map<String, int> _cloudCounts = {};
 
   int get cloudOrdersCount => _cloudCounts[SyncCollectionRegistry.orders] ?? -1;
-  int get cloudInventoryCount => _cloudCounts[SyncCollectionRegistry.inventory] ?? -1;
-  int get cloudCustomersCount => _cloudCounts[SyncCollectionRegistry.customers] ?? -1;
-  int get cloudSettingsCount => _cloudCounts[SyncCollectionRegistry.settings] ?? -1;
-  int get cloudEmployeesCount => _cloudCounts[SyncCollectionRegistry.employees] ?? -1;
+  int get cloudInventoryCount =>
+      _cloudCounts[SyncCollectionRegistry.inventory] ?? -1;
+  int get cloudCustomersCount =>
+      _cloudCounts[SyncCollectionRegistry.customers] ?? -1;
+  int get cloudSettingsCount =>
+      _cloudCounts[SyncCollectionRegistry.settings] ?? -1;
+  int get cloudEmployeesCount =>
+      _cloudCounts[SyncCollectionRegistry.employees] ?? -1;
   int get cloudTablesCount => _cloudCounts[SyncCollectionRegistry.tables] ?? -1;
   int get cloudFloorsCount => _cloudCounts[SyncCollectionRegistry.floors] ?? -1;
-  int get cloudSuppliersCount => _cloudCounts[SyncCollectionRegistry.suppliers] ?? -1;
+  int get cloudSuppliersCount =>
+      _cloudCounts[SyncCollectionRegistry.suppliers] ?? -1;
   int get cloudNotesCount => _cloudCounts[SyncCollectionRegistry.notes] ?? -1;
 
   Future<void> refreshCloudCounts({bool notify = true}) async {
@@ -482,7 +494,8 @@ class SyncService with ChangeNotifier {
       _cachedPlatformLimits = limits;
       return limits;
     } catch (e) {
-      debugPrint('⚠️ SyncService: Failed to retrieve platform limits (likely Firebase uninitialized): $e');
+      debugPrint(
+          '⚠️ SyncService: Failed to retrieve platform limits (likely Firebase uninitialized): $e');
       return const {
         'daily': 2000,
         'monthly': 50000,
@@ -506,34 +519,46 @@ class SyncService with ChangeNotifier {
   }
 
   /// Returns the retention period (in days) for cloud data cleanup.
-  Future<bool> hasDataCenterAddon(String? storeId) async => _planPolicy.hasDataCenterAddon(storeId);
+  Future<bool> hasDataCenterAddon(String? storeId) async =>
+      _planPolicy.hasDataCenterAddon(storeId);
 
   String? _extractIndexLink(String error) {
     if (!error.contains("https://console.firebase.google.com")) return null;
     try {
       final start = error.indexOf("https://console.firebase.google.com");
       final end = error.indexOf(" ", start);
-      if (end == -1) return error.substring(start).replaceAll("]", "").replaceAll(")", "");
-      return error.substring(start, end).replaceAll("]", "").replaceAll(")", "");
-    } catch (e) { return null; }
+      if (end == -1)
+        return error.substring(start).replaceAll("]", "").replaceAll(")", "");
+      return error
+          .substring(start, end)
+          .replaceAll("]", "")
+          .replaceAll(")", "");
+    } catch (e) {
+      return null;
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
   // SYNC ACTIONS
   // ─────────────────────────────────────────────────────────────
 
-  Future<void> processSync({bool forceManual = false, bool forceFull = false}) async {
+  Future<void> processSync(
+      {bool forceManual = false, bool forceFull = false}) async {
     if (!_isInitialized) return;
-    
+
     // Auto-login if we have internet but no cloud session yet
-    if (_isOnline && !_hasCloudAccess && OfflineService().getOfflineLoginState()) {
+    if (_isOnline &&
+        !_hasCloudAccess &&
+        OfflineService().getOfflineLoginState()) {
       await _checkAndPerformAutoCloudLogin();
     }
-    
-    await _orchestrator.processSync(forceManual: forceManual, forceFull: forceFull);
+
+    await _orchestrator.processSync(
+        forceManual: forceManual, forceFull: forceFull);
   }
 
-  Future<int> pullCollection(String collection, {bool forceFull = false}) async {
+  Future<int> pullCollection(String collection,
+      {bool forceFull = false}) async {
     if (!_isInitialized) return 0;
     return _pullEngine.pullCollection(collection, forceFull: forceFull);
   }
@@ -589,7 +614,8 @@ class SyncService with ChangeNotifier {
   // ─────────────────────────────────────────────────────────────
 
   Future<String> inspectCloudData() async {
-    return _diagnostics.inspectCloudData(db: _db, activeStoreId: _activeStoreId);
+    return _diagnostics.inspectCloudData(
+        db: _db, activeStoreId: _activeStoreId);
   }
 
   /// Returns a diagnostic integrity check string.
@@ -623,11 +649,14 @@ class SyncService with ChangeNotifier {
       for (var val in _queueBox!.values) {
         if (val is Map) {
           final itemStoreId = (val['activeStoreId'] ?? '').toString().trim();
-          final payloadStoreId = (val['payload'] is Map ? (val['payload']['storeId'] ?? '').toString().trim() : '');
-          if (itemStoreId == _activeStoreId || payloadStoreId == _activeStoreId) {
+          final payloadStoreId = (val['payload'] is Map
+              ? (val['payload']['storeId'] ?? '').toString().trim()
+              : '');
+          if (itemStoreId == _activeStoreId ||
+              payloadStoreId == _activeStoreId) {
             final col = val['collection'] as String?;
             if (col != null) {
-               pendingBreakdown[col] = (pendingBreakdown[col] ?? 0) + 1;
+              pendingBreakdown[col] = (pendingBreakdown[col] ?? 0) + 1;
             }
           }
         }
@@ -699,7 +728,8 @@ class SyncService with ChangeNotifier {
     data['lastModifiedBy'] = _deviceId;
 
     // 2. Offline-First Hive Write
-    final boxName = localCacheBox ?? SyncCollectionRegistry.getBoxName(collection);
+    final boxName =
+        localCacheBox ?? SyncCollectionRegistry.getBoxName(collection);
     if (boxName != null) {
       try {
         final box = await Hive.openBox(boxName);
@@ -794,7 +824,8 @@ class SyncService with ChangeNotifier {
   Future<void> _saveLastSyncTime(String collection, DateTime time) async {
     if (_activeStoreId == null) return;
     final box = await Hive.openBox(SyncCollectionRegistry.boxSettingsGeneral);
-    await box.put('last_sync_${collection}_$_activeStoreId', time.millisecondsSinceEpoch);
+    await box.put(
+        'last_sync_${collection}_$_activeStoreId', time.millisecondsSinceEpoch);
   }
 
   dynamic _deepSanitize(dynamic value) {
@@ -867,7 +898,8 @@ class SyncService with ChangeNotifier {
           }
         }
 
-        debugPrint('📤 SyncBridge: OrderCreatedEvent fully processed (${event.movements.length} movements)');
+        debugPrint(
+            '📤 SyncBridge: OrderCreatedEvent fully processed (${event.movements.length} movements)');
       } catch (e) {
         debugPrint('❌ SyncBridge: Failed to queue OrderCreatedEvent: $e');
       }
@@ -881,7 +913,8 @@ class SyncService with ChangeNotifier {
         final changeType = event.changeType;
 
         if (changeType == 'UPSERT') {
-          final item = await _repository.getInventoryItem(itemId, storeId: storeId);
+          final item =
+              await _repository.getInventoryItem(itemId, storeId: storeId);
           if (item != null) {
             final payload = item.toHiveMap();
             payload['storeId'] = storeId;
@@ -891,9 +924,11 @@ class SyncService with ChangeNotifier {
               action: 'create',
               payload: payload,
             );
-            debugPrint('📤 SyncBridge: Queued inventory item $itemId (UPSERT) for cloud sync');
+            debugPrint(
+                '📤 SyncBridge: Queued inventory item $itemId (UPSERT) for cloud sync');
           } else {
-            debugPrint('⚠️ SyncBridge: Inventory item $itemId not found in local DB, cannot queue sync');
+            debugPrint(
+                '⚠️ SyncBridge: Inventory item $itemId not found in local DB, cannot queue sync');
           }
         } else if (changeType == 'DELETE') {
           await queueOperation(
@@ -905,7 +940,8 @@ class SyncService with ChangeNotifier {
               'storeId': storeId,
             },
           );
-          debugPrint('📤 SyncBridge: Queued inventory item $itemId (DELETE) for cloud sync');
+          debugPrint(
+              '📤 SyncBridge: Queued inventory item $itemId (DELETE) for cloud sync');
         }
       } catch (e) {
         debugPrint('❌ SyncBridge: Failed to queue InventoryChangedEvent: $e');

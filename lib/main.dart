@@ -4,4 +4,3 @@ import 'app.dart';
 void main() async {
   await AppBootstrap.run(const MyApp());
 }
-

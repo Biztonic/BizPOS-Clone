@@ -53,7 +53,8 @@ abstract class InventoryRepositoryInterface {
   Future<InventoryResult<void>> insertItem(InventoryEntity item);
 
   /// Retrieve a single inventory item by ID.
-  Future<InventoryResult<InventoryEntity>> getItem(String itemId, {String? storeId});
+  Future<InventoryResult<InventoryEntity>> getItem(String itemId,
+      {String? storeId});
 
   /// Retrieve all inventory items for a store.
   Future<InventoryResult<List<InventoryEntity>>> getItems(
@@ -72,10 +73,12 @@ abstract class InventoryRepositoryInterface {
   // ─── Stock Operations ─────────────────────────────────────
 
   /// Get the current stock quantity for an item.
-  Future<InventoryResult<int>> getStockQuantity(String itemId, {String? storeId});
+  Future<InventoryResult<int>> getStockQuantity(String itemId,
+      {String? storeId});
 
   /// Get pending inventory delta (unsynced movements).
-  Future<InventoryResult<int>> getPendingDelta(String itemId, {String? storeId});
+  Future<InventoryResult<int>> getPendingDelta(String itemId,
+      {String? storeId});
 
   /// Rebuild the quantity cache from movement history.
   Future<InventoryResult<void>> rebuildQuantityCache(String storeId);

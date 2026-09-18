@@ -10,7 +10,6 @@ class UsbPrinterService {
   }
 
   Future<bool> connect(PrinterDevice device) async {
-
     return false;
   }
 
@@ -18,7 +17,5 @@ class UsbPrinterService {
     return true;
   }
 
-  Future<void> printRaw(List<int> bytes) async {
-
-  }
+  Future<void> printRaw(List<int> bytes) async {}
 }

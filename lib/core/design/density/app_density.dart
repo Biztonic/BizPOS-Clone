@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
-
 enum AppDensity {
   compact,
   comfortable,
@@ -40,7 +39,8 @@ class DensityConfig {
           rowHeight: 36,
           cardRadius: 0,
           buttonRadius: 0,
-          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+          contentPadding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
         );
       case AppDensity.comfortable:
         return const DensityConfig(
@@ -51,7 +51,8 @@ class DensityConfig {
           rowHeight: 48,
           cardRadius: 0,
           buttonRadius: 0,
-          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+          contentPadding:
+              EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
         );
       case AppDensity.touch:
         return const DensityConfig(
@@ -62,7 +63,8 @@ class DensityConfig {
           rowHeight: 64,
           cardRadius: 0,
           buttonRadius: 0,
-          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          contentPadding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         );
     }
   }
@@ -84,7 +86,9 @@ class AppDensityProvider extends InheritedWidget {
 
   static DensityConfig configOf(BuildContext context) {
     final provider = maybeOf(context);
-    return provider?.config ?? DensityConfig.fromDensity(AppDensity.comfortable); // Default to comfortable
+    return provider?.config ??
+        DensityConfig.fromDensity(
+            AppDensity.comfortable); // Default to comfortable
   }
 
   static AppDensity densityOf(BuildContext context) {

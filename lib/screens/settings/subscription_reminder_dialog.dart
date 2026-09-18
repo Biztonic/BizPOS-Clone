@@ -21,7 +21,8 @@ class SubscriptionReminderDialog extends StatelessWidget {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 28),
+          const Icon(Icons.warning_amber_rounded,
+              color: AppColors.warning, size: 28),
           const SizedBox(width: AppSpacing.md),
           Text(AppLocalizations.t(context, 'Subscription Expiring')),
         ],
@@ -31,14 +32,18 @@ class SubscriptionReminderDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            daysRemaining <= 0 
-              ? "Your Standard subscription has expired."
-              : "Your Standard subscription is expiring in $daysRemaining days.",
-            style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold),
+            daysRemaining <= 0
+                ? "Your Standard subscription has expired."
+                : "Your Standard subscription is expiring in $daysRemaining days.",
+            style:
+                AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(AppLocalizations.t(context, 'Renew now to continue enjoying unlimited features, cloud sync, and priority support without any interruption.'),
-            style: TextStyle(color: AppColors.textSecondary(context), fontSize: 14),
+          Text(
+            AppLocalizations.t(context,
+                'Renew now to continue enjoying unlimited features, cloud sync, and priority support without any interruption.'),
+            style: TextStyle(
+                color: AppColors.textSecondary(context), fontSize: 14),
           ),
         ],
       ),
@@ -55,7 +60,8 @@ class SubscriptionReminderDialog extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.warning,
             foregroundColor: AppColors.surfaceLight,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape:
+                const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           ),
           child: Text(AppLocalizations.t(context, 'RENEW / PURCHASE')),
         ),
@@ -63,7 +69,3 @@ class SubscriptionReminderDialog extends StatelessWidget {
     );
   }
 }
-
-
-
-

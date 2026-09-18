@@ -41,24 +41,24 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
   @override
   Widget build(BuildContext context) {
     final themeData = ref.watch(themeProvider);
-    
+
     return legacy_provider.Consumer2<LocaleProvider, DashboardProvider>(
       builder: (context, localeProvider, dashboardProvider, _) {
         final view = View.of(context);
         final size = view.physicalSize / view.devicePixelRatio;
         final isMobile = size.width < 600;
-        final isCarDashboard = themeData.uiStyle == UIStyle.car_dashboard && !isMobile;
+        final isCarDashboard =
+            themeData.uiStyle == UIStyle.car_dashboard && !isMobile;
 
-        final appDensity = isCarDashboard 
-            ? AppDensity.touch 
-            : AppDensity.comfortable;
+        final appDensity =
+            isCarDashboard ? AppDensity.touch : AppDensity.comfortable;
 
         if (dashboardProvider.isClockTampered) {
           return AppDensityProvider(
             density: appDensity,
             child: MaterialApp(
               title: 'BizPOS Lockout',
-              theme: isCarDashboard 
+              theme: isCarDashboard
                   ? CarDashboardTheme.getThemeData(isDark: themeData.isDarkMode)
                   : AppTheme.getTheme(themeData.currentTheme, false,
                       customSeed: themeData.customThemeColor != null
@@ -70,7 +70,8 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
                       customSeed: themeData.customThemeColor != null
                           ? Color(themeData.customThemeColor!)
                           : null),
-              themeMode: themeData.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+              themeMode:
+                  themeData.isDarkMode ? ThemeMode.dark : ThemeMode.light,
               locale: localeProvider.locale,
               localizationsDelegates: const [
                 AppLocalizationsDelegate(),
@@ -101,7 +102,7 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
           density: appDensity,
           child: MaterialApp.router(
             title: isCarDashboard ? 'BizPOS Auto' : 'BizPOS',
-            theme: isCarDashboard 
+            theme: isCarDashboard
                 ? CarDashboardTheme.getThemeData(isDark: themeData.isDarkMode)
                 : AppTheme.getTheme(themeData.currentTheme, false,
                     customSeed: themeData.customThemeColor != null
@@ -150,5 +151,3 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
     );
   }
 }
-
-

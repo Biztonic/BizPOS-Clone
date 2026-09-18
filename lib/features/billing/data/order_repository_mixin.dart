@@ -7,7 +7,8 @@ import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
-Map<String, dynamic> _decodeJson(String json) => jsonDecode(json) as Map<String, dynamic>;
+Map<String, dynamic> _decodeJson(String json) =>
+    jsonDecode(json) as Map<String, dynamic>;
 
 mixin OrderRepositoryMixin {
   Future<Database> get database;
@@ -15,38 +16,36 @@ mixin OrderRepositoryMixin {
   InventoryMovementRepository get movementRepo;
 
   // --- ORDERS ---
-  
+
   Future<void> insertOrder(OrderModel order) async {
-      final db = await dbHelper.database;
-      try {
-        // 1. Immutability Check (Security Risk 1)
-        final existingRows = await db.query('orders', where: 'id = ?', whereArgs: [order.id]);
-        if (existingRows.isNotEmpty) {
-           final existingStatus = existingRows.first['status'] as String;
-           final bool isIncomingSync = order.syncStatus == 'SYNCED' || order.syncStatus == 'CONFIRMED';
+    final db = await dbHelper.database;
+    try {
+      // 1. Immutability Check (Security Risk 1)
+      final existingRows =
+          await db.query('orders', where: 'id = ?', whereArgs: [order.id]);
+      if (existingRows.isNotEmpty) {
+        final existingStatus = existingRows.first['status'] as String;
+        final bool isIncomingSync =
+            order.syncStatus == 'SYNCED' || order.syncStatus == 'CONFIRMED';
 
-           if (['Completed', 'Cancelled', 'Refunded', 'VOID'].contains(existingStatus) && !isIncomingSync) {
-              return; 
-           }
+        if (['Completed', 'Cancelled', 'Refunded', 'VOID']
+                .contains(existingStatus) &&
+            !isIncomingSync) {
+          return;
         }
-
-        await db.insert(
-          'orders', 
-          order.toSqlMap(), 
-          conflictAlgorithm: ConflictAlgorithm.replace
-        );
-        
-        // 2. Insert Items (Sequential for Web Stability)
-        for (var item in order.items) {
-          await db.insert(
-            'order_items', 
-            item.toSqlMap(order.id),
-            conflictAlgorithm: ConflictAlgorithm.replace
-          );
-        }
-      } catch (e) {
-          rethrow;
       }
+
+      await db.insert('orders', order.toSqlMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+
+      // 2. Insert Items (Sequential for Web Stability)
+      for (var item in order.items) {
+        await db.insert('order_items', item.toSqlMap(order.id),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// Optimized Daily Order Count using SQL
@@ -83,7 +82,7 @@ mixin OrderRepositoryMixin {
       'movements': movements.map((e) => e.toSqlMap()).toList(),
       'yearMonth': yearMonth,
     });
-    
+
     // 0. Create Journal Entry (Pending) OUTSIDE transaction
     await db.insert('transaction_journal', {
       'id': txId,
@@ -160,8 +159,9 @@ mixin OrderRepositoryMixin {
 
   Future<void> replayTransaction(String txId, String operationsJson) async {
     final db = await dbHelper.database;
-    final Map<String, dynamic> data = await compute(_decodeJson, operationsJson);
-    
+    final Map<String, dynamic> data =
+        await compute(_decodeJson, operationsJson);
+
     final orderMap = data['order'] as Map<String, dynamic>;
     final itemsList = data['orderItems'] as List<dynamic>;
     final eventMap = data['event'] as Map<String, dynamic>;
@@ -170,15 +170,18 @@ mixin OrderRepositoryMixin {
 
     await db.transaction((txn) async {
       // 1. Insert Order
-      await txn.insert('orders', orderMap, conflictAlgorithm: ConflictAlgorithm.replace);
+      await txn.insert('orders', orderMap,
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
       // 2. Insert Order Items
       for (var item in itemsList) {
-        await txn.insert('order_items', item as Map<String, dynamic>, conflictAlgorithm: ConflictAlgorithm.replace);
+        await txn.insert('order_items', item as Map<String, dynamic>,
+            conflictAlgorithm: ConflictAlgorithm.replace);
       }
 
       // 3. Insert Business Event
-      await txn.insert('business_events', eventMap, conflictAlgorithm: ConflictAlgorithm.replace);
+      await txn.insert('business_events', eventMap,
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
       // 4. Update Token Counter (Logic simplified for replay)
       final counterResults = await txn.query(
@@ -205,8 +208,9 @@ mixin OrderRepositoryMixin {
 
       // 5. Insert Inventory Movements
       for (var movementMap in movementsList) {
-         final movement = InventoryMovement.fromMap(movementMap as Map<String, dynamic>, movementMap['id']);
-         await movementRepo.insertMovement(movement, txn: txn);
+        final movement = InventoryMovement.fromMap(
+            movementMap as Map<String, dynamic>, movementMap['id']);
+        await movementRepo.insertMovement(movement, txn: txn);
       }
 
       // 6. Mark Journal Complete
@@ -269,38 +273,39 @@ mixin OrderRepositoryMixin {
         String itemSql = 'SELECT * FROM order_items';
         List<dynamic> itemArgs = [];
         if (storeId != null) {
-          itemSql += ' WHERE orderId IN (SELECT id FROM orders WHERE storeId = ?)';
+          itemSql +=
+              ' WHERE orderId IN (SELECT id FROM orders WHERE storeId = ?)';
           itemArgs.add(storeId);
         }
-        
+
         final itemRows = await db.rawQuery(itemSql, itemArgs);
-        
+
         // 3. Map Items to Orders (In-Memory)
         Map<String, List<OrderItem>> itemsMap = {};
         for (var row in itemRows) {
-           final item = OrderItem.fromSql(row);
-           if (item.orderId != null) {
-               if (!itemsMap.containsKey(item.orderId!)) {
-                  itemsMap[item.orderId!] = [];
-               }
-               itemsMap[item.orderId!]!.add(item);
-           }
+          final item = OrderItem.fromSql(row);
+          if (item.orderId != null) {
+            if (!itemsMap.containsKey(item.orderId!)) {
+              itemsMap[item.orderId!] = [];
+            }
+            itemsMap[item.orderId!]!.add(item);
+          }
         }
 
         List<OrderModel> orders = [];
         for (var row in orderRows) {
-           String orderId = row['id'] as String;
-           List<OrderItem> items = itemsMap[orderId] ?? [];
-           orders.add(OrderModel.fromSql(row, items));
+          String orderId = row['id'] as String;
+          List<OrderItem> items = itemsMap[orderId] ?? [];
+          orders.add(OrderModel.fromSql(row, items));
         }
-        
+
         return orders;
       } catch (e) {
         if (e.toString().contains('locked') && retries > 1) {
-           await Future.delayed(const Duration(milliseconds: 200));
-           retries--;
+          await Future.delayed(const Duration(milliseconds: 200));
+          retries--;
         } else {
-           return []; // Return empty only on fatal
+          return []; // Return empty only on fatal
         }
       }
     }
@@ -309,23 +314,25 @@ mixin OrderRepositoryMixin {
 
   Future<OrderModel?> getOrder(String id) async {
     final db = await dbHelper.database;
-    final orderRows = await db.query('orders', where: 'id = ?', whereArgs: [id]);
+    final orderRows =
+        await db.query('orders', where: 'id = ?', whereArgs: [id]);
     if (orderRows.isEmpty) return null;
-    
-    final itemRows = await db.query('order_items', where: 'orderId = ?', whereArgs: [id]);
+
+    final itemRows =
+        await db.query('order_items', where: 'orderId = ?', whereArgs: [id]);
     final items = itemRows.map((r) => OrderItem.fromSql(r)).toList();
-    
+
     return OrderModel.fromSql(orderRows.first, items);
   }
 
-  Future<List<OrderModel>> getOrdersByCustomer(String storeId, String customerId) async {
+  Future<List<OrderModel>> getOrdersByCustomer(
+      String storeId, String customerId) async {
     try {
       final db = await dbHelper.database;
       // Fetch orders for this customer (Sorted by Date DESC)
       final orderRows = await db.rawQuery(
-        "SELECT * FROM orders WHERE storeId = ? AND (customerRefId = ? OR customerId = ?) AND (deletedAt IS NULL OR status = 'Cancelled') ORDER BY date DESC", 
-        [storeId, customerId, customerId]
-      );
+          "SELECT * FROM orders WHERE storeId = ? AND (customerRefId = ? OR customerId = ?) AND (deletedAt IS NULL OR status = 'Cancelled') ORDER BY date DESC",
+          [storeId, customerId, customerId]);
 
       if (orderRows.isEmpty) return [];
 
@@ -335,22 +342,21 @@ mixin OrderRepositoryMixin {
 
       final itemRows = await db.rawQuery(
           'SELECT * FROM order_items WHERE orderId IN ($placeholders)',
-          orderIds
-      );
+          orderIds);
 
       Map<String, List<OrderItem>> itemsMap = {};
       for (var row in itemRows) {
-         final item = OrderItem.fromSql(row);
-         if (item.orderId != null) {
-             itemsMap.putIfAbsent(item.orderId!, () => []).add(item);
-         }
+        final item = OrderItem.fromSql(row);
+        if (item.orderId != null) {
+          itemsMap.putIfAbsent(item.orderId!, () => []).add(item);
+        }
       }
 
       List<OrderModel> orders = [];
       for (var row in orderRows) {
-         String orderId = row['id'] as String;
-         List<OrderItem> items = itemsMap[orderId] ?? [];
-         orders.add(OrderModel.fromSql(row, items));
+        String orderId = row['id'] as String;
+        List<OrderItem> items = itemsMap[orderId] ?? [];
+        orders.add(OrderModel.fromSql(row, items));
       }
       return orders;
     } catch (e) {
@@ -359,12 +365,14 @@ mixin OrderRepositoryMixin {
   }
 
   // --- PAGINATED ORDERS (SCALABLE READS) ---
-  Future<List<OrderModel>> getPaginatedOrders(String? storeId, {int limit = 20, DateTime? lastDate}) async {
+  Future<List<OrderModel>> getPaginatedOrders(String? storeId,
+      {int limit = 20, DateTime? lastDate}) async {
     try {
       final db = await dbHelper.database;
-      String sql = "SELECT * FROM orders WHERE (deletedAt IS NULL OR status = 'Cancelled')";
+      String sql =
+          "SELECT * FROM orders WHERE (deletedAt IS NULL OR status = 'Cancelled')";
       List<dynamic> args = [];
-      
+
       if (storeId != null) {
         sql += ' AND storeId = ?';
         args.add(storeId);
@@ -372,8 +380,8 @@ mixin OrderRepositoryMixin {
 
       // O(1) Keyset Pagination
       if (lastDate != null) {
-         sql += ' AND date < ?';
-         args.add(lastDate.toIso8601String());
+        sql += ' AND date < ?';
+        args.add(lastDate.toIso8601String());
       }
 
       sql += ' ORDER BY date DESC LIMIT ?';
@@ -385,30 +393,28 @@ mixin OrderRepositoryMixin {
       // EFFICIENT ITEM FETCH: Only fetch items for the IDs we just got
       final orderIds = orderRows.map((r) => r['id'] as String).toList();
       final placeholders = List.filled(orderIds.length, '?').join(',');
-      
+
       final itemRows = await db.rawQuery(
           'SELECT * FROM order_items WHERE orderId IN ($placeholders)',
-          orderIds
-      );
+          orderIds);
 
       // Map Items
       Map<String, List<OrderItem>> itemsMap = {};
       for (var row in itemRows) {
-         final item = OrderItem.fromSql(row);
-         if (item.orderId != null) {
-             itemsMap.putIfAbsent(item.orderId!, () => []).add(item);
-         }
+        final item = OrderItem.fromSql(row);
+        if (item.orderId != null) {
+          itemsMap.putIfAbsent(item.orderId!, () => []).add(item);
+        }
       }
 
       // Assemble
       List<OrderModel> orders = [];
       for (var row in orderRows) {
-         String orderId = row['id'] as String;
-         List<OrderItem> items = itemsMap[orderId] ?? [];
-         orders.add(OrderModel.fromSql(row, items));
+        String orderId = row['id'] as String;
+        List<OrderItem> items = itemsMap[orderId] ?? [];
+        orders.add(OrderModel.fromSql(row, items));
       }
       return orders;
-
     } catch (e) {
       return [];
     }
@@ -417,19 +423,22 @@ mixin OrderRepositoryMixin {
   Future<List<OrderModel>> getUnsyncedOrders(String? storeId) async {
     try {
       final db = await dbHelper.database;
-      String sql = "SELECT * FROM orders WHERE synced = 0 AND (deletedAt IS NULL OR status = 'Cancelled')";
+      String sql =
+          "SELECT * FROM orders WHERE synced = 0 AND (deletedAt IS NULL OR status = 'Cancelled')";
       List<dynamic> args = [];
       if (storeId != null) {
         sql += ' AND storeId = ?';
         args.add(storeId);
       }
       final rows = await db.rawQuery(sql, args);
-      
+
       List<OrderModel> orders = [];
       for (var row in rows) {
         String orderId = row['id'] as String;
-        final itemRows = await db.rawQuery('SELECT * FROM order_items WHERE orderId = ?', [orderId]);
-        List<OrderItem> items = itemRows.map((r) => OrderItem.fromSql(r)).toList();
+        final itemRows = await db
+            .rawQuery('SELECT * FROM order_items WHERE orderId = ?', [orderId]);
+        List<OrderItem> items =
+            itemRows.map((r) => OrderItem.fromSql(r)).toList();
         orders.add(OrderModel.fromSql(row, items));
       }
       return orders;
@@ -439,9 +448,13 @@ mixin OrderRepositoryMixin {
   }
 
   // --- REPORTING AGGREGATIONS (SQL) ---
-  Future<Map<String, dynamic>> getSalesStats(String storeId, {DateTime? start, DateTime? end, String? status, String? paymentMethod}) async {
+  Future<Map<String, dynamic>> getSalesStats(String storeId,
+      {DateTime? start,
+      DateTime? end,
+      String? status,
+      String? paymentMethod}) async {
     final db = await dbHelper.database;
-    
+
     String filter = ' WHERE o.storeId = ? AND o.deletedAt IS NULL';
     List<dynamic> args = [storeId];
 
@@ -461,8 +474,8 @@ mixin OrderRepositoryMixin {
     }
 
     if (paymentMethod != null) {
-       filter += ' AND o.paymentMethod = ?';
-       args.add(paymentMethod);
+      filter += ' AND o.paymentMethod = ?';
+      args.add(paymentMethod);
     }
 
     final orderStats = await db.rawQuery('''
@@ -512,19 +525,27 @@ mixin OrderRepositoryMixin {
     double cogs = (itemStats.first['totalCogs'] as num? ?? 0).toDouble();
     double avg = count > 0 ? total / count : 0.0;
 
-    final List<Map<String, dynamic>> categoryStats = categoryRows.map((row) => {
-      'category': row['category'] ?? 'Uncategorized',
-      'sales': (row['sales'] as num? ?? 0).toDouble(),
-      'cogs': (row['cogs'] as num? ?? 0).toDouble(),
-      'profit': ((row['sales'] as num? ?? 0) - (row['cogs'] as num? ?? 0)).toDouble(),
-    }).toList();
+    final List<Map<String, dynamic>> categoryStats = categoryRows
+        .map((row) => {
+              'category': row['category'] ?? 'Uncategorized',
+              'sales': (row['sales'] as num? ?? 0).toDouble(),
+              'cogs': (row['cogs'] as num? ?? 0).toDouble(),
+              'profit':
+                  ((row['sales'] as num? ?? 0) - (row['cogs'] as num? ?? 0))
+                      .toDouble(),
+            })
+        .toList();
 
-    final List<Map<String, dynamic>> dayStats = dayRows.map((row) => {
-      'day': row['day'] ?? '',
-      'sales': (row['sales'] as num? ?? 0).toDouble(),
-      'cogs': (row['cogs'] as num? ?? 0).toDouble(),
-      'profit': ((row['sales'] as num? ?? 0) - (row['cogs'] as num? ?? 0)).toDouble(),
-    }).toList();
+    final List<Map<String, dynamic>> dayStats = dayRows
+        .map((row) => {
+              'day': row['day'] ?? '',
+              'sales': (row['sales'] as num? ?? 0).toDouble(),
+              'cogs': (row['cogs'] as num? ?? 0).toDouble(),
+              'profit':
+                  ((row['sales'] as num? ?? 0) - (row['cogs'] as num? ?? 0))
+                      .toDouble(),
+            })
+        .toList();
 
     return {
       'totalSales': total,
@@ -539,10 +560,11 @@ mixin OrderRepositoryMixin {
     };
   }
 
-  Future<List<Map<String, dynamic>>> getSalesByDay(String storeId, int days) async {
+  Future<List<Map<String, dynamic>>> getSalesByDay(
+      String storeId, int days) async {
     final db = await dbHelper.database;
     final start = DateTime.now().subtract(Duration(days: days));
-    
+
     // Group by Day (SQLite strftime)
     final result = await db.rawQuery('''
       SELECT strftime('%Y-%m-%d', date) as day, SUM(CASE WHEN status = 'Refunded' THEN 0 ELSE total END) as dailyTotal 
@@ -551,12 +573,13 @@ mixin OrderRepositoryMixin {
       GROUP BY day 
       ORDER BY day ASC
     ''', [storeId, start.toIso8601String()]);
-    
+
     return result;
   }
 
   Future<void> markOrderAsSynced(String orderId) async {
     final db = await dbHelper.database;
-    await db.update('orders', {'synced': 1}, where: 'id = ?', whereArgs: [orderId]);
+    await db.update('orders', {'synced': 1},
+        where: 'id = ?', whereArgs: [orderId]);
   }
 }

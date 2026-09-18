@@ -50,7 +50,13 @@ class IdempotencyGuard {
       // Use a lightweight hash of key fields to detect duplicate content
       // We hash: amount, total, quantity, delta — the fields where duplicates are dangerous
       final dangerFields = <String>[];
-      for (final key in ['total', 'amount', 'delta', 'quantity', 'refundAmount']) {
+      for (final key in [
+        'total',
+        'amount',
+        'delta',
+        'quantity',
+        'refundAmount'
+      ]) {
         if (payload.containsKey(key)) {
           dangerFields.add('$key=${payload[key]}');
         }
@@ -130,7 +136,8 @@ class IdempotencyGuard {
 
     if (keysToDelete.isNotEmpty) {
       await box.deleteAll(keysToDelete);
-      debugPrint('🛡️ [IdempotencyGuard] Cleaned ${keysToDelete.length} expired keys');
+      debugPrint(
+          '🛡️ [IdempotencyGuard] Cleaned ${keysToDelete.length} expired keys');
     }
   }
 

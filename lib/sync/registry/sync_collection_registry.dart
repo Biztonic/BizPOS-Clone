@@ -184,7 +184,8 @@ class SyncCollectionRegistry {
           await Hive.openBox(boxName);
         }
       } catch (e) {
-        debugPrint('⚠️ [SyncCollectionRegistry] Failed to open box $boxName: $e');
+        debugPrint(
+            '⚠️ [SyncCollectionRegistry] Failed to open box $boxName: $e');
       }
     }
   }

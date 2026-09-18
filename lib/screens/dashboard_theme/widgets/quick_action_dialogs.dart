@@ -25,7 +25,8 @@ class LastFiveBillsDialog extends StatelessWidget {
     final orders = provider.orders.reversed.take(5).toList();
 
     return Dialog(
-      backgroundColor: CarDashboardTheme.panelColor(true).withValues(alpha: 0.95),
+      backgroundColor:
+          CarDashboardTheme.panelColor(true).withValues(alpha: 0.95),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
         side: BorderSide(color: CarDashboardTheme.neonBlue, width: 2),
@@ -38,20 +39,34 @@ class LastFiveBillsDialog extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.history, color: CarDashboardTheme.neonBlue, size: 28),
+                const Icon(Icons.history,
+                    color: CarDashboardTheme.neonBlue, size: 28),
                 const SizedBox(width: AppSpacing.md),
-                Text(AppLocalizations.t(context, 'LAST 5 BILLS'), style: const TextStyle(color: AppColors.surfaceLight, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Orbitron')),
+                Text(AppLocalizations.t(context, 'LAST 5 BILLS'),
+                    style: const TextStyle(
+                        color: AppColors.surfaceLight,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Orbitron')),
                 const Spacer(),
-                IconButton(icon: const Icon(Icons.close, color: AppColors.textHintDark), onPressed: () => Navigator.pop(context)),
+                IconButton(
+                    icon:
+                        const Icon(Icons.close, color: AppColors.textHintDark),
+                    onPressed: () => Navigator.pop(context)),
               ],
             ),
             const Divider(color: Colors.white24, height: 30),
             Expanded(
-              child: orders.isEmpty 
-                  ? Center(child: Text(AppLocalizations.t(context, 'No Sales History Found'), style: const TextStyle(color: AppColors.textHintDark)))
+              child: orders.isEmpty
+                  ? Center(
+                      child: Text(
+                          AppLocalizations.t(context, 'No Sales History Found'),
+                          style:
+                              const TextStyle(color: AppColors.textHintDark)))
                   : ListView.builder(
                       itemCount: orders.length,
-                      itemBuilder: (ctx, i) => _buildOrderTile(context, orders[i]),
+                      itemBuilder: (ctx, i) =>
+                          _buildOrderTile(context, orders[i]),
                     ),
             ),
           ],
@@ -75,20 +90,31 @@ class LastFiveBillsDialog extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("#${order.shortId}", style: const TextStyle(color: CarDashboardTheme.neonBlue, fontWeight: FontWeight.bold)),
+              Text("#${order.shortId}",
+                  style: const TextStyle(
+                      color: CarDashboardTheme.neonBlue,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: AppSpacing.xs),
-              Text(DateFormat('hh:mm a').format(order.date), style: const TextStyle(color: AppColors.textHintDark, fontSize: 12)),
+              Text(DateFormat('hh:mm a').format(order.date),
+                  style: const TextStyle(
+                      color: AppColors.textHintDark, fontSize: 12)),
             ],
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text("?${order.total.toStringAsFixed(2)}", style: const TextStyle(color: CarDashboardTheme.electricGreen, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text("?${order.total.toStringAsFixed(2)}",
+                  style: const TextStyle(
+                      color: CarDashboardTheme.electricGreen,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16)),
               const SizedBox(height: AppSpacing.xs),
-              Text("${order.items.length} Items", style: const TextStyle(color: AppColors.textHintDark, fontSize: 12)),
+              Text("${order.items.length} Items",
+                  style: const TextStyle(
+                      color: AppColors.textHintDark, fontSize: 12)),
             ],
           ),
-          
+
           // Reprint Action? (User didn't explicitly ask for action, but typical 'Last Bill' implies Reprint or View)
           // We'll just standard view for now.
         ],
@@ -96,7 +122,6 @@ class LastFiveBillsDialog extends StatelessWidget {
     );
   }
 }
-
 
 // --- REFUND DIALOG ---
 class RefundDialog extends StatelessWidget {
@@ -108,7 +133,8 @@ class RefundDialog extends StatelessWidget {
     final orders = provider.orders.reversed.take(5).toList();
 
     return Dialog(
-      backgroundColor: CarDashboardTheme.panelColor(true).withValues(alpha: 0.95),
+      backgroundColor:
+          CarDashboardTheme.panelColor(true).withValues(alpha: 0.95),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
         side: BorderSide(color: CarDashboardTheme.alertRed, width: 2),
@@ -121,20 +147,34 @@ class RefundDialog extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.restart_alt, color: CarDashboardTheme.alertRed, size: 28),
+                const Icon(Icons.restart_alt,
+                    color: CarDashboardTheme.alertRed, size: 28),
                 const SizedBox(width: AppSpacing.md),
-                Text(AppLocalizations.t(context, 'QUICK REFUND (LAST 5)'), style: const TextStyle(color: AppColors.surfaceLight, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Orbitron')),
+                Text(AppLocalizations.t(context, 'QUICK REFUND (LAST 5)'),
+                    style: const TextStyle(
+                        color: AppColors.surfaceLight,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Orbitron')),
                 const Spacer(),
-                IconButton(icon: const Icon(Icons.close, color: AppColors.textHintDark), onPressed: () => Navigator.pop(context)),
+                IconButton(
+                    icon:
+                        const Icon(Icons.close, color: AppColors.textHintDark),
+                    onPressed: () => Navigator.pop(context)),
               ],
             ),
             const Divider(color: Colors.white24, height: 30),
             Expanded(
-              child: orders.isEmpty 
-                  ? Center(child: Text(AppLocalizations.t(context, 'No Orders Found'), style: const TextStyle(color: AppColors.textHintDark)))
+              child: orders.isEmpty
+                  ? Center(
+                      child: Text(
+                          AppLocalizations.t(context, 'No Orders Found'),
+                          style:
+                              const TextStyle(color: AppColors.textHintDark)))
                   : ListView.builder(
                       itemCount: orders.length,
-                      itemBuilder: (ctx, i) => _buildRefundTile(context, orders[i]),
+                      itemBuilder: (ctx, i) =>
+                          _buildRefundTile(context, orders[i]),
                     ),
             ),
           ],
@@ -158,16 +198,23 @@ class RefundDialog extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Order #${order.shortId}", style: const TextStyle(color: AppColors.surfaceLight, fontWeight: FontWeight.bold)),
-                Text("${order.items.length} Items ï¿½ ${DateFormat('hh:mm a').format(order.date)}", style: const TextStyle(color: AppColors.textHintDark, fontSize: 12)),
+                Text("Order #${order.shortId}",
+                    style: const TextStyle(
+                        color: AppColors.surfaceLight,
+                        fontWeight: FontWeight.bold)),
+                Text(
+                    "${order.items.length} Items ï¿½ ${DateFormat('hh:mm a').format(order.date)}",
+                    style: const TextStyle(
+                        color: AppColors.textHintDark, fontSize: 12)),
               ],
             ),
           ),
-          
-          Text("?${order.total.toStringAsFixed(2)}", style: const TextStyle(color: AppColors.surfaceLight, fontWeight: FontWeight.bold, fontSize: 18)),
-          
+          Text("?${order.total.toStringAsFixed(2)}",
+              style: const TextStyle(
+                  color: AppColors.surfaceLight,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18)),
           const SizedBox(width: AppSpacing.lg),
-          
           NeonButton(
             label: "REFUND",
             color: CarDashboardTheme.alertRed,
@@ -175,7 +222,10 @@ class RefundDialog extends StatelessWidget {
             onPressed: () {
               // Action: Confirm Refund
               // For now show snackbar as full refund logic might be complex
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Refund Requested (Feature Placeholder)')), backgroundColor: CarDashboardTheme.alertRed));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(AppLocalizations.t(
+                      context, 'Refund Requested (Feature Placeholder)')),
+                  backgroundColor: CarDashboardTheme.alertRed));
             },
           )
         ],
@@ -183,7 +233,6 @@ class RefundDialog extends StatelessWidget {
     );
   }
 }
-
 
 // --- QUICK DAY REPORT DIALOG ---
 class QuickDayReportDialog extends StatelessWidget {
@@ -195,11 +244,12 @@ class QuickDayReportDialog extends StatelessWidget {
     // Calculate Day Stats
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
-    
-    final todayOrders = provider.orders.where((o) => o.date.isAfter(todayStart)).toList();
+
+    final todayOrders =
+        provider.orders.where((o) => o.date.isAfter(todayStart)).toList();
     final totalSales = todayOrders.fold(0.0, (sum, o) => sum + o.total);
     final totalCount = todayOrders.length;
-    
+
     // Simple Category Pie Chart Data
     // We'll aggregate sales by 'category' (assuming items have categories)
     // Actually items in OrderModel are OrderItem
@@ -207,86 +257,113 @@ class QuickDayReportDialog extends StatelessWidget {
     // Let's check OrderItem definition. Usually it has minimal data.
     // If not available, we will chart Payment Methods (Cash vs UPI) which is usually on Order.
     bool hasPaymentMethod = todayOrders.isNotEmpty;
-    
+
     Map<String, double> pieData = {};
     if (hasPaymentMethod) {
-       for (var o in todayOrders) {
-         final method = o.paymentMethod ?? 'Unknown';
-         pieData[method] = (pieData[method] ?? 0) + o.total;
-       }
+      for (var o in todayOrders) {
+        final method = o.paymentMethod ?? 'Unknown';
+        pieData[method] = (pieData[method] ?? 0) + o.total;
+      }
     } else {
-        pieData = {'Sales': totalSales};
+      pieData = {'Sales': totalSales};
     }
 
     return Dialog(
-       backgroundColor: CarDashboardTheme.panelColor(true).withValues(alpha: 0.95),
-       shape: const RoundedRectangleBorder(
-         borderRadius: BorderRadius.zero,
-         side: BorderSide(color: CarDashboardTheme.electricGreen, width: 2),
-       ),
-       child: Container(
-         width: 800,
-         height: 600,
-         padding: const EdgeInsets.all(AppSpacing.lg),
-         child: Column(
-           children: [
-             Row(
-               children: [
-                 const Icon(Icons.bar_chart, color: CarDashboardTheme.electricGreen, size: 28),
-                 const SizedBox(width: AppSpacing.md),
-                 Text(AppLocalizations.t(context, 'DAY REPORT (QUICK VIEW)'), style: const TextStyle(color: AppColors.surfaceLight, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Orbitron')),
-                 const Spacer(),
-                 IconButton(icon: const Icon(Icons.close, color: AppColors.textHintDark), onPressed: () => Navigator.pop(context)),
-               ],
-             ),
-             
-             const Divider(color: Colors.white24, height: 30),
-             
-             Expanded(
-               child: Row(
-                 children: [
-                   // Left: Stats
-                   Expanded(
-                     child: Column(
-                       mainAxisAlignment: MainAxisAlignment.center,
-                       children: [
-                         _buildStatBox("TOTAL SALES", "?${totalSales.toStringAsFixed(0)}", CarDashboardTheme.electricGreen),
-                         const SizedBox(height: AppSpacing.lg),
-                         _buildStatBox("TOTAL ORDERS", "$totalCount", CarDashboardTheme.neonBlue),
-                         const SizedBox(height: AppSpacing.lg),
-                         _buildStatBox("AVG BILL", "?${totalCount > 0 ? (totalSales/totalCount).toStringAsFixed(0) : '0'}", AppColors.warning),
-                       ],
-                     ),
-                   ),
-                   
-                   // Right: Pie Chart
-                   Expanded(
-                     child: todayOrders.isEmpty 
-                         ? Center(child: Text(AppLocalizations.t(context, 'No Data Today'), style: const TextStyle(color: AppColors.textHintDark)))
-                         : PieChart(
-                             PieChartData(
-                               sectionsSpace: 4,
-                               centerSpaceRadius: 50,
-                               sections: pieData.entries.map((e) {
-                                 final color = e.key.toLowerCase().contains('cash') ? CarDashboardTheme.electricGreen : 
-                                               e.key.toLowerCase().contains('upi') ? CarDashboardTheme.neonBlue : AppColors.warning;
-                                 return PieChartSectionData(
-                                   color: color,
-                                   value: e.value,
-                                   title: "${e.key}\n${((e.value/totalSales)*100).toStringAsFixed(0)}%",
-                                   radius: 80,
-                                   titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
-                                 );
-                               }).toList(),
-                             ),
-                           ),
-                   ),
-                 ],
-               ),
-             )
-           ],
-         ),
-       ),
+      backgroundColor:
+          CarDashboardTheme.panelColor(true).withValues(alpha: 0.95),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+        side: BorderSide(color: CarDashboardTheme.electricGreen, width: 2),
+      ),
+      child: Container(
+        width: 800,
+        height: 600,
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.bar_chart,
+                    color: CarDashboardTheme.electricGreen, size: 28),
+                const SizedBox(width: AppSpacing.md),
+                Text(AppLocalizations.t(context, 'DAY REPORT (QUICK VIEW)'),
+                    style: const TextStyle(
+                        color: AppColors.surfaceLight,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Orbitron')),
+                const Spacer(),
+                IconButton(
+                    icon:
+                        const Icon(Icons.close, color: AppColors.textHintDark),
+                    onPressed: () => Navigator.pop(context)),
+              ],
+            ),
+            const Divider(color: Colors.white24, height: 30),
+            Expanded(
+              child: Row(
+                children: [
+                  // Left: Stats
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildStatBox(
+                            "TOTAL SALES",
+                            "?${totalSales.toStringAsFixed(0)}",
+                            CarDashboardTheme.electricGreen),
+                        const SizedBox(height: AppSpacing.lg),
+                        _buildStatBox("TOTAL ORDERS", "$totalCount",
+                            CarDashboardTheme.neonBlue),
+                        const SizedBox(height: AppSpacing.lg),
+                        _buildStatBox(
+                            "AVG BILL",
+                            "?${totalCount > 0 ? (totalSales / totalCount).toStringAsFixed(0) : '0'}",
+                            AppColors.warning),
+                      ],
+                    ),
+                  ),
+
+                  // Right: Pie Chart
+                  Expanded(
+                    child: todayOrders.isEmpty
+                        ? Center(
+                            child: Text(
+                                AppLocalizations.t(context, 'No Data Today'),
+                                style: const TextStyle(
+                                    color: AppColors.textHintDark)))
+                        : PieChart(
+                            PieChartData(
+                              sectionsSpace: 4,
+                              centerSpaceRadius: 50,
+                              sections: pieData.entries.map((e) {
+                                final color =
+                                    e.key.toLowerCase().contains('cash')
+                                        ? CarDashboardTheme.electricGreen
+                                        : e.key.toLowerCase().contains('upi')
+                                            ? CarDashboardTheme.neonBlue
+                                            : AppColors.warning;
+                                return PieChartSectionData(
+                                  color: color,
+                                  value: e.value,
+                                  title:
+                                      "${e.key}\n${((e.value / totalSales) * 100).toStringAsFixed(0)}%",
+                                  radius: 80,
+                                  titleStyle: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.surfaceLight),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 
@@ -301,12 +378,18 @@ class QuickDayReportDialog extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(label, style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 14)),
+          Text(label,
+              style:
+                  TextStyle(color: color.withValues(alpha: 0.8), fontSize: 14)),
           const SizedBox(height: AppSpacing.sm),
-          Text(value, style: TextStyle(color: color, fontSize: 32, fontWeight: FontWeight.bold, fontFamily: 'Orbitron')),
+          Text(value,
+              style: TextStyle(
+                  color: color,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Orbitron')),
         ],
       ),
     );
   }
 }
-

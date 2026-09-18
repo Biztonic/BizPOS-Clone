@@ -6,7 +6,8 @@ class InventoryMovementRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
   /// Insert a new inventory movement and update cache
-  Future<void> insertMovement(InventoryMovement movement, {Transaction? txn}) async {
+  Future<void> insertMovement(InventoryMovement movement,
+      {Transaction? txn}) async {
     if (txn != null) {
       await _insertMovementWithTxn(txn, movement);
     } else {
@@ -17,7 +18,8 @@ class InventoryMovementRepository {
     }
   }
 
-  Future<void> _insertMovementWithTxn(Transaction txn, InventoryMovement movement) async {
+  Future<void> _insertMovementWithTxn(
+      Transaction txn, InventoryMovement movement) async {
     // 1. Insert Movement
     await txn.insert(
       'inventory_movements',
@@ -28,20 +30,17 @@ class InventoryMovementRepository {
     // 2. Update Cache (Upsert-like logic using SQLite)
     // We use INSERT OR IGNORE to ensure row exists, then UPDATE
     await txn.rawInsert(
-      'INSERT OR IGNORE INTO cache_inventory_quantities (itemId, storeId, quantity) VALUES (?, ?, 0)',
-      [movement.itemId, movement.storeId]
-    );
-    
+        'INSERT OR IGNORE INTO cache_inventory_quantities (itemId, storeId, quantity) VALUES (?, ?, 0)',
+        [movement.itemId, movement.storeId]);
+
     await txn.rawUpdate(
-      'UPDATE cache_inventory_quantities SET quantity = MAX(0, quantity + ?) WHERE itemId = ? AND storeId = ?',
-      [movement.delta, movement.itemId, movement.storeId]
-    );
+        'UPDATE cache_inventory_quantities SET quantity = MAX(0, quantity + ?) WHERE itemId = ? AND storeId = ?',
+        [movement.delta, movement.itemId, movement.storeId]);
 
     // 3. Atomically update inventory table baseline quantity
     await txn.rawUpdate(
-      'UPDATE inventory SET quantity = MAX(0, quantity + ?) WHERE id = ?',
-      [movement.delta, movement.itemId]
-    );
+        'UPDATE inventory SET quantity = MAX(0, quantity + ?) WHERE id = ?',
+        [movement.delta, movement.itemId]);
   }
 
   /// Get all movements for a specific item
@@ -53,7 +52,9 @@ class InventoryMovementRepository {
       whereArgs: [itemId],
       orderBy: 'createdAt DESC',
     );
-    return maps.map((map) => InventoryMovement.fromMap(map, map['id'])).toList();
+    return maps
+        .map((map) => InventoryMovement.fromMap(map, map['id']))
+        .toList();
   }
 
   /// Get all movements for a store
@@ -65,13 +66,16 @@ class InventoryMovementRepository {
       whereArgs: [storeId],
       orderBy: 'createdAt DESC',
     );
-    return maps.map((map) => InventoryMovement.fromMap(map, map['id'])).toList();
+    return maps
+        .map((map) => InventoryMovement.fromMap(map, map['id']))
+        .toList();
   }
 
   /// Get current quantity for a specific item (SUM of all deltas, optionally filtered by store)
   Future<int> getItemQuantity(String itemId, {String? storeId}) async {
     final db = await _dbHelper.database;
-    String sql = 'SELECT SUM(delta) as quantity FROM inventory_movements WHERE itemId = ?';
+    String sql =
+        'SELECT SUM(delta) as quantity FROM inventory_movements WHERE itemId = ?';
     List<dynamic> args = [itemId];
     if (storeId != null) {
       sql += ' AND storeId = ?';
@@ -94,23 +98,20 @@ class InventoryMovementRepository {
       args.add(storeId);
     }
     sql += ' GROUP BY itemId';
-    
+
     final result = await db.rawQuery(sql, args);
-    
-    return Map.fromEntries(
-      result.map((row) => MapEntry(
-        row['itemId'] as String, 
-        (row['quantity'] as int?) ?? 0
-      ))
-    );
+
+    return Map.fromEntries(result.map((row) =>
+        MapEntry(row['itemId'] as String, (row['quantity'] as int?) ?? 0)));
   }
 
   /// Get movements by type (SALE, PURCHASE, etc.)
-  Future<List<InventoryMovement>> getMovementsByType(String? storeId, String type) async {
+  Future<List<InventoryMovement>> getMovementsByType(
+      String? storeId, String type) async {
     final db = await _dbHelper.database;
     String sql = 'SELECT * FROM inventory_movements WHERE type = ?';
     List<dynamic> args = [type];
-    
+
     if (storeId != null) {
       sql += ' AND storeId = ?';
       args.add(storeId);
@@ -118,7 +119,9 @@ class InventoryMovementRepository {
     sql += ' ORDER BY createdAt DESC';
 
     final List<Map<String, dynamic>> maps = await db.rawQuery(sql, args);
-    return maps.map((map) => InventoryMovement.fromMap(map, map['id'])).toList();
+    return maps
+        .map((map) => InventoryMovement.fromMap(map, map['id']))
+        .toList();
   }
 
   /// Get movements for a specific order
@@ -130,7 +133,9 @@ class InventoryMovementRepository {
       whereArgs: [orderId],
       orderBy: 'createdAt DESC',
     );
-    return maps.map((map) => InventoryMovement.fromMap(map, map['id'])).toList();
+    return maps
+        .map((map) => InventoryMovement.fromMap(map, map['id']))
+        .toList();
   }
 
   /// Get pending movements (not synced)
@@ -142,20 +147,23 @@ class InventoryMovementRepository {
       whereArgs: ['PENDING'],
       orderBy: 'createdAt ASC',
     );
-    return maps.map((map) => InventoryMovement.fromMap(map, map['id'])).toList();
+    return maps
+        .map((map) => InventoryMovement.fromMap(map, map['id']))
+        .toList();
   }
 
   /// Get total delta of pending movements for a specific item and store
   Future<int> getPendingDelta(String itemId, {String? storeId}) async {
     final db = await _dbHelper.database;
-    String sql = 'SELECT SUM(delta) as total FROM inventory_movements WHERE itemId = ? AND syncStatus = ?';
+    String sql =
+        'SELECT SUM(delta) as total FROM inventory_movements WHERE itemId = ? AND syncStatus = ?';
     List<dynamic> args = [itemId, 'PENDING'];
-    
+
     if (storeId != null) {
       sql += ' AND storeId = ?';
       args.add(storeId);
     }
-    
+
     final result = await db.rawQuery(sql, args);
     return Sqflite.firstIntValue(result) ?? 0;
   }
@@ -194,9 +202,13 @@ class InventoryMovementRepository {
     DateTime endDate,
   ) async {
     final db = await _dbHelper.database;
-    String sql = 'SELECT * FROM inventory_movements WHERE createdAt >= ? AND createdAt <= ?';
-    List<dynamic> args = [startDate.toIso8601String(), endDate.toIso8601String()];
-    
+    String sql =
+        'SELECT * FROM inventory_movements WHERE createdAt >= ? AND createdAt <= ?';
+    List<dynamic> args = [
+      startDate.toIso8601String(),
+      endDate.toIso8601String()
+    ];
+
     if (storeId != null) {
       sql += ' AND storeId = ?';
       args.add(storeId);
@@ -204,19 +216,22 @@ class InventoryMovementRepository {
     sql += ' ORDER BY createdAt DESC';
 
     final List<Map<String, dynamic>> maps = await db.rawQuery(sql, args);
-    return maps.map((map) => InventoryMovement.fromMap(map, map['id'])).toList();
+    return maps
+        .map((map) => InventoryMovement.fromMap(map, map['id']))
+        .toList();
   }
 
   /// Get stock value (quantity * cost) for purchases
   Future<double> getStockValue(String? storeId) async {
     final db = await _dbHelper.database;
-    String sql = "SELECT SUM(delta * COALESCE(cost, 0)) as value FROM inventory_movements WHERE type IN ('PURCHASE', 'INITIAL_STOCK')";
+    String sql =
+        "SELECT SUM(delta * COALESCE(cost, 0)) as value FROM inventory_movements WHERE type IN ('PURCHASE', 'INITIAL_STOCK')";
     List<dynamic> args = [];
     if (storeId != null) {
       sql += ' AND storeId = ?';
       args.add(storeId);
     }
-    
+
     final result = await db.rawQuery(sql, args);
     return (result.first['value'] as num?)?.toDouble() ?? 0.0;
   }
@@ -236,6 +251,7 @@ class InventoryMovementRepository {
       whereArgs: [itemId],
     );
   }
+
   /// Rebuild the entire quantity cache for a store from the movements ledger
   Future<void> rebuildQuantityCache(String storeId) async {
     final db = await _dbHelper.database;
@@ -266,5 +282,60 @@ class InventoryMovementRepository {
       }
       await batch.commit(noResult: true);
     });
+  }
+
+  /// Reconcile and detect stock drift between movements ledger and inventory table
+  Future<Map<String, int>> reconcileInventoryStock(String storeId) async {
+    final db = await _dbHelper.database;
+    final Map<String, int> repairedDrifts = {};
+
+    await db.transaction((txn) async {
+      // 1. Calculate sum of movements per item
+      final movementSums = await txn.rawQuery('''
+        SELECT itemId, SUM(delta) as movementTotal
+        FROM inventory_movements
+        WHERE storeId = ?
+        GROUP BY itemId
+      ''', [storeId]);
+
+      final movementMap = <String, int>{};
+      for (final row in movementSums) {
+        final itemId = row['itemId'] as String?;
+        if (itemId != null) {
+          movementMap[itemId] = (row['movementTotal'] as num?)?.toInt() ?? 0;
+        }
+      }
+
+      // 2. Compare against current inventory table quantity
+      final inventoryRows = await txn.query(
+        'inventory',
+        columns: ['id', 'quantity'],
+        where: 'storeId = ?',
+        whereArgs: [storeId],
+      );
+
+      for (final row in inventoryRows) {
+        final itemId = row['id'] as String;
+        final currentQty = (row['quantity'] as num?)?.toInt() ?? 0;
+        if (movementMap.containsKey(itemId)) {
+          final ledgerQty = movementMap[itemId]!;
+          if (ledgerQty >= 0 && ledgerQty != currentQty) {
+            // Drift detected! Repair quantity
+            await txn.update(
+              'inventory',
+              {'quantity': ledgerQty},
+              where: 'id = ?',
+              whereArgs: [itemId],
+            );
+            repairedDrifts[itemId] = ledgerQty;
+          }
+        }
+      }
+    });
+
+    // 3. Rebuild quantity cache
+    await rebuildQuantityCache(storeId);
+
+    return repairedDrifts;
   }
 }

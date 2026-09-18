@@ -88,19 +88,35 @@ void main() {
 
     test('canVoid: states that cannot be voided', () {
       final voidedOrder = OrderEntity(
-        id: '1', storeId: 's', items: const [], total: 10, date: now,
+        id: '1',
+        storeId: 's',
+        items: const [],
+        total: 10,
+        date: now,
         status: OrderStatus.voided,
       );
       final refundedOrder = OrderEntity(
-        id: '1', storeId: 's', items: const [], total: 10, date: now,
+        id: '1',
+        storeId: 's',
+        items: const [],
+        total: 10,
+        date: now,
         status: OrderStatus.refunded,
       );
       final cancelledOrder = OrderEntity(
-        id: '1', storeId: 's', items: const [], total: 10, date: now,
+        id: '1',
+        storeId: 's',
+        items: const [],
+        total: 10,
+        date: now,
         status: OrderStatus.cancelled,
       );
       final completedOrder = OrderEntity(
-        id: '1', storeId: 's', items: const [], total: 10, date: now,
+        id: '1',
+        storeId: 's',
+        items: const [],
+        total: 10,
+        date: now,
         status: OrderStatus.completed,
       );
 
@@ -112,11 +128,19 @@ void main() {
 
     test('canRefund: only completed orders can be refunded', () {
       final completedOrder = OrderEntity(
-        id: '1', storeId: 's', items: const [], total: 10, date: now,
+        id: '1',
+        storeId: 's',
+        items: const [],
+        total: 10,
+        date: now,
         status: OrderStatus.completed,
       );
       final newOrder = OrderEntity(
-        id: '1', storeId: 's', items: const [], total: 10, date: now,
+        id: '1',
+        storeId: 's',
+        items: const [],
+        total: 10,
+        date: now,
         status: OrderStatus.newOrder,
       );
 
@@ -126,11 +150,19 @@ void main() {
 
     test('canModify: terminal states are immutable', () {
       final completedOrder = OrderEntity(
-        id: '1', storeId: 's', items: const [], total: 10, date: now,
+        id: '1',
+        storeId: 's',
+        items: const [],
+        total: 10,
+        date: now,
         status: OrderStatus.completed,
       );
       final newOrder = OrderEntity(
-        id: '1', storeId: 's', items: const [], total: 10, date: now,
+        id: '1',
+        storeId: 's',
+        items: const [],
+        total: 10,
+        date: now,
         status: OrderStatus.newOrder,
       );
 

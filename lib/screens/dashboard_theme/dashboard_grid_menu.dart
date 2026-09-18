@@ -14,27 +14,63 @@ class DashboardGridMenu extends StatelessWidget {
     final provider = Provider.of<DashboardProvider>(context);
     final role = provider.activeRole;
     final isSuperAdmin = provider.userProfile?.role == 'Super Admin';
-    final isOwnerOrAdmin = role == 'Store Owner' || role == 'Admin' || isSuperAdmin;
+    final isOwnerOrAdmin =
+        role == 'Store Owner' || role == 'Admin' || isSuperAdmin;
 
     // Define Menu Actions – core items always visible
     final menuItems = <Map<String, dynamic>>[
-       {'label': 'POS TERMINAL', 'icon': Icons.point_of_sale, 'route': '/pos', 'size': 2}, // Large
-       {'label': 'INVENTORY', 'icon': Icons.inventory, 'route': '/inventory', 'size': 1},
-       {'label': 'SALES LOG', 'icon': Icons.receipt_long, 'route': '/sales', 'size': 1},
+      {
+        'label': 'POS TERMINAL',
+        'icon': Icons.point_of_sale,
+        'route': '/pos',
+        'size': 2
+      }, // Large
+      {
+        'label': 'INVENTORY',
+        'icon': Icons.inventory,
+        'route': '/inventory',
+        'size': 1
+      },
+      {
+        'label': 'SALES LOG',
+        'icon': Icons.receipt_long,
+        'route': '/sales',
+        'size': 1
+      },
     ];
 
     // Addon-gated items
     if (provider.hasAddon('customer_management') && isOwnerOrAdmin) {
-      menuItems.add({'label': 'CUSTOMERS', 'icon': Icons.people, 'route': '/customers', 'size': 1});
+      menuItems.add({
+        'label': 'CUSTOMERS',
+        'icon': Icons.people,
+        'route': '/customers',
+        'size': 1
+      });
     }
     if (provider.hasAddon('employee_management') && isOwnerOrAdmin) {
-      menuItems.add({'label': 'EMPLOYEES', 'icon': Icons.badge, 'route': '/employees', 'size': 1});
+      menuItems.add({
+        'label': 'EMPLOYEES',
+        'icon': Icons.badge,
+        'route': '/employees',
+        'size': 1
+      });
     }
 
     // Always visible
     menuItems.addAll([
-       {'label': 'REPORTS', 'icon': Icons.bar_chart, 'route': '/reports', 'size': 1},
-       {'label': 'SETTINGS', 'icon': Icons.settings_applications, 'route': '/settings', 'size': 2}, // Large
+      {
+        'label': 'REPORTS',
+        'icon': Icons.bar_chart,
+        'route': '/reports',
+        'size': 1
+      },
+      {
+        'label': 'SETTINGS',
+        'icon': Icons.settings_applications,
+        'route': '/settings',
+        'size': 2
+      }, // Large
     ]);
 
     return Padding(
@@ -44,7 +80,7 @@ class DashboardGridMenu extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 1000),
           child: GridView.builder(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4, 
+              crossAxisCount: 4,
               crossAxisSpacing: 24,
               mainAxisSpacing: 24,
               childAspectRatio: 1.2,

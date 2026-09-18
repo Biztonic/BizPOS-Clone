@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:biztonic_pos/features/inventory/domain/entities/inventory_item.dart';
-import 'package:biztonic_pos/features/inventory/data/inventory_repository.dart' as legacy;
+import 'package:biztonic_pos/features/inventory/data/inventory_repository.dart'
+    as legacy;
 import '../../domain/entities/inventory_entity.dart';
 import '../../domain/repositories/inventory_repository_interface.dart';
 import '../mappers/inventory_mapper.dart';
@@ -42,7 +43,8 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
   }
 
   @override
-  Future<InventoryResult<InventoryEntity>> getItem(String itemId, {String? storeId}) async {
+  Future<InventoryResult<InventoryEntity>> getItem(String itemId,
+      {String? storeId}) async {
     try {
       if (kIsWeb) {
         final box = await Hive.openBox('cache_inventory');
@@ -50,20 +52,24 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
         if (raw == null || raw is! Map) {
           return InventoryResult.failure('Item not found.');
         }
-        
+
         Map<String, dynamic> recursiveCast(Map map) {
           return map.map((key, value) {
-            if (value is Map) return MapEntry(key.toString(), recursiveCast(value));
-            if (value is List) return MapEntry(key.toString(), value.map((e) => e is Map ? recursiveCast(e) : e).toList());
+            if (value is Map)
+              return MapEntry(key.toString(), recursiveCast(value));
+            if (value is List)
+              return MapEntry(key.toString(),
+                  value.map((e) => e is Map ? recursiveCast(e) : e).toList());
             return MapEntry(key.toString(), value);
           });
         }
-        
+
         final legacyItem = InventoryItem.fromMap(recursiveCast(raw), itemId);
         return InventoryResult.success(InventoryMapper.fromLegacy(legacyItem));
       }
 
-      final legacyItem = await _legacyRepo.getInventoryItem(itemId, storeId: storeId);
+      final legacyItem =
+          await _legacyRepo.getInventoryItem(itemId, storeId: storeId);
       if (legacyItem == null) {
         return InventoryResult.failure('Item not found.');
       }
@@ -87,29 +93,39 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
 
         Map<String, dynamic> recursiveCast(Map map) {
           return map.map((key, value) {
-            if (value is Map) return MapEntry(key.toString(), recursiveCast(value));
-            if (value is List) return MapEntry(key.toString(), value.map((e) => e is Map ? recursiveCast(e) : e).toList());
+            if (value is Map)
+              return MapEntry(key.toString(), recursiveCast(value));
+            if (value is List)
+              return MapEntry(key.toString(),
+                  value.map((e) => e is Map ? recursiveCast(e) : e).toList());
             return MapEntry(key.toString(), value);
           });
         }
 
         final cached = box.values
             .where((v) {
-               if (v is! Map) return false;
-               final vStoreId = (v['storeId'] ?? '').toString().trim();
-               final matchesStore = vStoreId.isEmpty || vStoreId == targetStoreId;
-               final notDeleted = v['deletedAt'] == null && v['isDeleted'] != true && v['isDeleted'] != 1;
-               final matchesCategory = category == null || category == 'All' || v['category'] == category;
-               return matchesStore && notDeleted && matchesCategory;
+              if (v is! Map) return false;
+              final vStoreId = (v['storeId'] ?? '').toString().trim();
+              final matchesStore =
+                  vStoreId.isEmpty || vStoreId == targetStoreId;
+              final notDeleted = v['deletedAt'] == null &&
+                  v['isDeleted'] != true &&
+                  v['isDeleted'] != 1;
+              final matchesCategory = category == null ||
+                  category == 'All' ||
+                  v['category'] == category;
+              return matchesStore && notDeleted && matchesCategory;
             })
-            .map((e) => InventoryItem.fromMap(recursiveCast(e as Map), (e)['id'] ?? ''))
+            .map((e) =>
+                InventoryItem.fromMap(recursiveCast(e as Map), (e)['id'] ?? ''))
             .toList();
 
         final items = cached.map(InventoryMapper.fromLegacy).toList();
         return InventoryResult.success(items);
       }
 
-      final legacyItems = await _legacyRepo.getInventory(storeId, category: category);
+      final legacyItems =
+          await _legacyRepo.getInventory(storeId, category: category);
       final items = legacyItems.map(InventoryMapper.fromLegacy).toList();
       return InventoryResult.success(items);
     } catch (e, st) {
@@ -137,12 +153,13 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
       } else {
         // Fetch current to soft delete
         final legacyItem = await _legacyRepo.getInventoryItem(itemId);
-        if (legacyItem == null) return InventoryResult.failure('Item not found');
-        
+        if (legacyItem == null)
+          return InventoryResult.failure('Item not found');
+
         final deletedItem = legacyItem.copyWith(deletedAt: DateTime.now());
         await _legacyRepo.insertInventory(deletedItem);
       }
-      
+
       return InventoryResult.success(null);
     } catch (e, st) {
       debugPrint('🔥 Error deleting inventory item: $e\n$st');
@@ -151,7 +168,8 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
   }
 
   @override
-  Future<InventoryResult<void>> batchInsertItems(List<InventoryEntity> items) async {
+  Future<InventoryResult<void>> batchInsertItems(
+      List<InventoryEntity> items) async {
     try {
       final legacyItems = items.map(InventoryMapper.toLegacy).toList();
       if (kIsWeb) {
@@ -178,7 +196,8 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
   }
 
   @override
-  Future<InventoryResult<int>> getStockQuantity(String itemId, {String? storeId}) async {
+  Future<InventoryResult<int>> getStockQuantity(String itemId,
+      {String? storeId}) async {
     try {
       if (kIsWeb) {
         final box = await Hive.openBox('cache_inventory');
@@ -188,7 +207,8 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
         }
         return InventoryResult.success((raw['quantity'] as num?)?.toInt() ?? 0);
       }
-      final legacyItem = await _legacyRepo.getInventoryItem(itemId, storeId: storeId);
+      final legacyItem =
+          await _legacyRepo.getInventoryItem(itemId, storeId: storeId);
       return InventoryResult.success(legacyItem?.quantity ?? 0);
     } catch (e, st) {
       debugPrint('🔥 Error fetching stock quantity: $e\n$st');
@@ -197,12 +217,14 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
   }
 
   @override
-  Future<InventoryResult<int>> getPendingDelta(String itemId, {String? storeId}) async {
+  Future<InventoryResult<int>> getPendingDelta(String itemId,
+      {String? storeId}) async {
     try {
       if (kIsWeb) {
         return InventoryResult.success(0);
       }
-      final delta = await _legacyRepo.getPendingInventoryDelta(itemId, storeId: storeId);
+      final delta =
+          await _legacyRepo.getPendingInventoryDelta(itemId, storeId: storeId);
       return InventoryResult.success(delta);
     } catch (e, st) {
       debugPrint('🔥 Error fetching pending delta: $e\n$st');
@@ -225,7 +247,8 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
   }
 
   @override
-  Future<InventoryResult<InventoryStats>> getInventoryStats(String storeId) async {
+  Future<InventoryResult<InventoryStats>> getInventoryStats(
+      String storeId) async {
     try {
       List<InventoryItem> legacyItems = [];
       if (kIsWeb) {
@@ -234,23 +257,29 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
 
         Map<String, dynamic> recursiveCast(Map map) {
           return map.map((key, value) {
-            if (value is Map) return MapEntry(key.toString(), recursiveCast(value));
-            if (value is List) return MapEntry(key.toString(), value.map((e) => e is Map ? recursiveCast(e) : e).toList());
+            if (value is Map)
+              return MapEntry(key.toString(), recursiveCast(value));
+            if (value is List)
+              return MapEntry(key.toString(),
+                  value.map((e) => e is Map ? recursiveCast(e) : e).toList());
             return MapEntry(key.toString(), value);
           });
         }
 
         final cached = box.values
             .where((v) {
-               if (v is! Map) return false;
-               final vStoreId = (v['storeId'] ?? '').toString().trim();
-               final matchesStore = vStoreId == targetStoreId;
-               final notDeleted = v['deletedAt'] == null && v['isDeleted'] != true && v['isDeleted'] != 1;
-               return matchesStore && notDeleted;
+              if (v is! Map) return false;
+              final vStoreId = (v['storeId'] ?? '').toString().trim();
+              final matchesStore = vStoreId == targetStoreId;
+              final notDeleted = v['deletedAt'] == null &&
+                  v['isDeleted'] != true &&
+                  v['isDeleted'] != 1;
+              return matchesStore && notDeleted;
             })
-            .map((e) => InventoryItem.fromMap(recursiveCast(e as Map), (e)['id'] ?? ''))
+            .map((e) =>
+                InventoryItem.fromMap(recursiveCast(e as Map), (e)['id'] ?? ''))
             .toList();
-        
+
         legacyItems = cached;
       } else {
         legacyItems = await _legacyRepo.getInventory(storeId);
@@ -304,23 +333,29 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
 
         Map<String, dynamic> recursiveCast(Map map) {
           return map.map((key, value) {
-            if (value is Map) return MapEntry(key.toString(), recursiveCast(value));
-            if (value is List) return MapEntry(key.toString(), value.map((e) => e is Map ? recursiveCast(e) : e).toList());
+            if (value is Map)
+              return MapEntry(key.toString(), recursiveCast(value));
+            if (value is List)
+              return MapEntry(key.toString(),
+                  value.map((e) => e is Map ? recursiveCast(e) : e).toList());
             return MapEntry(key.toString(), value);
           });
         }
 
         final cached = box.values
             .where((v) {
-               if (v is! Map) return false;
-               final vStoreId = (v['storeId'] ?? '').toString().trim();
-               final matchesStore = vStoreId == targetStoreId;
-               final notDeleted = v['deletedAt'] == null && v['isDeleted'] != true && v['isDeleted'] != 1;
-               return matchesStore && notDeleted;
+              if (v is! Map) return false;
+              final vStoreId = (v['storeId'] ?? '').toString().trim();
+              final matchesStore = vStoreId == targetStoreId;
+              final notDeleted = v['deletedAt'] == null &&
+                  v['isDeleted'] != true &&
+                  v['isDeleted'] != 1;
+              return matchesStore && notDeleted;
             })
-            .map((e) => InventoryItem.fromMap(recursiveCast(e as Map), (e)['id'] ?? ''))
+            .map((e) =>
+                InventoryItem.fromMap(recursiveCast(e as Map), (e)['id'] ?? ''))
             .toList();
-        
+
         legacyItems = cached;
       } else {
         legacyItems = await _legacyRepo.getInventory(storeId);

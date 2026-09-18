@@ -18,19 +18,25 @@ class UserRoleManagementScreen extends StatefulWidget {
   const UserRoleManagementScreen({super.key});
 
   @override
-  State<UserRoleManagementScreen> createState() => _UserRoleManagementScreenState();
+  State<UserRoleManagementScreen> createState() =>
+      _UserRoleManagementScreenState();
 }
 
 class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
   final _searchController = TextEditingController();
   List<UserProfile> _users = [];
   bool _isLoading = false;
-  Map<String, int> _stats = {'total': 0, 'admins': 0, 'active': 0, 'subscriptions': 0};
+  Map<String, int> _stats = {
+    'total': 0,
+    'admins': 0,
+    'active': 0,
+    'subscriptions': 0
+  };
   Map<String, String> _userStorePlans = {};
-  
-  final int _limit = 20; 
-  final List<dynamic> _lastDocs = []; 
-  dynamic _currentLastDoc; 
+
+  final int _limit = 20;
+  final List<dynamic> _lastDocs = [];
+  dynamic _currentLastDoc;
   int _currentPage = 1;
   bool _hasMore = true;
 
@@ -42,7 +48,7 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
   List<String> get _filterOptions {
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     final roles = provider.roles.map((r) => r.name).toList();
-    return {'All', ...roles, 'Unauthorized'}.toList(); 
+    return {'All', ...roles, 'Unauthorized'}.toList();
   }
 
   @override
@@ -71,7 +77,8 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
 
   Future<void> _loadStats() async {
     try {
-      final stats = await Provider.of<DashboardProvider>(context, listen: false).getUserStats();
+      final stats = await Provider.of<DashboardProvider>(context, listen: false)
+          .getUserStats();
       if (context.mounted) setState(() => _stats = stats);
     } catch (e) {
       debugPrint("Error loading user stats: $e");
@@ -86,9 +93,16 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
         final results = await provider.searchUsers(_searchController.text);
         List<UserProfile> filtered = results;
         if (_selectedRoleFilter != 'All') {
-          filtered = results.where((u) => u.role == _selectedRoleFilter).toList();
+          filtered =
+              results.where((u) => u.role == _selectedRoleFilter).toList();
         }
-        if (context.mounted) setState(() { _users = filtered; _isLoading = false; _hasMore = false; _currentPage = 1; });
+        if (context.mounted)
+          setState(() {
+            _users = filtered;
+            _isLoading = false;
+            _hasMore = false;
+            _currentPage = 1;
+          });
         return;
       }
       dynamic startAfter;
@@ -103,17 +117,20 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
         startAfter = null;
         _currentPage = 1;
       }
-      final result = await provider.fetchPaginatedUsers(limit: _limit, startAfter: startAfter, filterRole: _selectedRoleFilter);
+      final result = await provider.fetchPaginatedUsers(
+          limit: _limit,
+          startAfter: startAfter,
+          filterRole: _selectedRoleFilter);
       if (context.mounted) {
-         setState(() {
-            _users = result['users'] as List<UserProfile>;
-            _userStorePlans = result['storePlans'] as Map<String, String>;
-            _currentLastDoc = result['lastDoc'];
-            _isLoading = false;
-            _hasMore = _users.length == _limit;
-            if (next) _currentPage++;
-            if (prev) _currentPage--;
-         });
+        setState(() {
+          _users = result['users'] as List<UserProfile>;
+          _userStorePlans = result['storePlans'] as Map<String, String>;
+          _currentLastDoc = result['lastDoc'];
+          _isLoading = false;
+          _hasMore = _users.length == _limit;
+          if (next) _currentPage++;
+          if (prev) _currentPage--;
+        });
       }
     } catch (e) {
       if (context.mounted) setState(() => _isLoading = false);
@@ -129,11 +146,14 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
         if (provider.activeRole == 'Super Admin')
           IconButton(
             icon: const Icon(Icons.settings_suggest_outlined),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RoleConfigurationScreen())),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const RoleConfigurationScreen())),
             tooltip: "Roles",
           ),
         IconButton(
-          icon: Icon(_isListView ? Icons.grid_view_outlined : Icons.view_headline_outlined),
+          icon: Icon(_isListView
+              ? Icons.grid_view_outlined
+              : Icons.view_headline_outlined),
           onPressed: () => setState(() => _isListView = !_isListView),
           tooltip: _isListView ? "Grid View" : "List View",
         ),
@@ -152,11 +172,13 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: AppRadius.borderSm,
-                  border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                  border:
+                      Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   "Error loading users: ${provider.userFetchError}",
-                  style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: AppColors.error, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -164,9 +186,18 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
             _buildSearchAndFilters(),
             const SizedBox(height: AppSpacing.lg),
             if (_isLoading)
-              const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.xs), child: CircularProgressIndicator()))
+              const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.xs),
+                      child: CircularProgressIndicator()))
             else if (_users.isEmpty)
-              Center(child: Padding(padding: const EdgeInsets.all(AppSpacing.xs), child: Text(AppLocalizations.t(context, 'No users found.'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))))
+              Center(
+                  child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xs),
+                      child: Text(
+                          AppLocalizations.t(context, 'No users found.'),
+                          style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.textSecondary(context)))))
             else if (_isListView)
               _buildListView(provider)
             else
@@ -185,15 +216,20 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
       spacing: AppSpacing.md,
       runSpacing: AppSpacing.md,
       children: [
-        _buildStatCard("Total Users", "${_stats['total']}", Icons.people_outline, AppColors.primary),
-        _buildStatCard("Active Admins", "${_stats['admins']}", Icons.admin_panel_settings_outlined, AppColors.warning),
-        _buildStatCard("Active Users", "${_stats['active']}", Icons.check_circle_outline, AppColors.success),
-        _buildStatCard("Subscriptions", "${_stats['subscriptions']}", Icons.subscriptions_outlined, AppColors.primary),
+        _buildStatCard("Total Users", "${_stats['total']}",
+            Icons.people_outline, AppColors.primary),
+        _buildStatCard("Active Admins", "${_stats['admins']}",
+            Icons.admin_panel_settings_outlined, AppColors.warning),
+        _buildStatCard("Active Users", "${_stats['active']}",
+            Icons.check_circle_outline, AppColors.success),
+        _buildStatCard("Subscriptions", "${_stats['subscriptions']}",
+            Icons.subscriptions_outlined, AppColors.primary),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return Container(
       width: 180,
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -208,7 +244,9 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
           Icon(icon, color: color, size: 24),
           const SizedBox(height: AppSpacing.md),
           Text(value, style: AppTypography.headlineMedium),
-          Text(title, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
+          Text(title,
+              style: AppTypography.labelSmall
+                  .copyWith(color: AppColors.textSecondary(context))),
         ],
       ),
     );
@@ -225,7 +263,8 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
             prefixIcon: const Icon(Icons.search),
             filled: true,
             fillColor: AppColors.textSecondary(context).withValues(alpha: 0.05),
-            border: const OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide.none),
+            border: const OutlineInputBorder(
+                borderRadius: BorderRadius.zero, borderSide: BorderSide.none),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -237,7 +276,11 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
               return Padding(
                 padding: const EdgeInsets.only(right: AppSpacing.sm),
                 child: ChoiceChip(
-                  label: Text(role, style: AppTypography.labelSmall.copyWith(color: isSelected ? AppColors.surfaceLight : AppColors.textSecondary(context))),
+                  label: Text(role,
+                      style: AppTypography.labelSmall.copyWith(
+                          color: isSelected
+                              ? AppColors.surfaceLight
+                              : AppColors.textSecondary(context))),
                   selected: isSelected,
                   selectedColor: AppColors.primary,
                   onSelected: (val) {
@@ -260,14 +303,19 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
 
   Widget _buildListView(DashboardProvider provider) {
     return Column(
-      children: _users.map((user) => _buildUserListItem(user, provider)).toList(),
+      children:
+          _users.map((user) => _buildUserListItem(user, provider)).toList(),
     );
   }
 
   Widget _buildGridView(DashboardProvider provider) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        int crossAxisCount = constraints.maxWidth > 1200 ? 4 : (constraints.maxWidth > 800 ? 3 : (constraints.maxWidth > 500 ? 2 : 1));
+        int crossAxisCount = constraints.maxWidth > 1200
+            ? 4
+            : (constraints.maxWidth > 800
+                ? 3
+                : (constraints.maxWidth > 500 ? 2 : 1));
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -278,7 +326,8 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
             childAspectRatio: 1.5,
           ),
           itemCount: _users.length,
-          itemBuilder: (context, index) => _buildUserGridCard(_users[index], provider),
+          itemBuilder: (context, index) =>
+              _buildUserGridCard(_users[index], provider),
         );
       },
     );
@@ -287,25 +336,36 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
   Widget _buildUserListItem(UserProfile user, DashboardProvider provider) {
     String storeName = 'Unassigned';
     if (user.storeId != null) {
-      try { storeName = provider.stores.firstWhere((s) => s.id == user.storeId).name; } catch (_) {}
+      try {
+        storeName =
+            provider.stores.firstWhere((s) => s.id == user.storeId).name;
+      } catch (_) {}
     }
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: AppCard(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         child: Row(
           children: [
             CircleAvatar(
               backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              child: Text(user.name.isNotEmpty ? user.name[0].toUpperCase() : '?', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              child: Text(
+                  user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                      color: AppColors.primary, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(user.name, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-                  Text(user.email, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
+                  Text(user.name,
+                      style: AppTypography.bodyMedium
+                          .copyWith(fontWeight: FontWeight.bold)),
+                  Text(user.email,
+                      style: AppTypography.labelSmall
+                          .copyWith(color: AppColors.textSecondary(context))),
                 ],
               ),
             ),
@@ -316,8 +376,11 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(storeName, style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.w500)),
-                  if (user.storeId != null) _buildPlanBadge(_userStorePlans[user.storeId] ?? 'Basic'),
+                  Text(storeName,
+                      style: AppTypography.labelSmall
+                          .copyWith(fontWeight: FontWeight.w500)),
+                  if (user.storeId != null)
+                    _buildPlanBadge(_userStorePlans[user.storeId] ?? 'Basic'),
                 ],
               ),
             ),
@@ -339,21 +402,34 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
               CircleAvatar(
                 radius: 16,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                child: Text(user.name.isNotEmpty ? user.name[0].toUpperCase() : '?', style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                child: Text(
+                    user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                    style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: AppSpacing.sm),
-              Expanded(child: Text(user.name, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+              Expanded(
+                  child: Text(user.name,
+                      style: AppTypography.bodyMedium
+                          .copyWith(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis)),
               _buildActions(user, provider),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(user.email, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)), overflow: TextOverflow.ellipsis),
+          Text(user.email,
+              style: AppTypography.labelSmall
+                  .copyWith(color: AppColors.textSecondary(context)),
+              overflow: TextOverflow.ellipsis),
           const Spacer(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildRoleBadge(user.role),
-              if (user.storeId != null) _buildPlanBadge(_userStorePlans[user.storeId] ?? 'Basic'),
+              if (user.storeId != null)
+                _buildPlanBadge(_userStorePlans[user.storeId] ?? 'Basic'),
             ],
           ),
         ],
@@ -365,20 +441,24 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (user.demoStatus == 'pending' && provider.activeRole == 'Super Admin')
+        if (user.demoStatus == 'pending' &&
+            provider.activeRole == 'Super Admin')
           IconButton(
             onPressed: () => _confirmApproveDemo(user, provider),
-            icon: const Icon(Icons.verified_user, size: 20, color: AppColors.success),
+            icon: const Icon(Icons.verified_user,
+                size: 20, color: AppColors.success),
             tooltip: "Approve Demo",
           ),
         IconButton(
-          onPressed: () => _showEditUserDialog(user, provider), 
-          icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primaryLight),
+          onPressed: () => _showEditUserDialog(user, provider),
+          icon: const Icon(Icons.edit_outlined,
+              size: 20, color: AppColors.primaryLight),
         ),
         if (provider.activeRole == 'Super Admin')
           IconButton(
             onPressed: () => _confirmDeleteUser(user, provider),
-            icon: const Icon(Icons.delete_forever, size: 20, color: AppColors.error),
+            icon: const Icon(Icons.delete_forever,
+                size: 20, color: AppColors.error),
           ),
       ],
     );
@@ -389,16 +469,23 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
     if (role.contains('Admin')) color = AppColors.primary;
     if (role.contains('Owner')) color = AppColors.warning;
     if (role == 'Super Admin') color = AppColors.error;
-    
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
-      child: Text(role.toUpperCase(), style: AppTypography.labelSmall.copyWith(color: color, fontWeight: FontWeight.bold)),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+      decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
+      child: Text(role.toUpperCase(),
+          style: AppTypography.labelSmall
+              .copyWith(color: color, fontWeight: FontWeight.bold)),
     );
   }
 
   Widget _buildPlanBadge(String plan) {
-    return Text(plan, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context), fontStyle: FontStyle.italic));
+    return Text(plan,
+        style: AppTypography.labelSmall.copyWith(
+            color: AppColors.textSecondary(context),
+            fontStyle: FontStyle.italic));
   }
 
   Widget _buildPaginationControls() {
@@ -411,7 +498,9 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
           variant: AppButtonVariant.outline,
         ),
         const SizedBox(width: AppSpacing.lg),
-        Text("Page $_currentPage", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+        Text("Page $_currentPage",
+            style: AppTypography.bodyMedium
+                .copyWith(color: AppColors.textSecondary(context))),
         const SizedBox(width: AppSpacing.lg),
         AppButton(
           label: "Next",
@@ -424,97 +513,128 @@ class _UserRoleManagementScreenState extends State<UserRoleManagementScreen> {
 
   void _confirmApproveDemo(UserProfile user, DashboardProvider provider) {
     showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(AppLocalizations.t(context, 'Approve Demo Access?'), style: AppTypography.titleLarge),
-        content: Text(AppLocalizations.t(context, 'This enables the user to access the interactive demo dashboard.'), style: AppTypography.bodyMedium),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'CANCEL'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))),
-          AppButton(
-            label: "APPROVE",
-            onPressed: () async {
-                await provider.approveDemoRequest(user.uid);
-                if (ctx.mounted) Navigator.pop(ctx);
-                _loadUsers();
-            },
-          )
-        ],
-      )
-    );
+        context: context,
+        builder: (ctx) => AlertDialog(
+              title: Text(AppLocalizations.t(context, 'Approve Demo Access?'),
+                  style: AppTypography.titleLarge),
+              content: Text(
+                  AppLocalizations.t(context,
+                      'This enables the user to access the interactive demo dashboard.'),
+                  style: AppTypography.bodyMedium),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(AppLocalizations.t(context, 'CANCEL'),
+                        style: AppTypography.bodyMedium.copyWith(
+                            color: AppColors.textSecondary(context)))),
+                AppButton(
+                  label: "APPROVE",
+                  onPressed: () async {
+                    await provider.approveDemoRequest(user.uid);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    _loadUsers();
+                  },
+                )
+              ],
+            ));
   }
 
   void _confirmDeleteUser(UserProfile user, DashboardProvider provider) {
     showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(AppLocalizations.t(context, 'Delete User?'), style: AppTypography.titleLarge),
-        content: Text("Are you sure you want to delete ${user.name}?\nThis action is PERMANENT.", style: AppTypography.bodyMedium),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'CANCEL'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))),
-          AppButton(
-            label: "DELETE",
-            variant: AppButtonVariant.outline,
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await provider.deleteUser(user.uid);
-              _loadUsers();
-            },
-          )
-        ],
-      )
-    );
+        context: context,
+        builder: (ctx) => AlertDialog(
+              title: Text(AppLocalizations.t(context, 'Delete User?'),
+                  style: AppTypography.titleLarge),
+              content: Text(
+                  "Are you sure you want to delete ${user.name}?\nThis action is PERMANENT.",
+                  style: AppTypography.bodyMedium),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(AppLocalizations.t(context, 'CANCEL'),
+                        style: AppTypography.bodyMedium.copyWith(
+                            color: AppColors.textSecondary(context)))),
+                AppButton(
+                  label: "DELETE",
+                  variant: AppButtonVariant.outline,
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await provider.deleteUser(user.uid);
+                    _loadUsers();
+                  },
+                )
+              ],
+            ));
   }
 
   void _showEditUserDialog(UserProfile user, DashboardProvider provider) {
     String selectedRole = user.role;
     String? selectedStoreId = user.storeId;
-    
+
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: Text("Edit ${user.name}", style: AppTypography.titleLarge),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                   value: provider.roles.any((r) => r.name == selectedRole) || selectedRole == 'Unauthorized' ? selectedRole : 'Unauthorized',
-                   decoration: const InputDecoration(labelText: "Role", border: OutlineInputBorder()),
-                   items: {'Unauthorized', ...provider.roles.map((r) => r.name)}
-                      .map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-                   onChanged: (val) { if (val != null) setDialogState(() => selectedRole = val); },
-                ),
-                const SizedBox(height: AppSpacing.md),
-                DropdownButtonFormField<String?>(
-                   value: provider.stores.any((s) => s.id == selectedStoreId) ? selectedStoreId : null,
-                   decoration: const InputDecoration(labelText: "Store", border: OutlineInputBorder()),
-                   items: [
-                      DropdownMenuItem(value: null, child: Text(AppLocalizations.t(context, 'Unassigned'))),
-                      ...provider.stores.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
-                   ],
-                   onChanged: (val) { setDialogState(() => selectedStoreId = val); },
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'CANCEL'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)))),
-              AppButton(
-                label: "SAVE CHANGES",
-                onPressed: () async {
-                  if (selectedRole != user.role) await provider.updateUserRole(user.uid, selectedRole);
-                  if (selectedStoreId != user.storeId) await provider.updateUserStores(user.uid, selectedStoreId != null ? [selectedStoreId!] : []);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  _loadUsers();
-                  _loadStats();
+      builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
+        return AlertDialog(
+          title: Text("Edit ${user.name}", style: AppTypography.titleLarge),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: provider.roles.any((r) => r.name == selectedRole) ||
+                        selectedRole == 'Unauthorized'
+                    ? selectedRole
+                    : 'Unauthorized',
+                decoration: const InputDecoration(
+                    labelText: "Role", border: OutlineInputBorder()),
+                items: {'Unauthorized', ...provider.roles.map((r) => r.name)}
+                    .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => selectedRole = val);
                 },
-              )
+              ),
+              const SizedBox(height: AppSpacing.md),
+              DropdownButtonFormField<String?>(
+                value: provider.stores.any((s) => s.id == selectedStoreId)
+                    ? selectedStoreId
+                    : null,
+                decoration: const InputDecoration(
+                    labelText: "Store", border: OutlineInputBorder()),
+                items: [
+                  DropdownMenuItem(
+                      value: null,
+                      child: Text(AppLocalizations.t(context, 'Unassigned'))),
+                  ...provider.stores.map(
+                      (s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                ],
+                onChanged: (val) {
+                  setDialogState(() => selectedStoreId = val);
+                },
+              ),
             ],
-          );
-        }
-      ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(AppLocalizations.t(context, 'CANCEL'),
+                    style: AppTypography.bodyMedium
+                        .copyWith(color: AppColors.textSecondary(context)))),
+            AppButton(
+              label: "SAVE CHANGES",
+              onPressed: () async {
+                if (selectedRole != user.role)
+                  await provider.updateUserRole(user.uid, selectedRole);
+                if (selectedStoreId != user.storeId)
+                  await provider.updateUserStores(user.uid,
+                      selectedStoreId != null ? [selectedStoreId!] : []);
+                if (ctx.mounted) Navigator.pop(ctx);
+                _loadUsers();
+                _loadStats();
+              },
+            )
+          ],
+        );
+      }),
     );
   }
 }
-
-

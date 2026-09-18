@@ -41,7 +41,7 @@ class InventoryProvider extends ChangeNotifier {
         _syncService = syncService {
     // Listen to store changes to reload data
     _storeProvider.addListener(_onStoreChanged);
-    
+
     // Listen to OrderCreatedEvent to decrement stock instantly after checkout
     _orderCreatedSub = EventBus.instance.on<OrderCreatedEvent>((event) {
       _handleOrderCreatedEvent(event);
@@ -58,7 +58,7 @@ class InventoryProvider extends ChangeNotifier {
         loadInventory();
       }
     });
-    
+
     // Initial load if store is already selected
     if (_storeProvider.activeStore != null) {
       loadInventory();
@@ -70,7 +70,7 @@ class InventoryProvider extends ChangeNotifier {
   List<InventoryEntity> _items = [];
   bool _isLoading = false;
   String? _error;
-  
+
   String _searchQuery = '';
   String _selectedCategory = 'All';
   List<String> _categories = ['All'];
@@ -89,7 +89,8 @@ class InventoryProvider extends ChangeNotifier {
   // ─── Legacy Bridge Getters ────────────────────────────────
 
   /// Backward compatibility for legacy modules expecting [InventoryItem].
-  List<legacy.InventoryItem> get storeInventory => _items.map<legacy.InventoryItem>(InventoryMapper.toLegacy).toList();
+  List<legacy.InventoryItem> get storeInventory =>
+      _items.map<legacy.InventoryItem>(InventoryMapper.toLegacy).toList();
 
   /// Gets the quantity of a specific item.
   int getItemStock(String itemId) {
@@ -115,7 +116,8 @@ class InventoryProvider extends ChangeNotifier {
 
     // Filter by Category
     if (_selectedCategory != 'All') {
-      filtered = filtered.where((item) => item.category == _selectedCategory).toList();
+      filtered =
+          filtered.where((item) => item.category == _selectedCategory).toList();
     }
 
     // Filter by Search Query
@@ -147,7 +149,8 @@ class InventoryProvider extends ChangeNotifier {
   /// Restore stock in-memory for each item in the refunded order.
   void _handleOrderRefundedEvent(OrderRefundedEvent event) {
     try {
-      final isStoreTracking = _storeProvider.activeStore?.trackInventory ?? true;
+      final isStoreTracking =
+          _storeProvider.activeStore?.trackInventory ?? true;
       if (!isStoreTracking) return;
 
       bool didUpdate = false;
@@ -184,7 +187,8 @@ class InventoryProvider extends ChangeNotifier {
   void _handleOrderCreatedEvent(OrderCreatedEvent event) {
     try {
       // If store inventory tracking is OFF, do not reduce stock after billing
-      final isStoreTracking = _storeProvider.activeStore?.trackInventory ?? true;
+      final isStoreTracking =
+          _storeProvider.activeStore?.trackInventory ?? true;
       if (!isStoreTracking) return;
 
       // Extract order items from the event
@@ -234,10 +238,21 @@ class InventoryProvider extends ChangeNotifier {
     if (_items.isEmpty) return;
     final totalItems = _items.length;
     final isStoreTracking = _storeProvider.activeStore?.trackInventory ?? true;
-    final lowStock = isStoreTracking ? _items.where((e) => e.trackStock && e.quantity <= e.lowStockThreshold && e.quantity > 0).length : 0;
-    final outOfStock = isStoreTracking ? _items.where((e) => e.trackStock && e.quantity <= 0).length : 0;
-    final totalCostValue = _items.fold<double>(0, (sum, e) => sum + (e.cost * e.quantity));
-    final totalRetailValue = _items.fold<double>(0, (sum, e) => sum + (e.price * e.quantity));
+    final lowStock = isStoreTracking
+        ? _items
+            .where((e) =>
+                e.trackStock &&
+                e.quantity <= e.lowStockThreshold &&
+                e.quantity > 0)
+            .length
+        : 0;
+    final outOfStock = isStoreTracking
+        ? _items.where((e) => e.trackStock && e.quantity <= 0).length
+        : 0;
+    final totalCostValue =
+        _items.fold<double>(0, (sum, e) => sum + (e.cost * e.quantity));
+    final totalRetailValue =
+        _items.fold<double>(0, (sum, e) => sum + (e.price * e.quantity));
     final categoriesCount = _items.map((e) => e.category).toSet().length;
     _stats = InventoryStats(
       totalItems: totalItems,
@@ -267,11 +282,11 @@ class InventoryProvider extends ChangeNotifier {
     notifyListeners();
 
     final result = await _repository.getItems(storeId);
-    
+
     if (result.isSuccess) {
       final rawItems = result.data ?? [];
       final healedItems = <InventoryEntity>[];
-      
+
       for (final item in rawItems) {
         if (item.storeId == null || item.storeId!.isEmpty) {
           final healed = item.copyWith(storeId: storeId);
@@ -320,8 +335,11 @@ class InventoryProvider extends ChangeNotifier {
     }
 
     final isNew = item.id.isEmpty;
-    final itemStoreId = (item.storeId != null && item.storeId!.isNotEmpty) ? item.storeId : storeId;
-    final targetItem = (isNew ? item.copyWith(id: const Uuid().v4()) : item).copyWith(storeId: itemStoreId);
+    final itemStoreId = (item.storeId != null && item.storeId!.isNotEmpty)
+        ? item.storeId
+        : storeId;
+    final targetItem = (isNew ? item.copyWith(id: const Uuid().v4()) : item)
+        .copyWith(storeId: itemStoreId);
     final deviceId = _syncService.deviceId ?? 'UNKNOWN';
 
     // 1. Optimistic UI Update
@@ -338,7 +356,8 @@ class InventoryProvider extends ChangeNotifier {
       item: targetItem,
       activeStoreId: storeId,
       deviceId: deviceId,
-      idempotencyKey: 'inv_upsert_${targetItem.id}_${DateTime.now().millisecondsSinceEpoch}',
+      idempotencyKey:
+          'inv_upsert_${targetItem.id}_${DateTime.now().millisecondsSinceEpoch}',
     );
 
     final result = await _orchestrator.upsertItem(params);
@@ -408,7 +427,8 @@ class InventoryProvider extends ChangeNotifier {
   // ─── Legacy Bridge Methods ────────────────────────────────
 
   /// Backward compatibility for legacy fetch requests.
-  Future<void> fetchInventory(String uid, {bool refresh = false}) => loadInventory();
+  Future<void> fetchInventory(String uid, {bool refresh = false}) =>
+      loadInventory();
 
   /// Clears the current inventory state.
   void clearInventory() {
@@ -417,12 +437,14 @@ class InventoryProvider extends ChangeNotifier {
   }
 
   /// Bridge for legacy add operations.
-  Future<void> addInventoryItem(legacy.InventoryItem item, String storeId, {File? imageFile}) => 
-    saveItem(InventoryMapper.fromLegacy(item));
+  Future<void> addInventoryItem(legacy.InventoryItem item, String storeId,
+          {File? imageFile}) =>
+      saveItem(InventoryMapper.fromLegacy(item));
 
   /// Bridge for legacy update operations.
-  Future<void> updateInventoryItem(legacy.InventoryItem item, {File? imageFile}) => 
-    saveItem(InventoryMapper.fromLegacy(item));
+  Future<void> updateInventoryItem(legacy.InventoryItem item,
+          {File? imageFile}) =>
+      saveItem(InventoryMapper.fromLegacy(item));
 
   /// Bridge for legacy delete operations.
   Future<void> deleteInventoryItem(String id) => deleteItem(id);

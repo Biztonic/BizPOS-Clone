@@ -11,7 +11,7 @@ import '../../core/design/tokens/app_colors.dart';
 class FirebaseBootstrap {
   static Future<void> init() async {
     debugPrint('🔥 Initializing Firebase...');
-    
+
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -49,12 +49,17 @@ class FirebaseBootstrap {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.error, size: 50),
+                    const Icon(Icons.error_outline,
+                        color: AppColors.error, size: 50),
                     const SizedBox(height: AppSpacing.md),
                     const Text("Something went wrong!",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.error)),
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.error)),
                     const SizedBox(height: AppSpacing.sm),
-                    Text(details.exception.toString(), textAlign: TextAlign.center, maxLines: 3),
+                    Text(details.exception.toString(),
+                        textAlign: TextAlign.center, maxLines: 3),
                   ],
                 ),
               ),

@@ -44,9 +44,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _syncStoreId() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final dashboard = legacy_provider.Provider.of<legacy.DashboardProvider>(context, listen: false);
+      final dashboard = legacy_provider.Provider.of<legacy.DashboardProvider>(
+          context,
+          listen: false);
       if (dashboard.activeStoreId != null) {
-        ref.read(storeNotifierProvider.notifier).setActiveStoreId(dashboard.activeStoreId);
+        ref
+            .read(storeNotifierProvider.notifier)
+            .setActiveStoreId(dashboard.activeStoreId);
       }
     });
   }
@@ -158,7 +162,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             selectedTileColor: color.withValues(alpha: 0.1),
             leading: AppIconography.iconContainer(
               icon: item['icon'] as IconData,
-              color: isRestricted ? AppColors.adaptiveSecondary(context) : color,
+              color:
+                  isRestricted ? AppColors.adaptiveSecondary(context) : color,
               size: AppIconography.lg,
               containerSize: AppIconography.containerLg,
               borderRadius: AppRadius.md,
@@ -166,7 +171,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: Text(item['label'],
                 style: AppTypography.bodyLarge
                     .copyWith(fontWeight: FontWeight.bold)),
-            trailing: isDesktop ? null : const Icon(Icons.chevron_right, size: AppIconography.md),
+            trailing: isDesktop
+                ? null
+                : const Icon(Icons.chevron_right, size: AppIconography.md),
             onTap: () {
               if (isDesktop) {
                 setState(() => _selectedIndex = index);
@@ -194,13 +201,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     Widget getSelectedWidget() {
-       final item = allMenuItems[_selectedIndex];
-       final widget = item.containsKey('key')
-            ? FeatureGuard(
-                featureKey: item['key'] as String,
-                child: (item['widgetBuilder'] as Widget Function())())
-            : (item['widgetBuilder'] as Widget Function())();
-       return widget;
+      final item = allMenuItems[_selectedIndex];
+      final widget = item.containsKey('key')
+          ? FeatureGuard(
+              featureKey: item['key'] as String,
+              child: (item['widgetBuilder'] as Widget Function())())
+          : (item['widgetBuilder'] as Widget Function())();
+      return widget;
     }
 
     return PosScaffold(
@@ -226,6 +233,3 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 }
-
-
-

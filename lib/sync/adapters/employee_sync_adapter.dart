@@ -10,11 +10,15 @@ class EmployeeSyncAdapter extends SyncAdapter {
   String get collection => SyncCollectionRegistry.employees;
 
   @override
-  Query buildQuery(FirebaseFirestore db, String storeId, DateTime? lastSyncTime) {
+  Query buildQuery(
+      FirebaseFirestore db, String storeId, DateTime? lastSyncTime) {
     // Cloud employees are stored in 'users' collection
-    Query query = db.collection(SyncCollectionRegistry.users).where('storeId', isEqualTo: storeId);
+    Query query = db
+        .collection(SyncCollectionRegistry.users)
+        .where('storeId', isEqualTo: storeId);
     if (lastSyncTime != null) {
-      query = query.where('updatedAt', isGreaterThan: Timestamp.fromDate(lastSyncTime));
+      query = query.where('updatedAt',
+          isGreaterThan: Timestamp.fromDate(lastSyncTime));
     }
     return query;
   }

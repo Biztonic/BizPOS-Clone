@@ -7,18 +7,21 @@ abstract class AbstractPrinterService {
   Future<void> init();
 
   /// Print a receipt from order data.
-  Future<bool> printReceipt(Map<String, dynamic> orderData, {
+  Future<bool> printReceipt(
+    Map<String, dynamic> orderData, {
     Map<String, dynamic>? storeSettings,
     String? printerAddress,
   });
 
   /// Print a KOT (Kitchen Order Ticket).
-  Future<bool> printKot(Map<String, dynamic> kotData, {
+  Future<bool> printKot(
+    Map<String, dynamic> kotData, {
     String? printerAddress,
   });
 
   /// Print a generic report.
-  Future<bool> printReport(String reportContent, {
+  Future<bool> printReport(
+    String reportContent, {
     String? printerAddress,
   });
 

@@ -32,11 +32,12 @@ class ThemeState {
 }
 
 class ThemeNotifier extends StateNotifier<ThemeState> {
-  ThemeNotifier() : super(ThemeState(
-    uiStyle: UIStyle.standard,
-    isDarkMode: false,
-    currentTheme: AppColorTheme.blue,
-  )) {
+  ThemeNotifier()
+      : super(ThemeState(
+          uiStyle: UIStyle.standard,
+          isDarkMode: false,
+          currentTheme: AppColorTheme.blue,
+        )) {
     _loadFromHive();
   }
 
@@ -48,9 +49,11 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   void _loadFromHive() {
     if (!Hive.isBoxOpen('settings')) return;
     final box = Hive.box('settings');
-    final uiStyleIndex = box.get('uiStyle', defaultValue: UIStyle.standard.index);
+    final uiStyleIndex =
+        box.get('uiStyle', defaultValue: UIStyle.standard.index);
     final isDarkMode = box.get('isDarkMode', defaultValue: false);
-    final currentThemeIndex = box.get('currentTheme', defaultValue: AppColorTheme.blue.index);
+    final currentThemeIndex =
+        box.get('currentTheme', defaultValue: AppColorTheme.blue.index);
     final customColor = box.get('customThemeColor');
 
     state = state.copyWith(

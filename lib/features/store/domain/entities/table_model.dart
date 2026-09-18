@@ -38,16 +38,18 @@ class TableModel {
       seats: (data['seats'] is int)
           ? List.generate(data['seats'] as int, (i) => TableSeat(number: i + 1))
           : (data['seats'] as List<dynamic>?)
-              ?.map((s) => TableSeat.fromMap(s))
-              .toList() ??
-          [],
+                  ?.map((s) => TableSeat.fromMap(s))
+                  .toList() ??
+              [],
       shape: data['shape'] ?? 'square',
       position: TablePosition.fromMap(data['position'] ?? {}),
       rotation: (data['rotation'] ?? 0).toDouble(),
       status: data['status'] ?? 'Available',
       orderId: data['orderId'],
       billingMode: data['billingMode'] ?? 'per-table',
-      bookedTime: data['bookedTime'] != null ? DateTime.tryParse(data['bookedTime']) : null,
+      bookedTime: data['bookedTime'] != null
+          ? DateTime.tryParse(data['bookedTime'])
+          : null,
       bookedSeats: data['bookedSeats'],
     );
   }
@@ -143,9 +145,9 @@ class TableSeat {
   }
 
   Map<String, dynamic> toMap() => {
-    'number': number,
-    'orderId': orderId,
-  };
+        'number': number,
+        'orderId': orderId,
+      };
 }
 
 class TablePosition {

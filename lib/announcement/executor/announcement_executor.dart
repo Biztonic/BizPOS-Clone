@@ -31,8 +31,10 @@ class AnnouncementExecutor {
   Future<ExecutorResult> execute(Announcement announcement) async {
     final stopwatch = Stopwatch()..start();
     try {
-      final volume = (announcement.metadata['volume'] as num?)?.toDouble() ?? 1.0;
-      final speechRate = (announcement.metadata['speechRate'] as num?)?.toDouble() ?? 1.0;
+      final volume =
+          (announcement.metadata['volume'] as num?)?.toDouble() ?? 1.0;
+      final speechRate =
+          (announcement.metadata['speechRate'] as num?)?.toDouble() ?? 1.0;
       final language = (announcement.metadata['language'] as String?) ?? 'en';
 
       // 1. Trigger Haptics

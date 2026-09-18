@@ -24,7 +24,7 @@ class _DependencyInjectorState extends ConsumerState<DependencyInjector> {
   Widget build(BuildContext context) {
     // CRITICAL: Use ref.watch(provider.notifier) instead of ref.read() or ref.watch().
     // .notifier provides the instance WITHOUT subscribing to notifyListeners() calls.
-    // This ensures that if Riverpod recreates the provider instance (e.g. during a hot reload 
+    // This ensures that if Riverpod recreates the provider instance (e.g. during a hot reload
     // or dependency change), the MultiProvider tree is updated with the NEW instance.
     // Using ref.read() would leave the tree with a STALE, DISPOSED instance, causing crashes.
     // Using ref.watch() would cause massive flickering on every notification.
@@ -50,9 +50,11 @@ class _DependencyInjectorState extends ConsumerState<DependencyInjector> {
         p.ChangeNotifierProvider.value(value: billing),
         p.ChangeNotifierProxyProvider<DashboardProvider, TableProvider>(
           create: (_) => TableProvider(),
-          update: (_, dashboard, tableProvider) => tableProvider!..setActiveStoreId(dashboard.activeStoreId),
+          update: (_, dashboard, tableProvider) =>
+              tableProvider!..setActiveStoreId(dashboard.activeStoreId),
         ),
-        p.ChangeNotifierProxyProvider3<DashboardProvider, OrderProvider, InventoryProvider, SmartInsightsProvider>(
+        p.ChangeNotifierProxyProvider3<DashboardProvider, OrderProvider,
+            InventoryProvider, SmartInsightsProvider>(
           create: (context) => SmartInsightsProvider(
             p.Provider.of<DashboardProvider>(context, listen: false),
             p.Provider.of<OrderProvider>(context, listen: false),

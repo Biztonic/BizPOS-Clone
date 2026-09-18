@@ -22,10 +22,12 @@ class DashboardOverviewScreen extends ConsumerStatefulWidget {
   const DashboardOverviewScreen({super.key});
 
   @override
-  ConsumerState<DashboardOverviewScreen> createState() => _DashboardOverviewScreenState();
+  ConsumerState<DashboardOverviewScreen> createState() =>
+      _DashboardOverviewScreenState();
 }
 
-class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScreen> {
+class _DashboardOverviewScreenState
+    extends ConsumerState<DashboardOverviewScreen> {
   @override
   void initState() {
     super.initState();
@@ -39,7 +41,8 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
   Widget build(BuildContext context) {
     final reportingState = ref.watch(reportingProvider);
     final stats = reportingState.stats;
-    final dashboardProvider = legacy_provider.Provider.of<DashboardProvider>(context, listen: false);
+    final dashboardProvider =
+        legacy_provider.Provider.of<DashboardProvider>(context, listen: false);
 
     return PosScaffold(
       title: AppLocalizations.t(context, 'overview'),
@@ -56,11 +59,20 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
                 height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.8),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .secondaryContainer
+                      .withValues(alpha: 0.8),
                   borderRadius: AppRadius.borderMd,
-                  border: Border.all(color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.1)),
+                  border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSecondaryContainer
+                          .withValues(alpha: 0.1)),
                 ),
-                child: Icon(Icons.speed, size: AppIconography.md, color: Theme.of(context).colorScheme.onSecondaryContainer),
+                child: Icon(Icons.speed,
+                    size: AppIconography.md,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer),
               ),
             ),
           ),
@@ -68,16 +80,18 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
       mainContent: reportingState.isComputing && stats == null
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: () => ref.read(reportingProvider.notifier).computeStats(),
+              onRefresh: () =>
+                  ref.read(reportingProvider.notifier).computeStats(),
               child: CustomScrollView(
                 slivers: [
                   SliverPadding(
-                    padding: EdgeInsets.all(AppDensityProvider.configOf(context).cardPadding),
+                    padding: EdgeInsets.all(
+                        AppDensityProvider.configOf(context).cardPadding),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         if (reportingState.smartInsights.isNotEmpty)
-                          _buildInsightsCarousel(context, reportingState.smartInsights),
-                        
+                          _buildInsightsCarousel(
+                              context, reportingState.smartInsights),
                         const SizedBox(height: AppSpacing.lg),
                       ]),
                     ),
@@ -85,16 +99,19 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
 
                   // 1. KPI Grid
                   SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: AppDensityProvider.configOf(context).cardPadding),
+                    padding: EdgeInsets.symmetric(
+                        horizontal:
+                            AppDensityProvider.configOf(context).cardPadding),
                     sliver: _buildKpiSliverGrid(context, stats),
                   ),
 
                   SliverPadding(
-                    padding: EdgeInsets.all(AppDensityProvider.configOf(context).cardPadding),
+                    padding: EdgeInsets.all(
+                        AppDensityProvider.configOf(context).cardPadding),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         const SizedBox(height: AppSpacing.xl),
-                        
+
                         // 2. Weekly Trend
                         Row(
                           children: [
@@ -108,16 +125,17 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
                             ),
                             const SizedBox(width: AppSpacing.md),
                             Text(
-                              AppLocalizations.t(context, 'sales_performance'), 
-                              style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)
-                            ),
+                                AppLocalizations.t(
+                                    context, 'sales_performance'),
+                                style: AppTypography.titleLarge
+                                    .copyWith(fontWeight: FontWeight.bold)),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.md),
                         _EnhancedTrendChart(data: stats?.weeklySales ?? []),
 
                         const SizedBox(height: AppSpacing.xl),
-                        
+
                         // 3. Top Items Leaderboard
                         Row(
                           children: [
@@ -131,13 +149,15 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
                             ),
                             const SizedBox(width: AppSpacing.md),
                             Text(
-                              AppLocalizations.t(context, 'top_selling_products'), 
-                              style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)
-                            ),
+                                AppLocalizations.t(
+                                    context, 'top_selling_products'),
+                                style: AppTypography.titleLarge
+                                    .copyWith(fontWeight: FontWeight.bold)),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.md),
-                        _buildTopItemsLeaderboard(context, stats?.topProducts ?? []),
+                        _buildTopItemsLeaderboard(
+                            context, stats?.topProducts ?? []),
 
                         const SizedBox(height: AppSpacing.xl),
                       ]),
@@ -151,8 +171,9 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
 
   Widget _buildPeriodSelector(BuildContext context, ReportPeriod current) {
     final theme = Theme.of(context);
-    final iconColor = theme.appBarTheme.foregroundColor ?? theme.textTheme.bodyLarge?.color;
-    
+    final iconColor =
+        theme.appBarTheme.foregroundColor ?? theme.textTheme.bodyLarge?.color;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: Container(
@@ -160,19 +181,26 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
         height: 40,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: (iconColor ?? AppColors.textPrimaryLight).withValues(alpha: 0.05),
+          color:
+              (iconColor ?? AppColors.textPrimaryLight).withValues(alpha: 0.05),
           borderRadius: AppRadius.borderMd,
-          border: Border.all(color: (iconColor ?? AppColors.textPrimaryLight).withValues(alpha: 0.1)),
+          border: Border.all(
+              color: (iconColor ?? AppColors.textPrimaryLight)
+                  .withValues(alpha: 0.1)),
         ),
         child: PopupMenuButton<ReportPeriod>(
-          icon: Icon(Icons.calendar_today_rounded, size: AppIconography.md, color: iconColor),
+          icon: Icon(Icons.calendar_today_rounded,
+              size: AppIconography.md, color: iconColor),
           padding: EdgeInsets.zero,
           initialValue: current,
-          onSelected: (period) => ref.read(reportingProvider.notifier).setPeriod(period),
-          itemBuilder: (context) => ReportPeriod.values.map((p) => PopupMenuItem(
-            value: p,
-            child: Text(p.toString().split('.').last.toUpperCase()),
-          )).toList(),
+          onSelected: (period) =>
+              ref.read(reportingProvider.notifier).setPeriod(period),
+          itemBuilder: (context) => ReportPeriod.values
+              .map((p) => PopupMenuItem(
+                    value: p,
+                    child: Text(p.toString().split('.').last.toUpperCase()),
+                  ))
+              .toList(),
         ),
       ),
     );
@@ -188,7 +216,8 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
         itemCount: insights.length,
         itemBuilder: (context, index) => Container(
           margin: const EdgeInsets.only(right: AppSpacing.md),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
           decoration: BoxDecoration(
             color: primaryColor.withValues(alpha: 0.1),
             borderRadius: AppRadius.borderMd,
@@ -196,9 +225,12 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
           ),
           child: Row(
             children: [
-              Icon(Icons.lightbulb_outline_rounded, color: primaryColor, size: AppIconography.sm),
+              Icon(Icons.lightbulb_outline_rounded,
+                  color: primaryColor, size: AppIconography.sm),
               const SizedBox(width: AppSpacing.sm),
-              Text(insights[index], style: AppTypography.labelMedium.copyWith(color: primaryColor, fontWeight: FontWeight.bold)),
+              Text(insights[index],
+                  style: AppTypography.labelMedium.copyWith(
+                      color: primaryColor, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -209,33 +241,29 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
   Widget _buildKpiSliverGrid(BuildContext context, dynamic stats) {
     final cards = [
       _KpiData(
-        title: AppLocalizations.t(context, 'period_sales'), 
-        value: "₹${stats?.totalSales.toStringAsFixed(0) ?? '0'}", 
-        icon: Icons.payments_rounded, 
-        color: const Color(0xFF6366F1), 
-        gradient: const [Color(0xFF6366F1), Color(0xFF4F46E5)]
-      ),
+          title: AppLocalizations.t(context, 'period_sales'),
+          value: "₹${stats?.totalSales.toStringAsFixed(0) ?? '0'}",
+          icon: Icons.payments_rounded,
+          color: const Color(0xFF6366F1),
+          gradient: const [Color(0xFF6366F1), Color(0xFF4F46E5)]),
       _KpiData(
-        title: AppLocalizations.t(context, 'orders'), 
-        value: "${stats?.totalOrders ?? '0'}", 
-        icon: Icons.shopping_basket_rounded, 
-        color: const Color(0xFFF97316), 
-        gradient: const [Color(0xFFF97316), Color(0xFFEA580C)]
-      ),
+          title: AppLocalizations.t(context, 'orders'),
+          value: "${stats?.totalOrders ?? '0'}",
+          icon: Icons.shopping_basket_rounded,
+          color: const Color(0xFFF97316),
+          gradient: const [Color(0xFFF97316), Color(0xFFEA580C)]),
       _KpiData(
-        title: AppLocalizations.t(context, 'avg_order'), 
-        value: "₹${stats?.avgOrderValue.toStringAsFixed(0) ?? '0'}", 
-        icon: Icons.pie_chart_rounded, 
-        color: const Color(0xFFD946EF), 
-        gradient: const [Color(0xFFD946EF), Color(0xFF8B5CF6)]
-      ),
+          title: AppLocalizations.t(context, 'avg_order'),
+          value: "₹${stats?.avgOrderValue.toStringAsFixed(0) ?? '0'}",
+          icon: Icons.pie_chart_rounded,
+          color: const Color(0xFFD946EF),
+          gradient: const [Color(0xFFD946EF), Color(0xFF8B5CF6)]),
       _KpiData(
-        title: AppLocalizations.t(context, 'today_sales'), 
-        value: "₹${stats?.todaySales.toStringAsFixed(0) ?? '0'}", 
-        icon: Icons.today_rounded, 
-        color: const Color(0xFF10B981), 
-        gradient: const [Color(0xFF10B981), Color(0xFF059669)]
-      ),
+          title: AppLocalizations.t(context, 'today_sales'),
+          value: "₹${stats?.todaySales.toStringAsFixed(0) ?? '0'}",
+          icon: Icons.today_rounded,
+          color: const Color(0xFF10B981),
+          gradient: const [Color(0xFF10B981), Color(0xFF059669)]),
     ];
 
     final width = MediaQuery.of(context).size.width;
@@ -262,29 +290,34 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
     );
   }
 
-  Widget _buildTopItemsLeaderboard(BuildContext context, List<Map<String, dynamic>> items) {
+  Widget _buildTopItemsLeaderboard(
+      BuildContext context, List<Map<String, dynamic>> items) {
     if (items.isEmpty) {
       return AppCard(
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Text(
-              AppLocalizations.t(context, 'no_data'), 
-              style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary(context))
-            ),
-          )
-        ),
+            child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Text(AppLocalizations.t(context, 'no_data'),
+              style: AppTypography.bodyLarge
+                  .copyWith(color: AppColors.textSecondary(context))),
+        )),
       );
     }
 
-    final maxVal = items.isNotEmpty ? ((items[0]['value'] as num?)?.toDouble() ?? (items[0]['quantity'] as num?)?.toDouble() ?? 1.0) : 1.0;
+    final maxVal = items.isNotEmpty
+        ? ((items[0]['value'] as num?)?.toDouble() ??
+            (items[0]['quantity'] as num?)?.toDouble() ??
+            1.0)
+        : 1.0;
 
     return AppCard(
       child: Column(
         children: items.asMap().entries.map((entry) {
           final index = entry.key;
           final item = entry.value;
-          final double itemValue = (item['value'] as num?)?.toDouble() ?? (item['quantity'] as num?)?.toDouble() ?? 0.0;
+          final double itemValue = (item['value'] as num?)?.toDouble() ??
+              (item['quantity'] as num?)?.toDouble() ??
+              0.0;
           final double percent = maxVal > 0 ? itemValue / maxVal : 0.0;
 
           return TweenAnimationBuilder<double>(
@@ -300,10 +333,15 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
               );
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                  vertical: AppSpacing.md, horizontal: AppSpacing.md),
               decoration: BoxDecoration(
-                border: index != items.length - 1 
-                    ? Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.5))) 
+                border: index != items.length - 1
+                    ? Border(
+                        bottom: BorderSide(
+                            color: Theme.of(context)
+                                .dividerColor
+                                .withValues(alpha: 0.5)))
                     : null,
               ),
               child: Row(
@@ -313,7 +351,9 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: index == 0 ? AppColors.warning.withValues(alpha: 0.1) : AppColors.surfaceVariant(context),
+                      color: index == 0
+                          ? AppColors.warning.withValues(alpha: 0.1)
+                          : AppColors.surfaceVariant(context),
                       shape: BoxShape.rectangle,
                     ),
                     child: Center(
@@ -321,13 +361,15 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
                         "${index + 1}",
                         style: AppTypography.labelMedium.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: index == 0 ? AppColors.warning : AppColors.textSecondary(context),
+                          color: index == 0
+                              ? AppColors.warning
+                              : AppColors.textSecondary(context),
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  
+
                   // Info & Progress
                   Expanded(
                     child: Column(
@@ -338,14 +380,14 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
                           children: [
                             Text(
                               item['name'],
-                              style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+                              style: AppTypography.bodyLarge
+                                  .copyWith(fontWeight: FontWeight.w600),
                             ),
                             Text(
                               "₹${itemValue.toStringAsFixed(0)}",
                               style: AppTypography.bodyLarge.copyWith(
-                                fontWeight: FontWeight.bold, 
-                                color: AppColors.adaptivePrimary(context)
-                              ),
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.adaptivePrimary(context)),
                             ),
                           ],
                         ),
@@ -367,8 +409,14 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      index == 0 ? AppColors.adaptiveWarning(context) : AppColors.adaptivePrimary(context),
-                                      index == 0 ? AppColors.adaptiveWarning(context).withValues(alpha: 0.6) : AppColors.adaptivePrimary(context).withValues(alpha: 0.6),
+                                      index == 0
+                                          ? AppColors.adaptiveWarning(context)
+                                          : AppColors.adaptivePrimary(context),
+                                      index == 0
+                                          ? AppColors.adaptiveWarning(context)
+                                              .withValues(alpha: 0.6)
+                                          : AppColors.adaptivePrimary(context)
+                                              .withValues(alpha: 0.6),
                                     ],
                                   ),
                                   borderRadius: AppRadius.borderCircular,
@@ -388,7 +436,6 @@ class _DashboardOverviewScreenState extends ConsumerState<DashboardOverviewScree
       ),
     );
   }
-
 }
 
 class _KpiData {
@@ -399,10 +446,10 @@ class _KpiData {
   final List<Color> gradient;
 
   _KpiData({
-    required this.title, 
-    required this.value, 
-    required this.icon, 
-    required this.color, 
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
     required this.gradient,
   });
 }
@@ -423,7 +470,7 @@ class _PremiumKpiCardState extends State<_PremiumKpiCard> {
   @override
   Widget build(BuildContext context) {
     final density = AppDensityProvider.configOf(context);
-    
+
     final gradient = LinearGradient(
       colors: widget.data.gradient,
       begin: Alignment.topLeft,
@@ -526,14 +573,12 @@ class _PremiumKpiCardState extends State<_PremiumKpiCard> {
                             duration: const Duration(milliseconds: 250),
                             padding: const EdgeInsets.all(AppSpacing.sm),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(_isHovered ? 0.25 : 0.15),
+                              color: Colors.white
+                                  .withOpacity(_isHovered ? 0.25 : 0.15),
                               borderRadius: AppRadius.borderMd,
                             ),
-                            child: Icon(
-                              widget.data.icon, 
-                              color: Colors.white, 
-                              size: AppIconography.md
-                            ),
+                            child: Icon(widget.data.icon,
+                                color: Colors.white, size: AppIconography.md),
                           ),
                         ],
                       ),
@@ -584,11 +629,9 @@ class _EnhancedTrendChart extends StatelessWidget {
       return AppCard(
         height: 250,
         child: Center(
-          child: Text(
-            AppLocalizations.t(context, 'no_data'), 
-            style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary(context))
-          )
-        ),
+            child: Text(AppLocalizations.t(context, 'no_data'),
+                style: AppTypography.bodyLarge
+                    .copyWith(color: AppColors.textSecondary(context)))),
       );
     }
 
@@ -597,7 +640,8 @@ class _EnhancedTrendChart extends StatelessWidget {
 
     return AppCard(
       height: 300,
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xl, AppSpacing.lg, AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.xl, AppSpacing.lg, AppSpacing.md),
       child: LineChart(
         LineChartData(
           gridData: FlGridData(
@@ -610,8 +654,10 @@ class _EnhancedTrendChart extends StatelessWidget {
           ),
           titlesData: FlTitlesData(
             show: true,
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
@@ -648,7 +694,8 @@ class _EnhancedTrendChart extends StatelessWidget {
                     formattedText = '₹${(val / 100000).toStringAsFixed(1)}L';
                   } else if (val >= 1000) {
                     final double kVal = val / 1000;
-                    formattedText = '₹${kVal % 1 == 0 ? kVal.toInt().toString() : kVal.toStringAsFixed(1)}K';
+                    formattedText =
+                        '₹${kVal % 1 == 0 ? kVal.toInt().toString() : kVal.toStringAsFixed(1)}K';
                   } else {
                     formattedText = '₹${val.toInt()}';
                   }
@@ -673,7 +720,9 @@ class _EnhancedTrendChart extends StatelessWidget {
           lineTouchData: LineTouchData(
             handleBuiltInTouches: true,
             touchTooltipData: LineTouchTooltipData(
-              tooltipBgColor: isDark ? AppColors.surfaceVariant(context) : AppColors.surfaceLight,
+              tooltipBgColor: isDark
+                  ? AppColors.surfaceVariant(context)
+                  : AppColors.surfaceLight,
               getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                 return touchedBarSpots.map((barSpot) {
                   final flSpot = barSpot;
@@ -699,14 +748,21 @@ class _EnhancedTrendChart extends StatelessWidget {
           ),
           lineBarsData: [
             LineChartBarData(
-              spots: data.asMap().entries.map((e) => FlSpot(e.key.toDouble(), (e.value['sales'] as num?)?.toDouble() ?? 0.0)).toList(),
+              spots: data
+                  .asMap()
+                  .entries
+                  .map((e) => FlSpot(e.key.toDouble(),
+                      (e.value['sales'] as num?)?.toDouble() ?? 0.0))
+                  .toList(),
               isCurved: true,
-              gradient: LinearGradient(colors: [primaryColor, primaryColor.withValues(alpha: 0.6)]),
+              gradient: LinearGradient(
+                  colors: [primaryColor, primaryColor.withValues(alpha: 0.6)]),
               barWidth: 4,
               isStrokeCapRound: true,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                getDotPainter: (spot, percent, barData, index) =>
+                    FlDotCirclePainter(
                   radius: 4,
                   color: AppColors.surfaceLight,
                   strokeWidth: 3,
@@ -731,7 +787,3 @@ class _EnhancedTrendChart extends StatelessWidget {
     );
   }
 }
-
-
-
-

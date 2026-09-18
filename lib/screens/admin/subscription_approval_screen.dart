@@ -16,10 +16,12 @@ class SubscriptionApprovalScreen extends StatefulWidget {
   const SubscriptionApprovalScreen({super.key});
 
   @override
-  State<SubscriptionApprovalScreen> createState() => _SubscriptionApprovalScreenState();
+  State<SubscriptionApprovalScreen> createState() =>
+      _SubscriptionApprovalScreenState();
 }
 
-class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen> {
+class _SubscriptionApprovalScreenState
+    extends State<SubscriptionApprovalScreen> {
   bool _isLoading = true;
 
   @override
@@ -30,7 +32,8 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
 
   Future<void> _refresh() async {
     setState(() => _isLoading = true);
-    await Provider.of<DashboardProvider>(context, listen: false).fetchPendingSubscriptions();
+    await Provider.of<DashboardProvider>(context, listen: false)
+        .fetchPendingSubscriptions();
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -57,11 +60,20 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.mark_email_read_outlined, size: 64, color: AppColors.textSecondary(context).withValues(alpha: 0.3)),
+                      Icon(Icons.mark_email_read_outlined,
+                          size: 64,
+                          color: AppColors.textSecondary(context)
+                              .withValues(alpha: 0.3)),
                       const SizedBox(height: AppSpacing.lg),
-                      Text(AppLocalizations.t(context, 'All caught up!'), style: AppTypography.titleLarge.copyWith(color: AppColors.textSecondary(context))),
+                      Text(AppLocalizations.t(context, 'All caught up!'),
+                          style: AppTypography.titleLarge.copyWith(
+                              color: AppColors.textSecondary(context))),
                       const SizedBox(height: AppSpacing.xs),
-                      Text(AppLocalizations.t(context, 'No pending subscription requests at the moment.'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+                      Text(
+                          AppLocalizations.t(context,
+                              'No pending subscription requests at the moment.'),
+                          style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.textSecondary(context))),
                     ],
                   ),
                 )
@@ -78,7 +90,7 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
 
   Widget _buildRequestCard(BuildContext context, SubscriptionRequest req) {
     final df = DateFormat('dd MMM yyyy, hh:mm a');
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: AppCard(
@@ -95,19 +107,23 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
                     children: [
                       Text(req.storeName, style: AppTypography.titleLarge),
                       const SizedBox(height: AppSpacing.xxs),
-                      Text(req.ownerEmail, style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+                      Text(req.ownerEmail,
+                          style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.textSecondary(context))),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.zero,
                   ),
                   child: Text(
                     req.planType.toUpperCase(),
-                    style: AppTypography.labelSmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+                    style: AppTypography.labelSmall.copyWith(
+                        color: AppColors.primary, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -115,34 +131,47 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
             const SizedBox(height: AppSpacing.md),
             const Divider(),
             const SizedBox(height: AppSpacing.md),
-            
-            _buildInfoRow(Icons.calendar_month, "Billing Policy", req.billingCycle),
+            _buildInfoRow(
+                Icons.calendar_month, "Billing Policy", req.billingCycle),
             _buildInfoRow(Icons.payments, "Amount Paid", "₹${req.amount}"),
-            _buildInfoRow(Icons.access_time, "Requested On", df.format(req.createdAt)),
-            
+            _buildInfoRow(
+                Icons.access_time, "Requested On", df.format(req.createdAt)),
             const SizedBox(height: AppSpacing.md),
-            Text(AppLocalizations.t(context, 'REQUESTED ADD-ONS'), style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context), fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.t(context, 'REQUESTED ADD-ONS'),
+                style: AppTypography.labelSmall.copyWith(
+                    color: AppColors.textSecondary(context),
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: AppSpacing.xs),
             if (req.selectedAddons.isEmpty)
-              Text(AppLocalizations.t(context, 'None (Base Plan Only)'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context), fontStyle: FontStyle.italic))
+              Text(AppLocalizations.t(context, 'None (Base Plan Only)'),
+                  style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textSecondary(context),
+                      fontStyle: FontStyle.italic))
             else
               Wrap(
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
-                children: req.selectedAddons.map((addonKey) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.zero,
-                    border: Border.all(color: AppColors.secondary.withValues(alpha: 0.2)),
-                  ),
-                  child: Text(
-                    addonKey.replaceAll('_', ' ').toUpperCase(),
-                    style: AppTypography.labelSmall.copyWith(color: AppColors.secondary, fontWeight: FontWeight.bold),
-                  ),
-                )).toList(),
+                children: req.selectedAddons
+                    .map((addonKey) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: AppSpacing.xs),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.zero,
+                            border: Border.all(
+                                color:
+                                    AppColors.secondary.withValues(alpha: 0.2)),
+                          ),
+                          child: Text(
+                            addonKey.replaceAll('_', ' ').toUpperCase(),
+                            style: AppTypography.labelSmall.copyWith(
+                                color: AppColors.secondary,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ))
+                    .toList(),
               ),
-              
             const SizedBox(height: AppSpacing.lg),
             Row(
               children: [
@@ -173,10 +202,16 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.textSecondary(context).withValues(alpha: 0.5)),
+          Icon(icon,
+              size: 16,
+              color: AppColors.textSecondary(context).withValues(alpha: 0.5)),
           const SizedBox(width: AppSpacing.sm),
-          Text("$label: ", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
-          Text(value, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w500)),
+          Text("$label: ",
+              style: AppTypography.bodyMedium
+                  .copyWith(color: AppColors.textSecondary(context))),
+          Text(value,
+              style: AppTypography.bodyMedium
+                  .copyWith(fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -189,25 +224,30 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(approve ? "Approve Subscription?" : "Reject Subscription?", style: AppTypography.titleLarge),
-        content: Text(approve 
-          ? "This will activate the Standard plan for ${req.storeName}. Please ensure payment is verified." 
-          : "Are you sure you want to reject this request?",
-          style: AppTypography.bodyMedium),
+        title: Text(approve ? "Approve Subscription?" : "Reject Subscription?",
+            style: AppTypography.titleLarge),
+        content: Text(
+            approve
+                ? "This will activate the Standard plan for ${req.storeName}. Please ensure payment is verified."
+                : "Are you sure you want to reject this request?",
+            style: AppTypography.bodyMedium),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(AppLocalizations.t(context, 'CANCEL'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+            child: Text(AppLocalizations.t(context, 'CANCEL'),
+                style: AppTypography.bodyMedium
+                    .copyWith(color: AppColors.textSecondary(context))),
           ),
           AppButton(
             label: approve ? "CONFIRM" : "REJECT",
             onPressed: () => Navigator.pop(ctx, true),
-            variant: approve ? AppButtonVariant.primary : AppButtonVariant.outline,
+            variant:
+                approve ? AppButtonVariant.primary : AppButtonVariant.outline,
           ),
         ],
       ),
     );
- 
+
     if (confirm == true) {
       if (!mounted) return;
       setState(() => _isLoading = true);
@@ -217,16 +257,19 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
         } else {
           await provider.rejectSubscriptionRequest(req);
         }
-        
+
         if (!mounted) return;
         messenger.showSnackBar(SnackBar(
-          content: Text(approve ? "Subscription Approved!" : "Subscription Rejected", style: const TextStyle(color: AppColors.surfaceLight)), 
+          content: Text(
+              approve ? "Subscription Approved!" : "Subscription Rejected",
+              style: const TextStyle(color: AppColors.surfaceLight)),
           backgroundColor: approve ? AppColors.success : AppColors.error,
         ));
       } catch (e) {
         if (mounted) {
           messenger.showSnackBar(SnackBar(
-            content: Text("Error: $e", style: const TextStyle(color: AppColors.surfaceLight)),
+            content: Text("Error: $e",
+                style: const TextStyle(color: AppColors.surfaceLight)),
             backgroundColor: AppColors.error,
           ));
         }
@@ -238,7 +281,3 @@ class _SubscriptionApprovalScreenState extends State<SubscriptionApprovalScreen>
     }
   }
 }
-
-
-
-

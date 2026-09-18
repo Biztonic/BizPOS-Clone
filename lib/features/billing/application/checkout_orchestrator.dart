@@ -122,9 +122,8 @@ class CheckoutOrchestrator {
 
     // ─── Step 4: Enrich Order with Metadata ─────────────────
     final now = DateTime.now();
-    final orderId = params.order.id.isNotEmpty
-        ? params.order.id
-        : _generateId('ORD');
+    final orderId =
+        params.order.id.isNotEmpty ? params.order.id : _generateId('ORD');
     final businessDayId =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${params.activeStoreId}';
 
@@ -184,7 +183,8 @@ class CheckoutOrchestrator {
           if (raw != null && raw is Map) {
             final itemData = Map<String, dynamic>.from(raw);
             final currentQty = (itemData['quantity'] as num?)?.toInt() ?? 0;
-            itemData['quantity'] = max(0, currentQty + m.delta); // m.delta is negative
+            itemData['quantity'] =
+                max(0, currentQty + m.delta); // m.delta is negative
             await invBox.put(m.itemId, itemData);
           }
         }
@@ -203,7 +203,8 @@ class CheckoutOrchestrator {
         );
       } else {
         // WEB: Standard Repository Write
-        final insertResult = await _billingRepository.insertOrder(enrichedOrder);
+        final insertResult =
+            await _billingRepository.insertOrder(enrichedOrder);
         if (!insertResult.isSuccess) {
           return CheckoutResult.failure(insertResult.error);
         }

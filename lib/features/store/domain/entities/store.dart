@@ -12,7 +12,7 @@ class Store {
   final List<String> purchasedAddons; // NEW
   final DateTime? subscriptionExpiry; // NEW
   final bool autoActivateSubscription;
-  
+
   final String? shortCode;
   final String? franchiseId;
   final String? franchiseName;
@@ -36,7 +36,7 @@ class Store {
     required this.ownerEmail,
     required this.status,
     required this.storeType,
-    this.subscriptionPlan = 'Basic', 
+    this.subscriptionPlan = 'Basic',
     this.addons = const [], // Default empty
     this.purchasedAddons = const [], // NEW
     this.subscriptionExpiry, // NEW
@@ -52,8 +52,14 @@ class Store {
     this.gstin,
     required this.receipt,
     required this.payment,
-    required this.kds, 
-    this.customRoles = const ['Cashier', 'Manager', 'Kitchen Staff', 'Waiter', 'Inventory Clerk'],
+    required this.kds,
+    this.customRoles = const [
+      'Cashier',
+      'Manager',
+      'Kitchen Staff',
+      'Waiter',
+      'Inventory Clerk'
+    ],
     this.rolePermissions = const {},
     this.autoActivateSubscription = true,
   });
@@ -67,8 +73,14 @@ class Store {
       status: data['status'] ?? 'Active',
       storeType: data['storeType'] ?? 'Restaurant',
       subscriptionPlan: data['subscriptionPlan'] ?? 'Basic',
-      addons: (data['addons'] as List<dynamic>?)?.map((e) => e?.toString() ?? '').toList() ?? [],
-      purchasedAddons: (data['purchasedAddons'] as List<dynamic>?)?.map((e) => e?.toString() ?? '').toList() ?? [],
+      addons: (data['addons'] as List<dynamic>?)
+              ?.map((e) => e?.toString() ?? '')
+              .toList() ??
+          [],
+      purchasedAddons: (data['purchasedAddons'] as List<dynamic>?)
+              ?.map((e) => e?.toString() ?? '')
+              .toList() ??
+          [],
       subscriptionExpiry: _parseDateTime(data['subscriptionExpiry']),
       shortCode: data['shortCode'],
       franchiseId: data['franchiseId'],
@@ -83,8 +95,16 @@ class Store {
       receipt: ReceiptSettings.fromMap(data['receipt'] ?? {}),
       payment: PaymentSettings.fromMap(data['payment'] ?? {}),
       kds: KdsSettings.fromMap(data['kds'] ?? {}),
-      customRoles: (data['customRoles'] as List<dynamic>?)?.map((e) => e?.toString() ?? '').toList() 
-          ?? const ['Cashier', 'Manager', 'Kitchen Staff', 'Waiter', 'Inventory Clerk'],
+      customRoles: (data['customRoles'] as List<dynamic>?)
+              ?.map((e) => e?.toString() ?? '')
+              .toList() ??
+          const [
+            'Cashier',
+            'Manager',
+            'Kitchen Staff',
+            'Waiter',
+            'Inventory Clerk'
+          ],
       rolePermissions: _parseRolePermissions(data['rolePermissions']),
       autoActivateSubscription: data['autoActivateSubscription'] ?? true,
     );
@@ -168,7 +188,7 @@ class Store {
     String? gstin,
     ReceiptSettings? receipt,
     PaymentSettings? payment,
-    KdsSettings? kds, 
+    KdsSettings? kds,
     List<String>? customRoles,
     Map<String, Map<String, bool>>? rolePermissions,
     bool? autoActivateSubscription,
@@ -196,11 +216,11 @@ class Store {
       gstin: gstin ?? this.gstin,
       receipt: receipt ?? this.receipt,
       payment: payment ?? this.payment,
-      kds: kds ?? this.kds, 
+      kds: kds ?? this.kds,
       customRoles: customRoles ?? this.customRoles,
       rolePermissions: rolePermissions ?? this.rolePermissions,
-      autoActivateSubscription: autoActivateSubscription ?? this.autoActivateSubscription,
+      autoActivateSubscription:
+          autoActivateSubscription ?? this.autoActivateSubscription,
     );
   }
 }
-

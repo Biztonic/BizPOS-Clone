@@ -5,14 +5,16 @@ class PrinterLogService {
   factory PrinterLogService() => _instance;
   PrinterLogService._internal();
 
-  final StreamController<String> _logController = StreamController<String>.broadcast();
+  final StreamController<String> _logController =
+      StreamController<String>.broadcast();
   Stream<String> get logStream => _logController.stream;
 
   final List<String> _logs = [];
   List<String> get logs => List.unmodifiable(_logs);
 
   void log(String message) {
-    final timestamp = DateTime.now().toIso8601String().split('T').last.split('.').first;
+    final timestamp =
+        DateTime.now().toIso8601String().split('T').last.split('.').first;
     final logMessage = "[$timestamp] $message";
     _logs.add(logMessage);
     // Keep only last 100 logs

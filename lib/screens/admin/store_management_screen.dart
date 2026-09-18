@@ -71,8 +71,6 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppColors.isDark(context);
-
     return PosScaffold(
       title: 'Store Management',
       actions: [
@@ -97,7 +95,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
         children: [
           // Tab Selection Segment
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg, vertical: AppSpacing.md),
             child: Row(
               children: [
                 ChoiceChip(
@@ -134,7 +133,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
 
                           // Toolbar
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.lg),
                             child: _buildToolbar(context),
                           ),
                           const SizedBox(height: AppSpacing.sm),
@@ -146,19 +146,28 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.store_outlined, size: 64, color: AppColors.textHint(context)),
+                                        Icon(Icons.store_outlined,
+                                            size: 64,
+                                            color: AppColors.textHint(context)),
                                         const SizedBox(height: AppSpacing.md),
                                         Text(
-                                          AppLocalizations.t(context, 'No stores found'),
-                                          style: AppTypography.titleMedium.copyWith(color: AppColors.textSecondary(context)),
+                                          AppLocalizations.t(
+                                              context, 'No stores found'),
+                                          style: AppTypography.titleMedium
+                                              .copyWith(
+                                                  color:
+                                                      AppColors.textSecondary(
+                                                          context)),
                                         ),
                                       ],
                                     ),
                                   )
                                 : ListView.builder(
-                                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.lg),
                                     itemCount: _filteredStores.length,
-                                    itemBuilder: (context, index) => _buildStoreCard(_filteredStores[index]),
+                                    itemBuilder: (context, index) =>
+                                        _buildStoreCard(_filteredStores[index]),
                                   ),
                           ),
                         ],
@@ -173,8 +182,10 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
     return Row(
       children: [
         Checkbox(
-          value: _filteredStores.isNotEmpty && _selectedStoreIds.length == _filteredStores.length,
-          tristate: _selectedStoreIds.isNotEmpty && _selectedStoreIds.length < _filteredStores.length,
+          value: _filteredStores.isNotEmpty &&
+              _selectedStoreIds.length == _filteredStores.length,
+          tristate: _selectedStoreIds.isNotEmpty &&
+              _selectedStoreIds.length < _filteredStores.length,
           onChanged: (val) {
             setState(() {
               if (val == true) {
@@ -194,7 +205,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
               hintText: "Search by name or owner...",
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(borderRadius: AppRadius.borderSm),
-              contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             ),
           ),
         ),
@@ -250,7 +262,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
             });
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
               borderRadius: AppRadius.borderSm,
               border: Border.all(
@@ -282,7 +295,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: AppRadius.borderSm,
                   ),
-                  child: const Icon(Icons.store_rounded, color: AppColors.primary, size: 20),
+                  child: const Icon(Icons.store_rounded,
+                      color: AppColors.primary, size: 20),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 // Store info
@@ -290,9 +304,13 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(store.name, style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w600)),
+                      Text(store.name,
+                          style: AppTypography.titleSmall
+                              .copyWith(fontWeight: FontWeight.w600)),
                       const SizedBox(height: 2),
-                      Text(store.owner, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+                      Text(store.owner,
+                          style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textSecondary(context))),
                     ],
                   ),
                 ),
@@ -306,7 +324,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
                   tooltip: 'Edit Store',
                 ),
                 IconButton(
-                  icon: Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+                  icon: Icon(Icons.delete_outline,
+                      size: 20, color: AppColors.error),
                   onPressed: () => _confirmDelete(store),
                   tooltip: 'Delete Store',
                 ),
@@ -325,16 +344,23 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
 
     return Row(
       children: [
-        Expanded(child: _buildStatCard("Total Stores", "$total", Icons.store_outlined, AppColors.primary)),
+        Expanded(
+            child: _buildStatCard("Total Stores", "$total",
+                Icons.store_outlined, AppColors.primary)),
         const SizedBox(width: AppSpacing.md),
-        Expanded(child: _buildStatCard("Active", "$active", Icons.check_circle_outline, AppColors.success)),
+        Expanded(
+            child: _buildStatCard("Active", "$active",
+                Icons.check_circle_outline, AppColors.success)),
         const SizedBox(width: AppSpacing.md),
-        Expanded(child: _buildStatCard("Inactive", "$inactive", Icons.pause_circle_outline, AppColors.warning)),
+        Expanded(
+            child: _buildStatCard("Inactive", "$inactive",
+                Icons.pause_circle_outline, AppColors.warning)),
       ],
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -357,8 +383,12 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: AppTypography.labelMedium.copyWith(color: AppColors.textSecondary(context))),
-              Text(value, style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.bold)),
+              Text(label,
+                  style: AppTypography.labelMedium
+                      .copyWith(color: AppColors.textSecondary(context))),
+              Text(value,
+                  style: AppTypography.headlineSmall
+                      .copyWith(fontWeight: FontWeight.bold)),
             ],
           ),
         ],
@@ -379,12 +409,15 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
         color = AppColors.secondary;
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: AppRadius.borderXs,
       ),
-      child: Text(status, style: AppTypography.labelSmall.copyWith(color: color, fontWeight: FontWeight.w600)),
+      child: Text(status,
+          style: AppTypography.labelSmall
+              .copyWith(color: color, fontWeight: FontWeight.w600)),
     );
   }
 
@@ -395,11 +428,13 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
         title: const Text('Delete Store'),
         content: Text("Are you sure you want to delete ${store.name}?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           AppButton.danger(
             onPressed: () async {
               Navigator.pop(ctx);
-              final provider = Provider.of<DashboardProvider>(context, listen: false);
+              final provider =
+                  Provider.of<DashboardProvider>(context, listen: false);
               await provider.deleteStore(store.id);
               _loadStores();
             },
@@ -417,12 +452,14 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
         title: const Text('Bulk Delete'),
         content: Text("Delete ${_selectedStoreIds.length} selected stores?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           AppButton.danger(
             onPressed: () async {
               Navigator.pop(ctx);
               setState(() => _isBulkDeleting = true);
-              final provider = Provider.of<DashboardProvider>(context, listen: false);
+              final provider =
+                  Provider.of<DashboardProvider>(context, listen: false);
               for (var id in _selectedStoreIds.toList()) {
                 await provider.deleteStore(id);
               }
@@ -441,11 +478,12 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
     final nameController = TextEditingController();
     final ownerController = TextEditingController();
     final dashboard = Provider.of<DashboardProvider>(context, listen: false);
-    final List<String> availableStoreTypes = dashboard.storeTypeConfigs.keys.isNotEmpty 
-        ? dashboard.storeTypeConfigs.keys.toList() 
-        : ['Restaurant', 'Grocery', 'Supermarket', 'Retail'];
-    String selectedStoreType = availableStoreTypes.contains('Restaurant') 
-        ? 'Restaurant' 
+    final List<String> availableStoreTypes =
+        dashboard.storeTypeConfigs.keys.isNotEmpty
+            ? dashboard.storeTypeConfigs.keys.toList()
+            : ['Restaurant', 'Grocery', 'Supermarket', 'Retail'];
+    String selectedStoreType = availableStoreTypes.contains('Restaurant')
+        ? 'Restaurant'
         : availableStoreTypes.first;
 
     showDialog(
@@ -461,21 +499,25 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: "Store Name", hintText: "e.g. Downtown POS"),
+                  decoration: const InputDecoration(
+                      labelText: "Store Name", hintText: "e.g. Downtown POS"),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: ownerController,
-                  decoration: const InputDecoration(labelText: "Owner Email", hintText: "owner@example.com"),
+                  decoration: const InputDecoration(
+                      labelText: "Owner Email", hintText: "owner@example.com"),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 DropdownButtonFormField<String>(
                   value: selectedStoreType,
                   decoration: const InputDecoration(labelText: "Store Type"),
-                  items: availableStoreTypes.map((type) => DropdownMenuItem(
-                    value: type,
-                    child: Text(type),
-                  )).toList(),
+                  items: availableStoreTypes
+                      .map((type) => DropdownMenuItem(
+                            value: type,
+                            child: Text(type),
+                          ))
+                      .toList(),
                   onChanged: (val) {
                     if (val != null) {
                       setDialogState(() {
@@ -487,15 +529,21 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel')),
               AppButton.primary(
                 isLoading: isSubmitting,
                 onPressed: () async {
-                  if (nameController.text.isEmpty || ownerController.text.isEmpty) return;
+                  if (nameController.text.isEmpty ||
+                      ownerController.text.isEmpty) return;
                   setDialogState(() => isSubmitting = true);
                   try {
-                    final provider = Provider.of<DashboardProvider>(context, listen: false);
-                    await provider.addStore(nameController.text, ownerController.text, storeType: selectedStoreType);
+                    final provider =
+                        Provider.of<DashboardProvider>(context, listen: false);
+                    await provider.addStore(
+                        nameController.text, ownerController.text,
+                        storeType: selectedStoreType);
                     if (ctx.mounted) Navigator.pop(ctx);
                     _loadStores();
                   } finally {
@@ -515,8 +563,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
     final dashboard = Provider.of<DashboardProvider>(context);
     final configs = dashboard.storeTypeConfigs;
 
-    final List<String> types = configs.keys.isNotEmpty 
-        ? configs.keys.toList() 
+    final List<String> types = configs.keys.isNotEmpty
+        ? configs.keys.toList()
         : ['Restaurant', 'Grocery', 'Supermarket', 'Retail'];
 
     return Column(
@@ -528,7 +576,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
             children: [
               Text(
                 'Define Store Types & Features',
-                style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
+                style: AppTypography.titleLarge
+                    .copyWith(fontWeight: FontWeight.bold),
               ),
               AppButton.primary(
                 icon: Icons.add,
@@ -542,12 +591,13 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
           child: types.isEmpty
               ? const Center(child: Text('No store types defined.'))
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   itemCount: types.length,
                   itemBuilder: (context, index) {
                     final type = types[index];
-                    final Map<String, dynamic> config = configs[type] is Map 
-                        ? Map<String, dynamic>.from(configs[type]) 
+                    final Map<String, dynamic> config = configs[type] is Map
+                        ? Map<String, dynamic>.from(configs[type])
                         : _getDefaultConfigFor(type);
 
                     return AppCard(
@@ -570,14 +620,22 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
                                     const SizedBox(width: AppSpacing.sm),
                                     Text(
                                       type,
-                                      style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                                      style: AppTypography.titleMedium.copyWith(
+                                          fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),
-                                if (!['Restaurant', 'Grocery', 'Supermarket', 'Retail'].contains(type))
+                                if (![
+                                  'Restaurant',
+                                  'Grocery',
+                                  'Supermarket',
+                                  'Retail'
+                                ].contains(type))
                                   IconButton(
-                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                    onPressed: () => _confirmDeleteStoreType(type),
+                                    icon: const Icon(Icons.delete_outline,
+                                        color: Colors.redAccent),
+                                    onPressed: () =>
+                                        _confirmDeleteStoreType(type),
                                     tooltip: 'Delete Custom Store Type',
                                   ),
                               ],
@@ -587,20 +645,46 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
                             const SizedBox(height: AppSpacing.sm),
                             Text(
                               'Feature Access Permissions',
-                              style: AppTypography.labelMedium.copyWith(color: AppColors.textSecondary(context)),
+                              style: AppTypography.labelMedium.copyWith(
+                                  color: AppColors.textSecondary(context)),
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Wrap(
                               spacing: AppSpacing.md,
                               runSpacing: AppSpacing.sm,
                               children: [
-                                _buildFeatureSwitch(type, config, 'table_reservation', 'Table Management (Floor Plans)'),
-                                _buildFeatureSwitch(type, config, 'barcode_scanner', 'Barcode Scanner & Scales'),
-                                _buildFeatureSwitch(type, config, 'kds_management', 'Kitchen Display System (KDS)'),
-                                _buildFeatureSwitch(type, config, 'customer_management', 'CRM & Customer Management'),
-                                _buildFeatureSwitch(type, config, 'employee_management', 'Employee Roles & Staff Shift'),
-                                _buildFeatureSwitch(type, config, 'supplier_management', 'Supplier Ledger & Orders'),
-                                _buildFeatureSwitch(type, config, 'data_center', 'Offline Data Center Sync'),
+                                _buildFeatureSwitch(
+                                    type,
+                                    config,
+                                    'table_reservation',
+                                    'Table Management (Floor Plans)'),
+                                _buildFeatureSwitch(
+                                    type,
+                                    config,
+                                    'barcode_scanner',
+                                    'Barcode Scanner & Scales'),
+                                _buildFeatureSwitch(
+                                    type,
+                                    config,
+                                    'kds_management',
+                                    'Kitchen Display System (KDS)'),
+                                _buildFeatureSwitch(
+                                    type,
+                                    config,
+                                    'customer_management',
+                                    'CRM & Customer Management'),
+                                _buildFeatureSwitch(
+                                    type,
+                                    config,
+                                    'employee_management',
+                                    'Employee Roles & Staff Shift'),
+                                _buildFeatureSwitch(
+                                    type,
+                                    config,
+                                    'supplier_management',
+                                    'Supplier Ledger & Orders'),
+                                _buildFeatureSwitch(type, config, 'data_center',
+                                    'Offline Data Center Sync'),
                               ],
                             ),
                           ],
@@ -649,13 +733,16 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
   }
 
   IconData _getIconForType(String type) {
-    if (type.contains('Restaurant') || type.contains('Cafe')) return Icons.restaurant;
-    if (type.contains('Grocery') || type.contains('Supermarket')) return Icons.local_grocery_store;
+    if (type.contains('Restaurant') || type.contains('Cafe'))
+      return Icons.restaurant;
+    if (type.contains('Grocery') || type.contains('Supermarket'))
+      return Icons.local_grocery_store;
     if (type.contains('Automotive')) return Icons.directions_car;
     return Icons.storefront;
   }
 
-  Widget _buildFeatureSwitch(String type, Map<String, dynamic> config, String key, String label) {
+  Widget _buildFeatureSwitch(
+      String type, Map<String, dynamic> config, String key, String label) {
     final isEnabled = config[key] == true;
     return SizedBox(
       width: 280,
@@ -669,7 +756,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
           if (val != null) {
             final updated = Map<String, dynamic>.from(config);
             updated[key] = val;
-            Provider.of<DashboardProvider>(context, listen: false).saveStoreTypeConfig(type, updated);
+            Provider.of<DashboardProvider>(context, listen: false)
+                .saveStoreTypeConfig(type, updated);
           }
         },
       ),
@@ -708,7 +796,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
                   'supplier_management': false,
                   'data_center': false,
                 };
-                Provider.of<DashboardProvider>(context, listen: false).saveStoreTypeConfig(type, initial);
+                Provider.of<DashboardProvider>(context, listen: false)
+                    .saveStoreTypeConfig(type, initial);
                 Navigator.pop(ctx);
               }
             },
@@ -724,7 +813,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Store Type'),
-        content: Text('Are you sure you want to delete the store type "$type"?'),
+        content:
+            Text('Are you sure you want to delete the store type "$type"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -732,7 +822,8 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
           ),
           AppButton.danger(
             onPressed: () {
-              Provider.of<DashboardProvider>(context, listen: false).deleteStoreTypeConfig(type);
+              Provider.of<DashboardProvider>(context, listen: false)
+                  .deleteStoreTypeConfig(type);
               Navigator.pop(ctx);
             },
             label: 'Delete',

@@ -1,4 +1,4 @@
-﻿// ignore_for_file: deprecated_member_use_from_same_package
+// ignore_for_file: deprecated_member_use_from_same_package
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:biztonic_pos/models/inventory_item.dart';
@@ -69,7 +69,8 @@ void main() {
     test('should correctly serialize to Hive Map', () {
       final hiveMap = testItem.toHiveMap();
       expect(hiveMap['id'], 'item_123');
-      expect(hiveMap['expiryDate'], isA<String>()); // Hive stores dates as ISO strings
+      expect(hiveMap['expiryDate'],
+          isA<String>()); // Hive stores dates as ISO strings
       expect(hiveMap['expiryDate'], '2025-12-31T00:00:00.000');
     });
 
@@ -87,7 +88,7 @@ void main() {
 
       final map = itemNoExpiry.toMap();
       expect(map['expiryDate'], null);
-      
+
       final hiveMap = itemNoExpiry.toHiveMap();
       expect(hiveMap['expiryDate'], null);
     });

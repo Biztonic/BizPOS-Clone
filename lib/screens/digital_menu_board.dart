@@ -15,7 +15,11 @@ class DigitalMenuBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DashboardProvider>(context);
-    final inventory = provider.storeInventory.where((i) => i.status == 'In Stock' && (!i.trackStock || provider.getItemStock(i.id) > 0)).toList();
+    final inventory = provider.storeInventory
+        .where((i) =>
+            i.status == 'In Stock' &&
+            (!i.trackStock || provider.getItemStock(i.id) > 0))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.textPrimaryLight,
@@ -34,9 +38,18 @@ class DigitalMenuBoard extends StatelessWidget {
               child: Column(
                 children: [
                   const SizedBox(height: AppSpacing.xxs),
-                  const CircleAvatar(radius: 40, backgroundColor: AppColors.warning, child: Icon(Icons.restaurant, size: 40, color: AppColors.textPrimaryLight)),
+                  const CircleAvatar(
+                      radius: 40,
+                      backgroundColor: AppColors.warning,
+                      child: Icon(Icons.restaurant,
+                          size: 40, color: AppColors.textPrimaryLight)),
                   const SizedBox(height: AppSpacing.xxs),
-                  Text(provider.activeStore?.name ?? "Menu", style: const TextStyle(color: AppColors.surfaceLight, fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  Text(provider.activeStore?.name ?? "Menu",
+                      style: const TextStyle(
+                          color: AppColors.surfaceLight,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center),
                   const SizedBox(height: AppSpacing.xs),
                   // Categories can go here
                   _buildCategoryItem("All Items", true),
@@ -62,29 +75,35 @@ class DigitalMenuBoard extends StatelessWidget {
                 final item = inventory[index];
                 return Container(
                   decoration: BoxDecoration(
-                    color: AppColors.textSecondary(context),
-                    borderRadius: BorderRadius.zero,
-                    image: DecorationImage(
-                      image: InventoryImageWidget.getImageProvider(item),
-                      fit: BoxFit.cover,
-                      opacity: 0.4
-                    )
-                  ),
+                      color: AppColors.textSecondary(context),
+                      borderRadius: BorderRadius.zero,
+                      image: DecorationImage(
+                          image: InventoryImageWidget.getImageProvider(item),
+                          fit: BoxFit.cover,
+                          opacity: 0.4)),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [AppColors.textPrimaryLight, AppColors.textPrimaryLight.withValues(alpha: 0.0)], begin: Alignment.bottomCenter, end: Alignment.topCenter)
-                        ),
+                            gradient: LinearGradient(
+                                colors: [
+                              AppColors.textPrimaryLight,
+                              AppColors.textPrimaryLight.withValues(alpha: 0.0)
+                            ],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter)),
                         width: double.infinity,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              item.name, 
-                              style: const TextStyle(color: AppColors.surfaceLight, fontSize: 20, fontWeight: FontWeight.bold),
+                              item.name,
+                              style: const TextStyle(
+                                  color: AppColors.surfaceLight,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -94,17 +113,20 @@ class DigitalMenuBoard extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    item.category, 
-                                    style: TextStyle(color: AppColors.textSecondary(context)),
+                                    item.category,
+                                    style: TextStyle(
+                                        color:
+                                            AppColors.textSecondary(context)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 const SizedBox(width: AppSpacing.sm),
-                                Text(
-                                  "₹${item.price}", 
-                                  style: const TextStyle(color: AppColors.warning, fontSize: 24, fontWeight: FontWeight.bold)
-                                ),
+                                Text("₹${item.price}",
+                                    style: const TextStyle(
+                                        color: AppColors.warning,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold)),
                               ],
                             )
                           ],
@@ -124,20 +146,16 @@ class DigitalMenuBoard extends StatelessWidget {
   Widget _buildCategoryItem(String title, bool isSelected) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.md, horizontal: AppSpacing.lg),
       color: isSelected ? AppColors.warning : AppColors.transparent,
-      child: Text(
-        title, 
-        style: TextStyle(
-          color: isSelected ? AppColors.textPrimaryLight : AppColors.surfaceLight, 
-          fontWeight: FontWeight.bold, 
-          fontSize: 18
-        )
-      ),
+      child: Text(title,
+          style: TextStyle(
+              color: isSelected
+                  ? AppColors.textPrimaryLight
+                  : AppColors.surfaceLight,
+              fontWeight: FontWeight.bold,
+              fontSize: 18)),
     );
   }
 }
-
-
-
-

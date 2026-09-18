@@ -22,7 +22,8 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
+class _DashboardScreenState extends State<DashboardScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -30,9 +31,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-       UpdateService.checkUpdate(context);
-       _checkSubscriptionReminder();
-       _checkEmiReminders();
+      UpdateService.checkUpdate(context);
+      _checkSubscriptionReminder();
+      _checkEmiReminders();
     });
   }
 
@@ -40,7 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     for (var hw in provider.storeHardwares) {
       if (hw.status != 'Assigned') continue;
-      
+
       final daysOverdue = DateTime.now().difference(hw.nextEmiDueDate).inDays;
       // Trigger logic based on daysOverdue
       if (daysOverdue >= -2) {
@@ -50,7 +51,8 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         // Show popup
         showDialog(
           context: context,
-          builder: (context) => EmiReminderPopup(hardware: hw, daysOverdue: daysOverdue),
+          builder: (context) =>
+              EmiReminderPopup(hardware: hw, daysOverdue: daysOverdue),
         );
       }
     }
@@ -65,10 +67,11 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.detached) {
-       final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
-       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-       dashboardProvider.clearSession();
-       authProvider.signOut();
+      final dashboardProvider =
+          Provider.of<DashboardProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      dashboardProvider.clearSession();
+      authProvider.signOut();
     }
   }
 
@@ -81,26 +84,30 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        
+
         dashboardProvider.clearSession();
         authProvider.signOut();
 
         if (Theme.of(context).platform == TargetPlatform.android) {
-           Future.delayed(const Duration(milliseconds: 200), () => SystemNavigator.pop());
+          Future.delayed(
+              const Duration(milliseconds: 200), () => SystemNavigator.pop());
         } else {
-           SystemNavigator.pop();
+          SystemNavigator.pop();
         }
       },
       child: dashboardProvider.isInitialSyncing
           ? _buildInitialSyncScreen(context, dashboardProvider)
-          : (dashboardProvider.activeStoreId == null && !dashboardProvider.isLoading) && 
-                 !(dashboardProvider.userProfile?.role == 'Super Admin' && dashboardProvider.isDeveloperMode)
+          : (dashboardProvider.activeStoreId == null &&
+                      !dashboardProvider.isLoading) &&
+                  !(dashboardProvider.userProfile?.role == 'Super Admin' &&
+                      dashboardProvider.isDeveloperMode)
               ? _buildStoreSelectionScreen(context, dashboardProvider)
               : widget.child,
     );
   }
 
-  Widget _buildInitialSyncScreen(BuildContext context, DashboardProvider provider) {
+  Widget _buildInitialSyncScreen(
+      BuildContext context, DashboardProvider provider) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = AppColors.primary;
     final progress = provider.initialSyncProgress;
@@ -110,9 +117,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: isDark 
-              ? [const Color(0xFF0F172A), const Color(0xFF1E293B)] 
-              : [const Color(0xFFF8FAFC), const Color(0xFFF1F5F9)],
+            colors: isDark
+                ? [const Color(0xFF0F172A), const Color(0xFF1E293B)]
+                : [const Color(0xFFF8FAFC), const Color(0xFFF1F5F9)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -126,7 +133,6 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
               children: [
                 _PulsingStoreIcon(color: primaryColor),
                 const SizedBox(height: AppSpacing.lg),
-
                 Text(
                   AppLocalizations.t(context, 'Setting Up Your Store'),
                   style: AppTypography.titleLarge.copyWith(
@@ -137,19 +143,24 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  AppLocalizations.t(context, 'Please wait while we sync your cloud database.'),
-                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
+                  AppLocalizations.t(context,
+                      'Please wait while we sync your cloud database.'),
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.textSecondary(context)),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xl),
-
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.black.withValues(alpha: 0.02),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.03)
+                        : Colors.black.withValues(alpha: 0.02),
                     borderRadius: AppRadius.borderMd,
                     border: Border.all(
-                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.04),
                     ),
                   ),
                   child: Column(
@@ -183,15 +194,17 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                         child: LinearProgressIndicator(
                           value: progress,
                           minHeight: 10,
-                          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                          valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                          backgroundColor: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.05),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(primaryColor),
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
-
                 _buildSyncSteps(context, progress, isDark),
               ],
             ),
@@ -215,9 +228,10 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       children: steps.map((step) {
         final threshold = step['threshold'] as double;
         final name = step['name'] as String;
-        
+
         final isCompleted = progress >= threshold;
-        final isCurrent = progress < threshold && (progress >= (threshold - 0.2));
+        final isCurrent =
+            progress < threshold && (progress >= (threshold - 0.2));
 
         Color iconColor = Colors.grey;
         IconData icon = Icons.circle_outlined;
@@ -250,7 +264,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                   fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                   color: isCompleted
                       ? AppColors.textSecondary(context)
-                      : (isCurrent ? AppColors.textPrimary(context) : AppColors.textHint(context)),
+                      : (isCurrent
+                          ? AppColors.textPrimary(context)
+                          : AppColors.textHint(context)),
                   decoration: isCompleted ? TextDecoration.lineThrough : null,
                 ),
               ),
@@ -261,18 +277,25 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     );
   }
 
-  Widget _buildStoreSelectionScreen(BuildContext context, DashboardProvider provider) {
+  Widget _buildStoreSelectionScreen(
+      BuildContext context, DashboardProvider provider) {
     if (provider.stores.isEmpty) {
       return Scaffold(
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.store, size: 64, color: AppColors.textSecondary(context)),
+              Icon(Icons.store,
+                  size: 64, color: AppColors.textSecondary(context)),
               const SizedBox(height: AppSpacing.md),
-              Text(AppLocalizations.t(context, 'No Stores Found'), style: AppTypography.titleLarge.copyWith(color: AppColors.textSecondary(context))),
+              Text(AppLocalizations.t(context, 'No Stores Found'),
+                  style: AppTypography.titleLarge
+                      .copyWith(color: AppColors.textSecondary(context))),
               const SizedBox(height: AppSpacing.sm),
-              Text("You are logged in as ${provider.activeRole}, but no stores are available.", style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+              Text(
+                  "You are logged in as ${provider.activeRole}, but no stores are available.",
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.textSecondary(context))),
             ],
           ),
         ),
@@ -289,48 +312,68 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.store, size: 64, color: AppColors.adaptivePrimary(context)),
+                Icon(Icons.store,
+                    size: 64, color: AppColors.adaptivePrimary(context)),
                 const SizedBox(height: AppSpacing.lg),
-                Text(AppLocalizations.t(context, 'Select a Store'), textAlign: TextAlign.center, style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold)),
+                Text(AppLocalizations.t(context, 'Select a Store'),
+                    textAlign: TextAlign.center,
+                    style: AppTypography.headlineMedium
+                        .copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: AppSpacing.sm),
-                Text(AppLocalizations.t(context, 'Please select a store to manage from the list below.'), textAlign: TextAlign.center, style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+                Text(
+                    AppLocalizations.t(context,
+                        'Please select a store to manage from the list below.'),
+                    textAlign: TextAlign.center,
+                    style: AppTypography.bodyMedium
+                        .copyWith(color: AppColors.textSecondary(context))),
                 const SizedBox(height: AppSpacing.xl),
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.border(context)),
                     borderRadius: AppRadius.borderMd,
                   ),
-                  child: Builder(
-                    builder: (context) {
-                      List<Store> allowedStores = provider.stores;
-                      if (provider.activeRole == 'Franchise Owner') {
-                        final uid = provider.userProfile?.uid;
-                        final email = provider.userProfile?.email;
-                        allowedStores = allowedStores.where((store) {
-                          return store.owner == uid || (email != null && store.ownerEmail == email);
-                        }).toList();
-                      }
-
-                      return ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: allowedStores.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final store = allowedStores[index];
-                          return ListTile(
-                            title: Text(store.name, style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-                            subtitle: Text(store.status, style: AppTypography.labelMedium.copyWith(color: store.status == 'Active' ? AppColors.adaptiveSuccess(context) : AppColors.adaptiveWarning(context))),
-                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                            onTap: () {
-                              provider.setActiveStoreId(store.id);
-                              provider.linkUserToStore(Provider.of<AuthProvider>(context, listen: false).user!.uid, store.id);
-                            },
-                          );
-                        },
-                      );
+                  child: Builder(builder: (context) {
+                    List<Store> allowedStores = provider.stores;
+                    if (provider.activeRole == 'Franchise Owner') {
+                      final uid = provider.userProfile?.uid;
+                      final email = provider.userProfile?.email;
+                      allowedStores = allowedStores.where((store) {
+                        return store.owner == uid ||
+                            (email != null && store.ownerEmail == email);
+                      }).toList();
                     }
-                  ),
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: allowedStores.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final store = allowedStores[index];
+                        return ListTile(
+                          title: Text(store.name,
+                              style: AppTypography.bodyLarge
+                                  .copyWith(fontWeight: FontWeight.bold)),
+                          subtitle: Text(store.status,
+                              style: AppTypography.labelMedium.copyWith(
+                                  color: store.status == 'Active'
+                                      ? AppColors.adaptiveSuccess(context)
+                                      : AppColors.adaptiveWarning(context))),
+                          trailing:
+                              const Icon(Icons.arrow_forward_ios, size: 16),
+                          onTap: () {
+                            provider.setActiveStoreId(store.id);
+                            provider.linkUserToStore(
+                                Provider.of<AuthProvider>(context,
+                                        listen: false)
+                                    .user!
+                                    .uid,
+                                store.id);
+                          },
+                        );
+                      },
+                    );
+                  }),
                 ),
               ],
             ),
@@ -370,7 +413,8 @@ class _PulsingStoreIcon extends StatefulWidget {
   State<_PulsingStoreIcon> createState() => _PulsingStoreIconState();
 }
 
-class _PulsingStoreIconState extends State<_PulsingStoreIcon> with SingleTickerProviderStateMixin {
+class _PulsingStoreIconState extends State<_PulsingStoreIcon>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -401,13 +445,11 @@ class _PulsingStoreIconState extends State<_PulsingStoreIcon> with SingleTickerP
         decoration: BoxDecoration(
           color: widget.color.withValues(alpha: 0.1),
           shape: BoxShape.circle,
-          border: Border.all(color: widget.color.withValues(alpha: 0.2), width: 4),
+          border:
+              Border.all(color: widget.color.withValues(alpha: 0.2), width: 4),
         ),
         child: Icon(Icons.storefront_rounded, size: 64, color: widget.color),
       ),
     );
   }
 }
-
-
-

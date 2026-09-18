@@ -28,7 +28,10 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
       appBar: AppBar(
         title: Text(AppLocalizations.t(context, 'Integration Hub')),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.history), tooltip: "Sync Logs"),
+          IconButton(
+              onPressed: () {},
+              icon: const Icon(Icons.history),
+              tooltip: "Sync Logs"),
         ],
       ),
       body: Padding(
@@ -36,11 +39,14 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(AppLocalizations.t(context, 'Manage Third-Party Connections'),
+            Text(
+              AppLocalizations.t(context, 'Manage Third-Party Connections'),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.sm),
-            Text(AppLocalizations.t(context, 'Connect your POS to external platforms for seamless order synchronization.'),
+            Text(
+              AppLocalizations.t(context,
+                  'Connect your POS to external platforms for seamless order synchronization.'),
               style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -72,7 +78,7 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
                     color: AppColors.success,
                     description: "Global delivery platform integration.",
                   ),
-                   _buildIntegrationCard(
+                  _buildIntegrationCard(
                     id: 'talabat',
                     name: 'Talabat',
                     icon: Icons.fastfood,
@@ -101,7 +107,8 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
-        side: isConnected ? BorderSide(color: color, width: 2) : BorderSide.none,
+        side:
+            isConnected ? BorderSide(color: color, width: 2) : BorderSide.none,
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -122,7 +129,8 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
                 Expanded(
                   child: Text(
                     name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
                 Switch(
@@ -135,10 +143,16 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(val ? "Connected to $name" : "Disconnected from $name"),
-                        backgroundColor: val ? AppColors.success : AppColors.textSecondary(context),
+                        content: Text(val
+                            ? "Connected to $name"
+                            : "Disconnected from $name"),
+                        backgroundColor: val
+                            ? AppColors.success
+                            : AppColors.textSecondary(context),
                         behavior: SnackBarBehavior.floating,
-                        width: MediaQuery.of(context).size.width > 600 ? 400 : null,
+                        width: MediaQuery.of(context).size.width > 600
+                            ? 400
+                            : null,
                       ),
                     );
                   },
@@ -148,39 +162,47 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
             const SizedBox(height: AppSpacing.md),
             Text(
               description,
-              style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 13),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const Spacer(),
             if (isConnected)
-               Row(
-                 children: [
-                   const Icon(Icons.check_circle, size: 14, color: AppColors.success),
-                   const SizedBox(width: AppSpacing.xs),
-                   Text(AppLocalizations.t(context, 'Online'), style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold)),
-                   const Spacer(),
-                   TextButton(
-                     onPressed: () {}, 
-                     style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
-                     child: Text(AppLocalizations.t(context, 'Settings'))
-                   )
-                 ],
-               )
+              Row(
+                children: [
+                  const Icon(Icons.check_circle,
+                      size: 14, color: AppColors.success),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(AppLocalizations.t(context, 'Online'),
+                      style: const TextStyle(
+                          color: AppColors.success,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  TextButton(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact),
+                      child: Text(AppLocalizations.t(context, 'Settings')))
+                ],
+              )
             else
-               Row(
-                 children: [
-                   Icon(Icons.circle, size: 14, color: AppColors.textSecondary(context)),
-                   const SizedBox(width: AppSpacing.xs),
-                   Text(AppLocalizations.t(context, 'Offline'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12)),
-                 ],
-               )
+              Row(
+                children: [
+                  Icon(Icons.circle,
+                      size: 14, color: AppColors.textSecondary(context)),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(AppLocalizations.t(context, 'Offline'),
+                      style: TextStyle(
+                          color: AppColors.textSecondary(context),
+                          fontSize: 12)),
+                ],
+              )
           ],
         ),
       ),
     );
   }
 }
-
-
-

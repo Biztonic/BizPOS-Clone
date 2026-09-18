@@ -23,13 +23,16 @@ class OrderPolicy {
   /// Validate that an order can be created.
   static ValidationResult canCreate(OrderEntity order) {
     if (order.items.isEmpty) {
-      return const ValidationResult.invalid('Order must have at least one item.');
+      return const ValidationResult.invalid(
+          'Order must have at least one item.');
     }
     if (order.storeId.isEmpty) {
-      return const ValidationResult.invalid('Order must be associated with a store.');
+      return const ValidationResult.invalid(
+          'Order must be associated with a store.');
     }
     if (order.total <= 0) {
-      return const ValidationResult.invalid('Order total must be greater than zero.');
+      return const ValidationResult.invalid(
+          'Order total must be greater than zero.');
     }
     return const ValidationResult.valid();
   }
@@ -51,7 +54,8 @@ class OrderPolicy {
   /// Validate that an order can be refunded.
   static ValidationResult canRefund(OrderEntity order) {
     if (order.status != OrderStatus.completed) {
-      return const ValidationResult.invalid('Only completed orders can be refunded.');
+      return const ValidationResult.invalid(
+          'Only completed orders can be refunded.');
     }
     return const ValidationResult.valid();
   }

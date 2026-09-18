@@ -9,7 +9,7 @@ class RoleRepository {
   /// Insert or update role in local database
   Future<void> insertRole(RoleModel role) async {
     final db = await _dbHelper.database;
-    
+
     final data = {
       'id': role.id,
       'storeId': null, // Will be set for store-specific roles
@@ -35,7 +35,7 @@ class RoleRepository {
   /// Insert role with specific storeId
   Future<void> insertRoleWithStore(RoleModel role, String? storeId) async {
     final db = await _dbHelper.database;
-    
+
     final data = {
       'id': role.id,
       'storeId': storeId,
@@ -61,7 +61,7 @@ class RoleRepository {
   /// Get all roles for a specific store (includes system roles)
   Future<List<RoleModel>> getRolesByStore(String storeId) async {
     final db = await _dbHelper.database;
-    
+
     // Get both system roles and store-specific roles
     final List<Map<String, dynamic>> maps = await db.query(
       'roles',
@@ -76,7 +76,7 @@ class RoleRepository {
   /// Get only system roles (storeId is NULL)
   Future<List<RoleModel>> getSystemRoles() async {
     final db = await _dbHelper.database;
-    
+
     final List<Map<String, dynamic>> maps = await db.query(
       'roles',
       where: 'storeId IS NULL AND deletedAt IS NULL',
@@ -89,7 +89,7 @@ class RoleRepository {
   /// Get all roles (system + all stores)
   Future<List<RoleModel>> getAllRoles() async {
     final db = await _dbHelper.database;
-    
+
     final List<Map<String, dynamic>> maps = await db.query(
       'roles',
       where: 'deletedAt IS NULL',
@@ -102,7 +102,7 @@ class RoleRepository {
   /// Get single role by ID
   Future<RoleModel?> getRoleById(String id) async {
     final db = await _dbHelper.database;
-    
+
     final List<Map<String, dynamic>> maps = await db.query(
       'roles',
       where: 'id = ? AND deletedAt IS NULL',
@@ -117,7 +117,7 @@ class RoleRepository {
   /// Soft delete role
   Future<void> deleteRole(String id) async {
     final db = await _dbHelper.database;
-    
+
     await db.update(
       'roles',
       {
@@ -133,7 +133,7 @@ class RoleRepository {
   /// Mark role as synced
   Future<void> markAsSynced(String id) async {
     final db = await _dbHelper.database;
-    
+
     await db.update(
       'roles',
       {
@@ -148,7 +148,7 @@ class RoleRepository {
   /// Get roles with pending sync status
   Future<List<Map<String, dynamic>>> getPendingRoles() async {
     final db = await _dbHelper.database;
-    
+
     return await db.query(
       'roles',
       where: 'syncStatus = ?',
@@ -159,18 +159,18 @@ class RoleRepository {
   /// Get role count
   Future<int> getRoleCount() async {
     final db = await _dbHelper.database;
-    
+
     final result = await db.rawQuery(
       'SELECT COUNT(*) as count FROM roles WHERE deletedAt IS NULL',
     );
-    
+
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
   /// Convert database map to RoleModel
   RoleModel _mapToRoleModel(Map<String, dynamic> map) {
     Map<String, bool> permissions = {};
-    
+
     // Parse JSON permissions
     if (map['permissions'] != null) {
       try {
@@ -178,7 +178,7 @@ class RoleRepository {
         if (decoded is Map) {
           permissions = Map<String, bool>.from(decoded);
         }
-      } catch (e) { /* Error ignored */ }
+      } catch (e) {/* Error ignored */}
     }
 
     return RoleModel(

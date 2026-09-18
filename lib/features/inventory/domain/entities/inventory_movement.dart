@@ -2,7 +2,8 @@ class InventoryMovement {
   final String id;
   final String itemId;
   final String storeId;
-  final String type; // SALE, PURCHASE, ADJUSTMENT, RETURN, WASTE, TRANSFER_IN, TRANSFER_OUT
+  final String
+      type; // SALE, PURCHASE, ADJUSTMENT, RETURN, WASTE, TRANSFER_IN, TRANSFER_OUT
   final int delta; // Negative for sales/waste, positive for purchases/returns
   final String? orderId; // Reference to order if movement is from sale
   final String? reason; // Human-readable reason for adjustment
@@ -43,7 +44,8 @@ class InventoryMovement {
       deviceId: data['deviceId'] ?? '',
       createdAt: data['createdAt'] is DateTime
           ? data['createdAt']
-          : DateTime.tryParse(data['createdAt']?.toString() ?? '') ?? DateTime.now(),
+          : DateTime.tryParse(data['createdAt']?.toString() ?? '') ??
+              DateTime.now(),
       syncStatus: data['syncStatus'] ?? 'PENDING',
       syncedAt: data['syncedAt'] != null
           ? (data['syncedAt'] is DateTime

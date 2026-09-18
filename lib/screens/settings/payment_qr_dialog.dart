@@ -39,7 +39,8 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
   @override
   Widget build(BuildContext context) {
     // Generate UPI URL
-    final upiUrl = "upi://pay?pa=${widget.adminUpiId}&pn=BizPOS&am=${widget.amount.toStringAsFixed(2)}&cu=INR&tn=Standard%20Plan%20${widget.billingCycle}";
+    final upiUrl =
+        "upi://pay?pa=${widget.adminUpiId}&pn=BizPOS&am=${widget.amount.toStringAsFixed(2)}&cu=INR&tn=Standard%20Plan%20${widget.billingCycle}";
 
     return Dialog(
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -55,7 +56,8 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
             children: [
               const Icon(Icons.payment, size: 48, color: AppColors.primary),
               const SizedBox(height: AppSpacing.md),
-              Text(AppLocalizations.t(context, 'Complete Payment'),
+              Text(
+                AppLocalizations.t(context, 'Complete Payment'),
                 style: AppTypography.headlineSmall,
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -74,13 +76,33 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
                   ),
                   child: Column(
                     children: [
-                      Row(children: [const Icon(Icons.list, size: 16, color: AppColors.primary), const SizedBox(width: AppSpacing.sm), Text(AppLocalizations.t(context, 'Breakdown'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))]),
+                      Row(children: [
+                        const Icon(Icons.list,
+                            size: 16, color: AppColors.primary),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(AppLocalizations.t(context, 'Breakdown'),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 13))
+                      ]),
                       const Divider(),
-                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text("${widget.billingCycle} Plan"), Text("₹${(widget.amount - _calculateAddonsTotal(context)).toStringAsFixed(2)}")]),
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("${widget.billingCycle} Plan"),
+                            Text(
+                                "₹${(widget.amount - _calculateAddonsTotal(context)).toStringAsFixed(2)}")
+                          ]),
                       ...widget.selectedAddons.map((key) => Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.xs),
-                        child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_getAddonTitle(key)), Text("₹${_getAddonPrice(key, widget.billingCycle, context).toStringAsFixed(2)}")]),
-                      )),
+                            padding: const EdgeInsets.only(top: AppSpacing.xs),
+                            child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(_getAddonTitle(key)),
+                                  Text(
+                                      "₹${_getAddonPrice(key, widget.billingCycle, context).toStringAsFixed(2)}")
+                                ]),
+                          )),
                     ],
                   ),
                 ),
@@ -96,18 +118,23 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
                 child: QrImageView(
                   data: upiUrl,
                   version: QrVersions.auto,
-                  size: MediaQuery.of(context).size.height < 600 ? 150.0 : 200.0,
+                  size:
+                      MediaQuery.of(context).size.height < 600 ? 150.0 : 200.0,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
                 "Total Amount: ₹${widget.amount}",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.success),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.success),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 "UPI ID: ${widget.adminUpiId}",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               ),
               const SizedBox(height: AppSpacing.lg),
               const Divider(),
@@ -115,14 +142,18 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
               const Text(
                 "Once you've made the payment, click 'I HAVE PAID' to submit your request for approval.",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: AppColors.warning, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.warning,
+                    fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: AppSpacing.lg),
               Row(
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                      onPressed:
+                          _isSubmitting ? null : () => Navigator.pop(context),
                       child: Text(AppLocalizations.t(context, 'CANCEL')),
                     ),
                   ),
@@ -134,38 +165,46 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
                         foregroundColor: AppColors.surfaceLight,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      onPressed: _isSubmitting ? null : () async {
-                        setState(() {
-                          _isSubmitting = true;
-                        });
-                        try {
-                          final provider = Provider.of<DashboardProvider>(context, listen: false);
-                          await provider.createSubscriptionRequest(
-                            planType: widget.planType,
-                            billingCycle: widget.billingCycle,
-                            amount: widget.amount,
-                            selectedAddons: widget.selectedAddons,
-                            isAddonOnly: widget.isAddonOnly,
-                          );
-                          if (context.mounted) {
-                            Navigator.pop(context, true);
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Error: $e"), backgroundColor: AppColors.error),
-                            );
-                            setState(() {
-                              _isSubmitting = false;
-                            });
-                          }
-                        }
-                      },
+                      onPressed: _isSubmitting
+                          ? null
+                          : () async {
+                              setState(() {
+                                _isSubmitting = true;
+                              });
+                              try {
+                                final provider = Provider.of<DashboardProvider>(
+                                    context,
+                                    listen: false);
+                                await provider.createSubscriptionRequest(
+                                  planType: widget.planType,
+                                  billingCycle: widget.billingCycle,
+                                  amount: widget.amount,
+                                  selectedAddons: widget.selectedAddons,
+                                  isAddonOnly: widget.isAddonOnly,
+                                );
+                                if (context.mounted) {
+                                  Navigator.pop(context, true);
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text("Error: $e"),
+                                        backgroundColor: AppColors.error),
+                                  );
+                                  setState(() {
+                                    _isSubmitting = false;
+                                  });
+                                }
+                              }
+                            },
                       child: _isSubmitting
                           ? const SizedBox(
                               height: 16,
                               width: 16,
-                              child: CircularProgressIndicator(color: AppColors.surfaceLight, strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                  color: AppColors.surfaceLight,
+                                  strokeWidth: 2),
                             )
                           : Text(AppLocalizations.t(context, 'I HAVE PAID')),
                     ),
@@ -194,21 +233,26 @@ class _PaymentQrDialogState extends State<PaymentQrDialog> {
 
   String _getAddonTitle(String key) {
     switch (key) {
-      case 'employee_management': return 'Employee Mgmt';
-      case 'table_reservation': return 'Table Res';
-      case 'supplier_management': return 'Supplier Mgmt';
-      case 'kds_management': return 'KDS Mgmt';
-      case 'franchise_management': return 'Franchise Mgmt';
-      case 'central_catalog': return 'Central Catalog';
-      case 'customer_management': return 'Customer Mgmt';
-      case 'data_center': return 'Data Center';
-      case 'integration_hub': return 'Integration Hub';
-      default: return key;
+      case 'employee_management':
+        return 'Employee Mgmt';
+      case 'table_reservation':
+        return 'Table Res';
+      case 'supplier_management':
+        return 'Supplier Mgmt';
+      case 'kds_management':
+        return 'KDS Mgmt';
+      case 'franchise_management':
+        return 'Franchise Mgmt';
+      case 'central_catalog':
+        return 'Central Catalog';
+      case 'customer_management':
+        return 'Customer Mgmt';
+      case 'data_center':
+        return 'Data Center';
+      case 'integration_hub':
+        return 'Integration Hub';
+      default:
+        return key;
     }
   }
 }
-
-
-
-
-

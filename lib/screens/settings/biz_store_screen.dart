@@ -18,6 +18,7 @@ import 'subscription_reminder_dialog.dart';
 import 'payment_qr_dialog.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'addon_detail_screen.dart';
+
 class BizStoreScreen extends StatefulWidget {
   const BizStoreScreen({super.key});
 
@@ -25,12 +26,14 @@ class BizStoreScreen extends StatefulWidget {
   State<BizStoreScreen> createState() => _BizStoreScreenState();
 }
 
-class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProviderStateMixin {
+class _BizStoreScreenState extends State<BizStoreScreen>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   Map<String, dynamic> _globalStats = {};
   late TabController _tabController;
 
-  List<Map<String, dynamic>> get addonsMetadata => AddonDetailScreen.addonsMetadata;
+  List<Map<String, dynamic>> get addonsMetadata =>
+      AddonDetailScreen.addonsMetadata;
 
   @override
   void initState() {
@@ -43,17 +46,22 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     try {
       final provider = Provider.of<DashboardProvider>(context, listen: false);
       final isSuperAdmin = provider.userProfile?.role == 'Super Admin';
-      
+
       final results = await Future.wait<dynamic>([
         provider.fetchSubscriptionHistory(),
         provider.fetchPendingSubscriptions(),
-        if (isSuperAdmin) provider.fetchGlobalSubscriptionStats() else Future.value({}),
+        if (isSuperAdmin)
+          provider.fetchGlobalSubscriptionStats()
+        else
+          Future.value({}),
       ]);
 
       if (mounted) {
-        setState(() { 
-          _globalStats = results[2] is Map ? Map<String, dynamic>.from(results[2] as Map) : {}; 
-          _isLoading = false; 
+        setState(() {
+          _globalStats = results[2] is Map
+              ? Map<String, dynamic>.from(results[2] as Map)
+              : {};
+          _isLoading = false;
         });
         _checkAndShowReminder();
       }
@@ -62,7 +70,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     }
   }
 
-  void _openAddonDetail(Map<String, dynamic> addon, bool isInstalled, bool isLocked, dynamic price) async {
+  void _openAddonDetail(Map<String, dynamic> addon, bool isInstalled,
+      bool isLocked, dynamic price) async {
     await context.push('/biz-store/addon-detail?key=${addon['key']}');
     if (mounted) setState(() {}); // Refresh on return
   }
@@ -70,12 +79,12 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
   void _checkAndShowReminder() {
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     final days = provider.consolidatedStandardDays;
-    
+
     // Show reminder if 3 days or less remaining, but not if already expired or if no Standard plan ever active
     if (days > 0 && days <= 3) {
       final lastShown = Hive.box('settings').get('last_reminder_shown');
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      
+
       if (lastShown != today) {
         _showExpiryReminder(days);
         Hive.box('settings').put('last_reminder_shown', today);
@@ -96,12 +105,17 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
   void _upgradeFlow() async {
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     final adminConfig = provider.adminConfig;
-    final monthlyPrice = (adminConfig['standardPlanMonthlyPrice'] ?? 499.0).toDouble();
-    final yearlyPrice = (adminConfig['standardPlanYearlyPrice'] ?? 4999.0).toDouble();
-    final upiId = (adminConfig['adminUpiId'] ?? 'biztonicautomation@okaxis').toString();
+    final monthlyPrice =
+        (adminConfig['standardPlanMonthlyPrice'] ?? 499.0).toDouble();
+    final yearlyPrice =
+        (adminConfig['standardPlanYearlyPrice'] ?? 4999.0).toDouble();
+    final upiId =
+        (adminConfig['adminUpiId'] ?? 'biztonicautomation@okaxis').toString();
 
     if (upiId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Upgrade currently unavailable. Please contact support.'))));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppLocalizations.t(context,
+              'Upgrade currently unavailable. Please contact support.'))));
       return;
     }
 
@@ -113,9 +127,11 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildPlanOption(ctx, "Monthly", monthlyPrice, Icons.calendar_month),
+            _buildPlanOption(
+                ctx, "Monthly", monthlyPrice, Icons.calendar_month),
             const SizedBox(height: AppSpacing.md),
-            _buildPlanOption(ctx, "Yearly", yearlyPrice, Icons.event_available, isBestValue: true),
+            _buildPlanOption(ctx, "Yearly", yearlyPrice, Icons.event_available,
+                isBestValue: true),
           ],
         ),
       ),
@@ -158,7 +174,10 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
 
       if (!mounted) return;
       if (done == true) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Upgrade request submitted! Waiting for Admin approval.')), backgroundColor: AppColors.success));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.t(context,
+                'Upgrade request submitted! Waiting for Admin approval.')),
+            backgroundColor: AppColors.success));
         _loadData();
       }
     }
@@ -168,120 +187,154 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     final activeStore = provider.activeStore;
     final alreadyInstalled = Set<String>.from(activeStore?.addons ?? []);
-    
+
     List<String> tempSelected = [];
-    
+
     return showDialog<List<String>?>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final limits = provider.platformLimits;
-          double addonTotal = 0;
-          for (var key in tempSelected) {
-            final monthlyRate = (limits['rate_$key'] ?? 0).toDouble();
-            addonTotal += billingCycle == 'Yearly' ? (monthlyRate * 10) : monthlyRate;
-          }
-
-          return AlertDialog(
-            title: Text("Select Addons ($billingCycle)"),
-            content: SizedBox(
-              width: 500,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(AppLocalizations.t(context, 'Enhance your store with these powerful modules.'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13)),
-                  const SizedBox(height: AppSpacing.md),
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: addonsMetadata.length,
-                      itemBuilder: (context, index) {
-                        final addon = addonsMetadata[index];
-                        final key = addon['key'] as String;
-                        final limits = provider.platformLimits;
-                        final isInstalled = alreadyInstalled.contains(key);
-                        final isDisabled = provider.globalDisabledAddons.contains(key);
-                        final monthlyPrice = (limits['rate_$key'] ?? 0).toDouble();
-                        final displayPrice = billingCycle == 'Yearly' ? (monthlyPrice * 10) : monthlyPrice;
-                        
-                        if (isInstalled || isDisabled) return const SizedBox.shrink();
-
-                        final isSelected = tempSelected.contains(key);
-                        
-                        return CheckboxListTile(
-                          value: isSelected,
-                          onChanged: (val) {
-                            setDialogState(() {
-                              if (val == true) {
-                                tempSelected.add(key);
-                              } else {
-                                tempSelected.remove(key);
-                              }
-                            });
-                          },
-                          secondary: Icon(addon['icon'] as IconData, color: addon['color'] as Color),
-                          title: Text(addon['title'] as String),
-                          subtitle: Text("₹$displayPrice / ${billingCycle.toLowerCase()}"),
-                        );
-                      },
-                    ),
-                  ),
-                  const Divider(),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(AppLocalizations.t(context, 'Addons Total:'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text("₹${addonTotal.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
-                      ],
-                    ),
-                  )
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'SKIP / CANCEL'))),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, tempSelected),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.surfaceLight),
-                child: Text(AppLocalizations.t(context, 'CONTINUE TO PAYMENT')),
-              ),
-            ],
-          );
+      builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
+        final limits = provider.platformLimits;
+        double addonTotal = 0;
+        for (var key in tempSelected) {
+          final monthlyRate = (limits['rate_$key'] ?? 0).toDouble();
+          addonTotal +=
+              billingCycle == 'Yearly' ? (monthlyRate * 10) : monthlyRate;
         }
-      ),
+
+        return AlertDialog(
+          title: Text("Select Addons ($billingCycle)"),
+          content: SizedBox(
+            width: 500,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                    AppLocalizations.t(context,
+                        'Enhance your store with these powerful modules.'),
+                    style: TextStyle(
+                        color: AppColors.textSecondary(context), fontSize: 13)),
+                const SizedBox(height: AppSpacing.md),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: addonsMetadata.length,
+                    itemBuilder: (context, index) {
+                      final addon = addonsMetadata[index];
+                      final key = addon['key'] as String;
+                      final limits = provider.platformLimits;
+                      final isInstalled = alreadyInstalled.contains(key);
+                      final isDisabled =
+                          provider.globalDisabledAddons.contains(key);
+                      final monthlyPrice =
+                          (limits['rate_$key'] ?? 0).toDouble();
+                      final displayPrice = billingCycle == 'Yearly'
+                          ? (monthlyPrice * 10)
+                          : monthlyPrice;
+
+                      if (isInstalled || isDisabled)
+                        return const SizedBox.shrink();
+
+                      final isSelected = tempSelected.contains(key);
+
+                      return CheckboxListTile(
+                        value: isSelected,
+                        onChanged: (val) {
+                          setDialogState(() {
+                            if (val == true) {
+                              tempSelected.add(key);
+                            } else {
+                              tempSelected.remove(key);
+                            }
+                          });
+                        },
+                        secondary: Icon(addon['icon'] as IconData,
+                            color: addon['color'] as Color),
+                        title: Text(addon['title'] as String),
+                        subtitle: Text(
+                            "₹$displayPrice / ${billingCycle.toLowerCase()}"),
+                      );
+                    },
+                  ),
+                ),
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(AppLocalizations.t(context, 'Addons Total:'),
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text("₹${addonTotal.toStringAsFixed(2)}",
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary)),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(AppLocalizations.t(context, 'SKIP / CANCEL'))),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, tempSelected),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.surfaceLight),
+              child: Text(AppLocalizations.t(context, 'CONTINUE TO PAYMENT')),
+            ),
+          ],
+        );
+      }),
     );
   }
 
-  Widget _buildPlanOption(BuildContext context, String cycle, double price, IconData icon, {bool isBestValue = false}) {
+  Widget _buildPlanOption(
+      BuildContext context, String cycle, double price, IconData icon,
+      {bool isBestValue = false}) {
     return InkWell(
-      onTap: () => Navigator.pop(context, <String, dynamic>{'cycle': cycle, 'amount': price}),
+      onTap: () => Navigator.pop(
+          context, <String, dynamic>{'cycle': cycle, 'amount': price}),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          border: Border.all(color: isBestValue ? AppColors.warning : AppColors.border(context)),
+          border: Border.all(
+              color:
+                  isBestValue ? AppColors.warning : AppColors.border(context)),
           borderRadius: BorderRadius.zero,
           color: isBestValue ? AppColors.warning.withValues(alpha: 0.05) : null,
         ),
         child: Row(
           children: [
-            Icon(icon, color: isBestValue ? AppColors.warning : AppColors.primary),
+            Icon(icon,
+                color: isBestValue ? AppColors.warning : AppColors.primary),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(cycle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text("₹$price / ${cycle.toLowerCase()}", style: TextStyle(color: AppColors.textSecondary(context))),
+                  Text(cycle,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text("₹$price / ${cycle.toLowerCase()}",
+                      style:
+                          TextStyle(color: AppColors.textSecondary(context))),
                 ],
               ),
             ),
             if (isBestValue)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-                decoration: const BoxDecoration(color: AppColors.warning, borderRadius: BorderRadius.zero),
-                child: Text(AppLocalizations.t(context, 'BEST VALUE'), style: const TextStyle(color: AppColors.surfaceLight, fontSize: 10, fontWeight: FontWeight.bold)),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                decoration: const BoxDecoration(
+                    color: AppColors.warning, borderRadius: BorderRadius.zero),
+                child: Text(AppLocalizations.t(context, 'BEST VALUE'),
+                    style: const TextStyle(
+                        color: AppColors.surfaceLight,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold)),
               ),
           ],
         ),
@@ -294,16 +347,20 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     final provider = Provider.of<DashboardProvider>(context);
     final activeStore = provider.activeStore;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    if (activeStore == null) return Scaffold(body: Center(child: Text(AppLocalizations.t(context, 'No Store Selected'))));
+
+    if (activeStore == null)
+      return Scaffold(
+          body: Center(
+              child: Text(AppLocalizations.t(context, 'No Store Selected'))));
 
     final currentAddons = Set<String>.from(activeStore.addons);
     final plan = activeStore.subscriptionPlan;
     final isStandard = plan == 'Standard';
     final isSuperAdmin = provider.userProfile?.role == 'Super Admin';
-    
+
     // Check for pending request
-    final hasPending = provider.pendingSubscriptions.any((r) => r.storeId == activeStore.id);
+    final hasPending =
+        provider.pendingSubscriptions.any((r) => r.storeId == activeStore.id);
 
     return PopScope(
       canPop: false,
@@ -320,13 +377,17 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
         mainContent: Column(
           children: [
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+              margin: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                color:
+                    isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.black.withOpacity(0.03),
                 ),
               ),
               child: TabBar(
@@ -347,8 +408,10 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                 indicatorSize: TabBarIndicatorSize.tab,
                 labelColor: isDark ? Colors.white : AppColors.primary,
                 unselectedLabelColor: isDark ? Colors.white54 : Colors.black54,
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                labelStyle:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                unselectedLabelStyle:
+                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
                 tabs: const [
                   Tab(
                     height: 40,
@@ -376,15 +439,17 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
               ),
             ),
             Expanded(
-              child: _isLoading 
-                  ? const Center(child: CircularProgressIndicator()) 
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
                   : TabBarView(
                       controller: _tabController,
                       children: [
-                        _buildModulesTab(provider, activeStore, currentAddons, isStandard, isSuperAdmin, isDark, hasPending),
-                        isSuperAdmin 
-                          ? _buildSuperAdminOverview(provider, isDark)
-                          : _buildSubscriptionTab(provider, activeStore, isStandard, hasPending, isDark),
+                        _buildModulesTab(provider, activeStore, currentAddons,
+                            isStandard, isSuperAdmin, isDark, hasPending),
+                        isSuperAdmin
+                            ? _buildSuperAdminOverview(provider, isDark)
+                            : _buildSubscriptionTab(provider, activeStore,
+                                isStandard, hasPending, isDark),
                       ],
                     ),
             ),
@@ -394,8 +459,13 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildModulesTab(DashboardProvider provider, dynamic activeStore,
-      Set<String> currentAddons, bool isStandard, bool isSuperAdmin, bool isDark,
+  Widget _buildModulesTab(
+      DashboardProvider provider,
+      dynamic activeStore,
+      Set<String> currentAddons,
+      bool isStandard,
+      bool isSuperAdmin,
+      bool isDark,
       bool hasPending) {
     final visibleAddons = addonsMetadata.where((a) {
       final key = a['key'] as String;
@@ -415,7 +485,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       slivers: [
         // Modern Plan Header
         SliverToBoxAdapter(
-          child: _buildModernPlanHeader(activeStore, isStandard, isSuperAdmin, isDark, hasPending),
+          child: _buildModernPlanHeader(
+              activeStore, isStandard, isSuperAdmin, isDark, hasPending),
         ),
 
         // Active Hardware EMIs
@@ -433,23 +504,28 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           SliverToBoxAdapter(
             child: _buildCategoryHeader(
               title: "Essentials for POS",
-              subtitle: "Core features to run your store, manage staff, and customers",
+              subtitle:
+                  "Core features to run your store, manage staff, and customers",
               isDark: isDark,
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.xs),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: MediaQuery.of(context).size.width < 500 ? 400 : 350,
-                childAspectRatio: MediaQuery.of(context).size.width < 500 ? 3.5 : 2.5,
+                maxCrossAxisExtent:
+                    MediaQuery.of(context).size.width < 500 ? 400 : 350,
+                childAspectRatio:
+                    MediaQuery.of(context).size.width < 500 ? 3.5 : 2.5,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final addon = essentials[index];
-                  return _buildAddonCard(addon, provider, activeStore, currentAddons, isStandard, isSuperAdmin, isDark);
+                  return _buildAddonCard(addon, provider, activeStore,
+                      currentAddons, isStandard, isSuperAdmin, isDark);
                 },
                 childCount: essentials.length,
               ),
@@ -462,23 +538,28 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           SliverToBoxAdapter(
             child: _buildCategoryHeader(
               title: "Operations & Kitchen",
-              subtitle: "Optimize table services, orders, and supplier pipelines",
+              subtitle:
+                  "Optimize table services, orders, and supplier pipelines",
               isDark: isDark,
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.xs),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: MediaQuery.of(context).size.width < 500 ? 400 : 350,
-                childAspectRatio: MediaQuery.of(context).size.width < 500 ? 3.5 : 2.5,
+                maxCrossAxisExtent:
+                    MediaQuery.of(context).size.width < 500 ? 400 : 350,
+                childAspectRatio:
+                    MediaQuery.of(context).size.width < 500 ? 3.5 : 2.5,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final addon = operations[index];
-                  return _buildAddonCard(addon, provider, activeStore, currentAddons, isStandard, isSuperAdmin, isDark);
+                  return _buildAddonCard(addon, provider, activeStore,
+                      currentAddons, isStandard, isSuperAdmin, isDark);
                 },
                 childCount: operations.length,
               ),
@@ -491,23 +572,28 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           SliverToBoxAdapter(
             child: _buildCategoryHeader(
               title: "Scale & Cloud Integrations",
-              subtitle: "Sync across franchises, manage central stocks, and connect aggregator APIs",
+              subtitle:
+                  "Sync across franchises, manage central stocks, and connect aggregator APIs",
               isDark: isDark,
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.xs),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: MediaQuery.of(context).size.width < 500 ? 400 : 350,
-                childAspectRatio: MediaQuery.of(context).size.width < 500 ? 3.5 : 2.5,
+                maxCrossAxisExtent:
+                    MediaQuery.of(context).size.width < 500 ? 400 : 350,
+                childAspectRatio:
+                    MediaQuery.of(context).size.width < 500 ? 3.5 : 2.5,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final addon = scaleAndCloud[index];
-                  return _buildAddonCard(addon, provider, activeStore, currentAddons, isStandard, isSuperAdmin, isDark);
+                  return _buildAddonCard(addon, provider, activeStore,
+                      currentAddons, isStandard, isSuperAdmin, isDark);
                 },
                 childCount: scaleAndCloud.length,
               ),
@@ -525,7 +611,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     required bool isDark,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -561,24 +648,27 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
   }
 
   Widget _buildFeaturedHero(BuildContext context, bool isDark) {
-    final addon = addonsMetadata.firstWhere((a) => a['key'] == 'employee_management');
+    final addon =
+        addonsMetadata.firstWhere((a) => a['key'] == 'employee_management');
     final provider = Provider.of<DashboardProvider>(context, listen: false);
     final activeStore = provider.activeStore;
-    final isInstalled = activeStore?.addons.contains('employee_management') ?? false;
+    final isInstalled =
+        activeStore?.addons.contains('employee_management') ?? false;
     final isLocked = !(activeStore?.subscriptionPlan == 'Standard') &&
         !(provider.userProfile?.role == 'Super Admin') &&
-        !(activeStore?.purchasedAddons.contains('employee_management') ?? false);
+        !(activeStore?.purchasedAddons.contains('employee_management') ??
+            false);
     final price = provider.platformLimits['rate_employee_management'] ?? 0;
-    
+
     return Container(
       margin: const EdgeInsets.all(AppSpacing.md),
       height: 180,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
-          colors: isDark 
-            ? [const Color(0xFF4F46E5), const Color(0xFF312E81)] 
-            : [const Color(0xFF6366F1), const Color(0xFF4338CA)],
+          colors: isDark
+              ? [const Color(0xFF4F46E5), const Color(0xFF312E81)]
+              : [const Color(0xFF6366F1), const Color(0xFF4338CA)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -629,7 +719,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(8),
@@ -666,13 +757,22 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 14),
+                            const Icon(Icons.star,
+                                color: Colors.amber, size: 14),
                             const SizedBox(width: 4),
-                            const Text("4.8", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                            const Text("4.8",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12)),
                             const SizedBox(width: 12),
-                            const Text("3.2 MB", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                            const Text("3.2 MB",
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 12)),
                             const SizedBox(width: 12),
-                            const Text("v1.2", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                            const Text("v1.2",
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 12)),
                           ],
                         ),
                       ],
@@ -690,17 +790,22 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1.5),
                           ),
-                          child: const Icon(Icons.badge, color: Colors.white, size: 36),
+                          child: const Icon(Icons.badge,
+                              color: Colors.white, size: 36),
                         ),
                         const SizedBox(height: 12),
                         ElevatedButton(
-                          onPressed: () => _openAddonDetail(addon, isInstalled, isLocked, price),
+                          onPressed: () => _openAddonDetail(
+                              addon, isInstalled, isLocked, price),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: const Color(0xFF4F46E5),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -708,7 +813,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                           ),
                           child: Text(
                             isInstalled ? "Open" : "Details",
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 12),
                           ),
                         ),
                       ],
@@ -727,13 +833,15 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     if (provider.storeHardwares.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
+      margin: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             "Hardware & EMI Status",
-            style: AppTypography.titleMedium.copyWith(color: isDark ? Colors.white : Colors.black87),
+            style: AppTypography.titleMedium
+                .copyWith(color: isDark ? Colors.white : Colors.black87),
           ),
           const SizedBox(height: AppSpacing.sm),
           ...provider.storeHardwares.map((hw) {
@@ -749,19 +857,39 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("Hardware ID: ${hw.hardwareId}", style: AppTypography.titleSmall.copyWith(color: isDark ? Colors.white : Colors.black87)),
-                        Text(hw.status, style: TextStyle(color: hw.status == 'Assigned' ? AppColors.success : AppColors.error)),
+                        Text("Hardware ID: ${hw.hardwareId}",
+                            style: AppTypography.titleSmall.copyWith(
+                                color: isDark ? Colors.white : Colors.black87)),
+                        Text(hw.status,
+                            style: TextStyle(
+                                color: hw.status == 'Assigned'
+                                    ? AppColors.success
+                                    : AppColors.error)),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text("Remaining EMIs: ${hw.totalEmis - hw.emisPaid} / ${hw.totalEmis}", style: AppTypography.bodySmall.copyWith(color: isDark ? Colors.white70 : Colors.black54)),
-                    Text("Remaining Amount: ₹${hw.remainingAmount}", style: AppTypography.bodySmall.copyWith(color: isDark ? Colors.white70 : Colors.black54)),
-                    Text("Next Due: ${hw.nextEmiDueDate.toString().split(' ')[0]}", style: AppTypography.bodySmall.copyWith(color: isDark ? Colors.white70 : Colors.black54)),
+                    Text(
+                        "Remaining EMIs: ${hw.totalEmis - hw.emisPaid} / ${hw.totalEmis}",
+                        style: AppTypography.bodySmall.copyWith(
+                            color: isDark ? Colors.white70 : Colors.black54)),
+                    Text("Remaining Amount: ₹${hw.remainingAmount}",
+                        style: AppTypography.bodySmall.copyWith(
+                            color: isDark ? Colors.white70 : Colors.black54)),
+                    Text(
+                        "Next Due: ${hw.nextEmiDueDate.toString().split(' ')[0]}",
+                        style: AppTypography.bodySmall.copyWith(
+                            color: isDark ? Colors.white70 : Colors.black54)),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                      child: Text("Buyback Guarantee Value: ₹${buyback.toStringAsFixed(2)}", style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                      decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8)),
+                      child: Text(
+                          "Buyback Guarantee Value: ₹${buyback.toStringAsFixed(2)}",
+                          style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -773,16 +901,20 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildModernPlanHeader(dynamic activeStore, bool isStandard, bool isSuperAdmin, bool isDark, bool hasPending) {
+  Widget _buildModernPlanHeader(dynamic activeStore, bool isStandard,
+      bool isSuperAdmin, bool isDark, bool hasPending) {
     final statusColor = isStandard ? AppColors.success : AppColors.primary;
     return Container(
-      margin: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
+      margin: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05),
+          color: isDark
+              ? Colors.white.withOpacity(0.08)
+              : Colors.black.withOpacity(0.05),
         ),
         boxShadow: [
           BoxShadow(
@@ -839,15 +971,19 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
               style: ElevatedButton.styleFrom(
                 backgroundColor: statusColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 0,
               ),
               child: Text(
-                hasPending ? "PENDING..." : (isStandard ? "BUY COUPON" : "UPGRADE"),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                hasPending
+                    ? "PENDING..."
+                    : (isStandard ? "BUY COUPON" : "UPGRADE"),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               ),
             )
         ],
@@ -895,8 +1031,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
 
   Widget _buildSubscriptionTab(DashboardProvider provider, dynamic activeStore,
       bool isStandard, bool hasPending, bool isDark) {
-    final historyItems =
-        provider.subscriptionHistory.where((s) => s.status != 'QUEUED').toList();
+    final historyItems = provider.subscriptionHistory
+        .where((s) => s.status != 'QUEUED')
+        .toList();
 
     return CustomScrollView(
       slivers: [
@@ -907,7 +1044,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Premium Visa-like Play Pass Card
-                _buildPremiumPlayPassCard(provider, activeStore, isStandard, hasPending, isDark),
+                _buildPremiumPlayPassCard(
+                    provider, activeStore, isStandard, hasPending, isDark),
                 const SizedBox(height: AppSpacing.lg),
 
                 // Upgrade Actions
@@ -917,15 +1055,18 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                     decoration: BoxDecoration(
                       color: AppColors.warning.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                      border: Border.all(
+                          color: AppColors.warning.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.hourglass_empty, color: AppColors.warning, size: 20),
+                        const Icon(Icons.hourglass_empty,
+                            color: AppColors.warning, size: 20),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
-                            AppLocalizations.t(context, 'Upgrade Request Pending Approval'),
+                            AppLocalizations.t(
+                                context, 'Upgrade Request Pending Approval'),
                             style: const TextStyle(
                               color: AppColors.warning,
                               fontWeight: FontWeight.bold,
@@ -945,7 +1086,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                       icon: const Icon(Icons.flash_on, size: 20),
                       label: Text(
                         AppLocalizations.t(context, 'UPGRADE TO STANDARD'),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.success,
@@ -961,7 +1103,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
-                      AppLocalizations.t(context, 'Enjoy full standard features & cloud sync.'),
+                      AppLocalizations.t(context,
+                          'Enjoy full standard features & cloud sync.'),
                       style: TextStyle(
                         color: AppColors.textSecondary(context),
                         fontStyle: FontStyle.italic,
@@ -978,7 +1121,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                       icon: const Icon(Icons.add_shopping_cart, size: 18),
                       label: Text(
                         AppLocalizations.t(context, 'PURCHASE ADVANCE COUPON'),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
@@ -998,14 +1142,19 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: BorderSide(
-                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.05),
                     ),
                   ),
                   child: SwitchListTile(
                     secondary: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: (activeStore.autoActivateSubscription ? AppColors.warning : AppColors.textSecondary(context)).withValues(alpha: 0.12),
+                        color: (activeStore.autoActivateSubscription
+                                ? AppColors.warning
+                                : AppColors.textSecondary(context))
+                            .withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -1017,11 +1166,14 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                       ),
                     ),
                     title: Text(
-                      AppLocalizations.t(context, 'Auto-activate next subscription'),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      AppLocalizations.t(
+                          context, 'Auto-activate next subscription'),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     subtitle: Text(
-                      AppLocalizations.t(context, 'Automatically activate queued coupons when the current plan expires.'),
+                      AppLocalizations.t(context,
+                          'Automatically activate queued coupons when the current plan expires.'),
                       style: const TextStyle(fontSize: 12),
                     ),
                     value: activeStore.autoActivateSubscription,
@@ -1033,7 +1185,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                 const SizedBox(height: AppSpacing.xl),
                 Text(
                   AppLocalizations.t(context, 'Ready Coupons (In Queue)'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: AppSpacing.md),
               ],
@@ -1083,7 +1236,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                 padding: const EdgeInsets.all(AppSpacing.xl),
                 child: Text(
                   AppLocalizations.t(context, 'No subscription history found'),
-                  style: TextStyle(color: AppColors.textSecondary(context), fontStyle: FontStyle.italic),
+                  style: TextStyle(
+                      color: AppColors.textSecondary(context),
+                      fontStyle: FontStyle.italic),
                 ),
               ),
             ),
@@ -1093,27 +1248,36 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             sliver: SliverList.separated(
               itemCount: historyItems.length,
-              separatorBuilder: (ctx, idx) => const SizedBox(height: AppSpacing.md),
+              separatorBuilder: (ctx, idx) =>
+                  const SizedBox(height: AppSpacing.md),
               itemBuilder: (ctx, idx) {
                 final sub = historyItems[idx];
                 final df = DateFormat('dd MMM yyyy');
-                final statusColor = sub.isActive ? AppColors.success : AppColors.textSecondary(context);
+                final statusColor = sub.isActive
+                    ? AppColors.success
+                    : AppColors.textSecondary(context);
                 return Container(
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : AppColors.surface(context),
+                    color: isDark
+                        ? const Color(0xFF1E293B)
+                        : AppColors.surface(context),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.border(context),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : AppColors.border(context),
                       width: 0.5,
                     ),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       leading: CircleAvatar(
                         backgroundColor: statusColor.withValues(alpha: 0.1),
-                        child: Icon(Icons.history, color: statusColor, size: 20),
+                        child:
+                            Icon(Icons.history, color: statusColor, size: 20),
                       ),
                       title: Text(
                         "${sub.planName} - ${sub.billingCycle}",
@@ -1125,14 +1289,18 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                       ),
                       subtitle: Text(
                         "Valid: ${df.format(sub.startDate)} - ${df.format(sub.endDate)}",
-                        style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12),
+                        style: TextStyle(
+                            color: AppColors.textSecondary(context),
+                            fontSize: 12),
                       ),
                       trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+                          border: Border.all(
+                              color: statusColor.withValues(alpha: 0.2)),
                         ),
                         child: Text(
                           sub.isActive ? "ACTIVE" : "EXPIRED",
@@ -1155,8 +1323,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildPremiumPlayPassCard(DashboardProvider provider, dynamic activeStore,
-      bool isStandard, bool hasPending, bool isDark) {
+  Widget _buildPremiumPlayPassCard(DashboardProvider provider,
+      dynamic activeStore, bool isStandard, bool hasPending, bool isDark) {
     return _AnimatedGoldPlayPassCard(
       provider: provider,
       activeStore: activeStore,
@@ -1184,7 +1352,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     final size = addon['size'] ?? '2.5 MB';
 
     return GestureDetector(
-      onTap: isSuperAdmin ? null : () => _openAddonDetail(addon, isInstalled, isLocked, price),
+      onTap: isSuperAdmin
+          ? null
+          : () => _openAddonDetail(addon, isInstalled, isLocked, price),
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 200),
         opacity: isLocked ? 0.6 : 1.0,
@@ -1195,7 +1365,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
             border: Border.all(
               color: isInstalled
                   ? AppColors.success.withValues(alpha: 0.5)
-                  : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05)),
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.05)),
               width: isInstalled ? 1.5 : 1.0,
             ),
             boxShadow: [
@@ -1251,7 +1423,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                             color: AppColors.success,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.check, color: Colors.white, size: 8),
+                          child: const Icon(Icons.check,
+                              color: Colors.white, size: 8),
                         ),
                       ),
                   ],
@@ -1290,7 +1463,10 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                           const SizedBox(width: 6),
                           Text(
                             "•",
-                            style: TextStyle(fontSize: 10.5, color: isDark ? Colors.white30 : Colors.black26),
+                            style: TextStyle(
+                                fontSize: 10.5,
+                                color:
+                                    isDark ? Colors.white30 : Colors.black26),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -1304,13 +1480,18 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                             const SizedBox(width: 6),
                             Text(
                               "•",
-                              style: TextStyle(fontSize: 10.5, color: isDark ? Colors.white30 : Colors.black26),
+                              style: TextStyle(
+                                  fontSize: 10.5,
+                                  color:
+                                      isDark ? Colors.white30 : Colors.black26),
                             ),
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 1.5),
                               decoration: BoxDecoration(
-                                color: AppColors.success.withValues(alpha: 0.12),
+                                color:
+                                    AppColors.success.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -1351,7 +1532,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                   )
                 else if (isInstalled)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
@@ -1369,7 +1551,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                      color: (isDark ? Colors.white : Colors.black)
+                          .withValues(alpha: 0.05),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -1380,7 +1563,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                   )
                 else if (isPending)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.warning.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
@@ -1396,7 +1580,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: isDark ? Colors.white24 : Colors.black12,
@@ -1418,8 +1603,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
   }
 
   Widget _buildQueuedSubsSliver(DashboardProvider provider, bool isDark) {
-    final queued =
-        provider.subscriptionHistory.where((s) => s.status == 'QUEUED').toList();
+    final queued = provider.subscriptionHistory
+        .where((s) => s.status == 'QUEUED')
+        .toList();
     if (queued.isEmpty) {
       return SliverToBoxAdapter(
         child: Container(
@@ -1427,9 +1613,15 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           padding: const EdgeInsets.all(AppSpacing.lg),
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B) : AppColors.surfaceVariant(context),
+            color: isDark
+                ? const Color(0xFF1E293B)
+                : AppColors.surfaceVariant(context),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.border(context), width: 0.5),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : AppColors.border(context),
+                width: 0.5),
           ),
           child: Text(
             AppLocalizations.t(context, 'No advance subscriptions in queue.'),
@@ -1466,18 +1658,22 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 leading: CircleAvatar(
                   backgroundColor: AppColors.warning.withValues(alpha: 0.15),
-                  child: const Icon(Icons.confirmation_num, color: AppColors.warning, size: 20),
+                  child: const Icon(Icons.confirmation_num,
+                      color: AppColors.warning, size: 20),
                 ),
                 title: Text(
                   "${sub.planName} Coupon (${sub.billingCycle})",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 subtitle: Text(
                   AppLocalizations.t(context, 'Status: QUEUED for later use'),
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary(context)),
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary(context)),
                 ),
                 trailing: ElevatedButton(
                   onPressed: () => provider.activateSubscriptionCoupon(sub.id),
@@ -1485,12 +1681,15 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                     backgroundColor: AppColors.warning,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   ),
                   child: Text(
                     AppLocalizations.t(context, 'ACTIVATE NOW'),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 11),
                   ),
                 ),
               ),
@@ -1522,7 +1721,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
               children: [
                 Text(
                   AppLocalizations.t(context, 'Global Subscription Overview'),
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
@@ -1563,7 +1763,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: _buildPlanDistributionCard(planDist, isDark),
+                                child: _buildPlanDistributionCard(
+                                    planDist, isDark),
                               ),
                               const SizedBox(width: AppSpacing.md),
                               Expanded(child: _buildTrendCard(isDark)),
@@ -1575,7 +1776,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                 const SizedBox(height: AppSpacing.xl),
                 Text(
                   AppLocalizations.t(context, 'Search & Quick Activity'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: AppSpacing.md),
               ],
@@ -1588,14 +1790,18 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isDark, {bool fullWidth = false}) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color, bool isDark,
+      {bool fullWidth = false}) {
     final widget = Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.05),
         ),
         boxShadow: [
           BoxShadow(
@@ -1644,7 +1850,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
       ),
     );
 
-    return fullWidth ? SizedBox(width: double.infinity, child: widget) : Expanded(child: widget);
+    return fullWidth
+        ? SizedBox(width: double.infinity, child: widget)
+        : Expanded(child: widget);
   }
 
   Widget _buildPlanDistributionCard(Map<String, dynamic> dist, bool isDark) {
@@ -1665,7 +1873,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
         value: countValue.toDouble(),
         title: '$countValue',
         radius: 36,
-        titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+        titleStyle: const TextStyle(
+            fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
       ));
       colorIdx++;
     });
@@ -1677,7 +1886,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.05),
         ),
         boxShadow: [
           BoxShadow(
@@ -1699,20 +1910,21 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: sections.isEmpty 
-              ? Center(
-                  child: Text(
-                    AppLocalizations.t(context, 'No data'),
-                    style: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
+            child: sections.isEmpty
+                ? Center(
+                    child: Text(
+                      AppLocalizations.t(context, 'No data'),
+                      style: TextStyle(
+                          color: isDark ? Colors.white38 : Colors.black38),
+                    ),
+                  )
+                : PieChart(
+                    PieChartData(
+                      sections: sections,
+                      centerSpaceRadius: 50,
+                      sectionsSpace: 3,
+                    ),
                   ),
-                )
-              : PieChart(
-                  PieChartData(
-                    sections: sections,
-                    centerSpaceRadius: 50,
-                    sectionsSpace: 3,
-                  ),
-                ),
           ),
           const SizedBox(height: 16),
           Wrap(
@@ -1727,7 +1939,8 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                   Container(
                     width: 10,
                     height: 10,
-                    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                    decoration:
+                        BoxDecoration(color: color, shape: BoxShape.circle),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -1754,7 +1967,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.05),
         ),
         boxShadow: [
           BoxShadow(
@@ -1784,8 +1999,13 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                 lineBarsData: [
                   LineChartBarData(
                     spots: const [
-                      FlSpot(0, 2), FlSpot(1, 4), FlSpot(2, 3), FlSpot(3, 7),
-                      FlSpot(4, 5), FlSpot(5, 8), FlSpot(6, 6),
+                      FlSpot(0, 2),
+                      FlSpot(1, 4),
+                      FlSpot(2, 3),
+                      FlSpot(3, 7),
+                      FlSpot(4, 5),
+                      FlSpot(5, 8),
+                      FlSpot(6, 6),
                     ],
                     isCurved: true,
                     color: const Color(0xFF6366F1),
@@ -1823,10 +2043,14 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           padding: const EdgeInsets.all(AppSpacing.lg),
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B) : AppColors.surfaceVariant(context),
+            color: isDark
+                ? const Color(0xFF1E293B)
+                : AppColors.surfaceVariant(context),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.border(context),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : AppColors.border(context),
               width: 0.5,
             ),
           ),
@@ -1834,14 +2058,18 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
             children: [
               Icon(
                 Icons.query_stats,
-                color: isDark ? Colors.white38 : AppColors.textSecondary(context),
+                color:
+                    isDark ? Colors.white38 : AppColors.textSecondary(context),
                 size: 32,
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
-                AppLocalizations.t(context, 'No recent subscription activity found.'),
+                AppLocalizations.t(
+                    context, 'No recent subscription activity found.'),
                 style: TextStyle(
-                  color: isDark ? Colors.white60 : AppColors.textSecondary(context),
+                  color: isDark
+                      ? Colors.white60
+                      : AppColors.textSecondary(context),
                   fontSize: 13,
                   fontStyle: FontStyle.italic,
                 ),
@@ -1870,7 +2098,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
               color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.05),
                 width: 0.5,
               ),
               boxShadow: [
@@ -1884,10 +2114,13 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 leading: CircleAvatar(
-                  backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                  child: const Icon(Icons.receipt_long, color: Color(0xFF6366F1), size: 20),
+                  backgroundColor:
+                      const Color(0xFF6366F1).withValues(alpha: 0.1),
+                  child: const Icon(Icons.receipt_long,
+                      color: Color(0xFF6366F1), size: 20),
                 ),
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1927,18 +2160,22 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
                           dateStr,
                           style: TextStyle(
                             fontSize: 11,
-                            color: isDark ? Colors.white38 : AppColors.textSecondary(context),
+                            color: isDark
+                                ? Colors.white38
+                                : AppColors.textSecondary(context),
                           ),
                         ),
                         const Spacer(),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: AppColors.success.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            item['status']?.toString().toUpperCase() ?? 'ACTIVE',
+                            item['status']?.toString().toUpperCase() ??
+                                'ACTIVE',
                             style: const TextStyle(
                               fontSize: 9,
                               color: AppColors.success,
@@ -1963,7 +2200,9 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : AppColors.error.withValues(alpha: 0.08),
+        color: isDark
+            ? const Color(0xFF1E293B)
+            : AppColors.error.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
       ),
@@ -1972,8 +2211,12 @@ class _BizStoreScreenState extends State<BizStoreScreen> with SingleTickerProvid
           const Icon(Icons.report_problem, color: AppColors.error, size: 32),
           const SizedBox(height: AppSpacing.md),
           Text(
-            AppLocalizations.t(context, 'No subscription rejection records found.'),
-            style: const TextStyle(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.bold),
+            AppLocalizations.t(
+                context, 'No subscription rejection records found.'),
+            style: const TextStyle(
+                color: AppColors.error,
+                fontSize: 13,
+                fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
         ],
@@ -1999,7 +2242,8 @@ class _AnimatedGoldPlayPassCard extends StatefulWidget {
   });
 
   @override
-  State<_AnimatedGoldPlayPassCard> createState() => _AnimatedGoldPlayPassCardState();
+  State<_AnimatedGoldPlayPassCard> createState() =>
+      _AnimatedGoldPlayPassCardState();
 }
 
 class _AnimatedGoldPlayPassCardState extends State<_AnimatedGoldPlayPassCard>
@@ -2030,12 +2274,17 @@ class _AnimatedGoldPlayPassCardState extends State<_AnimatedGoldPlayPassCard>
     final activePlan = activeStore.subscriptionPlan;
 
     // Find final expiry date
-    final activeItems = provider.subscriptionHistory.where((h) => h.isActive).toList();
+    final activeItems =
+        provider.subscriptionHistory.where((h) => h.isActive).toList();
     DateTime? expiryDate;
     if (activeItems.isNotEmpty) {
-      expiryDate = activeItems.map((h) => h.endDate).reduce((a, b) => a.isAfter(b) ? a : b);
+      expiryDate = activeItems
+          .map((h) => h.endDate)
+          .reduce((a, b) => a.isAfter(b) ? a : b);
     }
-    final expiryStr = expiryDate != null ? DateFormat('dd MMM yyyy').format(expiryDate) : 'N/A';
+    final expiryStr = expiryDate != null
+        ? DateFormat('dd MMM yyyy').format(expiryDate)
+        : 'N/A';
 
     return Container(
       width: double.infinity,
@@ -2134,7 +2383,8 @@ class _AnimatedGoldPlayPassCardState extends State<_AnimatedGoldPlayPassCard>
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE2B774).withValues(alpha: 0.2),
+                            color:
+                                const Color(0xFFE2B774).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
@@ -2175,7 +2425,8 @@ class _AnimatedGoldPlayPassCardState extends State<_AnimatedGoldPlayPassCard>
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: isStandard
                             ? AppColors.success.withValues(alpha: 0.2)
@@ -2195,14 +2446,18 @@ class _AnimatedGoldPlayPassCardState extends State<_AnimatedGoldPlayPassCard>
                             height: 8,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: isStandard ? AppColors.success : Colors.white60,
+                              color: isStandard
+                                  ? AppColors.success
+                                  : Colors.white60,
                             ),
                           ),
                           const SizedBox(width: 6),
                           Text(
                             isStandard ? "ACTIVE" : "INACTIVE",
                             style: TextStyle(
-                              color: isStandard ? Colors.greenAccent : Colors.white70,
+                              color: isStandard
+                                  ? Colors.greenAccent
+                                  : Colors.white70,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
@@ -2244,14 +2499,21 @@ class _AnimatedGoldPlayPassCardState extends State<_AnimatedGoldPlayPassCard>
                       children: [
                         const Text(
                           "VALUED MEMBER SINCE",
-                          style: TextStyle(color: Colors.white38, fontSize: 8, letterSpacing: 1.0),
+                          style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 8,
+                              letterSpacing: 1.0),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           provider.userProfile?.createdAt != null
-                              ? DateFormat('MM/yy').format(provider.userProfile!.createdAt!)
+                              ? DateFormat('MM/yy')
+                                  .format(provider.userProfile!.createdAt!)
                               : '05/26',
-                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -2271,7 +2533,8 @@ class _AnimatedGoldPlayPassCardState extends State<_AnimatedGoldPlayPassCard>
                           const SizedBox(height: 4),
                           Text(
                             "Expires: $expiryStr",
-                            style: const TextStyle(color: Colors.white38, fontSize: 10),
+                            style: const TextStyle(
+                                color: Colors.white38, fontSize: 10),
                           ),
                         ] else ...[
                           const Text(
@@ -2285,7 +2548,8 @@ class _AnimatedGoldPlayPassCardState extends State<_AnimatedGoldPlayPassCard>
                           const SizedBox(height: 4),
                           const Text(
                             "Upgrade to unlock full features",
-                            style: TextStyle(color: Colors.white24, fontSize: 9),
+                            style:
+                                TextStyle(color: Colors.white24, fontSize: 9),
                           ),
                         ]
                       ],
@@ -2398,7 +2662,9 @@ class GoldWavePainter extends CustomPainter {
       final normalizedX = x / w;
       final y = baseY +
           amplitude * sin(phase * speed + normalizedX * frequency * 2 * pi) +
-          amplitude * 0.5 * sin(phase * speed * 1.3 + normalizedX * frequency * 3.2 * pi);
+          amplitude *
+              0.5 *
+              sin(phase * speed * 1.3 + normalizedX * frequency * 3.2 * pi);
       wavePath.lineTo(x, y);
     }
 
@@ -2411,7 +2677,8 @@ class GoldWavePainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [color1, color2],
-      ).createShader(Rect.fromLTWH(0, baseY - amplitude, w, h - baseY + amplitude));
+      ).createShader(
+          Rect.fromLTWH(0, baseY - amplitude, w, h - baseY + amplitude));
     canvas.drawPath(wavePath, fillPaint);
 
     // Draw glowing crest line
@@ -2422,7 +2689,9 @@ class GoldWavePainter extends CustomPainter {
       final normalizedX = x / w;
       final y = baseY +
           amplitude * sin(phase * speed + normalizedX * frequency * 2 * pi) +
-          amplitude * 0.5 * sin(phase * speed * 1.3 + normalizedX * frequency * 3.2 * pi);
+          amplitude *
+              0.5 *
+              sin(phase * speed * 1.3 + normalizedX * frequency * 3.2 * pi);
       crestPath.lineTo(x, y);
     }
 
@@ -2445,4 +2714,3 @@ class GoldWavePainter extends CustomPainter {
   bool shouldRepaint(covariant GoldWavePainter oldDelegate) =>
       oldDelegate.animationValue != animationValue;
 }
-

@@ -68,28 +68,32 @@ class FeatureGuard extends ConsumerWidget {
     }
 
     // Access Denied / Locked UI
-    return lockedChild ?? Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.lock_person, size: 64, color: AppColors.warning),
-            const SizedBox(height: AppSpacing.md),
-            const Text("Access Restricted",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: AppSpacing.sm),
-            Text("You do not have permission to access: ${featureKey.toUpperCase()}"),
-            const SizedBox(height: AppSpacing.sm),
-            Text("Please contact your Store Owner for access.",
-                style: TextStyle(color: AppColors.textSecondary(context))),
-            const SizedBox(height: AppSpacing.md),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("GO BACK"),
-            )
-          ],
-        ),
-      ),
-    );
+    return lockedChild ??
+        Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock_person,
+                    size: 64, color: AppColors.warning),
+                const SizedBox(height: AppSpacing.md),
+                const Text("Access Restricted",
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                    "You do not have permission to access: ${featureKey.toUpperCase()}"),
+                const SizedBox(height: AppSpacing.sm),
+                Text("Please contact your Store Owner for access.",
+                    style: TextStyle(color: AppColors.textSecondary(context))),
+                const SizedBox(height: AppSpacing.md),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("GO BACK"),
+                )
+              ],
+            ),
+          ),
+        );
   }
 }

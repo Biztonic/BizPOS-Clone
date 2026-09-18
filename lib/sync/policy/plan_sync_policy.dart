@@ -14,8 +14,7 @@ import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
 class PlanSyncPolicy {
   final FirebaseFirestore? _db;
 
-  PlanSyncPolicy({FirebaseFirestore? db})
-      : _db = db ?? _getDefaultDb();
+  PlanSyncPolicy({FirebaseFirestore? db}) : _db = db ?? _getDefaultDb();
 
   static FirebaseFirestore? _getDefaultDb() {
     try {
@@ -85,7 +84,10 @@ class PlanSyncPolicy {
     }
 
     try {
-      final doc = await _db?.collection(SyncCollectionRegistry.stores).doc(storeId).get();
+      final doc = await _db
+          ?.collection(SyncCollectionRegistry.stores)
+          .doc(storeId)
+          .get();
       if (doc != null && doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
         final plan = (data['subscriptionPlan'] ?? 'Basic').toString();
@@ -117,7 +119,10 @@ class PlanSyncPolicy {
       }
 
       // Cloud fallback
-      final doc = await _db?.collection(SyncCollectionRegistry.stores).doc(storeId).get();
+      final doc = await _db
+          ?.collection(SyncCollectionRegistry.stores)
+          .doc(storeId)
+          .get();
       if (doc != null && doc.exists) {
         final data = doc.data()!;
         final addons = (data['addons'] as List<dynamic>?)
@@ -139,7 +144,8 @@ class PlanSyncPolicy {
   Future<void> checkOrderLimit({
     required String storeId,
     required String? userRole,
-    required Future<Map<String, int>> Function(String storeId) getLocalOrderCounts,
+    required Future<Map<String, int>> Function(String storeId)
+        getLocalOrderCounts,
   }) async {
     final plan = await getSubscriptionPlan(storeId);
 
@@ -270,12 +276,17 @@ class PlanSyncPolicy {
   Map<String, dynamic> _parseLimitsFromCloud(Map<String, dynamic> data) {
     return {
       'daily': _parseLimit(data['daily'] ?? data['maxOrdersPerDay'], 2000),
-      'monthly': _parseLimit(data['monthly'] ?? data['maxOrdersPerMonth'], 50000),
-      'rate_customer_management': (data['rate_customer_management'] ?? 0) as num,
-      'rate_franchise_management': (data['rate_franchise_management'] ?? 0) as num,
+      'monthly':
+          _parseLimit(data['monthly'] ?? data['maxOrdersPerMonth'], 50000),
+      'rate_customer_management':
+          (data['rate_customer_management'] ?? 0) as num,
+      'rate_franchise_management':
+          (data['rate_franchise_management'] ?? 0) as num,
       'rate_central_catalog': (data['rate_central_catalog'] ?? 0) as num,
-      'rate_employee_management': (data['rate_employee_management'] ?? 0) as num,
-      'rate_supplier_management': (data['rate_supplier_management'] ?? 0) as num,
+      'rate_employee_management':
+          (data['rate_employee_management'] ?? 0) as num,
+      'rate_supplier_management':
+          (data['rate_supplier_management'] ?? 0) as num,
       'rate_kds_management': (data['rate_kds_management'] ?? 0) as num,
       'rate_table_reservation': (data['rate_table_reservation'] ?? 0) as num,
       'rate_data_center': (data['rate_data_center'] ?? 0) as num,

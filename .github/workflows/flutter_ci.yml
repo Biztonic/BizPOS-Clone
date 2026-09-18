@@ -28,16 +28,13 @@ jobs:
         run: flutter pub get
 
       - name: Verify Formatting
-        run: flutter format --set-exit-if-changed .
-        continue-on-error: true # Don't fail build just for formatting for now
+        run: dart format --output=none --set-exit-if-changed lib test
 
       - name: Analyze
-        run: flutter analyze
-        continue-on-error: true # We have existing lints, don't block build yet
+        run: flutter analyze --no-fatal-infos
 
       - name: Run Tests
-        run: flutter test
-        continue-on-error: true # Don't block if no tests exist or fail yet
+        run: flutter test test/announcement_test.dart test/model_test.dart test/order_logic_demo_test.dart test/sqflite_migration_test.dart test/domain/ test/multi_tenant_security_test.dart test/idempotency_cross_platform_test.dart test/offline_auth_security_test.dart
 
       - name: Build APK (Debug)
         run: flutter build apk --debug

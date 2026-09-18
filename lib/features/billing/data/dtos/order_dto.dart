@@ -46,29 +46,31 @@ class OrderItemDto {
       quantity: _parseInt(data['quantity']),
       note: data['note'],
       category: data['category'],
-      seatIndex: data['seatIndex'] != null ? _parseInt(data['seatIndex']) : null,
+      seatIndex:
+          data['seatIndex'] != null ? _parseInt(data['seatIndex']) : null,
       cgst: (data['cgst'] ?? 0.0).toDouble(),
       sgst: (data['sgst'] ?? 0.0).toDouble(),
     );
   }
 
   Map<String, dynamic> toFirestoreMap() => {
-    'id': itemId,
-    'name': name,
-    'price': price,
-    'costSnapshot': cost,
-    'quantity': quantity,
-    'note': note,
-    'category': category,
-    'seatIndex': seatIndex,
-    'cgst': cgst,
-    'sgst': sgst,
-  };
+        'id': itemId,
+        'name': name,
+        'price': price,
+        'costSnapshot': cost,
+        'quantity': quantity,
+        'note': note,
+        'category': category,
+        'seatIndex': seatIndex,
+        'cgst': cgst,
+        'sgst': sgst,
+      };
 
   // ─── Hive ────────────────────────────────────────────────
 
   factory OrderItemDto.fromHive(Map<String, dynamic> data) {
-    return OrderItemDto.fromFirestore(data); // Same structure, different timestamps
+    return OrderItemDto.fromFirestore(
+        data); // Same structure, different timestamps
   }
 
   Map<String, dynamic> toHiveMap() => toFirestoreMap(); // No Timestamps in Hive
@@ -91,18 +93,18 @@ class OrderItemDto {
   }
 
   Map<String, dynamic> toSqlMap(String orderId) => {
-    'orderId': orderId,
-    'itemId': itemId,
-    'name': name,
-    'price': price,
-    'quantity': quantity,
-    'note': note,
-    'seatIndex': seatIndex,
-    'category': category,
-    'cost': cost,
-    'cgst': cgst,
-    'sgst': sgst,
-  };
+        'orderId': orderId,
+        'itemId': itemId,
+        'name': name,
+        'price': price,
+        'quantity': quantity,
+        'note': note,
+        'seatIndex': seatIndex,
+        'category': category,
+        'cost': cost,
+        'cgst': cgst,
+        'sgst': sgst,
+      };
 
   static int _parseInt(dynamic val) {
     if (val == null) return 0;
@@ -183,7 +185,8 @@ class OrderDto {
       id: id,
       storeId: data['storeId'] ?? '',
       items: (data['items'] as List<dynamic>?)
-              ?.map((item) => OrderItemDto.fromFirestore(item as Map<String, dynamic>))
+              ?.map((item) =>
+                  OrderItemDto.fromFirestore(item as Map<String, dynamic>))
               .toList() ??
           [],
       total: (data['total'] ?? 0).toDouble(),
@@ -222,38 +225,38 @@ class OrderDto {
   }
 
   Map<String, dynamic> toFirestoreMap() => {
-    'storeId': storeId,
-    'items': items.map((i) => i.toFirestoreMap()).toList(),
-    'total': total,
-    'subtotal': subtotal,
-    'discount': discount,
-    'cgst': cgst,
-    'sgst': sgst,
-    'taxRateSnapshot': taxRateSnapshot,
-    'discountSnapshot': discountSnapshot,
-    'date': date,
-    'status': status,
-    'customerRefId': customerId,
-    'customerName': customerName,
-    'customerPhone': customerPhone,
-    'type': type,
-    'paymentMethod': paymentMethod,
-    'tableId': tableId,
-    'tableName': tableName,
-    'seatNumbers': seatNumbers,
-    'synced': synced,
-    'updatedAt': updatedAt ?? FieldValue.serverTimestamp(),
-    'voidedAt': voidedAt,
-    'voidedBy': voidedBy,
-    'voidReason': voidReason,
-    'deletedAt': null,
-    'version': version,
-    'idempotencyKey': id,
-    'serverUpdatedAt': FieldValue.serverTimestamp(),
-    'syncStatus': syncStatus,
-    'deviceId': deviceId,
-    'businessDayId': businessDayId,
-  };
+        'storeId': storeId,
+        'items': items.map((i) => i.toFirestoreMap()).toList(),
+        'total': total,
+        'subtotal': subtotal,
+        'discount': discount,
+        'cgst': cgst,
+        'sgst': sgst,
+        'taxRateSnapshot': taxRateSnapshot,
+        'discountSnapshot': discountSnapshot,
+        'date': date,
+        'status': status,
+        'customerRefId': customerId,
+        'customerName': customerName,
+        'customerPhone': customerPhone,
+        'type': type,
+        'paymentMethod': paymentMethod,
+        'tableId': tableId,
+        'tableName': tableName,
+        'seatNumbers': seatNumbers,
+        'synced': synced,
+        'updatedAt': updatedAt ?? FieldValue.serverTimestamp(),
+        'voidedAt': voidedAt,
+        'voidedBy': voidedBy,
+        'voidReason': voidReason,
+        'deletedAt': null,
+        'version': version,
+        'idempotencyKey': id,
+        'serverUpdatedAt': FieldValue.serverTimestamp(),
+        'syncStatus': syncStatus,
+        'deviceId': deviceId,
+        'businessDayId': businessDayId,
+      };
 
   // ─── Hive ────────────────────────────────────────────────
 
@@ -262,7 +265,8 @@ class OrderDto {
       id: data['id'] ?? '',
       storeId: data['storeId'] ?? '',
       items: (data['items'] as List<dynamic>?)
-              ?.map((item) => OrderItemDto.fromHive(item as Map<String, dynamic>))
+              ?.map(
+                  (item) => OrderItemDto.fromHive(item as Map<String, dynamic>))
               .toList() ??
           [],
       total: (data['total'] ?? 0).toDouble(),
@@ -294,34 +298,34 @@ class OrderDto {
   }
 
   Map<String, dynamic> toHiveMap() => {
-    'id': id,
-    'storeId': storeId,
-    'items': items.map((i) => i.toHiveMap()).toList(),
-    'total': total,
-    'subtotal': subtotal,
-    'discount': discount,
-    'cgst': cgst,
-    'sgst': sgst,
-    'taxRateSnapshot': taxRateSnapshot,
-    'discountSnapshot': discountSnapshot,
-    'date': date.toIso8601String(),
-    'status': status,
-    'type': type,
-    'paymentMethod': paymentMethod,
-    'customerName': customerName,
-    'customerPhone': customerPhone,
-    'tableId': tableId,
-    'tableName': tableName,
-    'seatNumbers': seatNumbers,
-    'updatedAt': updatedAt?.toIso8601String(),
-    'voidedAt': voidedAt?.toIso8601String(),
-    'voidedBy': voidedBy,
-    'voidReason': voidReason,
-    'syncStatus': syncStatus,
-    'deviceId': deviceId,
-    'version': version,
-    'businessDayId': businessDayId,
-  };
+        'id': id,
+        'storeId': storeId,
+        'items': items.map((i) => i.toHiveMap()).toList(),
+        'total': total,
+        'subtotal': subtotal,
+        'discount': discount,
+        'cgst': cgst,
+        'sgst': sgst,
+        'taxRateSnapshot': taxRateSnapshot,
+        'discountSnapshot': discountSnapshot,
+        'date': date.toIso8601String(),
+        'status': status,
+        'type': type,
+        'paymentMethod': paymentMethod,
+        'customerName': customerName,
+        'customerPhone': customerPhone,
+        'tableId': tableId,
+        'tableName': tableName,
+        'seatNumbers': seatNumbers,
+        'updatedAt': updatedAt?.toIso8601String(),
+        'voidedAt': voidedAt?.toIso8601String(),
+        'voidedBy': voidedBy,
+        'voidReason': voidReason,
+        'syncStatus': syncStatus,
+        'deviceId': deviceId,
+        'version': version,
+        'businessDayId': businessDayId,
+      };
 
   // ─── SQLite ──────────────────────────────────────────────
 
@@ -358,34 +362,34 @@ class OrderDto {
   }
 
   Map<String, dynamic> toSqlMap() => {
-    'id': id,
-    'storeId': storeId,
-    'total': total,
-    'subtotal': subtotal,
-    'discount': discount,
-    'cgst': cgst,
-    'sgst': sgst,
-    'taxRateSnapshot': taxRateSnapshot,
-    'discountSnapshot': discountSnapshot,
-    'date': date.toIso8601String(),
-    'status': status,
-    'type': type,
-    'paymentMethod': paymentMethod,
-    'customerName': customerName,
-    'customerPhone': customerPhone,
-    'tableId': tableId,
-    'tableName': tableName,
-    'synced': synced ? 1 : 0,
-    'updatedAt': updatedAt?.toIso8601String(),
-    'voidedAt': voidedAt?.toIso8601String(),
-    'voidedBy': voidedBy,
-    'voidReason': voidReason,
-    'version': version,
-    'syncStatus': syncStatus,
-    'deviceId': deviceId,
-    'businessDayId': businessDayId,
-    'lastSyncedAt': DateTime.now().toIso8601String(),
-  };
+        'id': id,
+        'storeId': storeId,
+        'total': total,
+        'subtotal': subtotal,
+        'discount': discount,
+        'cgst': cgst,
+        'sgst': sgst,
+        'taxRateSnapshot': taxRateSnapshot,
+        'discountSnapshot': discountSnapshot,
+        'date': date.toIso8601String(),
+        'status': status,
+        'type': type,
+        'paymentMethod': paymentMethod,
+        'customerName': customerName,
+        'customerPhone': customerPhone,
+        'tableId': tableId,
+        'tableName': tableName,
+        'synced': synced ? 1 : 0,
+        'updatedAt': updatedAt?.toIso8601String(),
+        'voidedAt': voidedAt?.toIso8601String(),
+        'voidedBy': voidedBy,
+        'voidReason': voidReason,
+        'version': version,
+        'syncStatus': syncStatus,
+        'deviceId': deviceId,
+        'businessDayId': businessDayId,
+        'lastSyncedAt': DateTime.now().toIso8601String(),
+      };
 
   // ─── Helpers ─────────────────────────────────────────────
 

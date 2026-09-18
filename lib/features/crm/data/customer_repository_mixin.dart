@@ -11,13 +11,9 @@ mixin CustomerRepositoryMixin {
   Future<void> insertCustomer(Customer customer) async {
     final db = await dbHelper.database;
     try {
-      await db.insert(
-        'customers',
-        customer.toSqlMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace
-      );
+      await db.insert('customers', customer.toSqlMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
-
       rethrow;
     }
   }
@@ -57,7 +53,4 @@ mixin CustomerRepositoryMixin {
     if (rows.isEmpty) return null;
     return Customer.fromSql(rows.first);
   }
-
 }
-
-

@@ -80,13 +80,16 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
         children: [
           Text(
             'Audio Announcements & Alerts',
-            style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold),
+            style: AppTypography.headlineMedium
+                .copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Configure real-time voice, sound effects, and haptic feedback profiles.',
             style: AppTypography.bodyMedium.copyWith(
-              color: isDark ? AppColors.textHintDark : AppColors.textSecondary(context),
+              color: isDark
+                  ? AppColors.textHintDark
+                  : AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -97,8 +100,10 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Sound Effects Beeps', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Play chime alerts on item scans, printers, and payments.'),
+                  title: const Text('Sound Effects Beeps',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text(
+                      'Play chime alerts on item scans, printers, and payments.'),
                   value: _settings.enableSounds,
                   activeColor: AppColors.adaptiveSuccess(context),
                   onChanged: (val) {
@@ -111,8 +116,10 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                 const Divider(),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Text-To-Speech (TTS) Voice', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Announce actions using synthesized voice readouts.'),
+                  title: const Text('Text-To-Speech (TTS) Voice',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text(
+                      'Announce actions using synthesized voice readouts.'),
                   value: _settings.enableVoice,
                   activeColor: AppColors.adaptiveSuccess(context),
                   onChanged: (val) {
@@ -128,7 +135,9 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
           const SizedBox(height: AppSpacing.lg),
 
           // 2. Playback Parameters
-          Text('Voice settings', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+          Text('Voice settings',
+              style: AppTypography.titleLarge
+                  .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: Column(
@@ -177,7 +186,9 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
           const SizedBox(height: AppSpacing.lg),
 
           // 3. Profile & Language
-          Text('Preferences & Profiles', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+          Text('Preferences & Profiles',
+              style: AppTypography.titleLarge
+                  .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
             child: Column(
@@ -187,11 +198,15 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                     labelText: 'Voice Language',
                     border: OutlineInputBorder(),
                   ),
-                  value: ['en', 'hi', 'mr'].contains(_settings.language) ? _settings.language : 'en',
+                  value: ['en', 'hi', 'mr'].contains(_settings.language)
+                      ? _settings.language
+                      : 'en',
                   items: const [
                     DropdownMenuItem(value: 'en', child: Text('English (US)')),
-                    DropdownMenuItem(value: 'hi', child: Text('हिन्दी (Hindi)')),
-                    DropdownMenuItem(value: 'mr', child: Text('मराठी (Marathi)')),
+                    DropdownMenuItem(
+                        value: 'hi', child: Text('हिन्दी (Hindi)')),
+                    DropdownMenuItem(
+                        value: 'mr', child: Text('मराठी (Marathi)')),
                   ],
                   onChanged: (val) {
                     if (val != null) {
@@ -208,15 +223,26 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                     labelText: 'Announcement Filter Profile',
                     border: OutlineInputBorder(),
                   ),
-                  value: ['Silent', 'Basic', 'Business', 'Verbose'].contains(_settings.profile) ? _settings.profile : 'Business',
+                  value: ['Silent', 'Basic', 'Business', 'Verbose']
+                          .contains(_settings.profile)
+                      ? _settings.profile
+                      : 'Business',
                   items: const [
-                    DropdownMenuItem(value: 'Silent', child: Text('Silent (Suppress all voice)')),
+                    DropdownMenuItem(
+                        value: 'Silent',
+                        child: Text('Silent (Suppress all voice)')),
                     DropdownMenuItem(
                       value: 'Basic',
                       child: Text('Basic (Payments & Critical alarms only)'),
                     ),
-                    DropdownMenuItem(value: 'Business', child: Text('Business (Alarms, payments, printer, sync - default)')),
-                    DropdownMenuItem(value: 'Verbose', child: Text('Verbose (Announce everything including cart)')),
+                    DropdownMenuItem(
+                        value: 'Business',
+                        child: Text(
+                            'Business (Alarms, payments, printer, sync - default)')),
+                    DropdownMenuItem(
+                        value: 'Verbose',
+                        child: Text(
+                            'Verbose (Announce everything including cart)')),
                   ],
                   onChanged: (val) {
                     if (val != null) {
@@ -239,31 +265,77 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                     if (val == 'click') mapped = '1';
                     if (val == 'beep') mapped = '6';
                     if (val == 'chime') mapped = '11';
-                    final valid = ['none', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20'];
+                    final valid = [
+                      'none',
+                      '1',
+                      '2',
+                      '3',
+                      '4',
+                      '5',
+                      '6',
+                      '7',
+                      '8',
+                      '9',
+                      '10',
+                      '11',
+                      '12',
+                      '13',
+                      '14',
+                      '15',
+                      '16',
+                      '17',
+                      '18',
+                      '19',
+                      '20'
+                    ];
                     return valid.contains(mapped) ? mapped : '1';
                   })(),
                   items: const [
-                    DropdownMenuItem(value: 'none', child: Text('None (Muted)')),
-                    DropdownMenuItem(value: '1', child: Text('Sound 1: Subtle Click')),
-                    DropdownMenuItem(value: '2', child: Text('Sound 2: Tech Click')),
-                    DropdownMenuItem(value: '3', child: Text('Sound 3: High Tick')),
-                    DropdownMenuItem(value: '4', child: Text('Sound 4: Wood Click')),
-                    DropdownMenuItem(value: '5', child: Text('Sound 5: Pop Click')),
-                    DropdownMenuItem(value: '6', child: Text('Sound 6: Standard Beep')),
-                    DropdownMenuItem(value: '7', child: Text('Sound 7: High Beep')),
-                    DropdownMenuItem(value: '8', child: Text('Sound 8: Low Beep')),
-                    DropdownMenuItem(value: '9', child: Text('Sound 9: Double Beep')),
-                    DropdownMenuItem(value: '10', child: Text('Sound 10: Triple Beep')),
-                    DropdownMenuItem(value: '11', child: Text('Sound 11: Ascending Chime')),
-                    DropdownMenuItem(value: '12', child: Text('Sound 12: Descending Chime')),
-                    DropdownMenuItem(value: '13', child: Text('Sound 13: Major Triad Chord')),
-                    DropdownMenuItem(value: '14', child: Text('Sound 14: Ding Dong Alert')),
-                    DropdownMenuItem(value: '15', child: Text('Sound 15: Ring Chime')),
-                    DropdownMenuItem(value: '16', child: Text('Sound 16: Sci-Fi Sweep Up')),
-                    DropdownMenuItem(value: '17', child: Text('Sound 17: Sci-Fi Sweep Down')),
-                    DropdownMenuItem(value: '18', child: Text('Sound 18: Retro Laser')),
-                    DropdownMenuItem(value: '19', child: Text('Sound 19: Alert Ping')),
-                    DropdownMenuItem(value: '20', child: Text('Sound 20: Digital Alarm Pulse')),
+                    DropdownMenuItem(
+                        value: 'none', child: Text('None (Muted)')),
+                    DropdownMenuItem(
+                        value: '1', child: Text('Sound 1: Subtle Click')),
+                    DropdownMenuItem(
+                        value: '2', child: Text('Sound 2: Tech Click')),
+                    DropdownMenuItem(
+                        value: '3', child: Text('Sound 3: High Tick')),
+                    DropdownMenuItem(
+                        value: '4', child: Text('Sound 4: Wood Click')),
+                    DropdownMenuItem(
+                        value: '5', child: Text('Sound 5: Pop Click')),
+                    DropdownMenuItem(
+                        value: '6', child: Text('Sound 6: Standard Beep')),
+                    DropdownMenuItem(
+                        value: '7', child: Text('Sound 7: High Beep')),
+                    DropdownMenuItem(
+                        value: '8', child: Text('Sound 8: Low Beep')),
+                    DropdownMenuItem(
+                        value: '9', child: Text('Sound 9: Double Beep')),
+                    DropdownMenuItem(
+                        value: '10', child: Text('Sound 10: Triple Beep')),
+                    DropdownMenuItem(
+                        value: '11', child: Text('Sound 11: Ascending Chime')),
+                    DropdownMenuItem(
+                        value: '12', child: Text('Sound 12: Descending Chime')),
+                    DropdownMenuItem(
+                        value: '13',
+                        child: Text('Sound 13: Major Triad Chord')),
+                    DropdownMenuItem(
+                        value: '14', child: Text('Sound 14: Ding Dong Alert')),
+                    DropdownMenuItem(
+                        value: '15', child: Text('Sound 15: Ring Chime')),
+                    DropdownMenuItem(
+                        value: '16', child: Text('Sound 16: Sci-Fi Sweep Up')),
+                    DropdownMenuItem(
+                        value: '17',
+                        child: Text('Sound 17: Sci-Fi Sweep Down')),
+                    DropdownMenuItem(
+                        value: '18', child: Text('Sound 18: Retro Laser')),
+                    DropdownMenuItem(
+                        value: '19', child: Text('Sound 19: Alert Ping')),
+                    DropdownMenuItem(
+                        value: '20',
+                        child: Text('Sound 20: Digital Alarm Pulse')),
                   ],
                   onChanged: (val) {
                     if (val != null) {
@@ -281,12 +353,16 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
           const SizedBox(height: AppSpacing.lg),
 
           // 4. Marketing Announcements (Local Offline Storage)
-          Text('Marketing Announcements', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+          Text('Marketing Announcements',
+              style: AppTypography.titleLarge
+                  .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Upload custom audio promos. All files are stored locally on this device and never uploaded to the cloud.',
             style: AppTypography.bodySmall.copyWith(
-              color: isDark ? AppColors.textHintDark : AppColors.textSecondary(context),
+              color: isDark
+                  ? AppColors.textHintDark
+                  : AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -299,11 +375,18 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                     labelText: 'Marketing Play Mode',
                     border: OutlineInputBorder(),
                   ),
-                  value: ['none', 'loop', 'interval'].contains(_settings.marketingPlayMode) ? _settings.marketingPlayMode : 'none',
+                  value: ['none', 'loop', 'interval']
+                          .contains(_settings.marketingPlayMode)
+                      ? _settings.marketingPlayMode
+                      : 'none',
                   items: const [
-                    DropdownMenuItem(value: 'none', child: Text('Disabled (Muted)')),
-                    DropdownMenuItem(value: 'loop', child: Text('Continuous Loop (Rotation)')),
-                    DropdownMenuItem(value: 'interval', child: Text('Scheduled Interval')),
+                    DropdownMenuItem(
+                        value: 'none', child: Text('Disabled (Muted)')),
+                    DropdownMenuItem(
+                        value: 'loop',
+                        child: Text('Continuous Loop (Rotation)')),
+                    DropdownMenuItem(
+                        value: 'interval', child: Text('Scheduled Interval')),
                   ],
                   onChanged: (val) {
                     if (val != null) {
@@ -321,17 +404,25 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                       labelText: 'Play Interval',
                       border: OutlineInputBorder(),
                     ),
-                    value: [60, 300, 600, 1800].contains(_settings.marketingIntervalSeconds) ? _settings.marketingIntervalSeconds : 300,
+                    value: [60, 300, 600, 1800]
+                            .contains(_settings.marketingIntervalSeconds)
+                        ? _settings.marketingIntervalSeconds
+                        : 300,
                     items: const [
-                      DropdownMenuItem(value: 60, child: Text('Every 1 Minute')),
-                      DropdownMenuItem(value: 300, child: Text('Every 5 Minutes (Default)')),
-                      DropdownMenuItem(value: 600, child: Text('Every 10 Minutes')),
-                      DropdownMenuItem(value: 1800, child: Text('Every 30 Minutes')),
+                      DropdownMenuItem(
+                          value: 60, child: Text('Every 1 Minute')),
+                      DropdownMenuItem(
+                          value: 300, child: Text('Every 5 Minutes (Default)')),
+                      DropdownMenuItem(
+                          value: 600, child: Text('Every 10 Minutes')),
+                      DropdownMenuItem(
+                          value: 1800, child: Text('Every 30 Minutes')),
                     ],
                     onChanged: (val) {
                       if (val != null) {
                         setState(() {
-                          _settings = _settings.copyWith(marketingIntervalSeconds: val);
+                          _settings =
+                              _settings.copyWith(marketingIntervalSeconds: val);
                           _saveSettings();
                         });
                       }
@@ -346,7 +437,8 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                   children: [
                     Text(
                       'Local Audio Tracks (${AnnouncementService().marketingAudios.length})',
-                      style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                      style: AppTypography.titleMedium
+                          .copyWith(fontWeight: FontWeight.bold),
                     ),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
@@ -365,11 +457,13 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                 const SizedBox(height: AppSpacing.md),
                 if (AnnouncementService().marketingAudios.isEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                     child: Center(
                       child: Text(
                         'No local audio tracks uploaded yet.',
-                        style: AppTypography.bodyMedium.copyWith(color: AppColors.secondary),
+                        style: AppTypography.bodyMedium
+                            .copyWith(color: AppColors.secondary),
                       ),
                     ),
                   )
@@ -380,19 +474,25 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                     itemCount: AnnouncementService().marketingAudios.length,
                     separatorBuilder: (_, __) => const Divider(),
                     itemBuilder: (context, index) {
-                      final audio = AnnouncementService().marketingAudios[index];
+                      final audio =
+                          AnnouncementService().marketingAudios[index];
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.audiotrack, color: AppColors.secondary),
-                        title: Text(audio.name, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+                        leading: const Icon(Icons.audiotrack,
+                            color: AppColors.secondary),
+                        title: Text(audio.name,
+                            style: AppTypography.bodyMedium
+                                .copyWith(fontWeight: FontWeight.w600)),
                         subtitle: Text(
                           'Size: ${(audio.bytes.lengthInBytes / (1024 * 1024)).toStringAsFixed(2)} MB • Local Storage',
                           style: AppTypography.bodySmall,
                         ),
                         trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                          icon: const Icon(Icons.delete_outline,
+                              color: Colors.redAccent),
                           onPressed: () async {
-                            await AnnouncementService().deleteMarketingAudio(audio.id);
+                            await AnnouncementService()
+                                .deleteMarketingAudio(audio.id);
                             setState(() {
                               _settings = AnnouncementService().settings;
                             });
@@ -420,7 +520,8 @@ class _AudioSettingsSectionState extends State<AudioSettingsSection> {
                   ),
                 ),
                 icon: const Icon(Icons.play_arrow),
-                label: const Text('Test Announcement Playback', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text('Test Announcement Playback',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 onPressed: _testSpeech,
               ),
             ),

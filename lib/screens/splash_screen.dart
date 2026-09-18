@@ -11,7 +11,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -36,20 +37,20 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     // Navigate after animation + delay
     Future.delayed(const Duration(seconds: 3), () {
-       _checkAuthAndNavigate();
+      _checkAuthAndNavigate();
     });
   }
 
   Future<void> _checkAuthAndNavigate() async {
     if (!mounted) return;
-    
+
     // Simple navigation logic based on auth state (can be refined)
     // For now, we just go to the initial route defined in router or let AuthProvider handle it?
     // Actually, usually Main wrapper handles auth. So we might just pop or replace.
     // However, since we are using GoRouter, we can just go to '/'.
     // The redirect logic in GoRouter should handle the rest (Login vs Dashboard).
-    
-    context.go('/'); 
+
+    context.go('/');
   }
 
   @override
@@ -61,7 +62,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfaceLight, // Enterprise clean white background
+      backgroundColor:
+          AppColors.surfaceLight, // Enterprise clean white background
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -77,7 +79,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
                 const SizedBox(height: AppSpacing.xxs),
                 const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.success), // Matched with logo green?
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.success), // Matched with logo green?
                   strokeWidth: 2,
                 )
               ],

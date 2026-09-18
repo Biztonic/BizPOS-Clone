@@ -6,7 +6,12 @@ class Printer {
   final String? productId;
   final dynamic connectionType;
 
-  Printer({this.name, this.address, this.vendorId, this.productId, this.connectionType});
+  Printer(
+      {this.name,
+      this.address,
+      this.vendorId,
+      this.productId,
+      this.connectionType});
 }
 
 enum ConnectionType {

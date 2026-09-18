@@ -12,9 +12,12 @@ class SettingsSyncAdapter extends SyncAdapter {
   String get collection => SyncCollectionRegistry.settings;
 
   @override
-  Query buildQuery(FirebaseFirestore db, String storeId, DateTime? lastSyncTime) {
+  Query buildQuery(
+      FirebaseFirestore db, String storeId, DateTime? lastSyncTime) {
     // Settings are matched by document ID = storeId
-    return db.collection(collection).where(FieldPath.documentId, isEqualTo: storeId);
+    return db
+        .collection(collection)
+        .where(FieldPath.documentId, isEqualTo: storeId);
   }
 
   @override

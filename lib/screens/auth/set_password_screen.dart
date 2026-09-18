@@ -31,7 +31,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     setState(() => _isLoading = true);
     try {
       // 1. Create the account in Firebase Auth
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      final credential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: widget.email,
         password: _passwordController.text.trim(),
       );
@@ -41,12 +42,15 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
       // Check both literal and lowercase doc IDs
       final inputEmail = widget.email.trim();
       final cleanEmail = inputEmail.toLowerCase();
-      
+
       DocumentSnapshot? emailDoc;
       final docIdsToCheck = {inputEmail, cleanEmail};
-      
+
       for (final docId in docIdsToCheck) {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(docId).get();
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(docId)
+            .get();
         if (doc.exists) {
           emailDoc = doc;
           break;
@@ -57,27 +61,32 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
       if (emailDoc == null) {
         final query = await FirebaseFirestore.instance
             .collection('users')
-            .where('email', whereIn: [inputEmail, cleanEmail])
-            .get();
+            .where('email', whereIn: [inputEmail, cleanEmail]).get();
         if (query.docs.isNotEmpty) {
           emailDoc = query.docs.first;
         }
       }
-      
-      final Map<String, dynamic> userData = (emailDoc != null && emailDoc.exists) ? (emailDoc.data() as Map<String, dynamic>? ?? {}) : {};
-      
+
+      final Map<String, dynamic> userData =
+          (emailDoc != null && emailDoc.exists)
+              ? (emailDoc.data() as Map<String, dynamic>? ?? {})
+              : {};
+
       // 3. Prepare data for the new UID-keyed doc (Standard for the app)
       userData['uid'] = uid;
       userData['email'] = widget.email.toLowerCase().trim();
       userData['needsInitialPassword'] = false;
       userData['updatedAt'] = FieldValue.serverTimestamp();
-      
+
       // Ensure essential fields exist if doc was missing
       userData['role'] ??= 'Store Owner';
       userData['name'] ??= widget.email.split('@')[0];
 
       // 4. Save to UID-keyed doc
-      await FirebaseFirestore.instance.collection('users').doc(uid).set(userData);
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .set(userData);
 
       // 5. Clean up the placeholder email-keyed doc
       if (emailDoc != null && emailDoc.exists) {
@@ -87,7 +96,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.t(context, 'Account activated successfully!')),
+            content: Text(
+                AppLocalizations.t(context, 'Account activated successfully!')),
             backgroundColor: AppColors.success,
           ),
         );
@@ -139,11 +149,14 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.xl),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : AppColors.surfaceLight,
+                    color: isDark
+                        ? const Color(0xFF1E293B)
+                        : AppColors.surfaceLight,
                     borderRadius: BorderRadius.zero,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.textPrimaryLight.withValues(alpha: 0.2),
+                        color:
+                            AppColors.textPrimaryLight.withValues(alpha: 0.2),
                         blurRadius: 40,
                         offset: const Offset(0, 20),
                       ),
@@ -155,13 +168,17 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Icon(Icons.lock_reset, size: 64, color: Color(0xFF667eea)),
+                        const Icon(Icons.lock_reset,
+                            size: 64, color: Color(0xFF667eea)),
                         const SizedBox(height: AppSpacing.lg),
-                        Text(AppLocalizations.t(context, 'Welcome to BizPOS!'),
+                        Text(
+                          AppLocalizations.t(context, 'Welcome to BizPOS!'),
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: isDark ? AppColors.surfaceLight : AppColors.textSecondary(context),
+                            color: isDark
+                                ? AppColors.surfaceLight
+                                : AppColors.textSecondary(context),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -170,7 +187,9 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                           'Please set a password for ${widget.email} to continue.',
                           style: TextStyle(
                             fontSize: 14,
-                            color: isDark ? AppColors.textSecondary(context) : AppColors.textSecondary(context),
+                            color: isDark
+                                ? AppColors.textSecondary(context)
+                                : AppColors.textSecondary(context),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -181,10 +200,14 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                             labelText: 'New Password',
                             prefixIcon: const Icon(Icons.lock_outline),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              icon: Icon(_obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility),
+                              onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword),
                             ),
-                            border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+                            border: const OutlineInputBorder(
+                                borderRadius: BorderRadius.zero),
                           ),
                           obscureText: _obscurePassword,
                           validator: (val) => (val == null || val.length < 6)
@@ -198,10 +221,14 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                             labelText: 'Confirm Password',
                             prefixIcon: const Icon(Icons.lock_reset),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
-                              onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                              icon: Icon(_obscureConfirm
+                                  ? Icons.visibility_off
+                                  : Icons.visibility),
+                              onPressed: () => setState(
+                                  () => _obscureConfirm = !_obscureConfirm),
                             ),
-                            border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+                            border: const OutlineInputBorder(
+                                borderRadius: BorderRadius.zero),
                           ),
                           obscureText: _obscureConfirm,
                           validator: (val) => val != _passwordController.text
@@ -216,7 +243,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF667eea),
                               foregroundColor: AppColors.surfaceLight,
-                              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                              shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.zero),
                               elevation: 8,
                             ),
                             child: _isLoading
@@ -228,7 +256,9 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : Text(AppLocalizations.t(context, 'Set Password & Login'),
+                                : Text(
+                                    AppLocalizations.t(
+                                        context, 'Set Password & Login'),
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -248,6 +278,3 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     );
   }
 }
-
-
-

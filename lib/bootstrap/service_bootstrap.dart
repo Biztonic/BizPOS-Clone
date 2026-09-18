@@ -14,10 +14,15 @@ import '../announcement/listeners/qr_listener.dart';
 class ServiceBootstrap {
   static Future<void> init() async {
     debugPrint('⏳ Starting Service Parallel Init...');
-    
+
     await Future.wait([
-      if (!kIsWeb) PrinterManagerService().init().then((_) => debugPrint('🖨️ Printer Service Init Done')),
-      OfflineService().init().then((_) => debugPrint('🌐 Offline Service Init Done')),
+      if (!kIsWeb)
+        PrinterManagerService()
+            .init()
+            .then((_) => debugPrint('🖨️ Printer Service Init Done')),
+      OfflineService()
+          .init()
+          .then((_) => debugPrint('🌐 Offline Service Init Done')),
       SyncService().init().then((_) => debugPrint('🔄 Sync Service Init Done')),
     ]);
 
@@ -38,7 +43,7 @@ class ServiceBootstrap {
     } catch (e) {
       debugPrint('❌ Announcement Service Init Failed: $e');
     }
-    
+
     debugPrint('✅ Service Initialization Complete');
   }
 }

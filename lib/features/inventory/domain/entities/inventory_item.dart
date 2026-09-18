@@ -6,9 +6,10 @@ class InventoryItem {
   final String name;
   final String category;
   final double price;
-  @Deprecated('Use inventory_movements as source of truth. This is a cached view only.')
-  final int quantity; 
-  
+  @Deprecated(
+      'Use inventory_movements as source of truth. This is a cached view only.')
+  final int quantity;
+
   final String status;
   final String? image;
   final String? counterId;
@@ -17,7 +18,7 @@ class InventoryItem {
   final String? sku;
   final DateTime? expiryDate;
   final bool trackStock;
-  final String? storeId; 
+  final String? storeId;
   final String? centralItemId;
   final String? storeType;
   final String? dietaryType;
@@ -41,7 +42,7 @@ class InventoryItem {
     required this.name,
     required this.category,
     required this.price,
-    int quantity = 0, 
+    int quantity = 0,
     required this.status,
     this.image,
     this.counterId,
@@ -63,7 +64,7 @@ class InventoryItem {
     this.syncStatus = 'PENDING',
     this.deviceId,
     this.version = 1,
-    this.featured = false, 
+    this.featured = false,
     this.lowStockThreshold = 10,
     this.localImage,
   }) : this.quantity = quantity < 0 ? 0 : quantity;
@@ -100,7 +101,7 @@ class InventoryItem {
       name: data['name'] ?? '',
       category: data['category'] ?? '',
       price: parseDouble(data['price']),
-      quantity: parseInt(data['quantity']), 
+      quantity: parseInt(data['quantity']),
       status: data['status'] ?? 'In Stock',
       image: data['image'],
       counterId: data['counterId'],
@@ -122,8 +123,10 @@ class InventoryItem {
       syncStatus: data['syncStatus'] ?? 'PENDING',
       deviceId: data['deviceId'],
       version: parseInt(data['version']) > 0 ? parseInt(data['version']) : 1,
-      featured: data['featured'] ?? false, 
-      lowStockThreshold: parseInt(data['lowStockThreshold']) > 0 ? parseInt(data['lowStockThreshold']) : 10,
+      featured: data['featured'] ?? false,
+      lowStockThreshold: parseInt(data['lowStockThreshold']) > 0
+          ? parseInt(data['lowStockThreshold'])
+          : 10,
       localImage: data['localImage'],
     );
   }
@@ -155,7 +158,7 @@ class InventoryItem {
     String? syncStatus,
     String? deviceId,
     int? version,
-     bool? featured,
+    bool? featured,
     int? lowStockThreshold,
     String? localImage,
   }) {
@@ -214,11 +217,11 @@ class InventoryItem {
       'cardStyle': cardStyle,
       'cardSize': cardSize,
       'updatedAt': updatedAt ?? FieldValue.serverTimestamp(),
-      'deletedAt': deletedAt, 
+      'deletedAt': deletedAt,
       'syncStatus': syncStatus,
       'deviceId': deviceId,
       'version': version,
-      'featured': featured, 
+      'featured': featured,
       'lowStockThreshold': lowStockThreshold,
       'localImage': localImage,
     };
@@ -260,11 +263,12 @@ class InventoryItem {
       'syncStatus': syncStatus,
       'deviceId': deviceId,
       'version': version,
-      'featured': featured, 
+      'featured': featured,
       'lowStockThreshold': lowStockThreshold,
       'localImage': localImage,
     };
   }
+
   // --- SQFlite Adapters ---
   Map<String, dynamic> toSqlMap() {
     return {
@@ -309,7 +313,9 @@ class InventoryItem {
       sku: row['sku'],
       cost: (row['cost'] ?? 0).toDouble(),
       unit: row['unit'],
-      expiryDate: row['expiryDate'] != null ? DateTime.tryParse(row['expiryDate']) : null,
+      expiryDate: row['expiryDate'] != null
+          ? DateTime.tryParse(row['expiryDate'])
+          : null,
       trackStock: (row['trackStock'] == 1), // Integer -> Boolean
       storeId: row['storeId'],
       centralItemId: row['centralItemId'],

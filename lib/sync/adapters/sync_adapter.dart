@@ -19,10 +19,13 @@ abstract class SyncAdapter {
 
   /// Builds a Firestore query for pulling updates.
   /// Standard implementation uses 'storeId' filter and 'updatedAt' for deltas.
-  Query buildQuery(FirebaseFirestore db, String storeId, DateTime? lastSyncTime) {
-    Query query = db.collection(collection).where('storeId', isEqualTo: storeId);
+  Query buildQuery(
+      FirebaseFirestore db, String storeId, DateTime? lastSyncTime) {
+    Query query =
+        db.collection(collection).where('storeId', isEqualTo: storeId);
     if (lastSyncTime != null) {
-      query = query.where('updatedAt', isGreaterThan: Timestamp.fromDate(lastSyncTime));
+      query = query.where('updatedAt',
+          isGreaterThan: Timestamp.fromDate(lastSyncTime));
     }
     return query;
   }
@@ -50,4 +53,3 @@ abstract class SyncAdapter {
     Repository repository,
   ) async {}
 }
-

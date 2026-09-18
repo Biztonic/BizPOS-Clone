@@ -31,7 +31,8 @@ class LimitsEngine {
   Future<void> validateOrderCreation({
     required String storeId,
     required String? userRole,
-    required Future<Map<String, int>> Function(String storeId) getLocalOrderCounts,
+    required Future<Map<String, int>> Function(String storeId)
+        getLocalOrderCounts,
   }) async {
     await _policy.checkOrderLimit(
       storeId: storeId,
@@ -55,10 +56,10 @@ class LimitsEngine {
   }
 
   // --- Synchronous throttle check for orchestrator ---
-  
+
   bool _lastCanPull = true;
   String _lastThrottleReason = '';
-  
+
   /// Synchronous check if pull sync is currently allowed.
   /// Updated asynchronously via [refreshThrottleState].
   bool canPullSync() => _lastCanPull;
@@ -82,7 +83,8 @@ class LimitsEngine {
       forceManual: false,
     );
     if (!_lastCanPull) {
-      _lastThrottleReason = 'Sync throttled by plan policy (frequency: $syncFrequency)';
+      _lastThrottleReason =
+          'Sync throttled by plan policy (frequency: $syncFrequency)';
     } else {
       _lastThrottleReason = '';
     }

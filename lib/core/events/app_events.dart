@@ -284,4 +284,3 @@ class KitchenReadyEvent {
   final String tableName;
   KitchenReadyEvent({required this.orderId, required this.tableName});
 }
-

@@ -13,15 +13,16 @@ class BackendService {
   Future<List<InventoryItem>> fetchCentralCatalogItems() async {
     try {
       final snapshot = await _db.collection(_globalCatalogCollection).get();
-      
+
       // If collection is empty, we return empty list so the provider can fallback to local JSON if needed
       if (snapshot.docs.isEmpty) {
         return [];
       }
 
-      return snapshot.docs.map((doc) => _mapFirestoreToInventoryItem(doc)).toList();
+      return snapshot.docs
+          .map((doc) => _mapFirestoreToInventoryItem(doc))
+          .toList();
     } catch (e) {
-
       rethrow;
     }
   }
@@ -30,9 +31,8 @@ class BackendService {
   InventoryItem _mapFirestoreToInventoryItem(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return InventoryItem.fromMap(data, doc.id).copyWith(
-       storeId: null, // Central items don't belong to a store
-       quantity: 0,   // Central items are templates
-       status: 'In Stock'
-    );
+        storeId: null, // Central items don't belong to a store
+        quantity: 0, // Central items are templates
+        status: 'In Stock');
   }
 }

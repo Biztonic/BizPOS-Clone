@@ -19,7 +19,9 @@ extension DateTimeExtensions on DateTime {
   /// Returns true if this date is yesterday.
   bool get isYesterday {
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
-    return year == yesterday.year && month == yesterday.month && day == yesterday.day;
+    return year == yesterday.year &&
+        month == yesterday.month &&
+        day == yesterday.day;
   }
 
   /// Returns true if this date is within the current month.

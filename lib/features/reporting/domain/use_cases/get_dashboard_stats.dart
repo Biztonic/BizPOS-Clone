@@ -19,7 +19,8 @@ class GetDashboardStatsParams {
   });
 }
 
-class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, DashboardStats> {
+class GetDashboardStatsUseCase
+    extends UseCase<GetDashboardStatsParams, DashboardStats> {
   final Repository repository;
 
   GetDashboardStatsUseCase(this.repository);
@@ -33,10 +34,11 @@ class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, Dashboar
     // 1. Calculate Smart Stats (Top level metrics)
     int sqlTodayCount = 0;
     int sqlMonthCount = 0;
-    
+
     if (params.isNative && storeId != null) {
       final now = DateTime.now();
-      final dateStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      final dateStr =
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
       final yearMonth = "${now.year}-${now.month.toString().padLeft(2, '0')}";
       sqlTodayCount = await repository.getDailyOrderCount(storeId, dateStr);
       sqlMonthCount = await repository.getMonthlyOrderCount(storeId, yearMonth);
@@ -50,24 +52,30 @@ class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, Dashboar
     });
 
     // 2. Calculate Weekly Sales
-    final weeklySales = await compute(_calcWeeklySalesTask, {'orders': orders, 'period': period});
+    final weeklySales = await compute(
+        _calcWeeklySalesTask, {'orders': orders, 'period': period});
 
     // 3. Calculate Top Products
-    final topProducts = await compute(_calcTopProductsTask, {'orders': orders, 'period': period});
+    final topProducts = await compute(
+        _calcTopProductsTask, {'orders': orders, 'period': period});
 
     // 4. Calculate Actual Sales Data
-    final actualSalesData = await compute(_calcActualSalesTask, {'orders': orders, 'period': period});
+    final actualSalesData = await compute(
+        _calcActualSalesTask, {'orders': orders, 'period': period});
 
     final startDate = _getStartDateForPeriod(period);
 
     // 5. Calculate Category Stats
-    final categorySales = await compute(_calcCategorySalesTask, {'orders': orders, 'startDate': startDate});
+    final categorySales = await compute(
+        _calcCategorySalesTask, {'orders': orders, 'startDate': startDate});
 
     // 6. Calculate Sales Report
-    final salesReport = await compute(_calcSalesReportTask, {'orders': orders, 'startDate': startDate});
+    final salesReport = await compute(
+        _calcSalesReportTask, {'orders': orders, 'startDate': startDate});
 
     // 7. Calculate Payment Stats
-    final paymentStats = await compute(_calcPaymentStatsTask, {'orders': orders, 'startDate': startDate});
+    final paymentStats = await compute(
+        _calcPaymentStatsTask, {'orders': orders, 'startDate': startDate});
 
     // 8. Calculate Rushed Hours
     final rushedHours = await compute(_calcRushedHoursTask, {'orders': orders});
@@ -96,11 +104,16 @@ class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, Dashboar
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     switch (period) {
-      case ReportPeriod.today: return today;
-      case ReportPeriod.yesterday: return today.subtract(const Duration(days: 1));
-      case ReportPeriod.last7Days: return today.subtract(const Duration(days: 7));
-      case ReportPeriod.last30Days: return today.subtract(const Duration(days: 30));
-      case ReportPeriod.custom: return today.subtract(const Duration(days: 7));
+      case ReportPeriod.today:
+        return today;
+      case ReportPeriod.yesterday:
+        return today.subtract(const Duration(days: 1));
+      case ReportPeriod.last7Days:
+        return today.subtract(const Duration(days: 7));
+      case ReportPeriod.last30Days:
+        return today.subtract(const Duration(days: 30));
+      case ReportPeriod.custom:
+        return today.subtract(const Duration(days: 7));
     }
   }
 
@@ -111,7 +124,7 @@ class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, Dashboar
     final int sqlTodayCount = params['sqlTodayCount'];
     final int sqlMonthCount = params['sqlMonthCount'];
     final bool isNative = params['isNative'];
-    
+
     double totalSales = 0;
     double todaySales = 0;
     int todayCount = 0;
@@ -120,183 +133,224 @@ class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, Dashboar
     final now = DateTime.now();
 
     for (var o in data) {
-        if (o.status == 'Cancelled' || o.status == 'VOID') continue;
-        
-        double orderTotal = o.status == 'Refunded' ? 0 : o.total;
-        totalSales += orderTotal;
+      if (o.status == 'Cancelled' || o.status == 'VOID') continue;
 
-        if (o.date.day == now.day && o.date.month == now.month && o.date.year == now.year) {
-            todaySales += orderTotal;
-            if (o.status != 'Refunded') todayCount++;
-        }
-        if (o.date.month == now.month && o.date.year == now.year) {
-            monthSales += orderTotal;
-            if (o.status != 'Refunded') monthCount++;
-        }
+      double orderTotal = o.status == 'Refunded' ? 0 : o.total;
+      totalSales += orderTotal;
+
+      if (o.date.day == now.day &&
+          o.date.month == now.month &&
+          o.date.year == now.year) {
+        todaySales += orderTotal;
+        if (o.status != 'Refunded') todayCount++;
+      }
+      if (o.date.month == now.month && o.date.year == now.year) {
+        monthSales += orderTotal;
+        if (o.status != 'Refunded') monthCount++;
+      }
     }
-    
+
     final finalTodayCount = isNative ? sqlTodayCount : todayCount;
     final finalMonthCount = isNative ? sqlMonthCount : monthCount;
 
     return {
-       'totalSales': totalSales,
-       'totalOrders': data.length,
-       'todaySales': todaySales,
-       'todayOrders': finalTodayCount,
-       'monthSales': monthSales,
-       'monthOrders': finalMonthCount,
-       'avgDailySale': monthSales / 30,
-       'avgOrderValue': data.isNotEmpty ? totalSales / data.length : 0.0
+      'totalSales': totalSales,
+      'totalOrders': data.length,
+      'todaySales': todaySales,
+      'todayOrders': finalTodayCount,
+      'monthSales': monthSales,
+      'monthOrders': finalMonthCount,
+      'avgDailySale': monthSales / 30,
+      'avgOrderValue': data.isNotEmpty ? totalSales / data.length : 0.0
     };
   }
 
-  static List<Map<String, dynamic>> _calcWeeklySalesTask(Map<String, dynamic> params) {
-      final List<OrderModel> dataOrders = params['orders'];
-      final ReportPeriod selectedPeriod = params['period'];
-      
-      int days = 7;
-      if (selectedPeriod == ReportPeriod.today) {
-        days = 1;
-      } else if (selectedPeriod == ReportPeriod.yesterday) {
-        days = 2; 
-      } else if (selectedPeriod == ReportPeriod.last30Days) {
-        days = 30;
-      }
+  static List<Map<String, dynamic>> _calcWeeklySalesTask(
+      Map<String, dynamic> params) {
+    final List<OrderModel> dataOrders = params['orders'];
+    final ReportPeriod selectedPeriod = params['period'];
 
-      final now = DateTime.now();
-      List<Map<String, dynamic>> data = [];
-      for (int i = days - 1; i >= 0; i--) {
-          final day = now.subtract(Duration(days: i));
-          final dayOrders = dataOrders.where((o) => 
-            o.date.day == day.day && 
-            o.date.month == day.month && 
-            o.date.year == day.year && 
-            o.status != 'Cancelled' && 
-            o.status != 'VOID' && 
-            o.status != 'Refunded'
-          ).toList();
-          double sum = 0;
-          for(var o in dayOrders) {
-            sum += o.total;
-          }
-          data.add({'day': "${day.day}/${day.month}", 'sales': sum});
+    int days = 7;
+    if (selectedPeriod == ReportPeriod.today) {
+      days = 1;
+    } else if (selectedPeriod == ReportPeriod.yesterday) {
+      days = 2;
+    } else if (selectedPeriod == ReportPeriod.last30Days) {
+      days = 30;
+    }
+
+    final now = DateTime.now();
+    List<Map<String, dynamic>> data = [];
+    for (int i = days - 1; i >= 0; i--) {
+      final day = now.subtract(Duration(days: i));
+      final dayOrders = dataOrders
+          .where((o) =>
+              o.date.day == day.day &&
+              o.date.month == day.month &&
+              o.date.year == day.year &&
+              o.status != 'Cancelled' &&
+              o.status != 'VOID' &&
+              o.status != 'Refunded')
+          .toList();
+      double sum = 0;
+      for (var o in dayOrders) {
+        sum += o.total;
       }
-      return data;
+      data.add({'day': "${day.day}/${day.month}", 'sales': sum});
+    }
+    return data;
   }
 
-  static List<Map<String, dynamic>> _calcTopProductsTask(Map<String, dynamic> params) {
-      final List<OrderModel> dataOrders = params['orders'];
-      final ReportPeriod selectedPeriod = params['period'];
-      
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      DateTime startDate;
-      switch (selectedPeriod) {
-          case ReportPeriod.today: startDate = today; break;
-          case ReportPeriod.yesterday: startDate = today.subtract(const Duration(days: 1)); break;
-          case ReportPeriod.last7Days: startDate = today.subtract(const Duration(days: 7)); break;
-          case ReportPeriod.last30Days: startDate = today.subtract(const Duration(days: 30)); break;
-          case ReportPeriod.custom: startDate = today.subtract(const Duration(days: 7)); break;
-      }
+  static List<Map<String, dynamic>> _calcTopProductsTask(
+      Map<String, dynamic> params) {
+    final List<OrderModel> dataOrders = params['orders'];
+    final ReportPeriod selectedPeriod = params['period'];
 
-      final sales = <String, int>{};
-      for (var o in dataOrders) {
-          if (o.status == 'Cancelled' || o.status == 'VOID' || o.status == 'Refunded') continue;
-          if (o.date.isBefore(startDate)) continue;
-          for (var item in o.items) {
-             final int qty = item.quantity.toInt();
-             sales[item.item.name] = (sales[item.item.name] ?? 0) + qty;
-          }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    DateTime startDate;
+    switch (selectedPeriod) {
+      case ReportPeriod.today:
+        startDate = today;
+        break;
+      case ReportPeriod.yesterday:
+        startDate = today.subtract(const Duration(days: 1));
+        break;
+      case ReportPeriod.last7Days:
+        startDate = today.subtract(const Duration(days: 7));
+        break;
+      case ReportPeriod.last30Days:
+        startDate = today.subtract(const Duration(days: 30));
+        break;
+      case ReportPeriod.custom:
+        startDate = today.subtract(const Duration(days: 7));
+        break;
+    }
+
+    final sales = <String, int>{};
+    for (var o in dataOrders) {
+      if (o.status == 'Cancelled' ||
+          o.status == 'VOID' ||
+          o.status == 'Refunded') continue;
+      if (o.date.isBefore(startDate)) continue;
+      for (var item in o.items) {
+        final int qty = item.quantity.toInt();
+        sales[item.item.name] = (sales[item.item.name] ?? 0) + qty;
       }
-      final sortedKeys = sales.keys.toList()..sort((a,b) => sales[b]!.compareTo(sales[a]!));
-      return sortedKeys.take(5).map((k) => {'name': k, 'quantity': sales[k], 'revenue': 0.0}).toList();
+    }
+    final sortedKeys = sales.keys.toList()
+      ..sort((a, b) => sales[b]!.compareTo(sales[a]!));
+    return sortedKeys
+        .take(5)
+        .map((k) => {'name': k, 'quantity': sales[k], 'revenue': 0.0})
+        .toList();
   }
 
-  static List<Map<String, dynamic>> _calcActualSalesTask(Map<String, dynamic> params) {
-      final List<OrderModel> orders = params['orders'];
-      final ReportPeriod selectedPeriod = params['period'];
-      
-      int days = 7;
-      if (selectedPeriod == ReportPeriod.today) {
-        days = 1;
-      } else if (selectedPeriod == ReportPeriod.yesterday) {
-        days = 2;
-      } else if (selectedPeriod == ReportPeriod.last30Days) {
-        days = 30;
-      }
+  static List<Map<String, dynamic>> _calcActualSalesTask(
+      Map<String, dynamic> params) {
+    final List<OrderModel> orders = params['orders'];
+    final ReportPeriod selectedPeriod = params['period'];
 
-      final now = DateTime.now();
-      final Map<String, double> salesMap = {};
-      final List<String> orderedKeys = [];
-      for (int i = days - 1; i >= 0; i--) {
-          final day = now.subtract(Duration(days: i));
-          final key = "${day.day}/${day.month}";
-          salesMap[key] = 0.0;
-          orderedKeys.add(key);
+    int days = 7;
+    if (selectedPeriod == ReportPeriod.today) {
+      days = 1;
+    } else if (selectedPeriod == ReportPeriod.yesterday) {
+      days = 2;
+    } else if (selectedPeriod == ReportPeriod.last30Days) {
+      days = 30;
+    }
+
+    final now = DateTime.now();
+    final Map<String, double> salesMap = {};
+    final List<String> orderedKeys = [];
+    for (int i = days - 1; i >= 0; i--) {
+      final day = now.subtract(Duration(days: i));
+      final key = "${day.day}/${day.month}";
+      salesMap[key] = 0.0;
+      orderedKeys.add(key);
+    }
+    for (var o in orders) {
+      if (o.status == 'Cancelled' ||
+          o.status == 'VOID' ||
+          o.status == 'Refunded') continue;
+      final diff = now.difference(o.date).inDays;
+      if (diff < days && diff >= 0) {
+        final key = "${o.date.day}/${o.date.month}";
+        if (salesMap.containsKey(key)) {
+          salesMap[key] = (salesMap[key] ?? 0) + o.total;
+        }
       }
-      for (var o in orders) {
-          if (o.status == 'Cancelled' || o.status == 'VOID' || o.status == 'Refunded') continue;
-          final diff = now.difference(o.date).inDays;
-          if (diff < days && diff >= 0) {
-             final key = "${o.date.day}/${o.date.month}";
-             if (salesMap.containsKey(key)) {
-                salesMap[key] = (salesMap[key] ?? 0) + o.total;
-             }
-          }
-      }
-      return orderedKeys.map((key) => {'day': key, 'sales': salesMap[key]!, 'isForecast': false}).toList();
+    }
+    return orderedKeys
+        .map(
+            (key) => {'day': key, 'sales': salesMap[key]!, 'isForecast': false})
+        .toList();
   }
 
-  static Map<String, double> _calcCategorySalesTask(Map<String, dynamic> params) {
-      final List<OrderModel> orders = params['orders'];
-      final DateTime startDate = params['startDate'];
-      
-      Map<String, double> stats = {};
-      double grossSales = 0;
-      bool hasRecentOrders = false;
-
-      for (var o in orders) {
-         if (o.status == 'Cancelled' || o.status == 'VOID' || o.status == 'Refunded') continue;
-         if (o.date.isBefore(startDate)) continue;
-         
-         hasRecentOrders = true;
-         grossSales += o.total;
-         
-         for (var orderItem in o.items) {
-            final category = orderItem.category ?? orderItem.item.category;
-            stats[category] = (stats[category] ?? 0.0) + (orderItem.item.price * orderItem.quantity);
-         }
-      }
-      
-      if (stats.isEmpty && hasRecentOrders) {
-          stats['Uncategorized'] = grossSales;
-      }
-      return stats;
-  }
-
-  static Map<String, dynamic> _calcSalesReportTask(Map<String, dynamic> params) {
-      final List<OrderModel> orders = params['orders'];
-      final DateTime startDate = params['startDate'];
-      
-      final periodOrders = orders.where((o) => o.date.isAfter(startDate)).toList();
-      final activeOrders = periodOrders.where((o) => o.status != 'Cancelled' && o.status != 'VOID' && o.status != 'Refunded').toList();
-      final totalSales = activeOrders.fold(0.0, (sum, o) => sum + o.total);
-      
-      final refundedCount = periodOrders.where((o) => o.status == 'Refunded').length;
-      
-      return {
-         'totalSales': totalSales, 
-         'totalOrders': activeOrders.length,
-         'cancelled': periodOrders.where((o) => o.status == 'Cancelled').length,
-         'refunded': refundedCount,
-         'averageOrderValue': activeOrders.isNotEmpty ? totalSales / activeOrders.length : 0.0,
-      };
-  }
-
-  static Map<String, double> _calcPaymentStatsTask(Map<String, dynamic> params) {
+  static Map<String, double> _calcCategorySalesTask(
+      Map<String, dynamic> params) {
     final List<OrderModel> orders = params['orders'];
     final DateTime startDate = params['startDate'];
-    
+
+    Map<String, double> stats = {};
+    double grossSales = 0;
+    bool hasRecentOrders = false;
+
+    for (var o in orders) {
+      if (o.status == 'Cancelled' ||
+          o.status == 'VOID' ||
+          o.status == 'Refunded') continue;
+      if (o.date.isBefore(startDate)) continue;
+
+      hasRecentOrders = true;
+      grossSales += o.total;
+
+      for (var orderItem in o.items) {
+        final category = orderItem.category ?? orderItem.item.category;
+        stats[category] = (stats[category] ?? 0.0) +
+            (orderItem.item.price * orderItem.quantity);
+      }
+    }
+
+    if (stats.isEmpty && hasRecentOrders) {
+      stats['Uncategorized'] = grossSales;
+    }
+    return stats;
+  }
+
+  static Map<String, dynamic> _calcSalesReportTask(
+      Map<String, dynamic> params) {
+    final List<OrderModel> orders = params['orders'];
+    final DateTime startDate = params['startDate'];
+
+    final periodOrders =
+        orders.where((o) => o.date.isAfter(startDate)).toList();
+    final activeOrders = periodOrders
+        .where((o) =>
+            o.status != 'Cancelled' &&
+            o.status != 'VOID' &&
+            o.status != 'Refunded')
+        .toList();
+    final totalSales = activeOrders.fold(0.0, (sum, o) => sum + o.total);
+
+    final refundedCount =
+        periodOrders.where((o) => o.status == 'Refunded').length;
+
+    return {
+      'totalSales': totalSales,
+      'totalOrders': activeOrders.length,
+      'cancelled': periodOrders.where((o) => o.status == 'Cancelled').length,
+      'refunded': refundedCount,
+      'averageOrderValue':
+          activeOrders.isNotEmpty ? totalSales / activeOrders.length : 0.0,
+    };
+  }
+
+  static Map<String, double> _calcPaymentStatsTask(
+      Map<String, dynamic> params) {
+    final List<OrderModel> orders = params['orders'];
+    final DateTime startDate = params['startDate'];
+
     Map<String, double> stats = {};
     for (var o in orders) {
       if (o.status == 'Cancelled' || o.status == 'VOID') continue;
@@ -304,7 +358,7 @@ class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, Dashboar
 
       final method = o.paymentMethod.isEmpty ? 'Unknown' : o.paymentMethod;
       final double orderValue = o.status == 'Refunded' ? 0.0 : o.total;
-      
+
       stats[method] = (stats[method] ?? 0.0) + orderValue;
     }
     return stats;
@@ -330,10 +384,10 @@ class GetDashboardStatsUseCase extends UseCase<GetDashboardStatsParams, Dashboar
         peakHour = h;
       }
       if (h >= 9 && h <= 21) {
-         if (count < leastCount) {
-            leastCount = count;
-            leastHour = h;
-         }
+        if (count < leastCount) {
+          leastCount = count;
+          leastHour = h;
+        }
       }
     }
     return {'peakHour': peakHour, 'leastHour': leastHour};

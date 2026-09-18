@@ -35,10 +35,14 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.customer?.name ?? '');
-    _phoneController = TextEditingController(text: widget.customer?.phone ?? '');
-    _emailController = TextEditingController(text: widget.customer?.email ?? '');
-    _addressController = TextEditingController(text: widget.customer?.billingAddress ?? '');
-    _taxController = TextEditingController(text: widget.customer?.taxNumber ?? '');
+    _phoneController =
+        TextEditingController(text: widget.customer?.phone ?? '');
+    _emailController =
+        TextEditingController(text: widget.customer?.email ?? '');
+    _addressController =
+        TextEditingController(text: widget.customer?.billingAddress ?? '');
+    _taxController =
+        TextEditingController(text: widget.customer?.taxNumber ?? '');
   }
 
   @override
@@ -58,7 +62,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
 
     try {
       final provider = Provider.of<DashboardProvider>(context, listen: false);
-      
+
       final newCustomer = Customer(
         id: widget.customer?.id ?? const Uuid().v4(), // Generate ID if new
         storeId: provider.activeStoreId ?? '',
@@ -84,13 +88,17 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.t(context, 'Customer saved successfully')), behavior: SnackBarBehavior.floating),
+          SnackBar(
+              content: Text(
+                  AppLocalizations.t(context, 'Customer saved successfully')),
+              behavior: SnackBarBehavior.floating),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+              content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {
@@ -102,7 +110,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
   Widget build(BuildContext context) {
     return PosScaffold(
       title: widget.customer == null ? 'Add Customer' : 'Edit Customer',
-      mainContent: _isLoading 
+      mainContent: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -115,13 +123,18 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(AppLocalizations.t(context, 'Profile Information'), style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                          Text(
+                              AppLocalizations.t(
+                                  context, 'Profile Information'),
+                              style: AppTypography.titleMedium
+                                  .copyWith(fontWeight: FontWeight.bold)),
                           const SizedBox(height: AppSpacing.lg),
                           AppTextField(
                             controller: _nameController,
                             label: 'Full Name',
                             prefixIcon: const Icon(Icons.person_outline),
-                            validator: (v) => v!.isEmpty ? 'Name required' : null,
+                            validator: (v) =>
+                                v!.isEmpty ? 'Name required' : null,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           AppTextField(
@@ -129,7 +142,8 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                             label: 'Phone / Mobile',
                             prefixIcon: const Icon(Icons.phone_outlined),
                             keyboardType: TextInputType.phone,
-                            validator: (v) => v!.isEmpty ? 'Phone required' : null,
+                            validator: (v) =>
+                                v!.isEmpty ? 'Phone required' : null,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           AppTextField(
@@ -147,7 +161,9 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                           Text(AppLocalizations.t(context, 'Business Details'), style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+                          Text(AppLocalizations.t(context, 'Business Details'),
+                              style: AppTypography.titleMedium
+                                  .copyWith(fontWeight: FontWeight.bold)),
                           const SizedBox(height: AppSpacing.lg),
                           AppTextField(
                             controller: _addressController,
@@ -167,7 +183,9 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                     const SizedBox(height: AppSpacing.xl),
                     AppButton.primary(
                       onPressed: _save,
-                      label: widget.customer == null ? 'Create Customer' : 'Update Customer',
+                      label: widget.customer == null
+                          ? 'Create Customer'
+                          : 'Update Customer',
                       width: double.infinity,
                     ),
                   ],
@@ -177,4 +195,3 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
     );
   }
 }
-

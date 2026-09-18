@@ -28,20 +28,23 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
 
     try {
       final provider = Provider.of<DashboardProvider>(context, listen: false);
-      await provider.updateUserProfile(phoneNumber: _mobileController.text.trim());
-      
+      await provider.updateUserProfile(
+          phoneNumber: _mobileController.text.trim());
+
       if (mounted) {
-         // Router redirect will handle navigation automatically once profile is updated
-         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Profile Updated!'))));
+        // Router redirect will handle navigation automatically once profile is updated
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.t(context, 'Profile Updated!'))));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Error: $e")));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -59,7 +62,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               Provider.of<AuthProvider>(context, listen: false).signOut();
             },
             icon: const Icon(Icons.logout, size: 20),
-            label: Text(AppLocalizations.t(context, 'Logout'), style: const TextStyle(fontWeight: FontWeight.bold)),
+            label: Text(AppLocalizations.t(context, 'Logout'),
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).primaryColor,
             ),
@@ -77,19 +81,20 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.perm_contact_calendar, size: 64, color: AppColors.primaryLight),
+                const Icon(Icons.perm_contact_calendar,
+                    size: 64, color: AppColors.primaryLight),
                 const SizedBox(height: AppSpacing.lg),
-                Text(AppLocalizations.t(context, 'One Last Step!'), 
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)
-                ),
+                Text(AppLocalizations.t(context, 'One Last Step!'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.bold)),
                 const SizedBox(height: AppSpacing.sm),
-                Text(AppLocalizations.t(context, 'Please provide your mobile number to complete your registration.'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.textSecondary(context))
-                ),
+                Text(
+                    AppLocalizations.t(context,
+                        'Please provide your mobile number to complete your registration.'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textSecondary(context))),
                 const SizedBox(height: AppSpacing.xl),
-                
                 TextFormField(
                   controller: _mobileController,
                   decoration: const InputDecoration(
@@ -106,14 +111,15 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   },
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   ),
-                  child: _isLoading 
-                      ? const CircularProgressIndicator(color: AppColors.surfaceLight) 
+                  child: _isLoading
+                      ? const CircularProgressIndicator(
+                          color: AppColors.surfaceLight)
                       : Text(AppLocalizations.t(context, 'Save & Continue')),
                 ),
               ],

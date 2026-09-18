@@ -32,7 +32,7 @@ class AppLocalizations {
       'data_center': 'Data Center',
       'setting': 'Setting',
       'languages': 'Languages',
-      
+
       // Settings Menu
       'settings': 'Settings',
       'store': 'Store',
@@ -43,7 +43,7 @@ class AppLocalizations {
       'devices': 'Devices',
       'plan': 'Plan',
       'admin': 'Admin',
-      
+
       // Common Actions
       'logout': 'Logout',
       'login': 'Login',
@@ -74,12 +74,12 @@ class AppLocalizations {
       'print': 'Print',
       'export': 'Export',
       'import': 'Import',
-      
+
       // Developer Mode
       'developer_mode': 'DEVELOPER MODE',
       'normal_mode': 'NORMAL MODE',
       'language_settings': 'Language Settings',
-      
+
       // POS Screen
       'checkout': 'Checkout',
       'cart': 'Cart',
@@ -101,7 +101,7 @@ class AppLocalizations {
       'refund': 'Refund',
       'confirm_refund': 'Confirm Refund',
       'refund_confirmation_msg': 'Are you sure you want to refund this order?',
-      
+
       // Inventory Screen
       'add_item': 'Add Item',
       'edit_item': 'Edit Item',
@@ -117,7 +117,7 @@ class AppLocalizations {
       'in_stock': 'In Stock',
       'out_of_stock': 'Out of Stock',
       'low_stock': 'Low Stock',
-      
+
       // Customer Screen
       'add_customer': 'Add Customer',
       'customer_name': 'Customer Name',
@@ -125,7 +125,7 @@ class AppLocalizations {
       'email': 'Email',
       'address': 'Address',
       'loyalty_points': 'Loyalty Points',
-      
+
       // Sales & Reports
       'today': 'Today',
       'yesterday': 'Yesterday',
@@ -137,7 +137,7 @@ class AppLocalizations {
       'transactions': 'Transactions',
       'top_products': 'Top Products',
       'sales_report': 'Sales Report',
-      
+
       // Messages
       'success': 'Success',
       'error': 'Error',
@@ -151,7 +151,7 @@ class AppLocalizations {
       'saved_successfully': 'Saved Successfully',
       'deleted_successfully': 'Deleted Successfully',
       'updated_successfully': 'Updated Successfully',
-      
+
       // Form Labels
       'required': 'Required',
       'optional': 'Optional',
@@ -165,7 +165,7 @@ class AppLocalizations {
       'inactive': 'Inactive',
       'enabled': 'Enabled',
       'disabled': 'Disabled',
-      
+
       // Dashboard Specific
       'overview': 'Overview',
       'weekly_performance': 'Weekly Performance',
@@ -201,7 +201,7 @@ class AppLocalizations {
       'data_center': 'डेटा सेंटर',
       'setting': 'सेटिंग',
       'languages': 'भाषाएं',
-      
+
       // Settings Menu
       'settings': 'सेटिंग्स',
       'store': 'स्टोर',
@@ -212,7 +212,7 @@ class AppLocalizations {
       'devices': 'उपकरण',
       'plan': 'योजना',
       'admin': 'व्यवस्थापक',
-      
+
       // Common Actions
       'logout': 'लॉगआउट',
       'login': 'लॉगिन',
@@ -243,12 +243,12 @@ class AppLocalizations {
       'print': 'प्रिंट',
       'export': 'निर्यात',
       'import': 'आयात',
-      
+
       // Developer Mode
       'developer_mode': 'डेवलपर मोड',
       'normal_mode': 'सामान्य मोड',
       'language_settings': 'भाषा सेटिंग्स',
-      
+
       // POS Screen
       'checkout': 'चेकआउट',
       'cart': 'कार्ट',
@@ -269,8 +269,9 @@ class AppLocalizations {
       'orders': 'ऑर्डर',
       'refund': 'रिफंड',
       'confirm_refund': 'रिफंड की पुष्टि करें',
-      'refund_confirmation_msg': 'क्या आप वाकई इस ऑर्डर को रिफंड करना चाहते हैं?',
-      
+      'refund_confirmation_msg':
+          'क्या आप वाकई इस ऑर्डर को रिफंड करना चाहते हैं?',
+
       // Inventory Screen
       'add_item': 'वस्तु जोड़ें',
       'edit_item': 'वस्तु संपादित करें',
@@ -286,7 +287,7 @@ class AppLocalizations {
       'in_stock': 'स्टॉक में',
       'out_of_stock': 'स्टॉक में नहीं',
       'low_stock': 'कम स्टॉक',
-      
+
       // Customer Screen
       'add_customer': 'ग्राहक जोड़ें',
       'customer_name': 'ग्राहक का नाम',
@@ -294,7 +295,7 @@ class AppLocalizations {
       'email': 'ईमेल',
       'address': 'पता',
       'loyalty_points': 'लॉयल्टी अंक',
-      
+
       // Sales & Reports
       'today': 'आज',
       'yesterday': 'कल',
@@ -306,7 +307,7 @@ class AppLocalizations {
       'transactions': 'लेनदेन',
       'top_products': 'शीर्ष उत्पाद',
       'sales_report': 'बिक्री रिपोर्ट',
-      
+
       // Messages
       'success': 'सफलता',
       'error': 'त्रुटि',
@@ -320,7 +321,7 @@ class AppLocalizations {
       'saved_successfully': 'सफलतापूर्वक सहेजा गया',
       'deleted_successfully': 'सफलतापूर्वक हटाया गया',
       'updated_successfully': 'सफलतापूर्वक अपडेट किया गया',
-      
+
       // Form Labels
       'required': 'आवश्यक',
       'optional': 'वैकल्पिक',
@@ -334,7 +335,7 @@ class AppLocalizations {
       'inactive': 'निष्क्रिय',
       'enabled': 'सक्षम',
       'disabled': 'अक्षम',
-      
+
       // Dashboard Specific
       'overview': 'अवलोकन',
       'weekly_performance': 'साप्ताहिक प्रदर्शन',
@@ -504,11 +505,11 @@ class AppLocalizations {
     // 1. Try to find the translation in the current locale
     final currentTranslation = _localizedValues[locale.languageCode]?[key];
     if (currentTranslation != null) return currentTranslation;
-    
+
     // 2. Try to fall back to English translation
     final englishTranslation = _localizedValues['en']?[key];
     if (englishTranslation != null) return englishTranslation;
-    
+
     // 3. Fall back to the key itself
     return key;
   }
@@ -524,8 +525,18 @@ class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
 
   @override
   bool isSupported(Locale locale) => [
-    'en', 'hi', 'bn', 'mr', 'te', 'ta', 'gu', 'ur', 'kn', 'or', 'ml'
-  ].contains(locale.languageCode);
+        'en',
+        'hi',
+        'bn',
+        'mr',
+        'te',
+        'ta',
+        'gu',
+        'ur',
+        'kn',
+        'or',
+        'ml'
+      ].contains(locale.languageCode);
 
   @override
   Future<AppLocalizations> load(Locale locale) async {

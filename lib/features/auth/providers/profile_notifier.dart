@@ -13,11 +13,11 @@ class ProfileNotifier extends _$ProfileNotifier {
   AsyncValue<UserProfile?> build() {
     // Watch auth state to react to login/logout
     final authState = ref.watch(authNotifierProvider);
-    
+
     if (authState.user == null) {
       return const AsyncValue.data(null);
     }
-    
+
     // Fire off async profile fetch, set state when complete
     _fetchProfile(authState.user!.uid);
     return const AsyncValue.loading();
@@ -40,7 +40,7 @@ class ProfileNotifier extends _$ProfileNotifier {
     if (currentProfile == null) return;
 
     state = const AsyncValue.loading();
-    
+
     final Map<String, dynamic> updates = {};
     if (name != null) updates['name'] = name;
     if (photoBase64 != null) updates['photoBase64'] = photoBase64;
@@ -53,7 +53,7 @@ class ProfileNotifier extends _$ProfileNotifier {
 
     state = await AsyncValue.guard(() async {
       await _repository.updateUserProfile(currentProfile.uid, updates);
-      
+
       // Update local state by refetching or applying locally
       return currentProfile.copyWith(
         name: name,
@@ -62,7 +62,7 @@ class ProfileNotifier extends _$ProfileNotifier {
       );
     });
   }
-  
+
   /// Helper to refresh profile manually if needed
   Future<void> refresh() async {
     final authState = ref.read(authNotifierProvider);

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
@@ -25,14 +24,15 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
   final _phoneController = TextEditingController();
   final _franchiseCodeController = TextEditingController();
   bool _isSubmitting = false;
-  
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dashboard = Provider.of<DashboardProvider>(context, listen: false);
       if (dashboard.hasAnyStore && dashboard.activeStoreId == null) {
-        debugPrint('ðŸ†• CreateStoreScreen: Stores exist but none active, redirecting to /select-store');
+        debugPrint(
+            'ðŸ†• CreateStoreScreen: Stores exist but none active, redirecting to /select-store');
         context.go('/select-store');
       }
 
@@ -44,8 +44,12 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (auth.user != null) {
       try {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(auth.user!.uid).get();
-        if (doc.exists && doc.data()?.containsKey('pendingFranchiseCode') == true) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(auth.user!.uid)
+            .get();
+        if (doc.exists &&
+            doc.data()?.containsKey('pendingFranchiseCode') == true) {
           final code = doc.data()?['pendingFranchiseCode']?.toString();
           if (code != null && code.isNotEmpty && mounted) {
             setState(() {
@@ -84,13 +88,13 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
 
       // Create the store
       final newStoreId = await provider.addStore(
-        _nameController.text.trim(), 
+        _nameController.text.trim(),
         user.email!,
         address: _addressController.text.trim(),
         phone: _phoneController.text.trim(),
         franchiseCode: _franchiseCodeController.text.trim(),
       );
-      
+
       // Explicitly set as active to ensure immediate selection
       await provider.setActiveStoreId(newStoreId);
 
@@ -103,9 +107,8 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
       // We rely on main.dart redirect to detect the state change (hasStore + activeStore)
       // and redirect to dashboard. But we can also force it here.
       if (mounted) {
-         context.go('/dashboard');
+        context.go('/dashboard');
       }
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -123,13 +126,13 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
   @override
   Widget build(BuildContext context) {
     final dashboard = Provider.of<DashboardProvider>(context);
-    
+
     // Reactive Redirect: If stores are found while on this screen AND no store is active
     if (dashboard.hasAnyStore && dashboard.activeStoreId == null) {
-       WidgetsBinding.instance.addPostFrameCallback((_) {
-         if (mounted) context.go('/select-store');
-       });
-       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/select-store');
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final isDesktop = MediaQuery.of(context).size.width > 600;
@@ -143,7 +146,7 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
         actions: [
           TextButton.icon(
             onPressed: () {
-               Provider.of<AuthProvider>(context, listen: false).signOut();
+              Provider.of<AuthProvider>(context, listen: false).signOut();
             },
             icon: const Icon(Icons.logout),
             label: Text(AppLocalizations.t(context, 'Logout')),
@@ -173,95 +176,103 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                   const Icon(Icons.store_rounded, size: 64, color: AppColors.primary),
-                   const SizedBox(height: AppSpacing.lg),
-                   Text(AppLocalizations.t(context, 'Welcome to BizPOS!'),
-                     textAlign: TextAlign.center,
-                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                   ),
-                   const SizedBox(height: AppSpacing.sm),
-                   Text(AppLocalizations.t(context, 'To get started, please create your first store.'),
-                     textAlign: TextAlign.center,
-                     style: TextStyle(color: AppColors.textSecondary(context)),
-                   ),
-                   const SizedBox(height: AppSpacing.xl),
-
-                   TextFormField(
-                     controller: _nameController,
-                     decoration: const InputDecoration(
-                       labelText: "Store Name",
-                       hintText: "e.g., Downtown Cafe",
-                       border: OutlineInputBorder(),
-                       prefixIcon: Icon(Icons.business),
-                     ),
-                     validator: (value) {
-                       if (value == null || value.trim().isEmpty) {
-                         return "Please enter a store name";
-                       }
-                       return null;
-                     },
-                   ),
-                   const SizedBox(height: AppSpacing.md),
-                   
-                   TextFormField(
-                     controller: _addressController,
-                     decoration: const InputDecoration(
-                       labelText: "Address (Optional)",
-                       hintText: "City, Street",
-                       border: OutlineInputBorder(),
-                       prefixIcon: Icon(Icons.location_on_outlined),
-                     ),
-                   ),
-                    const SizedBox(height: AppSpacing.md),
-                    
-                    TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(
-                        labelText: "Phone (Optional)",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.phone),
-                      ),
+                  const Icon(Icons.store_rounded,
+                      size: 64, color: AppColors.primary),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    AppLocalizations.t(context, 'Welcome to BizPOS!'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    AppLocalizations.t(context,
+                        'To get started, please create your first store.'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textSecondary(context)),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: "Store Name",
+                      hintText: "e.g., Downtown Cafe",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.business),
                     ),
-                    const SizedBox(height: AppSpacing.md),
-
-                    TextFormField(
-                      controller: _franchiseCodeController,
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                      decoration: const InputDecoration(
-                        labelText: "Franchise Code (Optional)",
-                        hintText: "6-digit code for your franchise",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.vpn_key_outlined),
-                        counterText: "",
-                      ),
-                      validator: (value) {
-                        if (value != null && value.trim().isNotEmpty) {
-                          if (value.trim().length != 6 || int.tryParse(value.trim()) == null) {
-                            return "Franchise code must be a 6-digit number";
-                          }
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Please enter a store name";
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  TextFormField(
+                    controller: _addressController,
+                    decoration: const InputDecoration(
+                      labelText: "Address (Optional)",
+                      hintText: "City, Street",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.location_on_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: "Phone (Optional)",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.phone),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  TextFormField(
+                    controller: _franchiseCodeController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    decoration: const InputDecoration(
+                      labelText: "Franchise Code (Optional)",
+                      hintText: "6-digit code for your franchise",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.vpn_key_outlined),
+                      counterText: "",
+                    ),
+                    validator: (value) {
+                      if (value != null && value.trim().isNotEmpty) {
+                        if (value.trim().length != 6 ||
+                            int.tryParse(value.trim()) == null) {
+                          return "Franchise code must be a 6-digit number";
                         }
-                        return null;
-                      },
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  SizedBox(
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.surfaceLight,
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                  color: AppColors.surfaceLight,
+                                  strokeWidth: 2))
+                          : Text(AppLocalizations.t(context, 'Create Store'),
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
-                    const SizedBox(height: AppSpacing.xl),
-
-                   SizedBox(
-                     height: 50,
-                     child: ElevatedButton(
-                       onPressed: _isSubmitting ? null : _submit,
-                       style: ElevatedButton.styleFrom(
-                         backgroundColor: AppColors.primary,
-                         foregroundColor: AppColors.surfaceLight,
-                         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                       ),
-                       child: _isSubmitting 
-                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppColors.surfaceLight, strokeWidth: 2))
-                         : Text(AppLocalizations.t(context, 'Create Store'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                     ),
-                   ),
-
+                  ),
                 ],
               ),
             ),
@@ -271,7 +282,3 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
     );
   }
 }
-
-
-
-

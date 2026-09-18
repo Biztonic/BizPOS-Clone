@@ -1,7 +1,6 @@
 import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
-
 import 'package:flutter/material.dart';
 
 // FeatureNode model for hierarchical features
@@ -58,7 +57,9 @@ class _FeatureTreeSelectorState extends State<FeatureTreeSelector> {
                 setState(() => node.enabled = val);
                 widget.onChanged?.call(widget.featureTree);
               },
-        secondary: isLocked ? Icon(Icons.lock, color: AppColors.textSecondary(context)) : null,
+        secondary: isLocked
+            ? Icon(Icons.lock, color: AppColors.textSecondary(context))
+            : null,
       );
     } else {
       return ExpansionTile(
@@ -80,7 +81,9 @@ class _FeatureTreeSelectorState extends State<FeatureTreeSelector> {
                       widget.onChanged?.call(widget.featureTree);
                     },
             ),
-            if (isLocked) Icon(Icons.lock, color: AppColors.textSecondary(context), size: 18),
+            if (isLocked)
+              Icon(Icons.lock,
+                  color: AppColors.textSecondary(context), size: 18),
           ],
         ),
         children: node.children
@@ -222,7 +225,8 @@ class MockFeatureScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.lock, size: 64, color: AppColors.textSecondary(context)),
+                    Icon(Icons.lock,
+                        size: 64, color: AppColors.textSecondary(context)),
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       '$title is locked by plan',
@@ -300,7 +304,8 @@ class MockFeatureScreen extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.zero,
-              border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.1)),
+              border: Border.all(
+                  color: AppColors.primaryLight.withValues(alpha: 0.1)),
             ),
             child: CustomPaint(painter: _MockChartPainter()),
           ),
@@ -364,16 +369,16 @@ class MockFeatureScreen extends StatelessWidget {
             color: AppColors.surfaceLight,
             borderRadius: BorderRadius.zero,
             border: Border.all(color: AppColors.textSecondary(context)),
-            boxShadow: const [BoxShadow(color: AppColors.borderLight, blurRadius: 4)],
+            boxShadow: const [
+              BoxShadow(color: AppColors.borderLight, blurRadius: 4)
+            ],
           ),
           child: Column(
             children: [
               // Header
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
-                color: index % 2 == 0
-                    ? AppColors.success
-                    : AppColors.warning,
+                color: index % 2 == 0 ? AppColors.success : AppColors.warning,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -390,7 +395,8 @@ class MockFeatureScreen extends StatelessWidget {
                   itemCount: 4,
                   physics: const NeverScrollableScrollPhysics(),
                   itemBuilder: (c, i) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                     child: Row(
                       children: [
                         Container(
@@ -452,14 +458,17 @@ class MockFeatureScreen extends StatelessWidget {
                 width: 2),
             boxShadow: const [
               BoxShadow(
-                  color: AppColors.borderLight, blurRadius: 8, offset: Offset(0, 4))
+                  color: AppColors.borderLight,
+                  blurRadius: 8,
+                  offset: Offset(0, 4))
             ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.table_restaurant,
-                  size: 32, color: isOccupied ? AppColors.error : AppColors.success),
+                  size: 32,
+                  color: isOccupied ? AppColors.error : AppColors.success),
               const SizedBox(height: AppSpacing.sm),
               Text("T-${index + 1}",
                   style: TextStyle(
@@ -467,7 +476,8 @@ class MockFeatureScreen extends StatelessWidget {
                       color: isOccupied ? AppColors.error : AppColors.success)),
               if (isOccupied)
                 Text("24:00",
-                    style: TextStyle(fontSize: 10, color: AppColors.textSecondary(context))),
+                    style: TextStyle(
+                        fontSize: 10, color: AppColors.textSecondary(context))),
             ],
           ),
         );
@@ -563,14 +573,17 @@ class MockFeatureScreen extends StatelessWidget {
           borderRadius: BorderRadius.zero,
           border: Border.all(color: AppColors.textSecondary(context)),
           boxShadow: [
-            BoxShadow(color: AppColors.textSecondary(context).withValues(alpha: 0.1), blurRadius: 5)
+            BoxShadow(
+                color: AppColors.textSecondary(context).withValues(alpha: 0.1),
+                blurRadius: 5)
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12)),
+                style: TextStyle(
+                    color: AppColors.textSecondary(context), fontSize: 12)),
             const SizedBox(height: AppSpacing.xs),
             Text(value,
                 style: TextStyle(
@@ -601,10 +614,10 @@ class _MockChartPainter extends CustomPainter {
 
     // Fill
     final fillPaint = Paint()
-      ..shader = LinearGradient(
-              colors: [AppColors.primaryLight.withValues(alpha: 0.3), AppColors.transparent],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter)
+      ..shader = LinearGradient(colors: [
+        AppColors.primaryLight.withValues(alpha: 0.3),
+        AppColors.transparent
+      ], begin: Alignment.topCenter, end: Alignment.bottomCenter)
           .createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
 
@@ -618,6 +631,3 @@ class _MockChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-
-

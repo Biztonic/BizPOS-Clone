@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hive/hive.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../sync/sync_engine.dart';
 
 import '../l10n/app_localizations.dart';
 import '../core/design/tokens/app_colors.dart';
@@ -49,7 +51,7 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
     } else if (widget.empId != null) {
       _fetchEmployeeDetails();
     }
-    
+
     // Keep focus on our offscreen TextField to intercept physical keyboard presses
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
@@ -74,18 +76,24 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
 
     try {
       if (FirebaseAuth.instance.currentUser == null) {
-        await FirebaseAuth.instance.signInAnonymously().timeout(const Duration(seconds: 5));
+        await FirebaseAuth.instance
+            .signInAnonymously()
+            .timeout(const Duration(seconds: 5));
       }
 
       final cleanCode = storeCode.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
       String? storeId = widget.storeId;
 
       if (storeId == null) {
-        QuerySnapshot storeQuery = await getFirestore().collection('stores')
-            .where('shortCode', isEqualTo: cleanCode).limit(1).get();
+        QuerySnapshot storeQuery = await getFirestore()
+            .collection('stores')
+            .where('shortCode', isEqualTo: cleanCode)
+            .limit(1)
+            .get();
 
         if (storeQuery.docs.isEmpty) {
-          final doc = await getFirestore().collection('stores').doc(cleanCode).get();
+          final doc =
+              await getFirestore().collection('stores').doc(cleanCode).get();
           if (doc.exists) {
             storeId = cleanCode;
           }
@@ -98,22 +106,30 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
         throw AppLocalizations.t(context, 'Store Not Found');
       }
 
-      QuerySnapshot subQuery = await getFirestore().collection('stores')
-          .doc(storeId).collection('employees')
-          .where('employeeId', isEqualTo: empId).limit(1).get();
+      QuerySnapshot subQuery = await getFirestore()
+          .collection('stores')
+          .doc(storeId)
+          .collection('employees')
+          .where('employeeId', isEqualTo: empId)
+          .limit(1)
+          .get();
 
       if (subQuery.docs.isEmpty) {
-        subQuery = await getFirestore().collection('employees')
+        subQuery = await getFirestore()
+            .collection('employees')
             .where('storeId', isEqualTo: storeId)
             .where('employeeId', isEqualTo: empId)
-            .limit(1).get();
+            .limit(1)
+            .get();
         if (subQuery.docs.isEmpty) {
           final intId = int.tryParse(empId);
           if (intId != null) {
-            subQuery = await getFirestore().collection('employees')
+            subQuery = await getFirestore()
+                .collection('employees')
                 .where('storeId', isEqualTo: storeId)
                 .where('employeeId', isEqualTo: intId)
-                .limit(1).get();
+                .limit(1)
+                .get();
           }
         }
       }
@@ -128,14 +144,20 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
         });
       } else {
         final dummyEmail = "${storeId}_$empId@biztonic.pos".toLowerCase();
-        QuerySnapshot userQuery = await getFirestore().collection('users')
-            .where('email', isEqualTo: dummyEmail).limit(1).get();
+        QuerySnapshot userQuery = await getFirestore()
+            .collection('users')
+            .where('email', isEqualTo: dummyEmail)
+            .limit(1)
+            .get();
         if (userQuery.docs.isEmpty) {
           final intId = int.tryParse(empId);
           if (intId != null) {
             final intEmail = "${storeId}_$intId@biztonic.pos".toLowerCase();
-            userQuery = await getFirestore().collection('users')
-                .where('email', isEqualTo: intEmail).limit(1).get();
+            userQuery = await getFirestore()
+                .collection('users')
+                .where('email', isEqualTo: intEmail)
+                .limit(1)
+                .get();
           }
         }
         if (userQuery.docs.isNotEmpty) {
@@ -179,7 +201,8 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
     AnnouncementService().playKeypadSound();
     if (_pinController.text.isNotEmpty) {
       setState(() {
-        _pinController.text = _pinController.text.substring(0, _pinController.text.length - 1);
+        _pinController.text =
+            _pinController.text.substring(0, _pinController.text.length - 1);
         _errorMessage = null;
       });
     }
@@ -195,7 +218,7 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
 
   Future<void> _submitPin() async {
     if (_employee == null) return;
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -208,7 +231,9 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
     try {
       if (FirebaseAuth.instance.currentUser == null) {
         try {
-          await FirebaseAuth.instance.signInAnonymously().timeout(const Duration(seconds: 5));
+          await FirebaseAuth.instance
+              .signInAnonymously()
+              .timeout(const Duration(seconds: 5));
         } catch (e) {
           debugPrint("Auth non-critical failure: $e");
         }
@@ -222,7 +247,8 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
         final box = Hive.box('cache_stores');
         final storeMap = box.values.firstWhere((s) {
           final map = s as Map;
-          return map['shortCode'] == cleanStoreCode || map['id'] == cleanStoreCode;
+          return map['shortCode'] == cleanStoreCode ||
+              map['id'] == cleanStoreCode;
         }, orElse: () => null);
         if (storeMap != null) targetStoreId = (storeMap as Map)['id'];
       }
@@ -231,7 +257,8 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
         final box = Hive.box('cache_employees');
         final empMap = box.values.firstWhere((e) {
           final map = e as Map;
-          return map['storeId'] == targetStoreId && map['employeeId'].toString() == empId;
+          return map['storeId'] == targetStoreId &&
+              map['employeeId'].toString() == empId;
         }, orElse: () => null);
 
         if (empMap != null) {
@@ -249,39 +276,57 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
 
       // 2. NETWORK FALLBACK
       if (targetStoreId == null) {
-        final storeQuery = await getFirestore().collection('stores')
-            .where('shortCode', isEqualTo: cleanStoreCode).limit(1).get();
+        final storeQuery = await getFirestore()
+            .collection('stores')
+            .where('shortCode', isEqualTo: cleanStoreCode)
+            .limit(1)
+            .get();
         if (storeQuery.docs.isNotEmpty) {
           targetStoreId = storeQuery.docs.first.id;
         } else {
-          final doc = await getFirestore().collection('stores').doc(cleanStoreCode).get();
+          final doc = await getFirestore()
+              .collection('stores')
+              .doc(cleanStoreCode)
+              .get();
           if (doc.exists) targetStoreId = cleanStoreCode;
         }
       }
 
-      if (targetStoreId == null) throw AppLocalizations.t(context, 'Store Not Found');
+      if (targetStoreId == null)
+        throw AppLocalizations.t(context, 'Store Not Found');
 
       QuerySnapshot subQuery = await getFirestore()
-          .collection('stores').doc(targetStoreId).collection('employees')
-          .where('employeeId', isEqualTo: empId).limit(1).get();
+          .collection('stores')
+          .doc(targetStoreId)
+          .collection('employees')
+          .where('employeeId', isEqualTo: empId)
+          .limit(1)
+          .get();
 
       if (subQuery.docs.isEmpty) {
-        subQuery = await getFirestore().collection('employees')
+        subQuery = await getFirestore()
+            .collection('employees')
             .where('storeId', isEqualTo: targetStoreId)
-            .where('employeeId', isEqualTo: empId).limit(1).get();
+            .where('employeeId', isEqualTo: empId)
+            .limit(1)
+            .get();
 
         if (subQuery.docs.isEmpty) {
           final intId = int.tryParse(empId);
           if (intId != null) {
-            subQuery = await getFirestore().collection('employees')
+            subQuery = await getFirestore()
+                .collection('employees')
                 .where('storeId', isEqualTo: targetStoreId)
-                .where('employeeId', isEqualTo: intId).limit(1).get();
+                .where('employeeId', isEqualTo: intId)
+                .limit(1)
+                .get();
           }
         }
       }
 
       if (subQuery.docs.isNotEmpty) {
-        final Map<String, dynamic> userData = subQuery.docs.first.data() as Map<String, dynamic>;
+        final Map<String, dynamic> userData =
+            subQuery.docs.first.data() as Map<String, dynamic>;
         final storedPin = userData['pinHash'] ?? userData['pin'];
         final uid = subQuery.docs.first.id;
         if (PinUtils.verifyPin(pin, uid, storedPin)) {
@@ -293,20 +338,27 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
 
       // LEGACY Root User Check
       final dummyEmail = "${targetStoreId}_$empId@biztonic.pos".toLowerCase();
-      QuerySnapshot query = await getFirestore().collection('users')
-          .where('email', isEqualTo: dummyEmail).limit(1).get();
+      QuerySnapshot query = await getFirestore()
+          .collection('users')
+          .where('email', isEqualTo: dummyEmail)
+          .limit(1)
+          .get();
 
       if (query.docs.isEmpty) {
         final intId = int.tryParse(empId);
         if (intId != null) {
           final intEmail = "${targetStoreId}_$intId@biztonic.pos".toLowerCase();
-          query = await getFirestore().collection('users')
-              .where('email', isEqualTo: intEmail).limit(1).get();
+          query = await getFirestore()
+              .collection('users')
+              .where('email', isEqualTo: intEmail)
+              .limit(1)
+              .get();
         }
       }
 
       if (query.docs.isNotEmpty) {
-        final Map<String, dynamic> userData = query.docs.first.data() as Map<String, dynamic>;
+        final Map<String, dynamic> userData =
+            query.docs.first.data() as Map<String, dynamic>;
         final storedPin = userData['pin'];
         final uid = query.docs.first.id;
         if (PinUtils.verifyPin(pin, uid, storedPin)) {
@@ -351,15 +403,21 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
 
       final storeId = userData['storeId'];
       if (storeId != null) {
-        await getFirestore().collection('stores').doc(storeId).update({
-          'activeDeviceId': deviceId
-        });
+        unawaited(SyncService().performLocalWrite(
+          collection: 'stores',
+          docId: storeId,
+          data: {'activeDeviceId': deviceId},
+          action: 'update',
+          localCacheBox: 'cache_stores',
+          refreshCounts: false,
+        ));
       }
     } catch (e) {
       debugPrint("Device tracking update failed: $e");
     }
 
-    await provider.loadEmployeeProfileForVirtualLogin(uid, Map<String, dynamic>.from(userData));
+    await provider.loadEmployeeProfileForVirtualLogin(
+        uid, Map<String, dynamic>.from(userData));
     if (mounted) {
       Navigator.pop(context); // Close dialog
       context.go('/dashboard');
@@ -369,7 +427,8 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final empName = _employee?['name'] ?? widget.employee?['name'] ?? 'Employee';
+    final empName =
+        _employee?['name'] ?? widget.employee?['name'] ?? 'Employee';
     final empRole = _employee?['role'] ?? widget.employee?['role'] ?? 'Staff';
     final initial = empName.isNotEmpty ? empName[0].toUpperCase() : '?';
 
@@ -382,7 +441,10 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E293B) : AppColors.surfaceLight,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05)),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : Colors.black.withOpacity(0.05)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
@@ -420,121 +482,140 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header with back option
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.arrow_back_ios_new, size: 16, color: isDark ? Colors.white70 : Colors.black87),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        Text(
-                          AppLocalizations.t(context, 'Employee Login'),
-                          style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(width: 48), // Spacer for centering title
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
+                    children: [
+                      // Header with back option
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.arrow_back_ios_new,
+                                size: 16,
+                                color:
+                                    isDark ? Colors.white70 : Colors.black87),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                          Text(
+                            AppLocalizations.t(context, 'Employee Login'),
+                            style: AppTypography.titleMedium
+                                .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(
+                              width: 48), // Spacer for centering title
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
 
-                    if (_isFetchingDetails)
-                      const SizedBox(
-                        height: 350,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircularProgressIndicator(strokeWidth: 3),
-                              SizedBox(height: AppSpacing.md),
-                              Text("Loading profile details...", style: TextStyle(fontSize: 13, color: Colors.grey)),
-                            ],
+                      if (_isFetchingDetails)
+                        const SizedBox(
+                          height: 350,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(strokeWidth: 3),
+                                SizedBox(height: AppSpacing.md),
+                                Text("Loading profile details...",
+                                    style: TextStyle(
+                                        fontSize: 13, color: Colors.grey)),
+                              ],
+                            ),
+                          ),
+                        )
+                      else ...[
+                        // Avatar
+                        CircleAvatar(
+                          radius: 36,
+                          backgroundColor: AppColors.primary.withOpacity(0.15),
+                          child: Text(
+                            initial,
+                            style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary),
                           ),
                         ),
-                      )
-                    else ...[
-                      // Avatar
-                      CircleAvatar(
-                        radius: 36,
-                        backgroundColor: AppColors.primary.withOpacity(0.15),
-                        child: Text(
-                          initial,
-                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary),
+                        const SizedBox(height: AppSpacing.sm),
+
+                        // Employee Info
+                        Text(
+                          empName,
+                          style: AppTypography.titleLarge
+                              .copyWith(fontWeight: FontWeight.bold),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          empRole,
+                          style: AppTypography.labelSmall.copyWith(
+                              color: AppColors.textSecondary(context)),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
 
-                      // Employee Info
-                      Text(
-                        empName,
-                        style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        empRole,
-                        style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-
-                      // Dots for PIN indicator
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(4, (index) {
-                          final isFilled = _pinController.text.length > index;
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            margin: const EdgeInsets.symmetric(horizontal: 10),
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _errorMessage != null
-                                  ? AppColors.error
-                                  : isFilled
-                                      ? AppColors.primary
-                                      : (isDark ? Colors.white10 : Colors.black.withOpacity(0.08)),
-                              border: Border.all(
+                        // Dots for PIN indicator
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(4, (index) {
+                            final isFilled = _pinController.text.length > index;
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
                                 color: _errorMessage != null
                                     ? AppColors.error
                                     : isFilled
                                         ? AppColors.primary
-                                        : (isDark ? Colors.white30 : Colors.black26),
-                                width: 1.5,
+                                        : (isDark
+                                            ? Colors.white10
+                                            : Colors.black.withOpacity(0.08)),
+                                border: Border.all(
+                                  color: _errorMessage != null
+                                      ? AppColors.error
+                                      : isFilled
+                                          ? AppColors.primary
+                                          : (isDark
+                                              ? Colors.white30
+                                              : Colors.black26),
+                                  width: 1.5,
+                                ),
                               ),
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+
+                        // Error Message
+                        if (_errorMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: Text(
+                              _errorMessage!,
+                              style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.error,
+                                  fontWeight: FontWeight.w600),
+                              textAlign: TextAlign.center,
                             ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
+                          )
+                        else
+                          const SizedBox(height: 20),
 
-                      // Error Message
-                      if (_errorMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Text(
-                            _errorMessage!,
-                            style: AppTypography.bodySmall.copyWith(color: AppColors.error, fontWeight: FontWeight.w600),
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                      else
-                        const SizedBox(height: 20),
-
-                      // Loading or Keypad
-                      if (_isLoading)
-                        const SizedBox(
-                          height: 250,
-                          child: Center(
-                            child: CircularProgressIndicator(strokeWidth: 3),
-                          ),
-                        )
-                      else
-                        _buildKeypad(isDark),
+                        // Loading or Keypad
+                        if (_isLoading)
+                          const SizedBox(
+                            height: 250,
+                            child: Center(
+                              child: CircularProgressIndicator(strokeWidth: 3),
+                            ),
+                          )
+                        else
+                          _buildKeypad(isDark),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
           ),
         ),
       ),
@@ -592,8 +673,11 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
         onPressed: () => _handleNumberPress(label),
         style: OutlinedButton.styleFrom(
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          side: BorderSide(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.06)),
-          backgroundColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.01),
+          side: BorderSide(
+              color: isDark ? Colors.white10 : Colors.black.withOpacity(0.06)),
+          backgroundColor: isDark
+              ? Colors.white.withOpacity(0.02)
+              : Colors.black.withOpacity(0.01),
         ),
         child: Text(
           label,
@@ -616,8 +700,11 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          side: BorderSide(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.06)),
-          backgroundColor: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.01),
+          side: BorderSide(
+              color: isDark ? Colors.white10 : Colors.black.withOpacity(0.06)),
+          backgroundColor: isDark
+              ? Colors.white.withOpacity(0.02)
+              : Colors.black.withOpacity(0.01),
         ),
         child: Icon(
           icon,

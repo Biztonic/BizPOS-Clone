@@ -49,7 +49,11 @@ class ConflictResolver {
     if (val == null) return null;
     if (val is DateTime) return val;
     if (val is String) return DateTime.tryParse(val);
-    try { return val.toDate(); } catch (_) { return null; }
+    try {
+      return val.toDate();
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Check data integrity between local and cloud.

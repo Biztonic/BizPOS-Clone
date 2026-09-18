@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../tokens/app_spacing.dart';
 import '../atoms/app_button.dart';
 
@@ -40,7 +40,9 @@ class AppDialog extends StatelessWidget {
               Icon(
                 icon,
                 size: 48,
-                color: isDestructive ? Theme.of(context).colorScheme.error : Theme.of(context).primaryColor,
+                color: isDestructive
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).primaryColor,
               ),
               const SizedBox(height: AppSpacing.md),
             ],
@@ -54,7 +56,8 @@ class AppDialog extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             DefaultTextStyle(
-              style: Theme.of(context).textTheme.bodyMedium ?? const TextStyle(),
+              style:
+                  Theme.of(context).textTheme.bodyMedium ?? const TextStyle(),
               child: content,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -65,14 +68,15 @@ class AppDialog extends StatelessWidget {
                   Expanded(
                     child: AppButton.outline(
                       label: secondaryButtonText!,
-                      onPressed: onSecondaryPressed ?? () => Navigator.of(context).pop(),
+                      onPressed: onSecondaryPressed ??
+                          () => Navigator.of(context).pop(),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                 ],
                 if (primaryButtonText != null)
                   Expanded(
-                    child: isDestructive 
+                    child: isDestructive
                         ? AppButton.danger(
                             label: primaryButtonText!,
                             onPressed: onPrimaryPressed,
@@ -120,7 +124,3 @@ class AppDialog extends StatelessWidget {
     );
   }
 }
-
-
-
-

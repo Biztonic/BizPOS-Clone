@@ -10,7 +10,7 @@ class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
   static Database? _database;
-  
+
   // final SecurityService _security = SecurityService(); // Encryption Disabled
 
   DatabaseHelper._internal();
@@ -20,12 +20,12 @@ class DatabaseHelper {
   /// Closes the current database and sets the active user partition
   static Future<void> switchUser(String? uid) async {
     if (_currentUid == uid) return;
-    
+
     if (_database != null) {
       if (_database!.isOpen) await _database!.close();
       _database = null;
     }
-    
+
     _currentUid = uid;
   }
 
@@ -41,38 +41,34 @@ class DatabaseHelper {
   static void setDbName(String name) => _testDbName = name;
 
   Future<Database> _initDatabase() async {
-
     // Determine partitioned db name
-    String baseName = _currentUid != null ? 'biztonic_$_currentUid.db' : 'biztonic.db';
-    String webName = _currentUid != null ? 'biztonic_pos_$_currentUid.db' : 'biztonic_pos.db';
+    String baseName =
+        _currentUid != null ? 'biztonic_$_currentUid.db' : 'biztonic.db';
+    String webName = _currentUid != null
+        ? 'biztonic_pos_$_currentUid.db'
+        : 'biztonic_pos.db';
 
-    // WEB INIT 
+    // WEB INIT
     if (kIsWeb) {
+      initWebDatabaseFactory(); // Uses Shim
 
-       initWebDatabaseFactory(); // Uses Shim
+      try {
+        final db = await openDatabase(webName,
+            version: _version, onCreate: _onCreate, onUpgrade: _onUpgrade);
 
-       try {
-         final db = await openDatabase(
-            webName, 
-            version: _version, 
-            onCreate: _onCreate,
-            onUpgrade: _onUpgrade
-         );
-
-         return db;
-       } catch (e) {
-         rethrow;
-       }
+        return db;
+      } catch (e) {
+        rethrow;
+      }
     }
-    
-    
+
     // NATIVE INIT
     String path = await getDatabasePath(_testDbName ?? baseName);
 
     // Standard Open (No Encryption)
     return await openDatabase(
       path,
-      version: _version, 
+      version: _version,
       onConfigure: _onConfigure,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -83,58 +79,59 @@ class DatabaseHelper {
     // Add support for cascading deletes
     try {
       await db.execute('PRAGMA foreign_keys = ON');
-    } catch (e) { /* Error ignored */ }
+    } catch (e) {/* Error ignored */}
 
     // Enable Write-Ahead Logging (WAL) for concurrency
-    // Use rawQuery because PRAGMA journal_mode returns a result row ('wal') 
+    // Use rawQuery because PRAGMA journal_mode returns a result row ('wal')
     // which causes execute() to throw "Queries can be performed using..." exception on some Android versions.
     try {
       await db.rawQuery('PRAGMA journal_mode = WAL');
-    } catch (e) { /* Error ignored */ }
+    } catch (e) {/* Error ignored */}
 
     // Increase busy timeout
     try {
-       await db.execute('PRAGMA busy_timeout = 3000');
-    } catch (e) { /* Error ignored */ }
+      await db.execute('PRAGMA busy_timeout = 3000');
+    } catch (e) {/* Error ignored */}
   }
 
   // MIGRATION HANDLER
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-
-       try {
-         await db.execute("ALTER TABLE order_items ADD COLUMN seatIndex INTEGER");
-       } catch (e) { /* Error ignored */ }
+      try {
+        await db
+            .execute("ALTER TABLE order_items ADD COLUMN seatIndex INTEGER");
+      } catch (e) {/* Error ignored */}
     }
-    
-    if (oldVersion < 3) {
 
+    if (oldVersion < 3) {
       try {
         // Orders
         await db.execute("ALTER TABLE orders ADD COLUMN updatedAt TEXT");
         await db.execute("ALTER TABLE orders ADD COLUMN deletedAt TEXT");
-        await db.execute("ALTER TABLE orders ADD COLUMN syncStatus TEXT DEFAULT 'PENDING'");
+        await db.execute(
+            "ALTER TABLE orders ADD COLUMN syncStatus TEXT DEFAULT 'PENDING'");
         await db.execute("ALTER TABLE orders ADD COLUMN deviceId TEXT");
         await db.execute("ALTER TABLE orders ADD COLUMN lastSyncedAt TEXT");
-        
+
         // Inventory
         await db.execute("ALTER TABLE inventory ADD COLUMN updatedAt TEXT");
         await db.execute("ALTER TABLE inventory ADD COLUMN deletedAt TEXT");
-        await db.execute("ALTER TABLE inventory ADD COLUMN syncStatus TEXT DEFAULT 'PENDING'");
+        await db.execute(
+            "ALTER TABLE inventory ADD COLUMN syncStatus TEXT DEFAULT 'PENDING'");
         await db.execute("ALTER TABLE inventory ADD COLUMN deviceId TEXT");
         await db.execute("ALTER TABLE inventory ADD COLUMN lastSyncedAt TEXT");
 
         // Customers
         await db.execute("ALTER TABLE customers ADD COLUMN updatedAt TEXT");
         await db.execute("ALTER TABLE customers ADD COLUMN deletedAt TEXT");
-        await db.execute("ALTER TABLE customers ADD COLUMN syncStatus TEXT DEFAULT 'PENDING'");
+        await db.execute(
+            "ALTER TABLE customers ADD COLUMN syncStatus TEXT DEFAULT 'PENDING'");
         await db.execute("ALTER TABLE customers ADD COLUMN deviceId TEXT");
         await db.execute("ALTER TABLE customers ADD COLUMN lastSyncedAt TEXT");
-      } catch (e) { /* Error ignored */ }
+      } catch (e) {/* Error ignored */}
     }
-    
-    if (oldVersion < 4) {
 
+    if (oldVersion < 4) {
       try {
         // Employees Table
         await db.execute('''
@@ -154,7 +151,7 @@ class DatabaseHelper {
             lastSyncedAt TEXT
           )
         ''');
-        
+
         // Roles Table
         await db.execute('''
           CREATE TABLE IF NOT EXISTS roles (
@@ -172,12 +169,10 @@ class DatabaseHelper {
             lastSyncedAt TEXT
           )
         ''');
-
-      } catch (e) { /* Error ignored */ }
+      } catch (e) {/* Error ignored */}
     }
-    
-    if (oldVersion < 5) {
 
+    if (oldVersion < 5) {
       try {
         // Inventory Movements Table
         await db.execute('''
@@ -198,17 +193,23 @@ class DatabaseHelper {
             FOREIGN KEY(itemId) REFERENCES inventory(id) ON DELETE CASCADE
           )
         ''');
-        
+
         // Create indexes
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_movements_item ON inventory_movements(itemId)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_movements_store ON inventory_movements(storeId)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_movements_sync ON inventory_movements(syncStatus)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_movements_created ON inventory_movements(createdAt)');
-        
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_movements_item ON inventory_movements(itemId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_movements_store ON inventory_movements(storeId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_movements_sync ON inventory_movements(syncStatus)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_movements_created ON inventory_movements(createdAt)');
+
         // Migrate existing inventory quantities to movements
-        final inventoryItems = await db.query('inventory', where: 'quantity > 0');
+        final inventoryItems =
+            await db.query('inventory', where: 'quantity > 0');
         for (var item in inventoryItems) {
-          final movementId = 'MOV-MIGR-${DateTime.now().millisecondsSinceEpoch}-${item['id']}';
+          final movementId =
+              'MOV-MIGR-${DateTime.now().millisecondsSinceEpoch}-${item['id']}';
           await db.insert('inventory_movements', {
             'id': movementId,
             'itemId': item['id'],
@@ -221,42 +222,39 @@ class DatabaseHelper {
             'syncStatus': 'SYNCED',
           });
         }
-
-      } catch (e) { /* Error ignored */ }
+      } catch (e) {/* Error ignored */}
     }
 
     if (oldVersion < 6) {
-
       try {
         // Add version column to tables if not exists
-        await db.execute('ALTER TABLE orders ADD COLUMN version INTEGER DEFAULT 1');
-        await db.execute('ALTER TABLE inventory ADD COLUMN version INTEGER DEFAULT 1');
-        await db.execute('ALTER TABLE customers ADD COLUMN version INTEGER DEFAULT 1');
-
+        await db
+            .execute('ALTER TABLE orders ADD COLUMN version INTEGER DEFAULT 1');
+        await db.execute(
+            'ALTER TABLE inventory ADD COLUMN version INTEGER DEFAULT 1');
+        await db.execute(
+            'ALTER TABLE customers ADD COLUMN version INTEGER DEFAULT 1');
       } catch (e) {
         // Columns might already exist (e.g. if re-running migration), ignore specific error or log it
-
       }
     }
 
     if (oldVersion < 7) {
-
-       try {
-         await db.execute('''
+      try {
+        await db.execute('''
           CREATE TABLE IF NOT EXISTS cache_inventory_quantities (
             itemId TEXT PRIMARY KEY,
             storeId TEXT,
             quantity INTEGER DEFAULT 0
           )
         ''');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_cache_qty_store ON cache_inventory_quantities(storeId)');
-
-       } catch (e) { /* Error ignored */ }
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cache_qty_store ON cache_inventory_quantities(storeId)');
+      } catch (e) {/* Error ignored */}
     }
     if (oldVersion < 8) {
-
-       try {
-          await db.execute('''
+      try {
+        await db.execute('''
             CREATE TABLE IF NOT EXISTS business_events (
               id TEXT PRIMARY KEY,
               storeId TEXT,
@@ -271,10 +269,12 @@ class DatabaseHelper {
               syncedAt TEXT
             )
           ''');
-          await db.execute('CREATE INDEX IF NOT EXISTS idx_events_store ON business_events(storeId)');
-          await db.execute('CREATE INDEX IF NOT EXISTS idx_events_sync ON business_events(synced)');
-          
-          await db.execute('''
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_events_store ON business_events(storeId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_events_sync ON business_events(synced)');
+
+        await db.execute('''
             CREATE TABLE IF NOT EXISTS monthly_order_counter (
               storeId TEXT,
               yearMonth TEXT,
@@ -282,8 +282,8 @@ class DatabaseHelper {
               PRIMARY KEY (storeId, yearMonth)
             )
           ''');
-          
-          await db.execute('''
+
+        await db.execute('''
              CREATE TABLE IF NOT EXISTS plan_tokens (
                storeId TEXT PRIMARY KEY,
                token TEXT,
@@ -291,54 +291,50 @@ class DatabaseHelper {
                validUntil TEXT
              )
           ''');
-
-       } catch (e) { /* Error ignored */ }
+      } catch (e) {/* Error ignored */}
     }
     if (oldVersion < 9) {
-
       try {
         await db.execute("ALTER TABLE orders ADD COLUMN businessDayId TEXT");
-
-      } catch (e) { /* Error ignored */ }
+      } catch (e) {/* Error ignored */}
     }
     if (oldVersion < 10) {
-
       try {
-        await db.execute("ALTER TABLE orders ADD COLUMN taxRateSnapshot REAL DEFAULT 0.0");
-        await db.execute("ALTER TABLE orders ADD COLUMN discountSnapshot REAL DEFAULT 0.0");
-
-      } catch (e) { /* Error ignored */ }
+        await db.execute(
+            "ALTER TABLE orders ADD COLUMN taxRateSnapshot REAL DEFAULT 0.0");
+        await db.execute(
+            "ALTER TABLE orders ADD COLUMN discountSnapshot REAL DEFAULT 0.0");
+      } catch (e) {/* Error ignored */}
     }
     if (oldVersion < 11) {
-
       try {
         await db.execute("ALTER TABLE orders ADD COLUMN voidedAt TEXT");
         await db.execute("ALTER TABLE orders ADD COLUMN voidedBy TEXT");
         await db.execute("ALTER TABLE orders ADD COLUMN voidReason TEXT");
         await db.execute("ALTER TABLE employees ADD COLUMN pinHash TEXT");
-
-      } catch (e) { /* Error ignored */ }
+      } catch (e) {/* Error ignored */}
     }
     if (oldVersion < 12) {
-
       try {
         await db.execute("ALTER TABLE order_items ADD COLUMN category TEXT");
-
-      } catch (e) { /* Error ignored */ }
+      } catch (e) {/* Error ignored */}
     }
     if (oldVersion < 13) {
       try {
         // Migration V13: Custom Low Stock Threshold
         // Default to 10 to maintain existing behavior
-        await db.execute("ALTER TABLE inventory ADD COLUMN lowStockThreshold INTEGER DEFAULT 10");
-      } catch (e) { /* Error ignored */ }
+        await db.execute(
+            "ALTER TABLE inventory ADD COLUMN lowStockThreshold INTEGER DEFAULT 10");
+      } catch (e) {/* Error ignored */}
     }
     if (oldVersion < 14) {
       try {
         // Employee Enhancements
         await db.execute("ALTER TABLE employees ADD COLUMN permissions TEXT");
-        await db.execute("ALTER TABLE employees ADD COLUMN hourlyRate REAL DEFAULT 0.0");
-        await db.execute("ALTER TABLE employees ADD COLUMN monthlySalary REAL DEFAULT 0.0");
+        await db.execute(
+            "ALTER TABLE employees ADD COLUMN hourlyRate REAL DEFAULT 0.0");
+        await db.execute(
+            "ALTER TABLE employees ADD COLUMN monthlySalary REAL DEFAULT 0.0");
 
         // Attendance Table
         await db.execute('''
@@ -391,11 +387,13 @@ class DatabaseHelper {
           )
         ''');
 
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_attr_emp ON employee_attendance(employeeId)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_leaves_emp ON employee_leaves(employeeId)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_payroll_emp ON employee_payroll(employeeId)');
-
-      } catch (e) { /* Error ignored */ }
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_attr_emp ON employee_attendance(employeeId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_leaves_emp ON employee_leaves(employeeId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_payroll_emp ON employee_payroll(employeeId)');
+      } catch (e) {/* Error ignored */}
     }
 
     if (oldVersion < 15) {
@@ -403,9 +401,11 @@ class DatabaseHelper {
         // Migration V15: Missing Inventory Columns
         await db.execute("ALTER TABLE inventory ADD COLUMN dietaryType TEXT");
         await db.execute("ALTER TABLE inventory ADD COLUMN packagingType TEXT");
-        await db.execute("ALTER TABLE inventory ADD COLUMN variantCategory TEXT");
-        await db.execute("ALTER TABLE inventory ADD COLUMN featured INTEGER DEFAULT 0");
-      } catch (e) { /* Error ignored */ }
+        await db
+            .execute("ALTER TABLE inventory ADD COLUMN variantCategory TEXT");
+        await db.execute(
+            "ALTER TABLE inventory ADD COLUMN featured INTEGER DEFAULT 0");
+      } catch (e) {/* Error ignored */}
     }
 
     if (oldVersion < 16) {
@@ -420,7 +420,7 @@ class DatabaseHelper {
             deletedAt TEXT
           )
         ''');
-        
+
         await db.execute('''
           CREATE TABLE IF NOT EXISTS floors (
             id TEXT PRIMARY KEY,
@@ -466,23 +466,28 @@ class DatabaseHelper {
         ''');
 
         // Note: No foreign keys for flexible offline sync caching
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_floors_store ON floors(storeId)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_tables_store ON tables(storeId)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_suppliers_store ON suppliers(storeId)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_notes_store ON notes(storeId)');
-      } catch (e) { /* Error ignored */ }
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_floors_store ON floors(storeId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_tables_store ON tables(storeId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_suppliers_store ON suppliers(storeId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_notes_store ON notes(storeId)');
+      } catch (e) {/* Error ignored */}
     }
 
     if (oldVersion < 17) {
       try {
-        await db.execute("ALTER TABLE order_items ADD COLUMN cost REAL DEFAULT 0.0");
-      } catch (e) { /* Error ignored */ }
+        await db.execute(
+            "ALTER TABLE order_items ADD COLUMN cost REAL DEFAULT 0.0");
+      } catch (e) {/* Error ignored */}
     }
 
     if (oldVersion < 18) {
       try {
         await db.execute("ALTER TABLE inventory ADD COLUMN localImage TEXT");
-      } catch (e) { /* Error ignored */ }
+      } catch (e) {/* Error ignored */}
     }
 
     // Migration V19: Local-First Sync State Machine
@@ -492,72 +497,149 @@ class DatabaseHelper {
       try {
         // isDeleted columns (core entities)
         for (var table in ['orders', 'inventory', 'customers', 'employees']) {
-          try { await db.execute('ALTER TABLE $table ADD COLUMN isDeleted INTEGER DEFAULT 0'); } catch (_) {}
+          try {
+            await db.execute(
+                'ALTER TABLE $table ADD COLUMN isDeleted INTEGER DEFAULT 0');
+          } catch (_) {}
         }
         // isDeleted columns (config entities)
-        for (var table in ['floors', 'tables', 'suppliers', 'notes', 'store_settings']) {
-          try { await db.execute('ALTER TABLE $table ADD COLUMN isDeleted INTEGER DEFAULT 0'); } catch (_) {}
+        for (var table in [
+          'floors',
+          'tables',
+          'suppliers',
+          'notes',
+          'store_settings'
+        ]) {
+          try {
+            await db.execute(
+                'ALTER TABLE $table ADD COLUMN isDeleted INTEGER DEFAULT 0');
+          } catch (_) {}
         }
         // isDeleted columns (HR entities)
-        for (var table in ['employee_attendance', 'employee_leaves', 'employee_payroll']) {
-          try { await db.execute('ALTER TABLE $table ADD COLUMN isDeleted INTEGER DEFAULT 0'); } catch (_) {}
+        for (var table in [
+          'employee_attendance',
+          'employee_leaves',
+          'employee_payroll'
+        ]) {
+          try {
+            await db.execute(
+                'ALTER TABLE $table ADD COLUMN isDeleted INTEGER DEFAULT 0');
+          } catch (_) {}
         }
         // isDeleted for inventory_movements
-        try { await db.execute('ALTER TABLE inventory_movements ADD COLUMN isDeleted INTEGER DEFAULT 0'); } catch (_) {}
+        try {
+          await db.execute(
+              'ALTER TABLE inventory_movements ADD COLUMN isDeleted INTEGER DEFAULT 0');
+        } catch (_) {}
 
         // version columns for tables that were missing it
-        for (var table in ['employees', 'floors', 'tables', 'suppliers', 'notes', 'store_settings']) {
-          try { await db.execute('ALTER TABLE $table ADD COLUMN version INTEGER DEFAULT 1'); } catch (_) {}
+        for (var table in [
+          'employees',
+          'floors',
+          'tables',
+          'suppliers',
+          'notes',
+          'store_settings'
+        ]) {
+          try {
+            await db.execute(
+                'ALTER TABLE $table ADD COLUMN version INTEGER DEFAULT 1');
+          } catch (_) {}
         }
 
         // lastSyncedAt for tables that were missing it
-        for (var table in ['floors', 'tables', 'suppliers', 'notes', 'store_settings']) {
-          try { await db.execute('ALTER TABLE $table ADD COLUMN lastSyncedAt TEXT'); } catch (_) {}
+        for (var table in [
+          'floors',
+          'tables',
+          'suppliers',
+          'notes',
+          'store_settings'
+        ]) {
+          try {
+            await db.execute('ALTER TABLE $table ADD COLUMN lastSyncedAt TEXT');
+          } catch (_) {}
         }
 
         // Migrate existing soft-deleted records: set isDeleted = 1 where deletedAt IS NOT NULL
-        for (var table in ['orders', 'inventory', 'customers', 'employees', 'floors', 'tables', 'suppliers', 'notes']) {
-          try { await db.execute("UPDATE $table SET isDeleted = 1 WHERE deletedAt IS NOT NULL"); } catch (_) {}
+        for (var table in [
+          'orders',
+          'inventory',
+          'customers',
+          'employees',
+          'floors',
+          'tables',
+          'suppliers',
+          'notes'
+        ]) {
+          try {
+            await db.execute(
+                "UPDATE $table SET isDeleted = 1 WHERE deletedAt IS NOT NULL");
+          } catch (_) {}
         }
 
         // Create indexes for the new sync status queries
-        try { await db.execute('CREATE INDEX IF NOT EXISTS idx_orders_sync ON orders(syncStatus)'); } catch (_) {}
-        try { await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_sync ON inventory(syncStatus)'); } catch (_) {}
-        try { await db.execute('CREATE INDEX IF NOT EXISTS idx_customers_sync ON customers(syncStatus)'); } catch (_) {}
-        try { await db.execute('CREATE INDEX IF NOT EXISTS idx_employees_sync ON employees(syncStatus)'); } catch (_) {}
-      } catch (e) { /* Error ignored */ }
+        try {
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_orders_sync ON orders(syncStatus)');
+        } catch (_) {}
+        try {
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_inventory_sync ON inventory(syncStatus)');
+        } catch (_) {}
+        try {
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_customers_sync ON customers(syncStatus)');
+        } catch (_) {}
+        try {
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_employees_sync ON employees(syncStatus)');
+        } catch (_) {}
+      } catch (e) {/* Error ignored */}
     }
 
     // Migration V20: Performance Indexing for Core Tables
     if (oldVersion < 20) {
       try {
         // Orders Indexes
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_orders_store ON orders(storeId)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(date)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(orderId)');
-        
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_orders_store ON orders(storeId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(date)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(orderId)');
+
         // Core Entity Store Indexes
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_store ON inventory(storeId)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_customers_store ON customers(storeId)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_employees_store ON employees(storeId)');
-        
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_inventory_store ON inventory(storeId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_customers_store ON customers(storeId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_employees_store ON employees(storeId)');
+
         // Sync Status Indexes (Ensuring they exist for all)
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_orders_sync ON orders(syncStatus)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_sync ON inventory(syncStatus)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_customers_sync ON customers(syncStatus)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_employees_sync ON employees(syncStatus)');
-      } catch (e) { /* Error ignored */ }
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_orders_sync ON orders(syncStatus)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_inventory_sync ON inventory(syncStatus)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_customers_sync ON customers(syncStatus)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_employees_sync ON employees(syncStatus)');
+      } catch (e) {/* Error ignored */}
     }
 
     // Migration V21: Tax & Subtotal Columns for Orders
     if (oldVersion < 21) {
       try {
-        await db.execute('ALTER TABLE orders ADD COLUMN subtotal REAL DEFAULT 0.0');
+        await db
+            .execute('ALTER TABLE orders ADD COLUMN subtotal REAL DEFAULT 0.0');
         await db.execute('ALTER TABLE orders ADD COLUMN cgst REAL DEFAULT 0.0');
         await db.execute('ALTER TABLE orders ADD COLUMN sgst REAL DEFAULT 0.0');
-        await db.execute('ALTER TABLE order_items ADD COLUMN cgst REAL DEFAULT 0.0');
-        await db.execute('ALTER TABLE order_items ADD COLUMN sgst REAL DEFAULT 0.0');
-      } catch (e) { /* Error ignored */ }
+        await db.execute(
+            'ALTER TABLE order_items ADD COLUMN cgst REAL DEFAULT 0.0');
+        await db.execute(
+            'ALTER TABLE order_items ADD COLUMN sgst REAL DEFAULT 0.0');
+      } catch (e) {/* Error ignored */}
     }
 
     // Migration V22: Core Module Tables (Floors, Tables, Suppliers, Notes, Settings)
@@ -579,9 +661,10 @@ class DatabaseHelper {
               lastSyncedAt TEXT
             )
           ''');
-          await db.execute('CREATE INDEX IF NOT EXISTS idx_${t}_store ON $t(storeId)');
+          await db.execute(
+              'CREATE INDEX IF NOT EXISTS idx_${t}_store ON $t(storeId)');
         }
-        
+
         await db.execute('''
           CREATE TABLE IF NOT EXISTS store_settings (
             storeId TEXT PRIMARY KEY,
@@ -594,7 +677,7 @@ class DatabaseHelper {
             lastSyncedAt TEXT
           )
         ''');
-      } catch(e) { /* Error ignored */ }
+      } catch (e) {/* Error ignored */}
     }
 
     // Migration V23: Tier 1 Platform Hardening (Idempotency & Transaction Journal)
@@ -609,7 +692,8 @@ class DatabaseHelper {
             createdAt TEXT
           )
         ''');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_idem_created ON idempotency_keys(createdAt)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_idem_created ON idempotency_keys(createdAt)');
 
         await db.execute('''
           CREATE TABLE IF NOT EXISTS transaction_journal (
@@ -622,7 +706,7 @@ class DatabaseHelper {
             error TEXT
           )
         ''');
-      } catch(e) { /* Error ignored */ }
+      } catch (e) {/* Error ignored */}
     }
   }
 
@@ -661,7 +745,7 @@ class DatabaseHelper {
         voidReason TEXT
       )
     ''');
-    
+
     // 1.5 Cache Table for Quantities (Ephemeral, derived from Movements)
     await db.execute('''
       CREATE TABLE IF NOT EXISTS cache_inventory_quantities (
@@ -670,7 +754,8 @@ class DatabaseHelper {
         quantity INTEGER DEFAULT 0
       )
     ''');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_cache_qty_store ON cache_inventory_quantities(storeId)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_cache_qty_store ON cache_inventory_quantities(storeId)');
 
     // 2. Order Items Table
     await db.execute('''
@@ -754,7 +839,7 @@ class DatabaseHelper {
         isDeleted INTEGER DEFAULT 0
       )
     ''');
-    
+
     // 5. Employees Table
     await db.execute('''
       CREATE TABLE employees (
@@ -829,7 +914,7 @@ class DatabaseHelper {
         FOREIGN KEY(employeeId) REFERENCES employees(id) ON DELETE CASCADE
       )
     ''');
-    
+
     // 6. Roles Table
     await db.execute('''
       CREATE TABLE roles (
@@ -847,7 +932,7 @@ class DatabaseHelper {
         lastSyncedAt TEXT
       )
     ''');
-    
+
     // 7. Inventory Movements Table (Event Sourcing)
     await db.execute('''
       CREATE TABLE inventory_movements (
@@ -868,30 +953,41 @@ class DatabaseHelper {
         FOREIGN KEY(itemId) REFERENCES inventory(id) ON DELETE CASCADE
       )
     ''');
-    
+
     // Indexes for performance
     await db.execute('CREATE INDEX idx_orders_store ON orders(storeId)');
     await db.execute('CREATE INDEX idx_orders_date ON orders(date)');
     await db.execute('CREATE INDEX idx_orders_sync ON orders(syncStatus)');
-    await db.execute('CREATE INDEX idx_order_items_order ON order_items(orderId)');
-    
-    await db.execute('CREATE INDEX idx_inventory_store ON inventory(storeId)');
-    await db.execute('CREATE INDEX idx_inventory_sync ON inventory(syncStatus)');
-    
-    await db.execute('CREATE INDEX idx_customers_store ON customers(storeId)');
-    await db.execute('CREATE INDEX idx_customers_sync ON customers(syncStatus)');
-    
-    await db.execute('CREATE INDEX idx_employees_store ON employees(storeId)');
-    await db.execute('CREATE INDEX idx_employees_sync ON employees(syncStatus)');
+    await db
+        .execute('CREATE INDEX idx_order_items_order ON order_items(orderId)');
 
-    await db.execute('CREATE INDEX idx_movements_item ON inventory_movements(itemId)');
-    await db.execute('CREATE INDEX idx_movements_store ON inventory_movements(storeId)');
-    await db.execute('CREATE INDEX idx_movements_sync ON inventory_movements(syncStatus)');
-    await db.execute('CREATE INDEX idx_movements_created ON inventory_movements(createdAt)');
-    await db.execute('CREATE INDEX idx_attr_emp ON employee_attendance(employeeId)');
-    await db.execute('CREATE INDEX idx_leaves_emp ON employee_leaves(employeeId)');
-    await db.execute('CREATE INDEX idx_payroll_emp ON employee_payroll(employeeId)');
-    
+    await db.execute('CREATE INDEX idx_inventory_store ON inventory(storeId)');
+    await db
+        .execute('CREATE INDEX idx_inventory_sync ON inventory(syncStatus)');
+
+    await db.execute('CREATE INDEX idx_customers_store ON customers(storeId)');
+    await db
+        .execute('CREATE INDEX idx_customers_sync ON customers(syncStatus)');
+
+    await db.execute('CREATE INDEX idx_employees_store ON employees(storeId)');
+    await db
+        .execute('CREATE INDEX idx_employees_sync ON employees(syncStatus)');
+
+    await db.execute(
+        'CREATE INDEX idx_movements_item ON inventory_movements(itemId)');
+    await db.execute(
+        'CREATE INDEX idx_movements_store ON inventory_movements(storeId)');
+    await db.execute(
+        'CREATE INDEX idx_movements_sync ON inventory_movements(syncStatus)');
+    await db.execute(
+        'CREATE INDEX idx_movements_created ON inventory_movements(createdAt)');
+    await db.execute(
+        'CREATE INDEX idx_attr_emp ON employee_attendance(employeeId)');
+    await db
+        .execute('CREATE INDEX idx_leaves_emp ON employee_leaves(employeeId)');
+    await db.execute(
+        'CREATE INDEX idx_payroll_emp ON employee_payroll(employeeId)');
+
     // 8. Business Ledger (Enterprise)
     await db.execute('''
       CREATE TABLE business_events (
@@ -908,7 +1004,8 @@ class DatabaseHelper {
         syncedAt TEXT
       )
     ''');
-    await db.execute('CREATE INDEX idx_events_store ON business_events(storeId)');
+    await db
+        .execute('CREATE INDEX idx_events_store ON business_events(storeId)');
     await db.execute('CREATE INDEX idx_events_sync ON business_events(synced)');
 
     // 9. Monthly Order Counter (Token Enforcement)
@@ -944,7 +1041,7 @@ class DatabaseHelper {
         lastSyncedAt TEXT
       )
     ''');
-    
+
     await db.execute('''
       CREATE TABLE IF NOT EXISTS floors (
         id TEXT PRIMARY KEY,
@@ -958,7 +1055,8 @@ class DatabaseHelper {
         lastSyncedAt TEXT
       )
     ''');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_floors_store ON floors(storeId)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_floors_store ON floors(storeId)');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS tables (
@@ -973,7 +1071,8 @@ class DatabaseHelper {
         lastSyncedAt TEXT
       )
     ''');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_tables_store ON tables(storeId)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_tables_store ON tables(storeId)');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS suppliers (
@@ -988,7 +1087,8 @@ class DatabaseHelper {
         lastSyncedAt TEXT
       )
     ''');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_suppliers_store ON suppliers(storeId)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_suppliers_store ON suppliers(storeId)');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS notes (
@@ -1003,7 +1103,8 @@ class DatabaseHelper {
         lastSyncedAt TEXT
       )
     ''');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_notes_store ON notes(storeId)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_notes_store ON notes(storeId)');
 
     // 12. Idempotency & Transactions (Tier 1 Platform Hardening)
     await db.execute('''
@@ -1015,7 +1116,8 @@ class DatabaseHelper {
         createdAt TEXT
       )
     ''');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_idem_created ON idempotency_keys(createdAt)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_idem_created ON idempotency_keys(createdAt)');
 
     await db.execute('''
       CREATE TABLE transaction_journal (
@@ -1033,7 +1135,8 @@ class DatabaseHelper {
   // --- Helper Methods ---
 
   /// Generic count method for O(1) record counting
-  Future<int> count(String table, {String? where, List<Object?>? whereArgs}) async {
+  Future<int> count(String table,
+      {String? where, List<Object?>? whereArgs}) async {
     final db = await database;
     final List<Map<String, dynamic>> result = await db.rawQuery(
       'SELECT COUNT(*) as count FROM $table ${where != null ? 'WHERE $where' : ''}',
@@ -1046,14 +1149,31 @@ class DatabaseHelper {
   Future<void> clearAll() async {
     final db = await database;
     final tables = [
-      'order_items', 'orders', 'inventory', 'customers', 'employees', 'roles',
-      'store_settings', 'floors', 'tables', 'suppliers', 'notes',
-      'inventory_movements', 'cache_inventory_quantities', 'business_events',
-      'employee_attendance', 'employee_leaves', 'employee_payroll',
-      'expense_categories', 'expenses', 'payment_methods', 'activity_logs',
-      'idempotency_keys', 'transaction_journal'
+      'order_items',
+      'orders',
+      'inventory',
+      'customers',
+      'employees',
+      'roles',
+      'store_settings',
+      'floors',
+      'tables',
+      'suppliers',
+      'notes',
+      'inventory_movements',
+      'cache_inventory_quantities',
+      'business_events',
+      'employee_attendance',
+      'employee_leaves',
+      'employee_payroll',
+      'expense_categories',
+      'expenses',
+      'payment_methods',
+      'activity_logs',
+      'idempotency_keys',
+      'transaction_journal'
     ];
-    
+
     for (var table in tables) {
       try {
         await db.delete(table);
@@ -1065,18 +1185,17 @@ class DatabaseHelper {
 
   @visibleForTesting
   Future<void> close() async {
-     if (_database != null) {
-       await _database!.close();
-       _database = null;
-     }
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
   }
 
   // FORCE RESET (Panic Button)
   Future<void> nukeDatabase() async {
     try {
-
       await close();
-      
+
       String path;
       if (kIsWeb) {
         path = 'biztonic_pos.db';
@@ -1085,9 +1204,7 @@ class DatabaseHelper {
       }
 
       await deleteDatabase(path);
-
     } catch (e) {
-
       rethrow;
     }
   }

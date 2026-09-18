@@ -16,17 +16,17 @@ class SubscriptionsOverviewScreen extends StatefulWidget {
   const SubscriptionsOverviewScreen({super.key});
 
   @override
-  State<SubscriptionsOverviewScreen> createState() => _SubscriptionsOverviewScreenState();
+  State<SubscriptionsOverviewScreen> createState() =>
+      _SubscriptionsOverviewScreenState();
 }
 
-class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScreen> {
+class _SubscriptionsOverviewScreenState
+    extends State<SubscriptionsOverviewScreen> {
   bool _isLoading = true;
   Map<String, dynamic> _stats = {};
-  
+
   // Filtering & Sorting State
   String? _selectedAddonFilter;
-  
-  
 
   @override
   void initState() {
@@ -59,47 +59,48 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
       ],
       mainContent: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : LayoutBuilder(
-              builder: (context, constraints) {
-                final bool isMobile = constraints.maxWidth < 600;
-                
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSummaryCards(isMobile),
-                      const SizedBox(height: AppSpacing.lg),
-                      
-                      // Responsive Charts
-                      if (isMobile) ...[
-                        _buildPlanDistributionChart(),
-                        const SizedBox(height: AppSpacing.md),
-                        _buildAddonAdoptionChart(),
-                      ] else
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: _buildPlanDistributionChart()),
-                            AppSpacing.hMd,
-                            Expanded(child: _buildAddonAdoptionChart()),
-                          ],
-                        ),
-                      
-                      AppSpacing.vLg,
-                      _buildDetailedStoreTable(isMobile),
-                      AppSpacing.vLg,
-                      _buildStoreRevenueList(),
-                      AppSpacing.vLg,
-                      Text(AppLocalizations.t(context, 'Recent Transactions / Coupons'), style: AppTypography.h2),
-                      AppSpacing.vMd,
-                      _buildRecentHistoryList(),
-                      AppSpacing.vXl,
-                    ],
-                  ),
-                );
-              }
-            ),
+          : LayoutBuilder(builder: (context, constraints) {
+              final bool isMobile = constraints.maxWidth < 600;
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSummaryCards(isMobile),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Responsive Charts
+                    if (isMobile) ...[
+                      _buildPlanDistributionChart(),
+                      const SizedBox(height: AppSpacing.md),
+                      _buildAddonAdoptionChart(),
+                    ] else
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _buildPlanDistributionChart()),
+                          AppSpacing.hMd,
+                          Expanded(child: _buildAddonAdoptionChart()),
+                        ],
+                      ),
+
+                    AppSpacing.vLg,
+                    _buildDetailedStoreTable(isMobile),
+                    AppSpacing.vLg,
+                    _buildStoreRevenueList(),
+                    AppSpacing.vLg,
+                    Text(
+                        AppLocalizations.t(
+                            context, 'Recent Transactions / Coupons'),
+                        style: AppTypography.h2),
+                    AppSpacing.vMd,
+                    _buildRecentHistoryList(),
+                    AppSpacing.vXl,
+                  ],
+                ),
+              );
+            }),
     );
   }
 
@@ -116,17 +117,27 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
       spacing: AppSpacing.md,
       runSpacing: AppSpacing.md,
       children: [
-        _buildResponsiveStatCard("Total Revenue", currencyFormat.format(totalValue), Icons.payments, AppColors.success, isMobile),
-        _buildResponsiveStatCard("Active Standard", activeSubs.toString(), Icons.star, AppColors.warning, isMobile),
-        _buildResponsiveStatCard("Active Addons", totalAddonCount.toString(), Icons.extension, AppColors.primary, isMobile),
-        _buildResponsiveStatCard("Total Stores", totalStores.toString(), Icons.store, AppColors.primary, isMobile),
+        _buildResponsiveStatCard(
+            "Total Revenue",
+            currencyFormat.format(totalValue),
+            Icons.payments,
+            AppColors.success,
+            isMobile),
+        _buildResponsiveStatCard("Active Standard", activeSubs.toString(),
+            Icons.star, AppColors.warning, isMobile),
+        _buildResponsiveStatCard("Active Addons", totalAddonCount.toString(),
+            Icons.extension, AppColors.primary, isMobile),
+        _buildResponsiveStatCard("Total Stores", totalStores.toString(),
+            Icons.store, AppColors.primary, isMobile),
       ],
     );
   }
 
-  Widget _buildResponsiveStatCard(String label, String value, IconData icon, Color color, bool isMobile) {
-    final cardWidth = isMobile ? (MediaQuery.of(context).size.width - 48) / 2 : 240.0;
-    
+  Widget _buildResponsiveStatCard(
+      String label, String value, IconData icon, Color color, bool isMobile) {
+    final cardWidth =
+        isMobile ? (MediaQuery.of(context).size.width - 48) / 2 : 240.0;
+
     return Container(
       width: cardWidth,
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -140,29 +151,43 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
         children: [
           Icon(icon, color: color, size: 28),
           const SizedBox(height: AppSpacing.md),
-          Text(label, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
+          Text(label,
+              style: AppTypography.labelSmall
+                  .copyWith(color: AppColors.textSecondary(context))),
           const SizedBox(height: AppSpacing.xs),
-          FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: AppTypography.displaySmall)),
+          FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(value, style: AppTypography.displaySmall)),
         ],
       ),
     );
   }
 
   Widget _buildPlanDistributionChart() {
-    final Map<String, int> distribution = Map<String, int>.from(_stats['planDistribution'] ?? {});
+    final Map<String, int> distribution =
+        Map<String, int>.from(_stats['planDistribution'] ?? {});
     if (distribution.isEmpty) return const SizedBox();
 
     List<PieChartSectionData> sections = [];
     int i = 0;
-    final colors = [AppColors.primary, AppColors.warning, AppColors.primary, AppColors.error, AppColors.primaryLight];
-    
+    final colors = [
+      AppColors.primary,
+      AppColors.warning,
+      AppColors.primary,
+      AppColors.error,
+      AppColors.primaryLight
+    ];
+
     distribution.forEach((plan, planCount) {
       sections.add(PieChartSectionData(
         color: colors[i % colors.length],
         value: planCount.toDouble(),
         title: '$planCount',
         radius: 60,
-        titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
+        titleStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.surfaceLight),
       ));
       i++;
     });
@@ -170,9 +195,13 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
     return AppCard(
       child: Column(
         children: [
-          Text(AppLocalizations.t(context, 'Plan Distribution'), style: AppTypography.titleLarge),
+          Text(AppLocalizations.t(context, 'Plan Distribution'),
+              style: AppTypography.titleLarge),
           const SizedBox(height: AppSpacing.lg),
-          SizedBox(height: 180, child: PieChart(PieChartData(sections: sections, centerSpaceRadius: 40))),
+          SizedBox(
+              height: 180,
+              child: PieChart(
+                  PieChartData(sections: sections, centerSpaceRadius: 40))),
           const SizedBox(height: AppSpacing.lg),
           _buildPlanLegend(),
         ],
@@ -181,36 +210,54 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
   }
 
   Widget _buildStoreRevenueList() {
-    final Map<String, double> revenueMap = Map<String, double>.from(_stats['storeRevenue'] ?? {});
+    final Map<String, double> revenueMap =
+        Map<String, double>.from(_stats['storeRevenue'] ?? {});
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
 
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(AppLocalizations.t(context, 'Top Stores by Revenue'), style: AppTypography.titleLarge),
+          Text(AppLocalizations.t(context, 'Top Stores by Revenue'),
+              style: AppTypography.titleLarge),
           const SizedBox(height: AppSpacing.md),
           if (revenueMap.isEmpty)
-            Center(child: Text(AppLocalizations.t(context, 'No data available'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))))
+            Center(
+                child: Text(AppLocalizations.t(context, 'No data available'),
+                    style: AppTypography.bodyMedium
+                        .copyWith(color: AppColors.textSecondary(context))))
           else
             ...revenueMap.entries.take(5).map((e) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: Text(e.key, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w500))),
-                  Text(currencyFormat.format(e.value), style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.success)),
-                ],
-              ),
-            )),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                          child: Text(e.key,
+                              style: AppTypography.bodyMedium
+                                  .copyWith(fontWeight: FontWeight.w500))),
+                      Text(currencyFormat.format(e.value),
+                          style: AppTypography.bodyMedium.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.success)),
+                    ],
+                  ),
+                )),
         ],
       ),
     );
   }
 
   Widget _buildPlanLegend() {
-    final Map<String, int> distribution = Map<String, int>.from(_stats['planDistribution'] ?? {});
-    final colors = [AppColors.primary, AppColors.warning, AppColors.primary, AppColors.error, AppColors.primaryLight];
+    final Map<String, int> distribution =
+        Map<String, int>.from(_stats['planDistribution'] ?? {});
+    final colors = [
+      AppColors.primary,
+      AppColors.warning,
+      AppColors.primary,
+      AppColors.error,
+      AppColors.primaryLight
+    ];
     int i = 0;
 
     return Column(
@@ -221,7 +268,11 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Row(
             children: [
-              Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.rectangle)),
+              Container(
+                  width: 12,
+                  height: 12,
+                  decoration:
+                      BoxDecoration(color: color, shape: BoxShape.rectangle)),
               const SizedBox(width: AppSpacing.sm),
               Text(plan, style: AppTypography.bodyMedium),
             ],
@@ -238,7 +289,11 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Text(AppLocalizations.t(context, 'No subscription history available'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+            child: Text(
+                AppLocalizations.t(
+                    context, 'No subscription history available'),
+                style: AppTypography.bodyMedium
+                    .copyWith(color: AppColors.textSecondary(context))),
           ),
         ),
       );
@@ -271,19 +326,30 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
           }
 
           return ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             leading: CircleAvatar(
               backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              child: const Icon(Icons.receipt_long, color: AppColors.primary, size: 20),
+              child: const Icon(Icons.receipt_long,
+                  color: AppColors.primary, size: 20),
             ),
             title: Row(
               children: [
-                Expanded(child: Text(item['storeName'] ?? (item['ownerEmail'] ?? 'New Request'), style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold))),
+                Expanded(
+                    child: Text(
+                        item['storeName'] ??
+                            (item['ownerEmail'] ?? 'New Request'),
+                        style: AppTypography.bodyMedium
+                            .copyWith(fontWeight: FontWeight.bold))),
                 _buildStatusBadge(item['status']),
               ],
             ),
-            subtitle: Text("${df.format(createdAt)} • $plan ($cycle)", style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
-            trailing: Text("₹$amount", style: AppTypography.titleLarge.copyWith(color: AppColors.success)),
+            subtitle: Text("${df.format(createdAt)} • $plan ($cycle)",
+                style: AppTypography.labelSmall
+                    .copyWith(color: AppColors.textSecondary(context))),
+            trailing: Text("₹$amount",
+                style: AppTypography.titleLarge
+                    .copyWith(color: AppColors.success)),
           );
         },
       ),
@@ -293,7 +359,7 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
   Widget _buildStatusBadge(dynamic status) {
     final String statusStr = (status?.toString() ?? 'PENDING').toUpperCase();
     Color color = AppColors.textSecondary(context);
-    
+
     switch (statusStr) {
       case 'APPROVED':
       case 'COMPLETED':
@@ -309,31 +375,44 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.zero,
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
-      child: Text(statusStr, style: AppTypography.labelSmall.copyWith(color: color, fontWeight: FontWeight.bold)),
+      child: Text(statusStr,
+          style: AppTypography.labelSmall
+              .copyWith(color: color, fontWeight: FontWeight.bold)),
     );
   }
 
   Widget _buildAddonAdoptionChart() {
-    final Map<String, int> activeAddons = Map<String, int>.from(_stats['activeAddons'] ?? {});
+    final Map<String, int> activeAddons =
+        Map<String, int>.from(_stats['activeAddons'] ?? {});
     if (activeAddons.isEmpty) return const SizedBox();
 
     List<PieChartSectionData> sections = [];
     int i = 0;
-    final colors = [AppColors.primary, AppColors.primaryLight, AppColors.primaryLight, AppColors.primaryLightGrey, AppColors.success];
-    
+    final colors = [
+      AppColors.primary,
+      AppColors.primaryLight,
+      AppColors.primaryLight,
+      AppColors.primaryLightGrey,
+      AppColors.success
+    ];
+
     activeAddons.forEach((addon, addonCount) {
       sections.add(PieChartSectionData(
         color: colors[i % colors.length],
         value: addonCount.toDouble(),
         title: '$addonCount',
         radius: 60,
-        titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.surfaceLight),
+        titleStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.surfaceLight),
       ));
       i++;
     });
@@ -341,9 +420,13 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
     return AppCard(
       child: Column(
         children: [
-          Text(AppLocalizations.t(context, 'Addon Adoption'), style: AppTypography.titleLarge),
+          Text(AppLocalizations.t(context, 'Addon Adoption'),
+              style: AppTypography.titleLarge),
           const SizedBox(height: AppSpacing.lg),
-          SizedBox(height: 180, child: PieChart(PieChartData(sections: sections, centerSpaceRadius: 40))),
+          SizedBox(
+              height: 180,
+              child: PieChart(
+                  PieChartData(sections: sections, centerSpaceRadius: 40))),
           const SizedBox(height: AppSpacing.lg),
           _buildAddonLegend(activeAddons, colors),
         ],
@@ -361,9 +444,15 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Row(
             children: [
-              Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.rectangle)),
+              Container(
+                  width: 10,
+                  height: 10,
+                  decoration:
+                      BoxDecoration(color: color, shape: BoxShape.rectangle)),
               const SizedBox(width: AppSpacing.sm),
-              Text(addon.replaceAll('_', ' ').toUpperCase(), style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.w500)),
+              Text(addon.replaceAll('_', ' ').toUpperCase(),
+                  style: AppTypography.labelSmall
+                      .copyWith(fontWeight: FontWeight.w500)),
             ],
           ),
         );
@@ -393,7 +482,8 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(AppLocalizations.t(context, 'Detailed Overview'), style: AppTypography.titleLarge),
+              Text(AppLocalizations.t(context, 'Detailed Overview'),
+                  style: AppTypography.titleLarge),
               if (_selectedAddonFilter != null)
                 IconButton(
                   onPressed: () => setState(() => _selectedAddonFilter = null),
@@ -403,28 +493,32 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          
+
           // Addon Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 FilterChip(
-                  label: Text(AppLocalizations.t(context, 'All'), style: AppTypography.labelSmall),
+                  label: Text(AppLocalizations.t(context, 'All'),
+                      style: AppTypography.labelSmall),
                   selected: _selectedAddonFilter == null,
-                  onSelected: (_) => setState(() => _selectedAddonFilter = null),
+                  onSelected: (_) =>
+                      setState(() => _selectedAddonFilter = null),
                   selectedColor: AppColors.primary.withValues(alpha: 0.1),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 ...allAddons.map((addon) => Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.xs),
-                  child: FilterChip(
-                    label: Text(addon.replaceAll('_', ' '), style: AppTypography.labelSmall),
-                    selected: _selectedAddonFilter == addon,
-                    onSelected: (val) => setState(() => _selectedAddonFilter = val ? addon : null),
-                    selectedColor: AppColors.primary.withValues(alpha: 0.1),
-                  ),
-                )),
+                      padding: const EdgeInsets.only(right: AppSpacing.xs),
+                      child: FilterChip(
+                        label: Text(addon.replaceAll('_', ' '),
+                            style: AppTypography.labelSmall),
+                        selected: _selectedAddonFilter == addon,
+                        onSelected: (val) => setState(
+                            () => _selectedAddonFilter = val ? addon : null),
+                        selectedColor: AppColors.primary.withValues(alpha: 0.1),
+                      ),
+                    )),
               ],
             ),
           ),
@@ -439,7 +533,11 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
             },
             children: [
               TableRow(
-                decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.textSecondary(context).withValues(alpha: 0.1)))),
+                decoration: BoxDecoration(
+                    border: Border(
+                        bottom: BorderSide(
+                            color: AppColors.textSecondary(context)
+                                .withValues(alpha: 0.1)))),
                 children: [
                   _buildHeaderCell('STORE NAME'),
                   _buildHeaderCell('PLAN'),
@@ -451,45 +549,56 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
                 final plan = s['plan'] ?? 'Basic';
                 final addonList = s['addons'] as List? ?? [];
                 final expiry = s['expiry'];
-                
+
                 Widget addonContent;
                 if (plan == 'Basic') {
-                   final dCount = s['dailyOrders'] ?? 0;
-                   final dLimit = s['dailyLimit'] ?? globalDaily;
-                   
-                   
+                  final dCount = s['dailyOrders'] ?? 0;
+                  final dLimit = s['dailyLimit'] ?? globalDaily;
 
-                   final dProgress = (dLimit > 0) ? (dCount / dLimit).clamp(0.0, 1.0) : 0.0;
+                  final dProgress =
+                      (dLimit > 0) ? (dCount / dLimit).clamp(0.0, 1.0) : 0.0;
 
-                   addonContent = Column(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     mainAxisSize: MainAxisSize.min,
-                     children: [
-                       Row(
-                         children: [
-                           Text("Day: $dCount / $dLimit", 
+                  addonContent = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Text("Day: $dCount / $dLimit",
                               style: AppTypography.labelSmall.copyWith(
-                                color: dCount > dLimit * 0.9 ? AppColors.error : AppColors.primary,
-                                fontWeight: FontWeight.bold)),
-                           const Spacer(),
-                           Text("${(dProgress * 100).toInt()}%", style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context))),
-                         ],
-                       ),
-                       const SizedBox(height: AppSpacing.xs),
-                       ClipRRect(
-                         borderRadius: BorderRadius.zero,
-                         child: LinearProgressIndicator(
-                           value: dProgress,
-                           minHeight: 4,
-                           backgroundColor: AppColors.textSecondary(context).withValues(alpha: 0.1),
-                           valueColor: AlwaysStoppedAnimation<Color>(dCount > dLimit * 0.9 ? AppColors.error : AppColors.primary),
-                         ),
-                       ),
-                     ],
-                   );
+                                  color: dCount > dLimit * 0.9
+                                      ? AppColors.error
+                                      : AppColors.primary,
+                                  fontWeight: FontWeight.bold)),
+                          const Spacer(),
+                          Text("${(dProgress * 100).toInt()}%",
+                              style: AppTypography.labelSmall.copyWith(
+                                  color: AppColors.textSecondary(context))),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      ClipRRect(
+                        borderRadius: BorderRadius.zero,
+                        child: LinearProgressIndicator(
+                          value: dProgress,
+                          minHeight: 4,
+                          backgroundColor: AppColors.textSecondary(context)
+                              .withValues(alpha: 0.1),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              dCount > dLimit * 0.9
+                                  ? AppColors.error
+                                  : AppColors.primary),
+                        ),
+                      ),
+                    ],
+                  );
                 } else {
-                   final addons = addonList.isEmpty ? 'None' : addonList.join(', ').toUpperCase();
-                   addonContent = Text(addons, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary(context)));
+                  final addons = addonList.isEmpty
+                      ? 'None'
+                      : addonList.join(', ').toUpperCase();
+                  addonContent = Text(addons,
+                      style: AppTypography.labelSmall
+                          .copyWith(color: AppColors.textSecondary(context)));
                 }
 
                 String validity = 'N/A';
@@ -497,22 +606,34 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
                   final dt = _getExpiryDate(expiry);
                   if (dt != null) {
                     final diff = dt.difference(DateTime.now()).inDays;
-                    validity = diff > 0 ? "$diff days left" : (diff == 0 ? "Expires today" : "Expired");
+                    validity = diff > 0
+                        ? "$diff days left"
+                        : (diff == 0 ? "Expires today" : "Expired");
                   }
                 }
 
                 return TableRow(
-                  decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.textSecondary(context).withValues(alpha: 0.05)))),
+                  decoration: BoxDecoration(
+                      border: Border(
+                          bottom: BorderSide(
+                              color: AppColors.textSecondary(context)
+                                  .withValues(alpha: 0.05)))),
                   children: [
-                    _buildDataCell(Text(s['name'] ?? 'Unknown', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold))),
+                    _buildDataCell(Text(s['name'] ?? 'Unknown',
+                        style: AppTypography.bodyMedium
+                            .copyWith(fontWeight: FontWeight.bold))),
                     _buildDataCell(_buildPlanChip(plan)),
                     _buildDataCell(addonContent),
-                    _buildDataCell(Text(validity, 
-                      style: AppTypography.labelSmall.copyWith(
-                        color: (validity.contains('Expired') || validity.contains('today')) ? AppColors.error : AppColors.textSecondary(context),
-                        fontWeight: (validity.contains('Expired') || validity.contains('today')) ? FontWeight.bold : FontWeight.normal
-                      )
-                    )),
+                    _buildDataCell(Text(validity,
+                        style: AppTypography.labelSmall.copyWith(
+                            color: (validity.contains('Expired') ||
+                                    validity.contains('today'))
+                                ? AppColors.error
+                                : AppColors.textSecondary(context),
+                            fontWeight: (validity.contains('Expired') ||
+                                    validity.contains('today'))
+                                ? FontWeight.bold
+                                : FontWeight.normal))),
                   ],
                 );
               }),
@@ -524,17 +645,22 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
   }
 
   Widget _buildHeaderCell(String text) {
-     return Padding(
-       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.xs),
-       child: Text(text, style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.textSecondary(context))),
-     );
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.md, horizontal: AppSpacing.xs),
+      child: Text(text,
+          style: AppTypography.labelSmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary(context))),
+    );
   }
 
   Widget _buildDataCell(Widget child) {
-     return Padding(
-       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.xs),
-       child: child,
-     );
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.md, horizontal: AppSpacing.xs),
+      child: child,
+    );
   }
 
   List<String> _getAllUniqueAddons(List storeDetails) {
@@ -562,17 +688,16 @@ class _SubscriptionsOverviewScreenState extends State<SubscriptionsOverviewScree
     if (plan == 'Basic') color = AppColors.primary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.zero,
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
-      child: Text(plan.toUpperCase(), style: AppTypography.bodySmall.copyWith(color: color, fontWeight: FontWeight.bold)),
+      child: Text(plan.toUpperCase(),
+          style: AppTypography.bodySmall
+              .copyWith(color: color, fontWeight: FontWeight.bold)),
     );
   }
 }
-
-
-
-

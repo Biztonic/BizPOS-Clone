@@ -64,7 +64,8 @@ class InventoryOrchestrator {
   }) : _repository = repository;
 
   /// Create or update an inventory item.
-  Future<InventoryOrchestratorResult> upsertItem(UpsertItemParams params) async {
+  Future<InventoryOrchestratorResult> upsertItem(
+      UpsertItemParams params) async {
     final warnings = <String>[];
 
     // ─── Step 1: Domain Validation ──────────────────────────

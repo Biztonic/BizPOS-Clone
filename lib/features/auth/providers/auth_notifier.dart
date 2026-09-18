@@ -18,12 +18,14 @@ class AuthNotifier extends _$AuthNotifier {
     _repository.authStateChanges.listen((user) async {
       if (user != null) {
         final appUser = await _repository.getCurrentUser();
-        state = state.copyWith(user: appUser, isLoading: false, clearError: true);
+        state =
+            state.copyWith(user: appUser, isLoading: false, clearError: true);
       } else {
         // Check offline state if no firebase user
         final appUser = await _repository.getCurrentUser();
         if (appUser != null && appUser.isOffline) {
-          state = state.copyWith(user: appUser, isLoading: false, clearError: true);
+          state =
+              state.copyWith(user: appUser, isLoading: false, clearError: true);
         } else {
           state = state.copyWith(isLoading: false, clearUser: true);
         }

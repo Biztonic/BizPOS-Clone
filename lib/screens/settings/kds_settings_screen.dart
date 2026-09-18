@@ -27,7 +27,8 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    final settings = Provider.of<StoreProvider>(context, listen: false).storeSettings?.kds;
+    final settings =
+        Provider.of<StoreProvider>(context, listen: false).storeSettings?.kds;
     if (settings != null) {
       _soundEnabled = settings.soundEnabled;
       _fontSize = settings.fontSize;
@@ -67,7 +68,8 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
       await provider.updateSettingsConfig(newSettings);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.t(context, 'KDS Settings Saved'))),
+          SnackBar(
+              content: Text(AppLocalizations.t(context, 'KDS Settings Saved'))),
         );
       }
     } catch (e) {
@@ -81,30 +83,38 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    
-
     return PosScaffold(
       title: "KDS Settings",
       mainContent: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          Text(AppLocalizations.t(context, 'Interface Options'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Interface Options'),
+              style: AppTypography.titleSmall
+                  .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           AppCard(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             child: Column(
               children: [
                 SwitchListTile(
-                  title: Text(AppLocalizations.t(context, 'Sound Notifications'), style: AppTypography.bodyLarge),
-                  subtitle: Text(AppLocalizations.t(context, 'Play sound when a new order arrives'), style: AppTypography.bodySmall),
+                  title: Text(
+                      AppLocalizations.t(context, 'Sound Notifications'),
+                      style: AppTypography.bodyLarge),
+                  subtitle: Text(
+                      AppLocalizations.t(
+                          context, 'Play sound when a new order arrives'),
+                      style: AppTypography.bodySmall),
                   value: _soundEnabled,
                   onChanged: (v) => setState(() => _soundEnabled = v),
                   contentPadding: EdgeInsets.zero,
                 ),
                 const Divider(),
                 ListTile(
-                  title: Text(AppLocalizations.t(context, 'Font Size'), style: AppTypography.bodyLarge),
-                  subtitle: Text("${_fontSize.toInt()} px", style: AppTypography.bodySmall),
+                  title: Text(AppLocalizations.t(context, 'Font Size'),
+                      style: AppTypography.bodyLarge),
+                  subtitle: Text("${_fontSize.toInt()} px",
+                      style: AppTypography.bodySmall),
                   contentPadding: EdgeInsets.zero,
                   trailing: SizedBox(
                     width: 150,
@@ -119,26 +129,33 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
                 ),
                 const Divider(),
                 ListTile(
-                  title: Text(AppLocalizations.t(context, 'Layout Style'), style: AppTypography.bodyLarge),
+                  title: Text(AppLocalizations.t(context, 'Layout Style'),
+                      style: AppTypography.bodyLarge),
                   contentPadding: EdgeInsets.zero,
                   trailing: DropdownButton<String>(
                     value: _layout,
                     style: AppTypography.bodyMedium,
-                    items: ['Grid', 'List'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    items: ['Grid', 'List']
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
                     onChanged: (v) => setState(() => _layout = v!),
                   ),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: AppSpacing.xl),
-          Text(AppLocalizations.t(context, 'Filter Categories'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.t(context, 'Filter Categories'),
+              style: AppTypography.titleSmall
+                  .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.xs),
-          Text(AppLocalizations.t(context, 'Only show orders containing items from these categories:'), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+          Text(
+              AppLocalizations.t(context,
+                  'Only show orders containing items from these categories:'),
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textSecondary(context))),
           const SizedBox(height: AppSpacing.md),
           _buildCategoryFilters(),
-
           const SizedBox(height: AppSpacing.xxl),
           AppButton.primary(
             label: "Save Settings",
@@ -151,8 +168,8 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
   }
 
   Widget _buildCategoryFilters() {
-    final categories = ['Kitchen', 'Pizza', 'Drinks', 'Dessert']; 
-    
+    final categories = ['Kitchen', 'Pizza', 'Drinks', 'Dessert'];
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,

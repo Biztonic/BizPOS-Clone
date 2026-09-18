@@ -24,12 +24,12 @@ class AdjustStockUseCase extends UseCase<AdjustStockParams, bool> {
 
       // 2. Fire event
       EventBus.instance.fire(InventoryAdjustedEvent(
-         itemId: params.movement.itemId,
-         delta: params.movement.delta,
-         storeId: params.movement.storeId,
-         reason: params.movement.type,
+        itemId: params.movement.itemId,
+        delta: params.movement.delta,
+        storeId: params.movement.storeId,
+        reason: params.movement.type,
       ));
-      
+
       return true;
     } catch (e) {
       debugPrint('Error in AdjustStockUseCase: $e');

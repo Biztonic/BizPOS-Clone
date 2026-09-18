@@ -19,7 +19,7 @@ final userProfileProvider = FutureProvider<UserProfile?>((ref) async {
   if (user == null) return null;
 
   final doc = await getFirestore().collection('users').doc(user.uid).get();
-  
+
   if (doc.exists) {
     return UserProfile.fromMap(doc.data()!, doc.id);
   }

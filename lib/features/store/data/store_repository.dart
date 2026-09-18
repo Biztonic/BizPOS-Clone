@@ -14,7 +14,7 @@ import '../domain/entities/counter_model.dart';
 
 class StoreRepository with StoreRepositoryMixin {
   late final FirebaseFirestore _db = getFirestore();
-  
+
   final OfflineService _offlineService = OfflineService();
   final SyncService _syncService;
 
@@ -55,7 +55,10 @@ class StoreRepository with StoreRepositoryMixin {
 
     // 1. Fetch by UID
     try {
-      final q0 = await _db.collection('stores').where('owner', isEqualTo: user.uid).get();
+      final q0 = await _db
+          .collection('stores')
+          .where('owner', isEqualTo: user.uid)
+          .get();
       for (var doc in q0.docs) {
         uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
       }
@@ -66,7 +69,10 @@ class StoreRepository with StoreRepositoryMixin {
     // 2. Fetch by Email
     if (user.email != null) {
       try {
-        final q1 = await _db.collection('stores').where('ownerEmail', isEqualTo: user.email).get();
+        final q1 = await _db
+            .collection('stores')
+            .where('ownerEmail', isEqualTo: user.email)
+            .get();
         for (var doc in q1.docs) {
           uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
         }
@@ -83,14 +89,19 @@ class StoreRepository with StoreRepositoryMixin {
         final List<dynamic> accessIds = data['accessibleStoreIds'] ?? [];
         final List<dynamic> legacyIds = data['storeIds'] ?? [];
         final singleStoreId = data['storeId'];
-        final allIds = {...accessIds, ...legacyIds, if (singleStoreId != null) singleStoreId}
-            .where((id) => id != null && id.toString().isNotEmpty)
-            .toList();
+        final allIds = {
+          ...accessIds,
+          ...legacyIds,
+          if (singleStoreId != null) singleStoreId
+        }.where((id) => id != null && id.toString().isNotEmpty).toList();
 
         if (allIds.isNotEmpty) {
           final chunks = _chunkList(allIds, 10);
           for (var chunk in chunks) {
-            final q2 = await _db.collection('stores').where(FieldPath.documentId, whereIn: chunk).get();
+            final q2 = await _db
+                .collection('stores')
+                .where(FieldPath.documentId, whereIn: chunk)
+                .get();
             for (var doc in q2.docs) {
               uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
             }
@@ -125,12 +136,19 @@ class StoreRepository with StoreRepositoryMixin {
 
   // --- Counters ---
   Future<List<CounterModel>> fetchCounters(String storeId) async {
-    final snapshot = await _db.collection('stores').doc(storeId).collection('counters').get();
-    return snapshot.docs.map((doc) => CounterModel.fromMap(doc.data(), doc.id)).toList();
+    final snapshot = await _db
+        .collection('stores')
+        .doc(storeId)
+        .collection('counters')
+        .get();
+    return snapshot.docs
+        .map((doc) => CounterModel.fromMap(doc.data(), doc.id))
+        .toList();
   }
 
   Future<CounterModel> addCounter(String storeId, CounterModel counter) async {
-    final docRef = _db.collection('stores').doc(storeId).collection('counters').doc();
+    final docRef =
+        _db.collection('stores').doc(storeId).collection('counters').doc();
     final newCounter = CounterModel(
       id: docRef.id,
       name: counter.name,
@@ -143,11 +161,21 @@ class StoreRepository with StoreRepositoryMixin {
   }
 
   Future<void> updateCounter(String storeId, CounterModel counter) async {
-    await _db.collection('stores').doc(storeId).collection('counters').doc(counter.id).update(counter.toMap());
+    await _db
+        .collection('stores')
+        .doc(storeId)
+        .collection('counters')
+        .doc(counter.id)
+        .update(counter.toMap());
   }
 
   Future<void> deleteCounter(String storeId, String counterId) async {
-    await _db.collection('stores').doc(storeId).collection('counters').doc(counterId).delete();
+    await _db
+        .collection('stores')
+        .doc(storeId)
+        .collection('counters')
+        .doc(counterId)
+        .delete();
   }
 
   // --- Global Store Types ---
@@ -177,7 +205,8 @@ class StoreRepository with StoreRepositoryMixin {
     try {
       final doc = await _db.collection('settings').doc('global').get();
       if (doc.exists && doc.data()?['store_type_configs'] != null) {
-        final configs = Map<String, dynamic>.from(doc.data()!['store_type_configs']);
+        final configs =
+            Map<String, dynamic>.from(doc.data()!['store_type_configs']);
         if (Hive.isBoxOpen('store_type_configs')) {
           Hive.box('store_type_configs').put('configs', configs);
         }
@@ -187,12 +216,11 @@ class StoreRepository with StoreRepositoryMixin {
     return {};
   }
 
-  Future<void> addStoreType(String type, {Map<String, dynamic>? initialConfig}) async {
+  Future<void> addStoreType(String type,
+      {Map<String, dynamic>? initialConfig}) async {
     await _db.collection('settings').doc('global').set({
       'store_types': FieldValue.arrayUnion([type]),
-      'store_type_configs': {
-        type: initialConfig ?? {}
-      }
+      'store_type_configs': {type: initialConfig ?? {}}
     }, SetOptions(merge: true));
   }
 
@@ -206,7 +234,8 @@ class StoreRepository with StoreRepositoryMixin {
   List<List<T>> _chunkList<T>(List<T> list, int size) {
     List<List<T>> chunks = [];
     for (var i = 0; i < list.length; i += size) {
-      chunks.add(list.sublist(i, i + size > list.length ? list.length : i + size));
+      chunks.add(
+          list.sublist(i, i + size > list.length ? list.length : i + size));
     }
     return chunks;
   }

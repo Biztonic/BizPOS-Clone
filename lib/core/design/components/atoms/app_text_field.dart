@@ -76,15 +76,18 @@ class AppTextField extends StatelessWidget {
     bool isDense = true;
     switch (size) {
       case AppTextFieldSize.small:
-        contentPadding = const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm);
+        contentPadding = const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm);
         fontSize = 12;
         break;
       case AppTextFieldSize.medium:
-        contentPadding = const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12);
+        contentPadding =
+            const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12);
         fontSize = 14;
         break;
       case AppTextFieldSize.large:
-        contentPadding = const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md);
+        contentPadding = const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.md);
         fontSize = 16;
         break;
     }
@@ -95,8 +98,8 @@ class AppTextField extends StatelessWidget {
         case AppTextFieldVariant.filled:
           return OutlineInputBorder(
             borderRadius: AppRadius.borderMd,
-            borderSide: variant == AppTextFieldVariant.filled 
-                ? BorderSide.none 
+            borderSide: variant == AppTextFieldVariant.filled
+                ? BorderSide.none
                 : BorderSide(color: color, width: width),
           );
         case AppTextFieldVariant.underlined:
@@ -134,9 +137,14 @@ class AppTextField extends StatelessWidget {
         prefixIcon: prefixIcon ?? (icon),
         suffixIcon: suffixIcon,
         filled: variant == AppTextFieldVariant.filled,
-        fillColor: enabled 
-            ? (isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3) : AppColors.secondary.withValues(alpha: 0.15)) 
-            : (isDark ? AppColors.transparent : AppColors.secondary.withValues(alpha: 0.08)),
+        fillColor: enabled
+            ? (isDark
+                ? theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.3)
+                : AppColors.secondary.withValues(alpha: 0.15))
+            : (isDark
+                ? AppColors.transparent
+                : AppColors.secondary.withValues(alpha: 0.08)),
         contentPadding: contentPadding,
         border: buildBorder(theme.dividerColor),
         enabledBorder: buildBorder(theme.dividerColor),
@@ -148,7 +156,8 @@ class AppTextField extends StatelessWidget {
     );
 
     if (isFullWidth || width != null) {
-      return SizedBox(width: isFullWidth ? double.infinity : width, child: field);
+      return SizedBox(
+          width: isFullWidth ? double.infinity : width, child: field);
     }
     return field;
   }

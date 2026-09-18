@@ -7,7 +7,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 ///
 /// Decouples versioning logic from the main sync orchestrator.
 class ConflictEngine {
-  
   /// Determines if the cloud version of a document should overwrite the local version.
   ///
   /// Logic:

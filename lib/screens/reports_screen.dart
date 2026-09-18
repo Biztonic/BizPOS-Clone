@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:provider/provider.dart';
@@ -15,8 +15,6 @@ class ReportsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
-
     return PosScaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.t(context, 'Reports')),
@@ -26,16 +24,19 @@ class ReportsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(AppLocalizations.t(context, 'Report Categories'),
-              style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
+            Text(
+              AppLocalizations.t(context, 'Report Categories'),
+              style: AppTypography.titleLarge
+                  .copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.lg),
-            
             LayoutBuilder(
               builder: (context, constraints) {
                 final double width = constraints.maxWidth;
-                final int crossAxisCount = width > 1200 ? 5 : (width > 900 ? 4 : (width > 600 ? 3 : 2));
-                
+                final int crossAxisCount = width > 1200
+                    ? 5
+                    : (width > 900 ? 4 : (width > 600 ? 3 : 2));
+
                 return GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -66,23 +67,31 @@ class ReportsScreen extends StatelessWidget {
                       title: "Financials",
                       icon: Icons.attach_money,
                       color: AppColors.adaptiveSuccess(context),
-                      isLocked: Provider.of<DashboardProvider>(context).activeRole == 'Cashier' ||
-                          Provider.of<DashboardProvider>(context).activeRole == 'Waiter',
+                      isLocked: Provider.of<DashboardProvider>(context)
+                                  .activeRole ==
+                              'Cashier' ||
+                          Provider.of<DashboardProvider>(context).activeRole ==
+                              'Waiter',
                       onTap: () {
-                        if (Provider.of<DashboardProvider>(context, listen: false).activeRole == 'Cashier') {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.t(context, 'Access Denied'))));
+                        if (Provider.of<DashboardProvider>(context,
+                                    listen: false)
+                                .activeRole ==
+                            'Cashier') {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(AppLocalizations.t(
+                                  context, 'Access Denied'))));
                           return;
                         }
                         GoRouter.of(context).push('/reports/financials');
-                    },
-                  ),
-                  _ReportCategoryCard(
-                    title: "Audit Log",
-                    icon: Icons.history,
-                    color: AppColors.adaptiveSecondary(context),
-                    onTap: () => context.push('/reports/audit'),
-                  ),
-                ],
+                      },
+                    ),
+                    _ReportCategoryCard(
+                      title: "Audit Log",
+                      icon: Icons.history,
+                      color: AppColors.adaptiveSecondary(context),
+                      onTap: () => context.push('/reports/audit'),
+                    ),
+                  ],
                 );
               },
             ),
@@ -119,7 +128,9 @@ class _ReportCategoryCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
-              color: isLocked ? AppColors.adaptiveSecondary(context).withValues(alpha: 0.1) : color.withValues(alpha: 0.1),
+              color: isLocked
+                  ? AppColors.adaptiveSecondary(context).withValues(alpha: 0.1)
+                  : color.withValues(alpha: 0.1),
               shape: BoxShape.rectangle,
             ),
             child: Icon(
@@ -147,5 +158,3 @@ class _ReportCategoryCard extends StatelessWidget {
     );
   }
 }
-
-

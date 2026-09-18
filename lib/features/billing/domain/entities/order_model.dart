@@ -17,10 +17,10 @@ class OrderItem {
   final double? sgst; // Added for line-item tax (v18)
 
   OrderItem({
-    required this.item, 
-    required this.quantity, 
-    this.note, 
-    this.orderId, 
+    required this.item,
+    required this.quantity,
+    this.note,
+    this.orderId,
     this.seatIndex,
     this.priceSnapshot,
     this.category,
@@ -82,6 +82,7 @@ class OrderItem {
       'sgst': sgst ?? 0.0,
     };
   }
+
   // --- SQFlite Adapters ---
   Map<String, dynamic> toSqlMap(String orderId) {
     return {
@@ -184,7 +185,8 @@ class OrderModel {
   final double sgst; // Added for tax integrity (v18)
 
   // Immutability Check: Terminal states that prevent further editing
-  bool get isImmutable => ['Completed', 'Cancelled', 'Refunded', 'VOID'].contains(status);
+  bool get isImmutable =>
+      ['Completed', 'Cancelled', 'Refunded', 'VOID'].contains(status);
 
   /// Clean, collision-free short display ID (e.g. C6A38F90)
   String get shortId {
@@ -230,23 +232,25 @@ class OrderModel {
     return OrderModel(
       id: entity.id,
       storeId: entity.storeId,
-      items: entity.items.map((i) => OrderItem(
-        item: InventoryItem(
-          id: i.itemId,
-          name: i.itemName,
-          price: i.price,
-          category: i.category ?? 'Misc',
-          quantity: 0,
-          status: 'Active',
-          trackStock: false,
-        ),
-        quantity: i.quantity,
-        priceSnapshot: i.price,
-        costSnapshot: i.cost,
-        cgst: i.cgst,
-        sgst: i.sgst,
-        category: i.category,
-      )).toList(),
+      items: entity.items
+          .map((i) => OrderItem(
+                item: InventoryItem(
+                  id: i.itemId,
+                  name: i.itemName,
+                  price: i.price,
+                  category: i.category ?? 'Misc',
+                  quantity: 0,
+                  status: 'Active',
+                  trackStock: false,
+                ),
+                quantity: i.quantity,
+                priceSnapshot: i.price,
+                costSnapshot: i.cost,
+                cgst: i.cgst,
+                sgst: i.sgst,
+                category: i.category,
+              ))
+          .toList(),
       total: entity.total,
       subtotal: entity.subtotal,
       discount: entity.discount,
@@ -278,27 +282,40 @@ class OrderModel {
       id: id,
       storeId: data['storeId'] ?? '',
       items: (data['items'] as List<dynamic>?)
-          ?.map((item) => OrderItem.fromMap(item))
-          .toList() ?? [],
+              ?.map((item) => OrderItem.fromMap(item))
+              .toList() ??
+          [],
       total: (data['total'] ?? 0).toDouble(),
       discount: (data['discount'] ?? 0).toDouble(),
       date: (data['date'] is Timestamp)
           ? (data['date'] as Timestamp).toDate()
-          : (data['date'] is DateTime 
-              ? data['date'] as DateTime 
-              : DateTime.tryParse(data['date']?.toString() ?? '') ?? DateTime.now()),
+          : (data['date'] is DateTime
+              ? data['date'] as DateTime
+              : DateTime.tryParse(data['date']?.toString() ?? '') ??
+                  DateTime.now()),
       status: data['status'] ?? 'New',
-      customer: data['customer'] != null ? Customer.fromMap(data['customer'], data['customer']['id'] ?? '') : null,
-      customerRefId: data['customerRefId'] ?? (data['customerRef'] is DocumentReference ? (data['customerRef'] as DocumentReference).id : null),
+      customer: data['customer'] != null
+          ? Customer.fromMap(data['customer'], data['customer']['id'] ?? '')
+          : null,
+      customerRefId: data['customerRefId'] ??
+          (data['customerRef'] is DocumentReference
+              ? (data['customerRef'] as DocumentReference).id
+              : null),
       customerName: data['customerName'],
       customerPhone: data['customerPhone'],
       type: data['type'] ?? 'Dine-In',
       paymentMethod: data['paymentMethod'] ?? 'Cash',
       tableId: data['tableId'],
       tableName: data['tableName'],
-      seatNumbers: (data['seatNumbers'] as List<dynamic>?)?.map((e) => parseInt(e)).toList(),
-      updatedAt: (data['updatedAt'] is Timestamp) ? (data['updatedAt'] as Timestamp).toDate() : DateTime.tryParse(data['updatedAt']?.toString() ?? ''),
-      voidedAt: (data['voidedAt'] is Timestamp) ? (data['voidedAt'] as Timestamp).toDate() : DateTime.tryParse(data['voidedAt']?.toString() ?? ''),
+      seatNumbers: (data['seatNumbers'] as List<dynamic>?)
+          ?.map((e) => parseInt(e))
+          .toList(),
+      updatedAt: (data['updatedAt'] is Timestamp)
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.tryParse(data['updatedAt']?.toString() ?? ''),
+      voidedAt: (data['voidedAt'] is Timestamp)
+          ? (data['voidedAt'] as Timestamp).toDate()
+          : DateTime.tryParse(data['voidedAt']?.toString() ?? ''),
       voidedBy: data['voidedBy'],
       voidReason: data['voidReason'],
       version: parseInt(data['version']) > 0 ? parseInt(data['version']) : 1,
@@ -332,14 +349,16 @@ class OrderModel {
       'tableName': tableName,
       'seatNumbers': seatNumbers,
       'synced': synced,
-      'updatedAt': updatedAt ?? FieldValue.serverTimestamp(), // Use server timestamp on create
+      'updatedAt': updatedAt ??
+          FieldValue.serverTimestamp(), // Use server timestamp on create
       'voidedAt': voidedAt,
       'voidedBy': voidedBy,
       'voidReason': voidReason,
       'deletedAt': null, // Explicitly for count filtering
       'version': version,
       'idempotencyKey': id, // Explicitly use ID as idempotency key
-      'serverUpdatedAt': FieldValue.serverTimestamp(), // Authoritative sync clock
+      'serverUpdatedAt':
+          FieldValue.serverTimestamp(), // Authoritative sync clock
       'syncStatus': syncStatus,
       'deviceId': deviceId,
       'businessDayId': businessDayId,
@@ -352,10 +371,10 @@ class OrderModel {
   }
 
   Map<String, dynamic> toMapForLocal() {
-     return {
-       ...toMap(),
-       'updatedAt': updatedAt, // Keep local datetime
-     };
+    return {
+      ...toMap(),
+      'updatedAt': updatedAt, // Keep local datetime
+    };
   }
 
   // Hive-compatible Map (No Timestamp objects)
@@ -392,7 +411,7 @@ class OrderModel {
       'sgst': sgst,
     };
   }
-  
+
   // --- SQFlite Adapters ---
   Map<String, dynamic> toSqlMap() {
     return {
@@ -408,7 +427,7 @@ class OrderModel {
       'customerPhone': customerPhone,
       'tableId': tableId,
       'tableName': tableName,
-      'synced': synced ? 1 : 0, 
+      'synced': synced ? 1 : 0,
       'updatedAt': updatedAt?.toIso8601String(),
       'voidedAt': voidedAt?.toIso8601String(),
       'voidedBy': voidedBy,

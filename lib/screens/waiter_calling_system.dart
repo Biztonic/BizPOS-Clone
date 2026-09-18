@@ -23,24 +23,31 @@ class WaiterCallingSystem extends StatelessWidget {
       mainContent: ListView.separated(
         padding: const EdgeInsets.all(AppSpacing.lg),
         itemCount: calls.length,
-        separatorBuilder: (_,__) => const SizedBox(height: AppSpacing.md),
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, index) {
           final call = calls[index];
           final isUrgent = call['type'] == 'Bill';
           return Card(
             elevation: 4,
             color: isUrgent ? AppColors.warning : AppColors.surfaceLight,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero, side: isUrgent ? const BorderSide(color: AppColors.warning, width: 2) : BorderSide.none),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+                side: isUrgent
+                    ? const BorderSide(color: AppColors.warning, width: 2)
+                    : BorderSide.none),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundColor: isUrgent ? AppColors.warning : AppColors.primaryLight,
+                    backgroundColor:
+                        isUrgent ? AppColors.warning : AppColors.primaryLight,
                     child: Text(
                       call['table']!,
-                      style: const TextStyle(color: AppColors.surfaceLight, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: AppColors.surfaceLight,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.lg),
@@ -48,14 +55,22 @@ class WaiterCallingSystem extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Request for ${call['type']}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                        Text(call['time']!, style: TextStyle(fontSize: 16, color: AppColors.textSecondary(context))),
+                        Text("Request for ${call['type']}",
+                            style: const TextStyle(
+                                fontSize: 24, fontWeight: FontWeight.bold)),
+                        Text(call['time']!,
+                            style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.textSecondary(context))),
                       ],
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: (){},
-                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md)),
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xl,
+                            vertical: AppSpacing.md)),
                     child: Text(AppLocalizations.t(context, 'Attend')),
                   )
                 ],
@@ -65,13 +80,10 @@ class WaiterCallingSystem extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: (){}, 
+        onPressed: () {},
         label: Text(AppLocalizations.t(context, 'Clear All')),
         icon: const Icon(Icons.clear_all),
       ),
     );
   }
 }
-
-
-

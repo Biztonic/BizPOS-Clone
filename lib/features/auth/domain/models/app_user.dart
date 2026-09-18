@@ -15,7 +15,8 @@ class AppUser {
     this.profileData,
   });
 
-  factory AppUser.fromFirebaseUser(dynamic user, {Map<String, dynamic>? profile}) {
+  factory AppUser.fromFirebaseUser(dynamic user,
+      {Map<String, dynamic>? profile}) {
     return AppUser(
       uid: user.uid,
       email: user.email,

@@ -13,10 +13,12 @@ class ProductSettingsSection extends ConsumerStatefulWidget {
   final bool isSubView;
   const ProductSettingsSection({super.key, this.isSubView = false});
   @override
-  ConsumerState<ProductSettingsSection> createState() => _ProductSettingsSectionState();
+  ConsumerState<ProductSettingsSection> createState() =>
+      _ProductSettingsSectionState();
 }
 
-class _ProductSettingsSectionState extends ConsumerState<ProductSettingsSection> {
+class _ProductSettingsSectionState
+    extends ConsumerState<ProductSettingsSection> {
   bool _trackInventory = true;
   bool _isInit = true;
 
@@ -41,30 +43,38 @@ class _ProductSettingsSectionState extends ConsumerState<ProductSettingsSection>
     final content = ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-        Text(AppLocalizations.t(context, 'Inventory Tracking'), style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+        Text(AppLocalizations.t(context, 'Inventory Tracking'),
+            style:
+                AppTypography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: AppSpacing.md),
         AppCard(
           padding: EdgeInsets.zero,
           child: FeatureGuard(
             featureKey: 'settings.products.inventory',
             lockedChild: Opacity(
-              opacity: 0.5, 
-              child: IgnorePointer(
-                child: SwitchListTile(
-                  title: Text(AppLocalizations.t(context, 'Track Inventory Stock'), style: AppTypography.bodyLarge), 
-                  value: _trackInventory, 
-                  onChanged: (v){}
-                )
-              )
-            ), 
+                opacity: 0.5,
+                child: IgnorePointer(
+                    child: SwitchListTile(
+                        title: Text(
+                            AppLocalizations.t(
+                                context, 'Track Inventory Stock'),
+                            style: AppTypography.bodyLarge),
+                        value: _trackInventory,
+                        onChanged: (v) {}))),
             child: SwitchListTile(
-              title: Text(AppLocalizations.t(context, 'Track Inventory Stock'), style: AppTypography.bodyLarge),
-              subtitle: Text(AppLocalizations.t(context, 'Prevent sales when stock is unavailable'), style: AppTypography.bodySmall),
+              title: Text(AppLocalizations.t(context, 'Track Inventory Stock'),
+                  style: AppTypography.bodyLarge),
+              subtitle: Text(
+                  AppLocalizations.t(
+                      context, 'Prevent sales when stock is unavailable'),
+                  style: AppTypography.bodySmall),
               value: _trackInventory,
               onChanged: (val) async {
-                 setState(() => _trackInventory = val);
-                 final updatedStore = store.copyWith(trackInventory: val);
-                 await ref.read(storeNotifierProvider.notifier).updateStoreSettings(updatedStore);
+                setState(() => _trackInventory = val);
+                final updatedStore = store.copyWith(trackInventory: val);
+                await ref
+                    .read(storeNotifierProvider.notifier)
+                    .updateStoreSettings(updatedStore);
               },
             ),
           ),
@@ -81,4 +91,3 @@ class _ProductSettingsSectionState extends ConsumerState<ProductSettingsSection>
     );
   }
 }
-

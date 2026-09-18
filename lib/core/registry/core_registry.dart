@@ -43,20 +43,23 @@ class POSCoreRegistry {
 
     for (var module in activeModules) {
       try {
-        debugPrint('🔌 [Registry] Connecting: [${module.moduleName.toUpperCase()}] (${module.moduleId})...');
+        debugPrint(
+            '🔌 [Registry] Connecting: [${module.moduleName.toUpperCase()}] (${module.moduleId})...');
         await module.initializeOffline();
         module.registerDependencies();
         _registeredModules.add(module);
         debugPrint('✅ [Registry] Module connected: [${module.moduleName}]');
       } catch (e, stack) {
-        debugPrint('❌ [Registry] Failed to initialize module [${module.moduleName}]: $e');
+        debugPrint(
+            '❌ [Registry] Failed to initialize module [${module.moduleName}]: $e');
         debugPrint('$stack');
         // Don't block other modules from loading
       }
     }
 
     _isInitialized = true;
-    debugPrint('🏁 [Registry] ${_registeredModules.length}/${activeModules.length} modules active.');
+    debugPrint(
+        '🏁 [Registry] ${_registeredModules.length}/${activeModules.length} modules active.');
   }
 
   /// Get aggregated routes from all registered modules.
@@ -97,7 +100,8 @@ class POSCoreRegistry {
   /// Useful for hot-loading an addon after purchase without app restart.
   static Future<void> attachModule(POSModule module) async {
     if (_registeredModules.any((m) => m.moduleId == module.moduleId)) {
-      debugPrint('⚠️ [Registry] Module [${module.moduleName}] already attached.');
+      debugPrint(
+          '⚠️ [Registry] Module [${module.moduleName}] already attached.');
       return;
     }
 
@@ -108,7 +112,8 @@ class POSCoreRegistry {
       _registeredModules.add(module);
       debugPrint('✅ [Registry] Module hot-attached: [${module.moduleName}]');
     } catch (e) {
-      debugPrint('❌ [Registry] Failed to hot-attach [${module.moduleName}]: $e');
+      debugPrint(
+          '❌ [Registry] Failed to hot-attach [${module.moduleName}]: $e');
     }
   }
 
@@ -122,7 +127,8 @@ class POSCoreRegistry {
     }
 
     if (module.isCoreModule) {
-      debugPrint('🚫 [Registry] Cannot detach core module: [${module.moduleName}]');
+      debugPrint(
+          '🚫 [Registry] Cannot detach core module: [${module.moduleName}]');
       return;
     }
 

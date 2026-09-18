@@ -11,7 +11,8 @@ class InventoryListener {
   void init() {
     _scope.track(EventBus.instance.on<InventoryChangedEvent>((event) async {
       try {
-        final item = await _repository.inventory.getInventoryItem(event.itemId, storeId: event.storeId);
+        final item = await _repository.inventory
+            .getInventoryItem(event.itemId, storeId: event.storeId);
         if (item == null) return;
 
         if (event.changeType == 'DELETE') {
@@ -41,7 +42,8 @@ class InventoryListener {
 
     _scope.track(EventBus.instance.on<InventoryAdjustedEvent>((event) async {
       try {
-        final item = await _repository.inventory.getInventoryItem(event.itemId, storeId: event.storeId);
+        final item = await _repository.inventory
+            .getInventoryItem(event.itemId, storeId: event.storeId);
         if (item == null) return;
 
         if (item.trackStock) {
@@ -56,7 +58,8 @@ class InventoryListener {
               AnnouncementType.stockLow,
               metadata: {'itemName': item.name},
             );
-          } else if (event.delta > 0 && (item.quantity - event.delta) <= threshold) {
+          } else if (event.delta > 0 &&
+              (item.quantity - event.delta) <= threshold) {
             // If delta was positive, and we moved from low stock/out of stock to healthy stock
             AnnouncementService().announce(
               AnnouncementType.itemRestored,

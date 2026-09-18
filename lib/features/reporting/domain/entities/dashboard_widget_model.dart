@@ -1,7 +1,7 @@
-
 class DashboardWidgetModel {
   String id;
-  String type; // 'stat_card', 'action_btn', 'hero', 'clock_header', 'spacer', 'section_title'
+  String
+      type; // 'stat_card', 'action_btn', 'hero', 'clock_header', 'spacer', 'section_title'
   double widthFactor; // 0.2 to 1.0 (Percentage of container width)
   Map<String, dynamic> data;
 

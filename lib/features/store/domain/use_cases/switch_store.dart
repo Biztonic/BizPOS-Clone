@@ -23,7 +23,7 @@ class SwitchStoreUseCase extends UseCase<SwitchStoreParams, bool> {
 
       // Fire StoreChangedEvent, listeners (Providers, SyncEngine) handle the rest
       EventBus.instance.fire(StoreChangedEvent(newStoreId: params.store.id));
-      
+
       return true;
     } catch (e) {
       debugPrint('Error in SwitchStoreUseCase: $e');

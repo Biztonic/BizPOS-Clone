@@ -6,7 +6,7 @@ import '../queue/announcement_queue.dart';
 
 class AnnouncementScheduler {
   final AnnouncementQueue queue;
-  
+
   // Buffers for mergeable announcements
   final Map<AnnouncementType, List<Announcement>> _mergeBuffers = {};
   final Map<AnnouncementType, Timer> _mergeTimers = {};

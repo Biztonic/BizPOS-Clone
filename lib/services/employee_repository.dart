@@ -9,7 +9,7 @@ class EmployeeRepository {
   /// Insert or update employee in local database
   Future<void> insertEmployee(UserProfile employee) async {
     final db = await _dbHelper.database;
-    
+
     final data = {
       'id': employee.uid,
       'storeId': employee.storeId,
@@ -18,7 +18,9 @@ class EmployeeRepository {
       'role': employee.role,
       'employeeId': employee.employeeId,
       'pinHash': employee.pinHash,
-      'permissions': employee.permissions != null ? jsonEncode(employee.permissions) : null,
+      'permissions': employee.permissions != null
+          ? jsonEncode(employee.permissions)
+          : null,
       'hourlyRate': employee.hourlyRate,
       'monthlySalary': employee.monthlySalary,
       'createdAt': employee.createdAt?.toIso8601String(),
@@ -39,7 +41,7 @@ class EmployeeRepository {
   /// Get all employees for a specific store
   Future<List<UserProfile>> getEmployeesByStore(String storeId) async {
     final db = await _dbHelper.database;
-    
+
     final List<Map<String, dynamic>> maps = await db.query(
       'employees',
       where: 'storeId = ? AND deletedAt IS NULL',
@@ -53,7 +55,7 @@ class EmployeeRepository {
   /// Get single employee by ID
   Future<UserProfile?> getEmployeeById(String id) async {
     final db = await _dbHelper.database;
-    
+
     final List<Map<String, dynamic>> maps = await db.query(
       'employees',
       where: 'id = ? AND deletedAt IS NULL',
@@ -68,7 +70,7 @@ class EmployeeRepository {
   /// Soft delete employee
   Future<void> deleteEmployee(String id) async {
     final db = await _dbHelper.database;
-    
+
     await db.update(
       'employees',
       {
@@ -85,7 +87,7 @@ class EmployeeRepository {
   /// Mark employee as synced
   Future<void> markAsSynced(String id) async {
     final db = await _dbHelper.database;
-    
+
     await db.update(
       'employees',
       {
@@ -100,7 +102,7 @@ class EmployeeRepository {
   /// Get employees with pending sync status
   Future<List<Map<String, dynamic>>> getPendingEmployees() async {
     final db = await _dbHelper.database;
-    
+
     return await db.query(
       'employees',
       where: 'syncStatus = ?',
@@ -111,7 +113,7 @@ class EmployeeRepository {
   /// Update employee role
   Future<void> updateEmployeeRole(String id, String newRole) async {
     final db = await _dbHelper.database;
-    
+
     await db.update(
       'employees',
       {
@@ -127,12 +129,12 @@ class EmployeeRepository {
   /// Get employee count for a store
   Future<int> getEmployeeCount(String storeId) async {
     final db = await _dbHelper.database;
-    
+
     final result = await db.rawQuery(
       'SELECT COUNT(*) as count FROM employees WHERE storeId = ? AND deletedAt IS NULL',
       [storeId],
     );
-    
+
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
@@ -146,47 +148,62 @@ class EmployeeRepository {
       storeId: map['storeId'] as String?,
       employeeId: map['employeeId'] as String?,
       pinHash: map['pinHash'] as String? ?? map['pin'] as String?,
-      permissions: map['permissions'] != null ? Map<String, bool>.from(jsonDecode(map['permissions'])) : null,
+      permissions: map['permissions'] != null
+          ? Map<String, bool>.from(jsonDecode(map['permissions']))
+          : null,
       hourlyRate: (map['hourlyRate'] ?? 0.0).toDouble(),
       monthlySalary: (map['monthlySalary'] ?? 0.0).toDouble(),
-      createdAt: map['createdAt'] != null 
+      createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : null,
-      accessibleStoreIds: map['storeId'] != null ? [map['storeId'] as String] : [],
+      accessibleStoreIds:
+          map['storeId'] != null ? [map['storeId'] as String] : [],
     );
   }
 
   // --- ATTENDANCE ---
   Future<void> insertAttendance(Map<String, dynamic> data) async {
     final db = await _dbHelper.database;
-    await db.insert('employee_attendance', data, conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('employee_attendance', data,
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Map<String, dynamic>>> getAttendance(String employeeId) async {
     final db = await _dbHelper.database;
-    return await db.query('employee_attendance', where: 'employeeId = ?', whereArgs: [employeeId], orderBy: 'checkIn DESC');
+    return await db.query('employee_attendance',
+        where: 'employeeId = ?',
+        whereArgs: [employeeId],
+        orderBy: 'checkIn DESC');
   }
 
   // --- LEAVES ---
   Future<void> insertLeave(Map<String, dynamic> data) async {
     final db = await _dbHelper.database;
-    await db.insert('employee_leaves', data, conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('employee_leaves', data,
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Map<String, dynamic>>> getLeaves(String employeeId) async {
     final db = await _dbHelper.database;
-    return await db.query('employee_leaves', where: 'employeeId = ?', whereArgs: [employeeId], orderBy: 'startDate DESC');
+    return await db.query('employee_leaves',
+        where: 'employeeId = ?',
+        whereArgs: [employeeId],
+        orderBy: 'startDate DESC');
   }
 
   // --- PAYROLL ---
   Future<void> insertPayroll(Map<String, dynamic> data) async {
     final db = await _dbHelper.database;
-    await db.insert('employee_payroll', data, conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('employee_payroll', data,
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Map<String, dynamic>>> getPayroll(String employeeId) async {
     final db = await _dbHelper.database;
-    return await db.query('employee_payroll', where: 'employeeId = ?', whereArgs: [employeeId], orderBy: 'periodEnd DESC');
+    return await db.query('employee_payroll',
+        where: 'employeeId = ?',
+        whereArgs: [employeeId],
+        orderBy: 'periodEnd DESC');
   }
 
   /// Clear all employees (for testing/reset)

@@ -95,6 +95,3 @@ class ReportStatCard extends StatelessWidget {
     );
   }
 }
-
-
-

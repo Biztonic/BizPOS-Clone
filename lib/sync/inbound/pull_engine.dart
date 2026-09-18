@@ -20,7 +20,8 @@ class PullEngine {
   final String? Function() getActiveStoreId;
   final Future<bool> Function() checkConnectivity;
   final Future<DateTime?> Function(String collection) getLastSyncTime;
-  final Future<void> Function(String collection, DateTime time) saveLastSyncTime;
+  final Future<void> Function(String collection, DateTime time)
+      saveLastSyncTime;
   final Future<void> Function(String message, {bool isError}) logEvent;
   final Map<String, SyncAdapter> _adapters;
   final ConflictEngine _conflictEngine = ConflictEngine();
@@ -53,13 +54,12 @@ class PullEngine {
       int totalPulled = 0;
 
       // Parallelize pulls with individual error handling
-      await Future.wait(modules.map((m) =>
-        pullCollection(m, forceFull: forceFull).then((pulledCount) {
-          totalPulled += pulledCount;
-        }).catchError((e) {
-          debugPrint('📥 [PullEngine] Error pulling $m: $e');
-        })
-      ));
+      await Future.wait(modules.map(
+          (m) => pullCollection(m, forceFull: forceFull).then((pulledCount) {
+                totalPulled += pulledCount;
+              }).catchError((e) {
+                debugPrint('📥 [PullEngine] Error pulling $m: $e');
+              })));
 
       if (totalPulled > 0) {
         EventBus.instance.fire(SyncCompletedEvent(
@@ -75,7 +75,8 @@ class PullEngine {
   }
 
   /// Pull a single collection from Firestore.
-  Future<int> pullCollection(String collection, {bool forceFull = false}) async {
+  Future<int> pullCollection(String collection,
+      {bool forceFull = false}) async {
     final storeId = getActiveStoreId();
     if (storeId == null) return 0;
 
@@ -87,14 +88,15 @@ class PullEngine {
 
     try {
       final lastSync = forceFull ? null : await getLastSyncTime(collection);
-      
+
       // DELEGATED: Query building moved to adapter
       Query query = adapter.buildQuery(_db, storeId, lastSync);
 
       final snapshot = await query.limit(500).get();
       if (snapshot.docs.isEmpty) return 0;
 
-      final boxName = SyncCollectionRegistry.getBoxName(collection, storeId: storeId);
+      final boxName =
+          SyncCollectionRegistry.getBoxName(collection, storeId: storeId);
       Box? box;
       if (boxName != null) {
         box = await Hive.openBox(boxName);
@@ -113,12 +115,18 @@ class PullEngine {
           final localData = box?.get(doc.id);
 
           // DELEGATED: Conflict resolution moved to ConflictEngine
-          if (!_conflictEngine.shouldCloudWin(cloudData: data, localData: localData is Map ? Map<String, dynamic>.from(localData) : null)) {
+          if (!_conflictEngine.shouldCloudWin(
+              cloudData: data,
+              localData: localData is Map
+                  ? Map<String, dynamic>.from(localData)
+                  : null)) {
             continue;
           }
 
           // Handle deletions
-          bool isDeleted = data['deletedAt'] != null || data['isDeleted'] == true || data['isDeleted'] == 1;
+          bool isDeleted = data['deletedAt'] != null ||
+              data['isDeleted'] == true ||
+              data['isDeleted'] == 1;
           if (isDeleted) {
             if (!kIsWeb) await adapter.deleteLocal(doc.id, repo);
             if (box != null) await box.delete(doc.id);
@@ -139,12 +147,14 @@ class PullEngine {
           }
           pulledCount++;
         } catch (e) {
-          debugPrint('📥 [PullEngine] Error processing $collection/${doc.id}: $e');
+          debugPrint(
+              '📥 [PullEngine] Error processing $collection/${doc.id}: $e');
         }
       }
 
       // RECONCILIATION: Orphan cleanup on full sync
-      if (forceFull && SyncCollectionRegistry.reconcilableCollections.contains(collection)) {
+      if (forceFull &&
+          SyncCollectionRegistry.reconcilableCollections.contains(collection)) {
         await _cleanupOrphans(collection, storeId, cloudIds, box, repo);
       }
 
@@ -160,7 +170,8 @@ class PullEngine {
     }
   }
 
-  Future<void> _cleanupOrphans(String collection, String storeId, Set<String> cloudIds, Box? box, Repository repo) async {
+  Future<void> _cleanupOrphans(String collection, String storeId,
+      Set<String> cloudIds, Box? box, Repository repo) async {
     // 1. Hive cleanup
     if (box != null) {
       final keysToDelete = [];
@@ -168,7 +179,7 @@ class PullEngine {
         if (!cloudIds.contains(key.toString())) {
           final val = box.get(key);
           if (val is Map && val['syncStatus'] == 'CONFIRMED') {
-             keysToDelete.add(key);
+            keysToDelete.add(key);
           }
         }
       }
@@ -189,7 +200,9 @@ class PullEngine {
       } else if (value is Map<String, dynamic>) {
         sanitized[key] = _deepSanitize(value);
       } else if (value is List) {
-        sanitized[key] = value.map((e) => e is Map<String, dynamic> ? _deepSanitize(e) : e).toList();
+        sanitized[key] = value
+            .map((e) => e is Map<String, dynamic> ? _deepSanitize(e) : e)
+            .toList();
       } else {
         sanitized[key] = value;
       }
@@ -197,4 +210,3 @@ class PullEngine {
     return sanitized;
   }
 }
-

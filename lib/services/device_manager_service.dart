@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum DisplayType { cfd, order_board, digital_signage }
+
 enum DisplayConnection { hdmi, network, browser }
 
 class DisplayDevice {
@@ -11,7 +12,11 @@ class DisplayDevice {
   DisplayType type;
   DisplayConnection connection;
 
-  DisplayDevice({required this.name, this.address, required this.type, required this.connection});
+  DisplayDevice(
+      {required this.name,
+      this.address,
+      required this.type,
+      required this.connection});
 
   Map<String, dynamic> toJson() => {
         'name': name,
@@ -29,7 +34,8 @@ class DisplayDevice {
 }
 
 class DeviceManagerService {
-  static final DeviceManagerService _instance = DeviceManagerService._internal();
+  static final DeviceManagerService _instance =
+      DeviceManagerService._internal();
 
   factory DeviceManagerService() {
     return _instance;
@@ -58,7 +64,8 @@ class DeviceManagerService {
 
   Future<void> _saveDisplays() async {
     final prefs = await SharedPreferences.getInstance();
-    final List<String> jsonList = _savedDisplays.map((d) => json.encode(d.toJson())).toList();
+    final List<String> jsonList =
+        _savedDisplays.map((d) => json.encode(d.toJson())).toList();
     await prefs.setStringList('saved_display_devices', jsonList);
   }
 
@@ -67,17 +74,26 @@ class DeviceManagerService {
     final List<String>? jsonList = prefs.getStringList('saved_display_devices');
     if (jsonList != null) {
       try {
-        _savedDisplays = jsonList.map((jsonStr) => DisplayDevice.fromJson(json.decode(jsonStr))).toList();
-      } catch (e) { /* Error ignored */ }
+        _savedDisplays = jsonList
+            .map((jsonStr) => DisplayDevice.fromJson(json.decode(jsonStr)))
+            .toList();
+      } catch (e) {/* Error ignored */}
     }
-    
+
     // Fallback Mock Data if empty (so user sees something initially)
     if (_savedDisplays.isEmpty) {
-        _savedDisplays.addAll([
-            DisplayDevice(name: "HDMI - Main Counter TV", type: DisplayType.digital_signage, connection: DisplayConnection.hdmi),
-            DisplayDevice(name: "Kitchen Monitor 1", type: DisplayType.order_board, connection: DisplayConnection.network, address: "192.168.1.50"),
-        ]);
-        await _saveDisplays();
+      _savedDisplays.addAll([
+        DisplayDevice(
+            name: "HDMI - Main Counter TV",
+            type: DisplayType.digital_signage,
+            connection: DisplayConnection.hdmi),
+        DisplayDevice(
+            name: "Kitchen Monitor 1",
+            type: DisplayType.order_board,
+            connection: DisplayConnection.network,
+            address: "192.168.1.50"),
+      ]);
+      await _saveDisplays();
     }
   }
 }

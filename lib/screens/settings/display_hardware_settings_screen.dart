@@ -1,4 +1,4 @@
-﻿// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
@@ -17,23 +17,27 @@ class DisplayHardwareSettingsScreen extends StatefulWidget {
   const DisplayHardwareSettingsScreen({super.key});
 
   @override
-  State<DisplayHardwareSettingsScreen> createState() => _DisplayHardwareSettingsScreenState();
+  State<DisplayHardwareSettingsScreen> createState() =>
+      _DisplayHardwareSettingsScreenState();
 }
 
-class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsScreen> with SingleTickerProviderStateMixin {
+class _DisplayHardwareSettingsScreenState
+    extends State<DisplayHardwareSettingsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final TextEditingController _ipController = TextEditingController(text: "192.168.1.50");
-  
+  final TextEditingController _ipController =
+      TextEditingController(text: "192.168.1.50");
+
   // Mock State
   bool _isScanning = false;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     // Refresh UI after data might have loaded (though service init is async, this ensures rebuild if already loaded)
     DeviceManagerService().init().then((_) {
-      if(mounted) setState((){});
+      if (mounted) setState(() {});
     });
   }
 
@@ -45,14 +49,12 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
   }
 
   void _addDisplay(DisplayDevice device) async {
-     await DeviceManagerService().addDisplay(device);
-     setState(() {}); // Refresh list
-     ScaffoldMessenger.of(context).showSnackBar(
-       SnackBar(
-         content: Text("Added ${device.name}"),
-         behavior: SnackBarBehavior.floating,
-       )
-     );
+    await DeviceManagerService().addDisplay(device);
+    setState(() {}); // Refresh list
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text("Added ${device.name}"),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   void _scan() async {
@@ -60,35 +62,35 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
     await Future.delayed(const Duration(seconds: 2));
     setState(() => _isScanning = false);
     // Mock found device
-    if(mounted) {
+    if (mounted) {
       showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(AppLocalizations.t(context, 'Device Found'), style: AppTypography.titleMedium),
-          content: const Text("Found 'Samsung TV' at 192.168.1.105", style: AppTypography.bodyMedium),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context), 
-              child: Text(AppLocalizations.t(context, 'Cancel'))
-            ),
-            AppButton(
-              label: "Add",
-              onPressed: () {
-                Navigator.pop(context);
-                _addDisplay(DisplayDevice(
-                  name: "Samsung TV (Kitchen)", 
-                  address: "192.168.1.105", 
-                  type: DisplayType.order_board, 
-                  connection: DisplayConnection.network
-                ));
-              },
-              variant: AppButtonVariant.primary,
-              size: AppButtonSize.small,
-            )
-          ],
-        )
-      );
+          context: context,
+          builder: (context) => AlertDialog(
+                title: Text(AppLocalizations.t(context, 'Device Found'),
+                    style: AppTypography.titleMedium),
+                content: const Text("Found 'Samsung TV' at 192.168.1.105",
+                    style: AppTypography.bodyMedium),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(AppLocalizations.t(context, 'Cancel'))),
+                  AppButton(
+                    label: "Add",
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _addDisplay(DisplayDevice(
+                          name: "Samsung TV (Kitchen)",
+                          address: "192.168.1.105",
+                          type: DisplayType.order_board,
+                          connection: DisplayConnection.network));
+                    },
+                    variant: AppButtonVariant.primary,
+                    size: AppButtonSize.small,
+                  )
+                ],
+              ));
     }
   }
 
@@ -104,13 +106,15 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
             controller: _tabController,
             indicatorColor: Theme.of(context).colorScheme.primary,
             labelColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-            labelStyle: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.bold),
+            unselectedLabelColor:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            labelStyle:
+                AppTypography.labelMedium.copyWith(fontWeight: FontWeight.bold),
             unselectedLabelStyle: AppTypography.labelMedium,
             tabs: const [
-               Tab(text: "Connected", icon: Icon(Icons.connected_tv_outlined)),
-               Tab(text: "Discover", icon: Icon(Icons.search_outlined)),
-               Tab(text: "This Device", icon: Icon(Icons.devices_outlined)),
+              Tab(text: "Connected", icon: Icon(Icons.connected_tv_outlined)),
+              Tab(text: "Discover", icon: Icon(Icons.search_outlined)),
+              Tab(text: "This Device", icon: Icon(Icons.devices_outlined)),
             ],
           ),
           Expanded(
@@ -135,10 +139,11 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.tv_off_outlined, size: 64, color: Theme.of(context).disabledColor),
+            Icon(Icons.tv_off_outlined,
+                size: 64, color: Theme.of(context).disabledColor),
             const SizedBox(height: AppSpacing.md),
             const Text(
-              "No displays configured.\nGo to Discover to add one.", 
+              "No displays configured.\nGo to Discover to add one.",
               textAlign: TextAlign.center,
               style: AppTypography.bodyMedium,
             ),
@@ -154,33 +159,38 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.md),
           child: AppCard(
-             child: ListTile(
-               leading: Container(
-                 padding: const EdgeInsets.all(AppSpacing.sm),
-                 decoration: BoxDecoration(
-                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                   borderRadius: BorderRadius.zero,
-                 ),
-                 child: Icon(Icons.tv, color: Theme.of(context).colorScheme.primary),
-               ),
-               title: Text(device.name, style: AppTypography.titleSmall),
-               subtitle: Text(
-                 "${device.type.name.toUpperCase().replaceAll('_', ' ')} • ${device.connection.name.toUpperCase()}",
-                 style: AppTypography.bodySmall,
-               ),
-               trailing: IconButton(
-                 icon: const Icon(Icons.delete_outline),
-                 onPressed: () async {
-                     await DeviceManagerService().removeDisplay(index);
-                     setState(() {}); // refresh
-                 },
-               ),
-               onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(AppLocalizations.t(context, 'Sending test signal...')), behavior: SnackBarBehavior.floating)
-                  );
-               },
-             ),
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.zero,
+                ),
+                child: Icon(Icons.tv,
+                    color: Theme.of(context).colorScheme.primary),
+              ),
+              title: Text(device.name, style: AppTypography.titleSmall),
+              subtitle: Text(
+                "${device.type.name.toUpperCase().replaceAll('_', ' ')} • ${device.connection.name.toUpperCase()}",
+                style: AppTypography.bodySmall,
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () async {
+                  await DeviceManagerService().removeDisplay(index);
+                  setState(() {}); // refresh
+                },
+              ),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(
+                        AppLocalizations.t(context, 'Sending test signal...')),
+                    behavior: SnackBarBehavior.floating));
+              },
+            ),
           ),
         );
       },
@@ -194,7 +204,7 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
         SizedBox(
           width: double.infinity,
           child: AppButton(
-            onPressed: _isScanning ? null : _scan, 
+            onPressed: _isScanning ? null : _scan,
             label: _isScanning ? "Scanning Network..." : "Scan for Displays",
             icon: _isScanning ? null : Icons.wifi_find,
             isLoading: _isScanning,
@@ -202,7 +212,8 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
-        Text(AppLocalizations.t(context, 'Manual Connect'), style: AppTypography.titleSmall),
+        Text(AppLocalizations.t(context, 'Manual Connect'),
+            style: AppTypography.titleSmall),
         const SizedBox(height: AppSpacing.lg),
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -217,13 +228,12 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
             const SizedBox(width: AppSpacing.md),
             AppButton(
               onPressed: () {
-                 _addDisplay(DisplayDevice(
+                _addDisplay(DisplayDevice(
                     name: "Manual Display",
                     address: _ipController.text,
                     type: DisplayType.cfd,
-                    connection: DisplayConnection.network
-                 ));
-              }, 
+                    connection: DisplayConnection.network));
+              },
               label: "Connect",
               icon: Icons.add,
               variant: AppButtonVariant.secondary,
@@ -243,15 +253,17 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
-               children: [
-                 Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
-                 const SizedBox(width: AppSpacing.md),
-                 Expanded(
-                   child: Text(AppLocalizations.t(context, 'Use this device as a dedicated display unit if connected via HDMI to a TV.'),
-                     style: AppTypography.bodySmall,
-                   )
-                 )
-               ],
+              children: [
+                Icon(Icons.info_outline,
+                    color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                    child: Text(
+                  AppLocalizations.t(context,
+                      'Use this device as a dedicated display unit if connected via HDMI to a TV.'),
+                  style: AppTypography.bodySmall,
+                ))
+              ],
             ),
           ),
         ),
@@ -261,7 +273,10 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
           subtitle: "Open the public view for prepared/ready orders",
           icon: Icons.grid_view_outlined,
           onTap: () {
-             Navigator.push(context, MaterialPageRoute(builder: (context) => const CustomerDisplayScreen()));
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const CustomerDisplayScreen()));
           },
         ),
         const SizedBox(height: AppSpacing.md),
@@ -270,7 +285,8 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
           subtitle: "Show cart items and total (Mock)",
           icon: Icons.shopping_cart_checkout_outlined,
           onTap: () {
-             Navigator.push(context, MaterialPageRoute(builder: (context) => const CFDScreen()));
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => const CFDScreen()));
           },
         ),
       ],
@@ -294,8 +310,3 @@ class _DisplayHardwareSettingsScreenState extends State<DisplayHardwareSettingsS
     );
   }
 }
-
-
-
-
-

@@ -6,7 +6,7 @@ import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 // ignore_for_file: deprecated_member_use_from_same_package
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/order_model.dart';
 import '../providers/dashboard_provider.dart';
 import '../models/inventory_item.dart';
 import '../widgets/inventory_image_widget.dart';
@@ -20,12 +20,16 @@ class SelfOrderingScreen extends StatefulWidget {
 
 class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
   // Local cart for the kiosk session to avoid conflicting with the main POS user's suspended cart if any
-  final Map<String, int> _kioskCart = {}; 
+  final Map<String, int> _kioskCart = {};
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DashboardProvider>(context);
-    final inventory = provider.storeInventory.where((i) => i.status == 'In Stock' && (!i.trackStock || provider.getItemStock(i.id) > 0)).toList();
+    final inventory = provider.storeInventory
+        .where((i) =>
+            i.status == 'In Stock' &&
+            (!i.trackStock || provider.getItemStock(i.id) > 0))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.textSecondary(context),
@@ -35,16 +39,19 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
         foregroundColor: AppColors.textPrimaryLight,
         elevation: 1,
         actions: [
-           if (_kioskCart.isNotEmpty)
-             Container(
-               margin: const EdgeInsets.only(right: AppSpacing.md),
-               child: ElevatedButton.icon(
-                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: AppColors.surfaceLight),
-                 icon: const Icon(Icons.shopping_cart),
-                 label: Text("Checkout (${_kioskCart.length})"),
-                 onPressed: () => _showCheckoutDialog(context, provider, inventory),
-               ),
-             )
+          if (_kioskCart.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(right: AppSpacing.md),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: AppColors.surfaceLight),
+                icon: const Icon(Icons.shopping_cart),
+                label: Text("Checkout (${_kioskCart.length})"),
+                onPressed: () =>
+                    _showCheckoutDialog(context, provider, inventory),
+              ),
+            )
         ],
       ),
       body: Row(
@@ -56,15 +63,19 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
               color: AppColors.surfaceLight,
               child: ListView(
                 children: [
-                   const SizedBox(height: AppSpacing.xxs),
-                   const Icon(Icons.fastfood, size: 60, color: AppColors.warning),
-                   const SizedBox(height: AppSpacing.md),
-                   Text(AppLocalizations.t(context, 'Yummy Burger'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                   const Divider(),
-                   _buildCategoryItem("All Items", true),
-                   _buildCategoryItem("Burgers", false),
-                   _buildCategoryItem("Beverages", false),
-                   _buildCategoryItem("Desserts", false),
+                  const SizedBox(height: AppSpacing.xxs),
+                  const Icon(Icons.fastfood,
+                      size: 60, color: AppColors.warning),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(AppLocalizations.t(context, 'Yummy Burger'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Divider(),
+                  _buildCategoryItem("All Items", true),
+                  _buildCategoryItem("Burgers", false),
+                  _buildCategoryItem("Beverages", false),
+                  _buildCategoryItem("Desserts", false),
                 ],
               ),
             ),
@@ -84,22 +95,29 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
               itemBuilder: (context, index) {
                 final item = inventory[index];
                 final qty = _kioskCart[item.id] ?? 0;
-                
+
                 return GestureDetector(
                   onTap: () {
-                     setState(() {
-                       _kioskCart[item.id] = qty + 1;
-                     });
-                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${item.name} added!"), duration: const Duration(milliseconds: 600)));
+                    setState(() {
+                      _kioskCart[item.id] = qty + 1;
+                    });
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text("${item.name} added!"),
+                        duration: const Duration(milliseconds: 600)));
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceLight,
-                      borderRadius: BorderRadius.zero,
-                      boxShadow: [BoxShadow(color: AppColors.textSecondary(context), blurRadius: 5)],
-                      border: qty > 0 ? Border.all(color: AppColors.success, width: 2) : null
-                    ),
+                        color: AppColors.surfaceLight,
+                        borderRadius: BorderRadius.zero,
+                        boxShadow: [
+                          BoxShadow(
+                              color: AppColors.textSecondary(context),
+                              blurRadius: 5)
+                        ],
+                        border: qty > 0
+                            ? Border.all(color: AppColors.success, width: 2)
+                            : null),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -107,11 +125,13 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
                           child: Container(
                             decoration: BoxDecoration(
                               color: AppColors.textSecondary(context),
-                              borderRadius: const BorderRadius.vertical(top: Radius.zero),
+                              borderRadius:
+                                  const BorderRadius.vertical(top: Radius.zero),
                             ),
                             child: item.image != null
                                 ? ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.zero),
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.zero),
                                     child: InventoryImageWidget(
                                       item: item,
                                       fit: BoxFit.cover,
@@ -119,7 +139,9 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
                                       height: double.infinity,
                                     ),
                                   )
-                                : Icon(Icons.image, size: 50, color: AppColors.textSecondary(context)),
+                                : Icon(Icons.image,
+                                    size: 50,
+                                    color: AppColors.textSecondary(context)),
                           ),
                         ),
                         Padding(
@@ -127,20 +149,33 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text(item.name,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis),
                               const SizedBox(height: AppSpacing.xs),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text("₹${item.price}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success, fontSize: 16)),
+                                  Text("₹${item.price}",
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.success,
+                                          fontSize: 16)),
                                   if (qty > 0)
                                     CircleAvatar(
-                                      radius: 12, 
-                                      backgroundColor: AppColors.success, 
-                                      child: Text("$qty", style: const TextStyle(fontSize: 12, color: AppColors.surfaceLight))
-                                    )
-                                  else 
-                                    const Icon(Icons.add_circle_outline, color: AppColors.warning)
+                                        radius: 12,
+                                        backgroundColor: AppColors.success,
+                                        child: Text("$qty",
+                                            style: const TextStyle(
+                                                fontSize: 12,
+                                                color: AppColors.surfaceLight)))
+                                  else
+                                    const Icon(Icons.add_circle_outline,
+                                        color: AppColors.warning)
                                 ],
                               )
                             ],
@@ -160,13 +195,20 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
 
   Widget _buildCategoryItem(String title, bool isSelected) {
     return ListTile(
-      title: Text(title, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppColors.warning : AppColors.textPrimaryLight)),
-      leading: isSelected ? const Icon(Icons.arrow_right, color: AppColors.warning) : null,
+      title: Text(title,
+          style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color:
+                  isSelected ? AppColors.warning : AppColors.textPrimaryLight)),
+      leading: isSelected
+          ? const Icon(Icons.arrow_right, color: AppColors.warning)
+          : null,
       onTap: () {},
     );
   }
 
-  void _showCheckoutDialog(BuildContext context, DashboardProvider provider, List<InventoryItem> inventory) {
+  void _showCheckoutDialog(BuildContext context, DashboardProvider provider,
+      List<InventoryItem> inventory) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -176,34 +218,43 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-               ..._kioskCart.entries.map((e) {
-                  final item = inventory.firstWhere((i) => i.id == e.key);
-                  return ListTile(
-                    title: Text(item.name),
-                    trailing: Text("${e.value} x ₹${item.price}"),
-                  );
-               }),
-               const Divider(),
-               Padding(
-                 padding: const EdgeInsets.all(AppSpacing.sm),
-                 child: Row(
-                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   children: [
-                      Text(AppLocalizations.t(context, 'Total'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-                      Text("₹${_calculateTotal(inventory).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.success)),
-                   ],
-                 ),
-               )
+              ..._kioskCart.entries.map((e) {
+                final item = inventory.firstWhere((i) => i.id == e.key);
+                return ListTile(
+                  title: Text(item.name),
+                  trailing: Text("${e.value} x ₹${item.price}"),
+                );
+              }),
+              const Divider(),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(AppLocalizations.t(context, 'Total'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 20)),
+                    Text("₹${_calculateTotal(inventory).toStringAsFixed(2)}",
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            color: AppColors.success)),
+                  ],
+                ),
+              )
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.t(context, 'Cancel'))),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppLocalizations.t(context, 'Cancel'))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, foregroundColor: AppColors.surfaceLight),
-            onPressed: () => _placeOrder(context, provider, inventory), 
-            child: Text(AppLocalizations.t(context, 'Place Order'))
-          ),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  foregroundColor: AppColors.surfaceLight),
+              onPressed: () => _placeOrder(context, provider, inventory),
+              child: Text(AppLocalizations.t(context, 'Place Order'))),
         ],
       ),
     );
@@ -212,53 +263,69 @@ class _SelfOrderingScreenState extends State<SelfOrderingScreen> {
   double _calculateTotal(List<InventoryItem> inventory) {
     double total = 0;
     _kioskCart.forEach((id, qty) {
-       final item = inventory.firstWhere((i) => i.id == id);
-       total += item.price * qty;
+      final item = inventory.firstWhere((i) => i.id == id);
+      total += item.price * qty;
     });
     return total;
   }
 
-  Future<void> _placeOrder(BuildContext context, DashboardProvider provider, List<InventoryItem> inventory) async {
-     Navigator.pop(context); // Close dialog
+  Future<void> _placeOrder(BuildContext context, DashboardProvider provider,
+      List<InventoryItem> inventory) async {
+    Navigator.pop(context); // Close dialog
 
-     if (provider.activeStoreId == null) return;
+    if (provider.activeStoreId == null) return;
 
-     final orderData = {
-       'storeId': provider.activeStoreId,
-       'date': FieldValue.serverTimestamp(),
-       'status': 'New',
-       'total': _calculateTotal(inventory),
-       'paymentMethod': 'Kiosk/Pay at Counter',
-       'items': _kioskCart.entries.map((e) {
-          final item = inventory.firstWhere((i) => i.id == e.key);
-          return {
-            'id': item.id,
-            'name': item.name,
-            'price': item.price,
-            'quantity': e.value,
-          };
-       }).toList()
-     };
+    final total = _calculateTotal(inventory);
+    final orderItems = _kioskCart.entries.map((e) {
+      final item = inventory.firstWhere((i) => i.id == e.key);
+      return OrderItem(
+        item: item,
+        quantity: e.value,
+      );
+    }).toList();
 
-     await FirebaseFirestore.instance.collection('orders').add(orderData);
+    final order = OrderModel(
+      id: '',
+      storeId: provider.activeStoreId!,
+      date: DateTime.now(),
+      status: 'New',
+      total: total,
+      type: 'Dine-In',
+      paymentMethod: 'Kiosk/Pay at Counter',
+      items: orderItems,
+    );
 
-     setState(() {
-       _kioskCart.clear();
-     });
+    try {
+      await provider.placeOrder(order);
 
-     if (context.mounted) {
-       showDialog(
-         context: context, 
-         builder: (_) => AlertDialog(
-           title: const Icon(Icons.check_circle, color: AppColors.success, size: 60),
-           content: const Text("Order Placed Successfully!\nPlease pay at the counter.", textAlign: TextAlign.center, style: TextStyle(fontSize: 18)),
-           actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.t(context, 'Close')))],
-         )
-       );
-     }
+      if (mounted) {
+        setState(() {
+          _kioskCart.clear();
+        });
+        showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+                  title: const Icon(Icons.check_circle,
+                      color: AppColors.success, size: 60),
+                  content: const Text(
+                      "Order Placed Successfully!\nPlease pay at the counter.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18)),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(AppLocalizations.t(context, 'Close')))
+                  ],
+                ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text("Failed to place order: $e"),
+              backgroundColor: AppColors.error),
+        );
+      }
+    }
   }
 }
-
-
-
-

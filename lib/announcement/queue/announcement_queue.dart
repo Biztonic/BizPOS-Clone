@@ -8,7 +8,7 @@ import '../policy/announcement_policy.dart';
 class AnnouncementQueue {
   final AnnouncementExecutor executor;
   final void Function(AnnouncementLog log) onLog;
-  
+
   final List<Announcement> _queue = [];
   bool _isPlaying = false;
   Announcement? _current;

@@ -18,7 +18,8 @@ class UserProfile {
   final Map<String, bool>? permissions; // Granular permission overrides
   final double? hourlyRate;
   final double? monthlySalary;
-  final List<String>? accessibleAddons; // NEW: Specific addons this employee can access
+  final List<String>?
+      accessibleAddons; // NEW: Specific addons this employee can access
   final String? preferredTheme; // NEW: 'standard' or 'automotive'
 
   UserProfile({
@@ -43,7 +44,6 @@ class UserProfile {
     this.preferredTheme,
   });
 
-
   factory UserProfile.fromMap(dynamic data, String id) {
     return UserProfile(
       uid: id,
@@ -53,25 +53,29 @@ class UserProfile {
       storeId: data['storeId'],
       franchiseId: data['franchiseId'],
       franchiseCode: data['franchiseCode'],
-      accessibleStoreIds: (data['accessibleStoreIds'] is List) 
-          ? (data['accessibleStoreIds'] as List).map((e) => e.toString()).toList() 
+      accessibleStoreIds: (data['accessibleStoreIds'] is List)
+          ? (data['accessibleStoreIds'] as List)
+              .map((e) => e.toString())
+              .toList()
           : null,
       photoBase64: data['photoBase64'],
       phoneNumber: data['phoneNumber'],
       employeeId: data['employeeId'],
       pinHash: data['pinHash'] ?? data['pin'], // Fallback for migration
       demoStatus: data['demoStatus'],
-      permissions: data['permissions'] != null ? Map<String, bool>.from(data['permissions']) : null,
+      permissions: data['permissions'] != null
+          ? Map<String, bool>.from(data['permissions'])
+          : null,
       hourlyRate: (data['hourlyRate'] ?? 0.0).toDouble(),
       monthlySalary: (data['monthlySalary'] ?? 0.0).toDouble(),
-      accessibleAddons: (data['accessibleAddons'] is List) 
-          ? (data['accessibleAddons'] as List).map((e) => e.toString()).toList() 
+      accessibleAddons: (data['accessibleAddons'] is List)
+          ? (data['accessibleAddons'] as List).map((e) => e.toString()).toList()
           : null,
       preferredTheme: data['preferredTheme'],
       createdAt: (data['createdAt'] != null && data['createdAt'] is Timestamp)
-
           ? (data['createdAt'] as Timestamp).toDate()
-          : DateTime.tryParse(data['createdAt']?.toString() ?? '') ?? DateTime.now(),
+          : DateTime.tryParse(data['createdAt']?.toString() ?? '') ??
+              DateTime.now(),
     );
   }
 
@@ -96,8 +100,8 @@ class UserProfile {
       'accessibleAddons': accessibleAddons,
       'preferredTheme': preferredTheme,
     };
-
   }
+
   UserProfile copyWith({
     String? uid,
     String? email,
@@ -119,7 +123,6 @@ class UserProfile {
     List<String>? accessibleAddons,
     String? preferredTheme,
   }) {
-
     return UserProfile(
       uid: uid ?? this.uid,
       email: email ?? this.email,
@@ -141,7 +144,5 @@ class UserProfile {
       accessibleAddons: accessibleAddons ?? this.accessibleAddons,
       preferredTheme: preferredTheme ?? this.preferredTheme,
     );
-
-
   }
 }

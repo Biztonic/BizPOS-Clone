@@ -1,5 +1,6 @@
 /// Core layer barrel exports
 library;
+
 export 'events/event_bus.dart';
 export 'events/app_events.dart';
 export 'di/service_locator.dart';

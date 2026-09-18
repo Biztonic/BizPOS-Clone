@@ -50,11 +50,13 @@ class HiveBootstrap {
     debugPrint('✅ Hive Boxes Opened');
   }
 
-  static Future<void> _openEncryptedBox(String boxName, HiveCipher cipher) async {
+  static Future<void> _openEncryptedBox(
+      String boxName, HiveCipher cipher) async {
     try {
       await Hive.openBox(boxName, encryptionCipher: cipher);
     } catch (e) {
-      debugPrint('⚠️ HiveBootstrap: Failed to open encrypted box "$boxName" ($e). Attempting staged migration...');
+      debugPrint(
+          '⚠️ HiveBootstrap: Failed to open encrypted box "$boxName" ($e). Attempting staged migration...');
       try {
         // 1. Open old box unencrypted
         final oldBox = await Hive.openBox(boxName);
@@ -63,7 +65,8 @@ class HiveBootstrap {
         // 2. Open temporary encrypted box
         final tempBoxName = '${boxName}_temp';
         await Hive.deleteBoxFromDisk(tempBoxName);
-        final tempBox = await Hive.openBox(tempBoxName, encryptionCipher: cipher);
+        final tempBox =
+            await Hive.openBox(tempBoxName, encryptionCipher: cipher);
 
         // 3. Copy records to temp box
         await tempBox.putAll(data);
@@ -84,16 +87,19 @@ class HiveBootstrap {
         final newBox = await Hive.openBox(boxName, encryptionCipher: cipher);
 
         // 8. Reopen temp box and copy back
-        final tempBoxRead = await Hive.openBox(tempBoxName, encryptionCipher: cipher);
+        final tempBoxRead =
+            await Hive.openBox(tempBoxName, encryptionCipher: cipher);
         await newBox.putAll(Map<dynamic, dynamic>.from(tempBoxRead.toMap()));
         await tempBoxRead.close();
 
         // 9. Clean up temp box
         await Hive.deleteBoxFromDisk(tempBoxName);
 
-        debugPrint('✅ HiveBootstrap: Successfully migrated box "$boxName" to encrypted format.');
+        debugPrint(
+            '✅ HiveBootstrap: Successfully migrated box "$boxName" to encrypted format.');
       } catch (migrationError) {
-        debugPrint('❌ HiveBootstrap: Failed to migrate box "$boxName": $migrationError. Creating fresh encrypted box.');
+        debugPrint(
+            '❌ HiveBootstrap: Failed to migrate box "$boxName": $migrationError. Creating fresh encrypted box.');
         await Hive.deleteBoxFromDisk(boxName);
         await Hive.deleteBoxFromDisk('${boxName}_temp');
         await Hive.openBox(boxName, encryptionCipher: cipher);

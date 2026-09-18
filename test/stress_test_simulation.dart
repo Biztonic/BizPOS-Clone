@@ -17,7 +17,7 @@ void main() {
     test('High Volume Checkout Simulation (1000 Orders)', () async {
       debugPrint('--- Starting High Volume Checkout Test ---');
       final stopwatch = Stopwatch()..start();
-      
+
       for (int i = 0; i < 1000; i++) {
         final orderId = 'STRESS_${uuid.v4()}';
         final order = OrderModel(
@@ -75,30 +75,33 @@ void main() {
           storeId: 'test_store',
           yearMonth: '2026-03',
         );
-        
+
         if (i % 100 == 0) debugPrint('Processed $i orders...');
       }
 
       stopwatch.stop();
-      debugPrint('Completed 1000 atomic checkouts in ${stopwatch.elapsedMilliseconds}ms');
-      debugPrint('Average time per checkout: ${stopwatch.elapsedMilliseconds / 1000}ms');
-      
-      expect(stopwatch.elapsed.inSeconds, lessThan(30), reason: 'Checkout logic too slow for high-volume POS');
+      debugPrint(
+          'Completed 1000 atomic checkouts in ${stopwatch.elapsedMilliseconds}ms');
+      debugPrint(
+          'Average time per checkout: ${stopwatch.elapsedMilliseconds / 1000}ms');
+
+      expect(stopwatch.elapsed.inSeconds, lessThan(30),
+          reason: 'Checkout logic too slow for high-volume POS');
     });
 
     test('High Volume Sync Simulation', () async {
-       debugPrint('--- Starting High Volume Sync Test ---');
-       // In a real simulation, we'd mock the Firestore responses.
-       // Here we analyze the logic for batch sizes.
-       expect(syncService.isBusy, isFalse);
-       
-       // Note: Total orders to sync would be 1000 from the previous test.
-       // SyncService processes in batches of 500.
-       // We expect 2 batches.
-       
-       // logic verification:
-       // Batch 1: 500 items -> 1 HTTP request (batches) + 500 local Repo updates.
-       // Point of failure: If Repo updates are not also batched, it will be SLOW.
+      debugPrint('--- Starting High Volume Sync Test ---');
+      // In a real simulation, we'd mock the Firestore responses.
+      // Here we analyze the logic for batch sizes.
+      expect(syncService.isBusy, isFalse);
+
+      // Note: Total orders to sync would be 1000 from the previous test.
+      // SyncService processes in batches of 500.
+      // We expect 2 batches.
+
+      // logic verification:
+      // Batch 1: 500 items -> 1 HTTP request (batches) + 500 local Repo updates.
+      // Point of failure: If Repo updates are not also batched, it will be SLOW.
     });
   });
 }

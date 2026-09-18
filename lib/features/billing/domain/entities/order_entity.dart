@@ -89,7 +89,8 @@ enum OrderStatus {
   const OrderStatus(this.value);
 
   /// Whether this order can still be modified.
-  bool get isTerminal => [completed, cancelled, refunded, voided].contains(this);
+  bool get isTerminal =>
+      [completed, cancelled, refunded, voided].contains(this);
 
   static OrderStatus fromString(String status) {
     return OrderStatus.values.firstWhere(

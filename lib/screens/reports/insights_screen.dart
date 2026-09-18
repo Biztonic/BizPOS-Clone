@@ -26,10 +26,19 @@ class InsightsScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                   Icon(Icons.lightbulb_outline, size: 64, color: AppColors.textSecondary(context)),
-                   const SizedBox(height: AppSpacing.md),
-                   Text(AppLocalizations.t(context, 'No insights available yet.'), style: TextStyle(color: AppColors.textSecondary(context))),
-                   Text(AppLocalizations.t(context, 'Keep selling to generate data!'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12)),
+                  Icon(Icons.lightbulb_outline,
+                      size: 64, color: AppColors.textSecondary(context)),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                      AppLocalizations.t(context, 'No insights available yet.'),
+                      style:
+                          TextStyle(color: AppColors.textSecondary(context))),
+                  Text(
+                      AppLocalizations.t(
+                          context, 'Keep selling to generate data!'),
+                      style: TextStyle(
+                          color: AppColors.textSecondary(context),
+                          fontSize: 12)),
                 ],
               ),
             )
@@ -42,7 +51,8 @@ class InsightsScreen extends StatelessWidget {
                 // Strings are like "ðŸ“ˆ Message"
                 return Card(
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
+                  shape:
+                      RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
                   margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -50,7 +60,11 @@ class InsightsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // If we want to extract the emoji/icon, we can, or just display text
-                         Expanded(child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500))),
+                        Expanded(
+                            child: Text(text,
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500))),
                       ],
                     ),
                   ),
@@ -60,7 +74,3 @@ class InsightsScreen extends StatelessWidget {
     );
   }
 }
-
-
-
-

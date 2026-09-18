@@ -64,7 +64,8 @@ class _PosScaffoldState extends State<PosScaffold> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
           child: Text(
             widget.title!,
             style: AppTypography.headlineMedium.copyWith(
@@ -82,20 +83,26 @@ class _PosScaffoldState extends State<PosScaffold> {
   Widget build(BuildContext context) {
     // CRITICAL: Use context.select instead of Provider.of(context) to prevent
     // rebuilding the entire scaffold on EVERY DashboardProvider change.
-    final storeName = context.select<DashboardProvider, String?>((p) => p.activeStore?.name);
-    final userRole = context.select<DashboardProvider, String?>((p) => p.userProfile?.role);
-    final isDarkMode = context.select<DashboardProvider, bool>((p) => p.isDarkMode);
-    final isDevMode = context.select<DashboardProvider, bool>((p) => p.isDeveloperMode);
-    
+    final storeName =
+        context.select<DashboardProvider, String?>((p) => p.activeStore?.name);
+    final userRole =
+        context.select<DashboardProvider, String?>((p) => p.userProfile?.role);
+    final isDarkMode =
+        context.select<DashboardProvider, bool>((p) => p.isDarkMode);
+    final isDevMode =
+        context.select<DashboardProvider, bool>((p) => p.isDeveloperMode);
+
     // AuthProvider is usually stable, listen: false is fine
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final layoutType = _getLayoutType(constraints);
-        
+
         // Define Default AppBar
-        final effectiveAppBar = widget.appBar ?? _buildAppBar(context, storeName, userRole, isDarkMode, isDevMode, authProvider, layoutType);
+        final effectiveAppBar = widget.appBar ??
+            _buildAppBar(context, storeName, userRole, isDarkMode, isDevMode,
+                authProvider, layoutType);
 
         switch (layoutType) {
           case PosLayoutType.mobile:
@@ -107,17 +114,19 @@ class _PosScaffoldState extends State<PosScaffold> {
               floatingActionButton: widget.floatingActionButton,
               bottomNavigationBar: widget.bottomBar,
             );
-          
+
           case PosLayoutType.tablet:
-            final showInlineSidebar = widget.showSidebar && widget.rightPanel == null;
+            final showInlineSidebar =
+                widget.showSidebar && widget.rightPanel == null;
             return Scaffold(
               key: _scaffoldKey,
               appBar: effectiveAppBar,
-              drawer: showInlineSidebar ? null : (widget.drawer ?? const PosSidebar(isDrawer: true)),
+              drawer: showInlineSidebar
+                  ? null
+                  : (widget.drawer ?? const PosSidebar(isDrawer: true)),
               body: Row(
                 children: [
-                  if (showInlineSidebar)
-                    widget.leftPanel ?? const PosSidebar(),
+                  if (showInlineSidebar) widget.leftPanel ?? const PosSidebar(),
                   Expanded(
                     flex: 6,
                     child: _buildBodyWithTitle(context, widget.mainContent),
@@ -146,12 +155,15 @@ class _PosScaffoldState extends State<PosScaffold> {
                     flex: 8,
                     child: Column(
                       children: [
-                        if (effectiveAppBar != null) 
+                        if (effectiveAppBar != null)
                           PreferredSize(
-                            preferredSize: const Size.fromHeight(kToolbarHeight),
+                            preferredSize:
+                                const Size.fromHeight(kToolbarHeight),
                             child: effectiveAppBar,
                           ),
-                        Expanded(child: _buildBodyWithTitle(context, widget.mainContent)),
+                        Expanded(
+                            child: _buildBodyWithTitle(
+                                context, widget.mainContent)),
                       ],
                     ),
                   ),
@@ -172,43 +184,48 @@ class _PosScaffoldState extends State<PosScaffold> {
   }
 
   PreferredSizeWidget? _buildAppBar(
-    BuildContext context, 
-    String? storeName,
-    String? userRole,
-    bool isDarkMode,
-    bool isDevMode,
-    AuthProvider authProvider, 
-    PosLayoutType layoutType
-  ) {
-    if (widget.title == null && widget.actions == null && !widget.showGlobalActions) return null;
+      BuildContext context,
+      String? storeName,
+      String? userRole,
+      bool isDarkMode,
+      bool isDevMode,
+      AuthProvider authProvider,
+      PosLayoutType layoutType) {
+    if (widget.title == null &&
+        widget.actions == null &&
+        !widget.showGlobalActions) return null;
     final canPop = Navigator.of(context).canPop();
     // We still need dashboardProvider for non-reactive actions (functions)
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    final dashboardProvider =
+        Provider.of<DashboardProvider>(context, listen: false);
 
     return AppBar(
-      leading: canPop 
-        ? IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-            onPressed: () => Navigator.of(context).pop(),
-          )
-        : (layoutType == PosLayoutType.mobile || layoutType == PosLayoutType.tablet)
-            ? _buildDrawerMenuButton(context)
-            : null,
+      leading: canPop
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+              onPressed: () => Navigator.of(context).pop(),
+            )
+          : (layoutType == PosLayoutType.mobile ||
+                  layoutType == PosLayoutType.tablet)
+              ? _buildDrawerMenuButton(context)
+              : null,
       title: Text(
         storeName ?? 'BizPOS',
         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
       ),
       centerTitle: true,
       elevation: 0,
-      backgroundColor: layoutType == PosLayoutType.desktop ? AppColors.transparent : null,
-      foregroundColor: layoutType == PosLayoutType.desktop ? Theme.of(context).textTheme.bodyLarge?.color : null,
+      backgroundColor:
+          layoutType == PosLayoutType.desktop ? AppColors.transparent : null,
+      foregroundColor: layoutType == PosLayoutType.desktop
+          ? Theme.of(context).textTheme.bodyLarge?.color
+          : null,
       actions: [
         if (widget.actions != null) ...widget.actions!,
-        
         if (widget.showGlobalActions) ...[
           // Sync Status & Manual Sync
           const SyncStatusWidget(),
-          
+
           _buildHeaderIconButton(
             context,
             icon: Icons.refresh,
@@ -216,7 +233,10 @@ class _PosScaffoldState extends State<PosScaffold> {
             onPressed: () {
               dashboardProvider.refreshDashboard();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Refreshing data..."), behavior: SnackBarBehavior.floating, duration: Duration(seconds: 1)),
+                const SnackBar(
+                    content: Text("Refreshing data..."),
+                    behavior: SnackBarBehavior.floating,
+                    duration: Duration(seconds: 1)),
               );
             },
           ),
@@ -239,9 +259,10 @@ class _PosScaffoldState extends State<PosScaffold> {
             icon: Icons.logout,
             tooltip: 'Logout',
             onPressed: () {
-              final isEmployee = dashboardProvider.activeRole != 'Store Owner' && 
-                  dashboardProvider.activeRole != 'Admin' && 
-                  dashboardProvider.activeRole != 'Franchise Owner';
+              final isEmployee =
+                  dashboardProvider.activeRole != 'Store Owner' &&
+                      dashboardProvider.activeRole != 'Admin' &&
+                      dashboardProvider.activeRole != 'Franchise Owner';
               dashboardProvider.clearSession();
               authProvider.signOut();
               if (isEmployee) context.go('/login');
@@ -261,8 +282,10 @@ class _PosScaffoldState extends State<PosScaffold> {
     Color? color,
   }) {
     final theme = Theme.of(context);
-    final iconColor = color ?? theme.appBarTheme.foregroundColor ?? theme.textTheme.bodyLarge?.color;
-    
+    final iconColor = color ??
+        theme.appBarTheme.foregroundColor ??
+        theme.textTheme.bodyLarge?.color;
+
     return Tooltip(
       message: tooltip,
       child: Padding(
@@ -275,9 +298,12 @@ class _PosScaffoldState extends State<PosScaffold> {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: (iconColor ?? AppColors.textPrimaryLight).withValues(alpha: 0.05),
+              color: (iconColor ?? AppColors.textPrimaryLight)
+                  .withValues(alpha: 0.05),
               borderRadius: AppRadius.borderSm,
-              border: Border.all(color: (iconColor ?? AppColors.textPrimaryLight).withValues(alpha: 0.1)),
+              border: Border.all(
+                  color: (iconColor ?? AppColors.textPrimaryLight)
+                      .withValues(alpha: 0.1)),
             ),
             child: Icon(icon, size: 20, color: iconColor),
           ),
@@ -287,9 +313,10 @@ class _PosScaffoldState extends State<PosScaffold> {
   }
 
   Widget _buildDevModeToggle(BuildContext context, bool isDev) {
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    final dashboardProvider =
+        Provider.of<DashboardProvider>(context, listen: false);
     final statusColor = isDev ? AppColors.error : AppColors.success;
-    
+
     return InkWell(
       onTap: () => dashboardProvider.toggleDeveloperMode(),
       borderRadius: AppRadius.borderSm,
@@ -304,10 +331,12 @@ class _PosScaffoldState extends State<PosScaffold> {
           border: Border.all(color: statusColor),
         ),
         child: Text(
-          isDev ? AppLocalizations.t(context, 'developer_mode') : AppLocalizations.t(context, 'normal_mode'),
+          isDev
+              ? AppLocalizations.t(context, 'developer_mode')
+              : AppLocalizations.t(context, 'normal_mode'),
           style: TextStyle(
-            color: statusColor, 
-            fontWeight: FontWeight.bold, 
+            color: statusColor,
+            fontWeight: FontWeight.bold,
             fontSize: 11,
           ),
         ),
@@ -325,7 +354,9 @@ class _PosScaffoldState extends State<PosScaffold> {
           decoration: BoxDecoration(
             color: AppColors.adaptivePrimary(context).withValues(alpha: 0.05),
             borderRadius: AppRadius.borderSm,
-            border: Border.all(color: AppColors.adaptivePrimary(context).withValues(alpha: 0.1)),
+            border: Border.all(
+                color:
+                    AppColors.adaptivePrimary(context).withValues(alpha: 0.1)),
           ),
           child: Icon(
             Icons.menu_rounded,
@@ -337,6 +368,3 @@ class _PosScaffoldState extends State<PosScaffold> {
     );
   }
 }
-
-
-

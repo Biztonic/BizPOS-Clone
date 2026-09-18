@@ -27,15 +27,26 @@ class AnnouncementSettings {
     try {
       final box = Hive.box('settings');
       return AnnouncementSettings(
-        enableSounds: box.get('announcement_enable_sounds', defaultValue: true) as bool,
-        enableVoice: box.get('announcement_enable_voice', defaultValue: true) as bool,
-        volume: (box.get('announcement_volume', defaultValue: 1.0) as num).toDouble(),
-        speechRate: (box.get('announcement_speech_rate', defaultValue: 1.0) as num).toDouble(),
-        language: box.get('announcement_language', defaultValue: 'en') as String,
-        profile: box.get('announcement_profile', defaultValue: 'Business') as String,
-        interactionSound: box.get('announcement_interaction_sound', defaultValue: '1') as String,
-        marketingPlayMode: box.get('announcement_marketing_play_mode', defaultValue: 'none') as String,
-        marketingIntervalSeconds: box.get('announcement_marketing_interval_seconds', defaultValue: 300) as int,
+        enableSounds:
+            box.get('announcement_enable_sounds', defaultValue: true) as bool,
+        enableVoice:
+            box.get('announcement_enable_voice', defaultValue: true) as bool,
+        volume: (box.get('announcement_volume', defaultValue: 1.0) as num)
+            .toDouble(),
+        speechRate:
+            (box.get('announcement_speech_rate', defaultValue: 1.0) as num)
+                .toDouble(),
+        language:
+            box.get('announcement_language', defaultValue: 'en') as String,
+        profile:
+            box.get('announcement_profile', defaultValue: 'Business') as String,
+        interactionSound: box.get('announcement_interaction_sound',
+            defaultValue: '1') as String,
+        marketingPlayMode: box.get('announcement_marketing_play_mode',
+            defaultValue: 'none') as String,
+        marketingIntervalSeconds: box.get(
+            'announcement_marketing_interval_seconds',
+            defaultValue: 300) as int,
       );
     } catch (_) {
       return const AnnouncementSettings();
@@ -53,7 +64,8 @@ class AnnouncementSettings {
       await box.put('announcement_profile', profile);
       await box.put('announcement_interaction_sound', interactionSound);
       await box.put('announcement_marketing_play_mode', marketingPlayMode);
-      await box.put('announcement_marketing_interval_seconds', marketingIntervalSeconds);
+      await box.put(
+          'announcement_marketing_interval_seconds', marketingIntervalSeconds);
     } catch (_) {
       // Fail-soft, do not crash business logic
     }
@@ -79,7 +91,8 @@ class AnnouncementSettings {
       profile: profile ?? this.profile,
       interactionSound: interactionSound ?? this.interactionSound,
       marketingPlayMode: marketingPlayMode ?? this.marketingPlayMode,
-      marketingIntervalSeconds: marketingIntervalSeconds ?? this.marketingIntervalSeconds,
+      marketingIntervalSeconds:
+          marketingIntervalSeconds ?? this.marketingIntervalSeconds,
     );
   }
 }

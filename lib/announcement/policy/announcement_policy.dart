@@ -32,7 +32,8 @@ class AnnouncementPolicy {
 
     if (profile == 'Business') {
       // Plays everything except frequent cart additions/removals
-      return type != AnnouncementType.itemAdded && type != AnnouncementType.itemRemoved;
+      return type != AnnouncementType.itemAdded &&
+          type != AnnouncementType.itemRemoved;
     }
 
     // Verbose profile plays everything
@@ -51,7 +52,8 @@ class AnnouncementPolicy {
 
   /// Identifies if an event type is mergeable to prevent sound spam (e.g. cart items).
   static bool isMergeable(AnnouncementType type) {
-    return type == AnnouncementType.itemAdded || type == AnnouncementType.itemRemoved;
+    return type == AnnouncementType.itemAdded ||
+        type == AnnouncementType.itemRemoved;
   }
 
   /// Merges two announcements of the same type.

@@ -8,12 +8,15 @@ import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
 /// Covers: floors, tables, suppliers, notes
 class GenericSyncAdapter extends SyncAdapter {
   final String _collection;
-  final Future<void> Function(String docId, String storeId, Map<String, dynamic> data, Repository repo) _insertFn;
+  final Future<void> Function(String docId, String storeId,
+      Map<String, dynamic> data, Repository repo) _insertFn;
   final Future<void> Function(String docId, Repository repo)? _deleteFn;
 
   GenericSyncAdapter({
     required String collection,
-    required Future<void> Function(String docId, String storeId, Map<String, dynamic> data, Repository repo) insertFn,
+    required Future<void> Function(String docId, String storeId,
+            Map<String, dynamic> data, Repository repo)
+        insertFn,
     Future<void> Function(String docId, Repository repo)? deleteFn,
   })  : _collection = collection,
         _insertFn = insertFn,

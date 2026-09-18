@@ -94,7 +94,8 @@ class BillingRepositoryImpl implements BillingRepository {
     String customerId,
   ) async {
     try {
-      final legacyOrders = await _legacyRepo.getOrdersByCustomer(storeId, customerId);
+      final legacyOrders =
+          await _legacyRepo.getOrdersByCustomer(storeId, customerId);
       final entities = legacyOrders.map(_legacyModelToEntity).toList();
       return BillingResult.success(entities);
     } catch (e) {
@@ -105,7 +106,8 @@ class BillingRepositoryImpl implements BillingRepository {
   // ─── Batch Operations ─────────────────────────────────────
 
   @override
-  Future<BillingResult<void>> batchInsertOrders(List<OrderEntity> orders) async {
+  Future<BillingResult<void>> batchInsertOrders(
+      List<OrderEntity> orders) async {
     try {
       final legacyOrders = orders.map((e) {
         final dto = OrderMapper.toDto(e);
@@ -119,7 +121,8 @@ class BillingRepositoryImpl implements BillingRepository {
   }
 
   @override
-  Future<BillingResult<List<OrderEntity>>> getUnsyncedOrders(String? storeId) async {
+  Future<BillingResult<List<OrderEntity>>> getUnsyncedOrders(
+      String? storeId) async {
     try {
       final legacyOrders = await _legacyRepo.getUnsyncedOrders(storeId);
       final entities = legacyOrders.map(_legacyModelToEntity).toList();
@@ -229,14 +232,16 @@ class BillingRepositoryImpl implements BillingRepository {
     return OrderModel(
       id: dto.id,
       storeId: dto.storeId,
-      items: dto.items.map((i) => OrderItem(
-        item: _createMinimalItem(i),
-        quantity: i.quantity,
-        costSnapshot: i.cost,
-        priceSnapshot: i.price,
-        cgst: i.cgst,
-        sgst: i.sgst,
-      )).toList(),
+      items: dto.items
+          .map((i) => OrderItem(
+                item: _createMinimalItem(i),
+                quantity: i.quantity,
+                costSnapshot: i.cost,
+                priceSnapshot: i.price,
+                cgst: i.cgst,
+                sgst: i.sgst,
+              ))
+          .toList(),
       total: dto.total,
       subtotal: dto.subtotal,
       discount: dto.discount,
@@ -260,16 +265,18 @@ class BillingRepositoryImpl implements BillingRepository {
     return OrderEntity(
       id: model.id,
       storeId: model.storeId,
-      items: model.items.map((item) => OrderItemEntity(
-        itemId: item.item.id,
-        itemName: item.item.name,
-        price: item.priceSnapshot ?? item.item.price,
-        cost: item.costSnapshot ?? 0.0,
-        quantity: item.quantity,
-        category: item.item.category,
-        cgst: item.cgst ?? 0.0,
-        sgst: item.sgst ?? 0.0,
-      )).toList(),
+      items: model.items
+          .map((item) => OrderItemEntity(
+                itemId: item.item.id,
+                itemName: item.item.name,
+                price: item.priceSnapshot ?? item.item.price,
+                cost: item.costSnapshot ?? 0.0,
+                quantity: item.quantity,
+                category: item.item.category,
+                cgst: item.cgst ?? 0.0,
+                sgst: item.sgst ?? 0.0,
+              ))
+          .toList(),
       total: model.total,
       subtotal: model.subtotal,
       discount: model.discount,
@@ -370,8 +377,7 @@ class BillingRepositoryImpl implements BillingRepository {
       }
       if (paymentMethod != null && pm != paymentMethod) continue;
       if (start != null && orderDate.isBefore(start)) continue;
-      if (end != null &&
-          orderDate.isAfter(end.add(const Duration(days: 1)))) {
+      if (end != null && orderDate.isAfter(end.add(const Duration(days: 1)))) {
         continue;
       }
 
@@ -390,9 +396,8 @@ class BillingRepositoryImpl implements BillingRepository {
       for (var itemRecord in items) {
         if (itemRecord is Map) {
           final qty = (itemRecord['quantity'] ?? 0).toDouble();
-          final cost =
-              (itemRecord['costSnapshot'] ?? itemRecord['cost'] ?? 0)
-                  .toDouble();
+          final cost = (itemRecord['costSnapshot'] ?? itemRecord['cost'] ?? 0)
+              .toDouble();
           totalCogs += isRefunded ? 0.0 : (cost * qty);
         }
       }

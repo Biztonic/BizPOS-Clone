@@ -32,7 +32,8 @@ class AppEmptyState extends StatefulWidget {
   State<AppEmptyState> createState() => _AppEmptyStateState();
 }
 
-class _AppEmptyStateState extends State<AppEmptyState> with SingleTickerProviderStateMixin {
+class _AppEmptyStateState extends State<AppEmptyState>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
@@ -157,7 +158,8 @@ class _AppEmptyStateState extends State<AppEmptyState> with SingleTickerProvider
                           spreadRadius: 4,
                         ),
                       ],
-                      borderRadius: const BorderRadius.all(Radius.elliptical(35, 6)),
+                      borderRadius:
+                          const BorderRadius.all(Radius.elliptical(35, 6)),
                     ),
                   ),
                 ),
@@ -221,12 +223,12 @@ class _PulsePainter extends CustomPainter {
 
       paint.color = color.withValues(alpha: opacity);
       canvas.drawCircle(center, radius, paint);
-      
+
       if (waveProgress > 0.1 && waveProgress < 0.9) {
         final dotPaint = Paint()
           ..style = PaintingStyle.fill
           ..color = color.withValues(alpha: opacity * 1.5);
-        
+
         final double angle = (progress * 2 * math.pi) + (i * math.pi * 0.6);
         final dotCenter = Offset(
           center.dx + radius * math.cos(angle),
@@ -374,21 +376,24 @@ class _BoxPainter extends CustomPainter {
 
     // 3. Flaps (Lids) breathing
     final breath = math.sin(progress * 2 * math.pi);
-    
+
     // Front-Left flap
     final flapFLPath = Path()
       ..moveTo(iLeft.dx, iLeft.dy)
       ..lineTo(iBottom.dx, iBottom.dy)
-      ..lineTo(iBottom.dx - w * 0.6 + breath * 4, iBottom.dy + h * 0.3 + breath * 3)
+      ..lineTo(
+          iBottom.dx - w * 0.6 + breath * 4, iBottom.dy + h * 0.3 + breath * 3)
       ..lineTo(iLeft.dx - w * 0.6 + breath * 4, iLeft.dy + h * 0.3 - breath * 3)
       ..close();
-    
+
     // Front-Right flap
     final flapFRPath = Path()
       ..moveTo(iBottom.dx, iBottom.dy)
       ..lineTo(iRight.dx, iRight.dy)
-      ..lineTo(iRight.dx + w * 0.6 - breath * 4, iRight.dy + h * 0.3 - breath * 3)
-      ..lineTo(iBottom.dx + w * 0.6 - breath * 4, iBottom.dy + h * 0.3 + breath * 3)
+      ..lineTo(
+          iRight.dx + w * 0.6 - breath * 4, iRight.dy + h * 0.3 - breath * 3)
+      ..lineTo(
+          iBottom.dx + w * 0.6 - breath * 4, iBottom.dy + h * 0.3 + breath * 3)
       ..close();
 
     // Back-Left flap
@@ -403,7 +408,8 @@ class _BoxPainter extends CustomPainter {
     final flapBRPath = Path()
       ..moveTo(iTop.dx, iTop.dy)
       ..lineTo(iRight.dx, iRight.dy)
-      ..lineTo(iRight.dx + w * 0.5 + breath * 3, iRight.dy - h * 0.5 + breath * 4)
+      ..lineTo(
+          iRight.dx + w * 0.5 + breath * 3, iRight.dy - h * 0.5 + breath * 4)
       ..lineTo(iTop.dx + w * 0.5 + breath * 3, iTop.dy - h * 0.5 - breath * 4)
       ..close();
 
@@ -435,7 +441,7 @@ class _BoxPainter extends CustomPainter {
       final double size = 3.0 + rand.nextDouble() * 4.0;
 
       final sparkleCenter = Offset(cx + rx, cy + bobY - 8 + ry);
-      
+
       final sparklePaint = Paint()
         ..color = primaryColor.withValues(alpha: opacity)
         ..style = PaintingStyle.fill;
@@ -483,7 +489,7 @@ class _EmployeePainter extends CustomPainter {
     final cy = size.height / 2;
 
     final bobY = math.sin(progress * 2 * math.pi) * 4.0;
-    
+
     // Background aura
     final auraPaint = Paint()
       ..shader = RadialGradient(
@@ -511,9 +517,11 @@ class _EmployeePainter extends CustomPainter {
 
     final torsoPath = Path()
       ..moveTo(cx - 35, avatarCenter.dy + 45)
-      ..quadraticBezierTo(cx - 32, avatarCenter.dy + 18, cx - 18, avatarCenter.dy + 15)
+      ..quadraticBezierTo(
+          cx - 32, avatarCenter.dy + 18, cx - 18, avatarCenter.dy + 15)
       ..lineTo(cx + 18, avatarCenter.dy + 15)
-      ..quadraticBezierTo(cx + 32, avatarCenter.dy + 18, cx + 35, avatarCenter.dy + 45)
+      ..quadraticBezierTo(
+          cx + 32, avatarCenter.dy + 18, cx + 35, avatarCenter.dy + 45)
       ..close();
     canvas.drawPath(torsoPath, torsoPaint);
 
@@ -544,7 +552,8 @@ class _EmployeePainter extends CustomPainter {
           color.withValues(alpha: 0.95),
           color.withValues(alpha: 0.7),
         ],
-      ).createShader(Rect.fromCircle(center: Offset(cx, avatarCenter.dy - 12), radius: 18))
+      ).createShader(
+          Rect.fromCircle(center: Offset(cx, avatarCenter.dy - 12), radius: 18))
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(cx, avatarCenter.dy - 12), 18, headPaint);
     canvas.drawCircle(Offset(cx, avatarCenter.dy - 12), 18, outlinePaint);
@@ -566,7 +575,7 @@ class _EmployeePainter extends CustomPainter {
       ..color = color.withValues(alpha: 0.25)
       ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
-    
+
     canvas.drawOval(
       Rect.fromCenter(center: Offset(cx, cy), width: 110, height: 38),
       orbitPaint,
@@ -579,7 +588,9 @@ class _EmployeePainter extends CustomPainter {
     final glassCenter = Offset(glassX, glassY);
 
     final lensPaint = Paint()
-      ..color = isDark ? Colors.grey.shade900.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.8)
+      ..color = isDark
+          ? Colors.grey.shade900.withValues(alpha: 0.8)
+          : Colors.white.withValues(alpha: 0.8)
       ..style = PaintingStyle.fill;
     final lensBorderPaint = Paint()
       ..color = color
@@ -593,7 +604,7 @@ class _EmployeePainter extends CustomPainter {
       ..color = color
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
-      
+
     final handleEnd = Offset(
       glassCenter.dx + 6 * math.cos(angle + math.pi / 4),
       glassCenter.dy + 6 * math.sin(angle + math.pi / 4),
@@ -612,12 +623,12 @@ class _EmployeePainter extends CustomPainter {
       final double a = (i * 120.0 + progress * 40.0) * math.pi / 180.0;
       final double px = cx + dist * math.cos(a);
       final double py = cy + dist * math.sin(a) - 10;
-      
+
       final indicatorPaint = Paint()
         ..color = color.withValues(alpha: scale * 0.5)
         ..strokeWidth = 1.5
         ..style = PaintingStyle.stroke;
-      
+
       canvas.drawLine(Offset(px - 3, py), Offset(px + 3, py), indicatorPaint);
       canvas.drawLine(Offset(px, py - 3), Offset(px, py + 3), indicatorPaint);
     }
@@ -677,11 +688,16 @@ class _CartPainter extends CustomPainter {
     canvas.drawPath(basketPath, cartPaint);
 
     // Grid lines
-    canvas.drawLine(const Offset(-31, -8), const Offset(17, -8), cartPaint..strokeWidth = 1.0);
-    canvas.drawLine(const Offset(-28, 4), const Offset(14, 4), cartPaint..strokeWidth = 1.0);
-    canvas.drawLine(const Offset(-20, -20), const Offset(-15, 15), cartPaint..strokeWidth = 1.0);
-    canvas.drawLine(const Offset(-5, -20), const Offset(-5, 15), cartPaint..strokeWidth = 1.0);
-    canvas.drawLine(const Offset(10, -20), const Offset(8, 15), cartPaint..strokeWidth = 1.0);
+    canvas.drawLine(const Offset(-31, -8), const Offset(17, -8),
+        cartPaint..strokeWidth = 1.0);
+    canvas.drawLine(const Offset(-28, 4), const Offset(14, 4),
+        cartPaint..strokeWidth = 1.0);
+    canvas.drawLine(const Offset(-20, -20), const Offset(-15, 15),
+        cartPaint..strokeWidth = 1.0);
+    canvas.drawLine(const Offset(-5, -20), const Offset(-5, 15),
+        cartPaint..strokeWidth = 1.0);
+    canvas.drawLine(const Offset(10, -20), const Offset(8, 15),
+        cartPaint..strokeWidth = 1.0);
 
     cartPaint.strokeWidth = 2.0;
 
@@ -716,7 +732,7 @@ class _CartPainter extends CustomPainter {
       ..color = cartColor
       ..strokeWidth = 1.8
       ..style = PaintingStyle.stroke;
-    
+
     final wheelInnerPaint = Paint()
       ..color = isDark ? Colors.grey.shade900 : Colors.white
       ..style = PaintingStyle.fill;
@@ -733,9 +749,12 @@ class _CartPainter extends CustomPainter {
 
     for (int i = 0; i < 3; i++) {
       final double spAngle = rotAngle + (i * 2 * math.pi / 3);
-      final spokeOffset = Offset(wheelRadius * math.cos(spAngle), wheelRadius * math.sin(spAngle));
-      canvas.drawLine(wheelLeftCenter, wheelLeftCenter + spokeOffset, spokePaint);
-      canvas.drawLine(wheelRightCenter, wheelRightCenter + spokeOffset, spokePaint);
+      final spokeOffset = Offset(
+          wheelRadius * math.cos(spAngle), wheelRadius * math.sin(spAngle));
+      canvas.drawLine(
+          wheelLeftCenter, wheelLeftCenter + spokeOffset, spokePaint);
+      canvas.drawLine(
+          wheelRightCenter, wheelRightCenter + spokeOffset, spokePaint);
     }
 
     canvas.restore();
@@ -745,7 +764,8 @@ class _CartPainter extends CustomPainter {
     for (int i = 0; i < 4; i++) {
       final double phase = (progress + (i / 4.0)) % 1.0;
       final double scale = 1.0 - phase;
-      final double wx = (rand.nextDouble() - 0.5) * 40.0 + math.sin(progress * 2 * math.pi + i) * 6.0;
+      final double wx = (rand.nextDouble() - 0.5) * 40.0 +
+          math.sin(progress * 2 * math.pi + i) * 6.0;
       final double wy = -20 - (phase * 60.0);
 
       final bubbleCenter = Offset(cx + wx, cy + bobY + wy);
@@ -755,7 +775,7 @@ class _CartPainter extends CustomPainter {
         ..color = cartColor.withValues(alpha: scale * 0.45)
         ..strokeWidth = 1.0
         ..style = PaintingStyle.stroke;
-      
+
       canvas.drawCircle(bubbleCenter, bubbleRadius, bubblePaint);
     }
   }

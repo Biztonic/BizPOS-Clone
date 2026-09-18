@@ -1,12 +1,11 @@
-
 /// Defines UI density levels, primarily used to adapt layouts for POS systems.
 enum AppDensity {
   /// Condensed layout for efficient data entry (e.g., Desktop back-office)
   compact,
-  
+
   /// Standard layout (e.g., Tablet POS)
   comfortable,
-  
+
   /// Large touch targets for fast-paced environments (e.g., Mobile POS or Touch-heavy terminals)
   touch,
 }

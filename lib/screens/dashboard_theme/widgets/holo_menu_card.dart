@@ -1,4 +1,3 @@
-
 import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
@@ -43,26 +42,25 @@ class _HoloMenuCardState extends State<HoloMenuCard> {
         scale: scale,
         child: GlassPanel(
           withGlow: true,
-          opacity: 0.15, 
+          opacity: 0.15,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-               Icon(
-                 widget.icon,
-                 size: widget.isLarge ? 48 : 32,
-                 color: CarDashboardTheme.neonBlue,
-               ),
-               const SizedBox(height: AppSpacing.md),
-               Text(
-                 widget.label.toUpperCase(),
-                 style: CarDashboardTheme.labelStyle.copyWith(
-                   fontSize: widget.isLarge ? 18 : 14,
-                   color: AppColors.surfaceLight,
-                   fontWeight: FontWeight.bold,
-                   letterSpacing: 1.2
-                 ),
-                 textAlign: TextAlign.center,
-               ),
+              Icon(
+                widget.icon,
+                size: widget.isLarge ? 48 : 32,
+                color: CarDashboardTheme.neonBlue,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                widget.label.toUpperCase(),
+                style: CarDashboardTheme.labelStyle.copyWith(
+                    fontSize: widget.isLarge ? 18 : 14,
+                    color: AppColors.surfaceLight,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),

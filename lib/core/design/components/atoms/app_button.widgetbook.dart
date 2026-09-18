@@ -29,9 +29,12 @@ Widget sizesUseCase(BuildContext context) {
     mainAxisAlignment: MainAxisAlignment.center,
     spacing: 16.0,
     children: [
-      AppButton.primary(label: 'Large', size: AppButtonSize.large, onPressed: () {}),
-      AppButton.primary(label: 'Medium', size: AppButtonSize.medium, onPressed: () {}),
-      AppButton.primary(label: 'Small', size: AppButtonSize.small, onPressed: () {}),
+      AppButton.primary(
+          label: 'Large', size: AppButtonSize.large, onPressed: () {}),
+      AppButton.primary(
+          label: 'Medium', size: AppButtonSize.medium, onPressed: () {}),
+      AppButton.primary(
+          label: 'Small', size: AppButtonSize.small, onPressed: () {}),
     ],
   );
 }

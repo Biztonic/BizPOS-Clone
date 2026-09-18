@@ -27,7 +27,11 @@ class MockVoiceEngine implements VoiceEngine {
   bool isStopped = false;
 
   @override
-  Future<void> speak(String text, {double volume = 1.0, double rate = 1.0, String lang = 'en', String? englishFallback}) async {
+  Future<void> speak(String text,
+      {double volume = 1.0,
+      double rate = 1.0,
+      String lang = 'en',
+      String? englishFallback}) async {
     spokenTexts.add(text);
   }
 
@@ -103,7 +107,8 @@ void main() {
 
       expect(mockVoice.spokenTexts.contains('Critical payment failed'), true);
       // Low priority announcement should be logged as enqueued or processed/interrupted
-      expect(receivedLogs.any((l) => l.type == AnnouncementType.paymentFailed), true);
+      expect(receivedLogs.any((l) => l.type == AnnouncementType.paymentFailed),
+          true);
     });
 
     test('Settings loading default values', () {
@@ -148,7 +153,8 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 1800));
 
       // Verify that announcements were merged
-      expect(receivedLogs.any((l) => l.type == AnnouncementType.itemAdded), true);
+      expect(
+          receivedLogs.any((l) => l.type == AnnouncementType.itemAdded), true);
     });
 
     test('PosTouchAction enum and action sounds coverage', () {

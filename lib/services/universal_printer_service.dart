@@ -252,15 +252,18 @@ class UniversalPrinterService {
     required double tax,
   }) async {
     if (kIsWeb) return;
-    final profile = await CapabilityProfile.load().timeout(const Duration(seconds: 2));
+    final profile =
+        await CapabilityProfile.load().timeout(const Duration(seconds: 2));
     final generator = Generator(PaperSize.mm80, profile);
 
     final hasMarathi = ReceiptGenerator.containsNonLatin1(storeName) ||
-        items.any((item) => ReceiptGenerator.containsNonLatin1(item['name'].toString()));
+        items.any((item) =>
+            ReceiptGenerator.containsNonLatin1(item['name'].toString()));
 
     if (hasMarathi) {
       final header = ReceiptHeader(storeName: storeName);
-      final billInfo = ReceiptBillInfo(billNo: orderId, date: DateTime.now(), cashierName: 'Cashier');
+      final billInfo = ReceiptBillInfo(
+          billNo: orderId, date: DateTime.now(), cashierName: 'Cashier');
       final receiptItems = items.map((item) {
         final double qty = double.tryParse(item['qty'].toString()) ?? 1.0;
         final double price = double.tryParse(item['price'].toString()) ?? 0.0;
@@ -273,7 +276,11 @@ class UniversalPrinterService {
       }).toList();
       final summary = ReceiptKeyValSummary(
         rows: [],
-        grandTotal: ReceiptKeyVal(label: 'Total', value: total.toStringAsFixed(2), isBold: true, isLarge: true),
+        grandTotal: ReceiptKeyVal(
+            label: 'Total',
+            value: total.toStringAsFixed(2),
+            isBold: true,
+            isLarge: true),
       );
       final content = ReceiptContent(
         header: header,
@@ -283,10 +290,12 @@ class UniversalPrinterService {
         payment: null,
         footer: null,
       );
-      
+
       final config = ReceiptConfig.mm80();
-      final uiImage = await ReceiptImageRenderer.renderCustomerReceipt(content: content, config: config);
-      final rawBytes = await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+      final uiImage = await ReceiptImageRenderer.renderCustomerReceipt(
+          content: content, config: config);
+      final rawBytes =
+          await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
       if (rawBytes != null) {
         final imgImage = img.Image.fromBytes(
           width: uiImage.width,
@@ -521,7 +530,8 @@ class UniversalPrinterService {
         ReceiptGenerator.containsNonLatin1(cashierName) ||
         ReceiptGenerator.containsNonLatin1(tableName ?? '') ||
         ReceiptGenerator.containsNonLatin1(seatNumbers ?? '') ||
-        items.any((item) => ReceiptGenerator.containsNonLatin1(item['name'].toString())) ||
+        items.any((item) =>
+            ReceiptGenerator.containsNonLatin1(item['name'].toString())) ||
         ReceiptGenerator.containsNonLatin1(settings.customHeaderMessage) ||
         ReceiptGenerator.containsNonLatin1(settings.upsellMessage);
 
@@ -530,7 +540,8 @@ class UniversalPrinterService {
         content: content,
         config: config,
       );
-      final rawBytes = await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+      final rawBytes =
+          await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
       if (rawBytes != null) {
         final imgImage = img.Image.fromBytes(
           width: uiImage.width,
@@ -540,29 +551,34 @@ class UniversalPrinterService {
         );
         final int targetWidth = settings.receiptWidth == 58 ? 384 : 576;
         final optimizedImage = _optimizeAndBinarize(imgImage, targetWidth);
-        final profile = await CapabilityProfile.load().timeout(const Duration(seconds: 2));
-        final imgGenerator = Generator(settings.receiptWidth == 58 ? PaperSize.mm58 : PaperSize.mm80, profile);
+        final profile =
+            await CapabilityProfile.load().timeout(const Duration(seconds: 2));
+        final imgGenerator = Generator(
+            settings.receiptWidth == 58 ? PaperSize.mm58 : PaperSize.mm80,
+            profile);
         List<int> printBytes = [];
         printBytes += imgGenerator.reset();
         printBytes += imgGenerator.image(optimizedImage);
-        
-        if (footer != null && footer.qrData != null && footer.qrData!.isNotEmpty) {
-           printBytes += imgGenerator.feed(1);
-           printBytes += [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06];
-           printBytes += [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31];
-           int len = footer.qrData!.length + 3;
-           int pL = len % 256;
-           int pH = len ~/ 256;
-           printBytes += [0x1D, 0x28, 0x6B, pL, pH, 0x31, 0x50, 0x30];
-           for (int i = 0; i < footer.qrData!.length; i++) {
-             printBytes.add(footer.qrData!.codeUnitAt(i));
-           }
-           printBytes += [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30];
+
+        if (footer != null &&
+            footer.qrData != null &&
+            footer.qrData!.isNotEmpty) {
+          printBytes += imgGenerator.feed(1);
+          printBytes += [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06];
+          printBytes += [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31];
+          int len = footer.qrData!.length + 3;
+          int pL = len % 256;
+          int pH = len ~/ 256;
+          printBytes += [0x1D, 0x28, 0x6B, pL, pH, 0x31, 0x50, 0x30];
+          for (int i = 0; i < footer.qrData!.length; i++) {
+            printBytes.add(footer.qrData!.codeUnitAt(i));
+          }
+          printBytes += [0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30];
         }
-        
+
         printBytes += imgGenerator.feed(3);
         printBytes += imgGenerator.cut();
-        
+
         await printRaw(printBytes);
         return;
       }
@@ -595,7 +611,9 @@ class UniversalPrinterService {
         ReceiptGenerator.containsNonLatin1(billerName) ||
         ReceiptGenerator.containsNonLatin1(tableName ?? '') ||
         ReceiptGenerator.containsNonLatin1(seatNumbers ?? '') ||
-        items.any((item) => ReceiptGenerator.containsNonLatin1(item['name'].toString()) || ReceiptGenerator.containsNonLatin1(item['note'] ?? ''));
+        items.any((item) =>
+            ReceiptGenerator.containsNonLatin1(item['name'].toString()) ||
+            ReceiptGenerator.containsNonLatin1(item['note'] ?? ''));
 
     if (hasMarathi) {
       final uiImage = await ReceiptImageRenderer.renderKdsReceipt(
@@ -609,7 +627,8 @@ class UniversalPrinterService {
         seatNumbers: seatNumbers,
         receiptWidth: receiptWidth,
       );
-      final rawBytes = await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+      final rawBytes =
+          await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
       if (rawBytes != null) {
         final imgImage = img.Image.fromBytes(
           width: uiImage.width,
@@ -619,8 +638,10 @@ class UniversalPrinterService {
         );
         final int targetWidth = receiptWidth == 58 ? 384 : 576;
         final optimizedImage = _optimizeAndBinarize(imgImage, targetWidth);
-        final profile = await CapabilityProfile.load().timeout(const Duration(seconds: 2));
-        final imgGenerator = Generator(receiptWidth == 58 ? PaperSize.mm58 : PaperSize.mm80, profile);
+        final profile =
+            await CapabilityProfile.load().timeout(const Duration(seconds: 2));
+        final imgGenerator = Generator(
+            receiptWidth == 58 ? PaperSize.mm58 : PaperSize.mm80, profile);
         List<int> printBytes = [];
         printBytes += imgGenerator.reset();
         printBytes += imgGenerator.image(optimizedImage);
@@ -795,7 +816,8 @@ class UniversalPrinterService {
   }
 
   img.Image _optimizeAndBinarize(img.Image highResImage, int targetWidth) {
-    final int targetHeight = (highResImage.height * targetWidth) ~/ highResImage.width;
+    final int targetHeight =
+        (highResImage.height * targetWidth) ~/ highResImage.width;
     final resized = img.copyResize(
       highResImage,
       width: targetWidth,
@@ -804,7 +826,8 @@ class UniversalPrinterService {
     );
 
     for (final pixel in resized) {
-      final double luminance = 0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b;
+      final double luminance =
+          0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b;
       if (luminance < 200) {
         pixel.r = 0;
         pixel.g = 0;

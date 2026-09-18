@@ -24,7 +24,7 @@ void main() {
     // Initialize Hive to a temp directory for tests
     final tempDir = Directory.systemTemp.createTempSync();
     Hive.init(tempDir.path);
-    
+
     // Open the boxes needed by the app
     await Hive.openBox('settings');
     await Hive.openBox('sync_queue');

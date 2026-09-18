@@ -51,7 +51,7 @@ class BillingProvider with ChangeNotifier {
   Map<String, int> get cart => Map.unmodifiable(_cart);
 
   // ─── Cart Management ───────────────────────────────────────
-  
+
   void addToCart(String itemId) {
     _cart[itemId] = (_cart[itemId] ?? 0) + 1;
     notifyListeners();
@@ -133,7 +133,7 @@ class BillingProvider with ChangeNotifier {
         // Optimistic UI: prepend the new order
         _orders.insert(0, result.order!);
         _setStatus(BillingStatus.success);
-        
+
         // Refresh sync counts
         await _syncService.refreshLocalCounts(notify: true);
       } else {

@@ -22,59 +22,72 @@ class SlideUpMenuBar extends StatefulWidget {
 
 class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
   late PageController _pageController;
-  
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(
-      viewportFraction: 0.14, 
-      initialPage: 0, 
+      viewportFraction: 0.14,
+      initialPage: 0,
     );
   }
 
   List<Map<String, dynamic>> _buildMenuData(DashboardProvider provider) {
     final role = provider.activeRole;
     final isSuperAdmin = provider.userProfile?.role == 'Super Admin';
-    final isOwnerOrAdmin = role == 'Store Owner' || role == 'Admin' || isSuperAdmin;
-    
+    final isOwnerOrAdmin =
+        role == 'Store Owner' || role == 'Admin' || isSuperAdmin;
+
     // Core features always visible
     final items = <Map<String, dynamic>>[
       {'icon': Icons.point_of_sale, 'label': 'POS', 'route': '/pos'},
       {'icon': Icons.bar_chart, 'label': 'REPORTS', 'route': '/reports'},
-      {'icon': Icons.history, 'label': 'SALES HISTORY', 'route': '/sales'}, 
+      {'icon': Icons.history, 'label': 'SALES HISTORY', 'route': '/sales'},
       {'icon': Icons.dashboard, 'label': 'DASHBOARD', 'route': '/dashboard'},
     ];
 
     // Addon-gated features â€“ only show if addon is active
     if (provider.hasAddon('customer_management') && isOwnerOrAdmin) {
-      items.add({'icon': Icons.people, 'label': 'CUSTOMERS', 'route': '/customers'});
+      items.add(
+          {'icon': Icons.people, 'label': 'CUSTOMERS', 'route': '/customers'});
     }
     if (provider.hasAddon('employee_management') && isOwnerOrAdmin) {
-      items.add({'icon': Icons.badge, 'label': 'EMPLOYEES', 'route': '/employees'});
+      items.add(
+          {'icon': Icons.badge, 'label': 'EMPLOYEES', 'route': '/employees'});
     }
     if (provider.hasAddon('kds_management') && isOwnerOrAdmin) {
       items.add({'icon': Icons.tv, 'label': 'DISPLAY', 'route': '/display'});
     }
     if (provider.hasAddon('table_reservation') && isOwnerOrAdmin) {
-      items.add({'icon': Icons.table_restaurant, 'label': 'TABLES', 'route': '/tables'});
+      items.add({
+        'icon': Icons.table_restaurant,
+        'label': 'TABLES',
+        'route': '/tables'
+      });
     }
-    if (provider.hasAddon('franchise_management') || role == 'Franchise Owner') {
-      items.add({'icon': Icons.store, 'label': 'FRANCHISES', 'route': '/franchises'});
+    if (provider.hasAddon('franchise_management') ||
+        role == 'Franchise Owner') {
+      items.add(
+          {'icon': Icons.store, 'label': 'FRANCHISES', 'route': '/franchises'});
     }
     if (provider.hasAddon('data_center') && isOwnerOrAdmin) {
-      items.add({'icon': Icons.sync_alt, 'label': 'DATA CENTER', 'route': '/data-sync'});
+      items.add({
+        'icon': Icons.sync_alt,
+        'label': 'DATA CENTER',
+        'route': '/data-sync'
+      });
     }
 
     // Printer â€“ always available as a utility
     items.add({'icon': Icons.print, 'label': 'PRINTER', 'route': '/printer'});
-    
+
     // Settings
-    items.add({'icon': Icons.settings, 'label': 'SETTINGS', 'route': '/settings'});
-    
+    items.add(
+        {'icon': Icons.settings, 'label': 'SETTINGS', 'route': '/settings'});
+
     // Logout always last
     items.add({'icon': Icons.logout, 'label': 'LOGOUT', 'action': 'logout'});
-    
+
     return items;
   }
 
@@ -82,19 +95,21 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
     if (item.containsKey('action')) {
       final action = item['action'];
       if (action == 'logout') {
-          // Fix: Ensure Demo Mode and all Data is cleared
-          Provider.of<DashboardProvider>(context, listen: false).clearSession();
-          Provider.of<AuthProvider>(context, listen: false).signOut();
-          GoRouter.of(context).go('/login');
+        // Fix: Ensure Demo Mode and all Data is cleared
+        Provider.of<DashboardProvider>(context, listen: false).clearSession();
+        Provider.of<AuthProvider>(context, listen: false).signOut();
+        GoRouter.of(context).go('/login');
       } else if (action == 'last_bill') {
-          showDialog(context: context, builder: (_) => const LastFiveBillsDialog());
+        showDialog(
+            context: context, builder: (_) => const LastFiveBillsDialog());
       } else if (action == 'refund') {
-          showDialog(context: context, builder: (_) => const RefundDialog());
+        showDialog(context: context, builder: (_) => const RefundDialog());
       } else if (action == 'day_report') {
-          showDialog(context: context, builder: (_) => const QuickDayReportDialog());
+        showDialog(
+            context: context, builder: (_) => const QuickDayReportDialog());
       }
     } else if (item.containsKey('route')) {
-        context.push(item['route']);
+      context.push(item['route']);
     }
   }
 
@@ -136,15 +151,16 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<DashboardProvider>(context); // Listen to changes
+    final provider =
+        Provider.of<DashboardProvider>(context); // Listen to changes
     final currentUri = GoRouterState.of(context).uri.toString();
-    
+
     // Rebuild menu data on every build so it reacts to addon changes
     final menuItems = _buildMenuData(provider);
-    
+
     return GlassPanel(
       borderRadius: AppRadius.lg,
-      withGlow: false, 
+      withGlow: false,
       opacity: 1.0, // Solid Background
       color: AppColors.surface(context), // Solid surface color
       borderColor: AppColors.border(context),
@@ -157,12 +173,11 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.textSecondary(context).withValues(alpha: 0.5),
-              borderRadius: BorderRadius.zero
-            ),
+                color: AppColors.textSecondary(context).withValues(alpha: 0.5),
+                borderRadius: BorderRadius.zero),
           ),
           const SizedBox(height: AppSpacing.xxs),
-          
+
           // Scrollable Menu List
           SizedBox(
             height: 130, // Increased height to fit larger items
@@ -183,10 +198,12 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
   }
 
   Widget _buildMenuItem(Map<String, dynamic> item, String currentUri) {
-    final bool isSelected = item['route'] != null && currentUri.startsWith(item['route']);
-    
+    final bool isSelected =
+        item['route'] != null && currentUri.startsWith(item['route']);
+
     final itemColor = _getItemColor(item['label'], context);
-    final borderColor = isSelected ? itemColor : itemColor.withValues(alpha: 0.3);
+    final borderColor =
+        isSelected ? itemColor : itemColor.withValues(alpha: 0.3);
 
     return GestureDetector(
       onTap: () => _onItemTap(item),
@@ -196,26 +213,32 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md), // Increased padding
             decoration: BoxDecoration(
-              color: isSelected ? itemColor.withValues(alpha: 0.2) : itemColor.withValues(alpha: 0.05),
+              color: isSelected
+                  ? itemColor.withValues(alpha: 0.2)
+                  : itemColor.withValues(alpha: 0.05),
               shape: BoxShape.rectangle,
               borderRadius: AppRadius.borderSm,
-              border: Border.all(
-                color: borderColor,
-                width: isSelected ? 2 : 1
-              ),
-              boxShadow: isSelected ? [BoxShadow(color: itemColor.withValues(alpha: 0.4), blurRadius: 10)] : null, 
+              border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                          color: itemColor.withValues(alpha: 0.4),
+                          blurRadius: 10)
+                    ]
+                  : null,
             ),
-            child: Icon(item['icon'], color: itemColor, size: 36), // Increased Size from 28 to 36
+            child: Icon(item['icon'],
+                color: itemColor, size: 36), // Increased Size from 28 to 36
           ),
-          const SizedBox(height: AppSpacing.md), 
+          const SizedBox(height: AppSpacing.md),
           Text(
             item['label'],
             textAlign: TextAlign.center,
             style: AppTypography.labelMedium.copyWith(
-              color: isSelected ? itemColor : AppColors.textPrimary(context), 
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-              fontSize: 12 // Increased font size from 10 to 12
-            ),
+                color: isSelected ? itemColor : AppColors.textPrimary(context),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                fontSize: 12 // Increased font size from 10 to 12
+                ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -224,6 +247,3 @@ class _SlideUpMenuBarState extends State<SlideUpMenuBar> {
     );
   }
 }
-
-
-

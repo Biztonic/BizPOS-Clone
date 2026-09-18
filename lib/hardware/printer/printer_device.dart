@@ -37,7 +37,8 @@ class PrinterDevice {
       vendorId: json['vendorId'],
       productId: json['productId'],
       type: PrinterConnectionType.values[json['type'] ?? 0],
-      paperSize: PrinterPaperSize.values[json['paperSize'] ?? 1], // Default mm80 if missing
+      paperSize: PrinterPaperSize
+          .values[json['paperSize'] ?? 1], // Default mm80 if missing
     );
   }
 }

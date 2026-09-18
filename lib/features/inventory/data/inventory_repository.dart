@@ -16,42 +16,41 @@ class InventoryRepository {
   // --- INVENTORY ---
 
   Future<void> insertInventory(InventoryItem item) async {
-       final db = await dbHelper.database;
-       try {
-         await db.insert(
-           'inventory',
-           item.toSqlMap(),
-           conflictAlgorithm: ConflictAlgorithm.replace
-         );
-       } catch (e) {
-         rethrow;
-       }
+    final db = await dbHelper.database;
+    try {
+      await db.insert('inventory', item.toSqlMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<int> getPendingInventoryDelta(String itemId, {String? storeId}) async {
     return await movementRepo.getPendingDelta(itemId, storeId: storeId);
   }
 
-  Future<void> updateInventoryCache(String itemId, int quantity, String storeId) async {
+  Future<void> updateInventoryCache(
+      String itemId, int quantity, String storeId) async {
     final db = await dbHelper.database;
     final safeQty = quantity < 0 ? 0 : quantity;
-    await db.insert(
-      'cache_inventory_quantities',
-      {'itemId': itemId, 'quantity': safeQty, 'storeId': storeId},
-      conflictAlgorithm: ConflictAlgorithm.replace
-    );
+    await db.insert('cache_inventory_quantities',
+        {'itemId': itemId, 'quantity': safeQty, 'storeId': storeId},
+        conflictAlgorithm: ConflictAlgorithm.replace);
     await db.rawUpdate(
-      'UPDATE inventory SET quantity = ? WHERE id = ?',
-      [safeQty, itemId]
-    );
+        'UPDATE inventory SET quantity = ? WHERE id = ?', [safeQty, itemId]);
   }
 
-  Future<void> insertMovement(InventoryMovement movement, {Transaction? txn}) async {
-      await movementRepo.insertMovement(movement, txn: txn);
+  Future<void> insertMovement(InventoryMovement movement,
+      {Transaction? txn}) async {
+    await movementRepo.insertMovement(movement, txn: txn);
   }
 
   Future<void> rebuildQuantityCache(String storeId) async {
     await movementRepo.rebuildQuantityCache(storeId);
+  }
+
+  Future<Map<String, int>> reconcileInventoryStock(String storeId) async {
+    return await movementRepo.reconcileInventoryStock(storeId);
   }
 
   // --- BATCH INVENTORY ---
@@ -71,9 +70,10 @@ class InventoryRepository {
     await batch.commit(noResult: true);
   }
 
-  Future<List<InventoryItem>> getInventory(String? storeId, {String? category}) async {
+  Future<List<InventoryItem>> getInventory(String? storeId,
+      {String? category}) async {
     final db = await dbHelper.database;
-    
+
     String sql = 'SELECT * FROM inventory WHERE deletedAt IS NULL';
     List<dynamic> args = [];
 
@@ -81,7 +81,7 @@ class InventoryRepository {
       sql += ' AND (storeId = ? OR storeId IS NULL OR storeId = \'\')';
       args.add(storeId);
     }
-    
+
     if (category != null && category != 'All') {
       sql += ' AND category = ?';
       args.add(category);
@@ -95,7 +95,7 @@ class InventoryRepository {
     final db = await dbHelper.database;
     final rows = await db.query('inventory', where: 'id = ?', whereArgs: [id]);
     if (rows.isEmpty) return null;
-    
+
     return InventoryItem.fromSql(rows.first);
   }
 
@@ -106,7 +106,7 @@ class InventoryRepository {
       final rows = await db.rawQuery('SELECT * FROM inventory');
       return rows.map((r) => InventoryItem.fromSql(r)).toList();
     } catch (e) {
-       return [];
+      return [];
     }
   }
 }

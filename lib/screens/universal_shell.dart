@@ -48,12 +48,13 @@ class _UniversalShellState extends State<UniversalShell> {
     try {
       final router = GoRouter.of(context);
       final currentPath = router.routeInformationProvider.value.uri.path;
-      
-      if (currentPath != '/admin/lock' && 
-          currentPath != '/login' && 
-          currentPath != '/splash' && 
+
+      if (currentPath != '/admin/lock' &&
+          currentPath != '/login' &&
+          currentPath != '/splash' &&
           currentPath != '/set-password') {
-        debugPrint('🕒 Auto-Lock: User inactive for 5 minutes. Locking station.');
+        debugPrint(
+            '🕒 Auto-Lock: User inactive for 5 minutes. Locking station.');
         router.go('/admin/lock');
       }
     } catch (e) {
@@ -63,7 +64,8 @@ class _UniversalShellState extends State<UniversalShell> {
 
   @override
   Widget build(BuildContext context) {
-    final uiStyle = context.select<DashboardProvider, UIStyle>((p) => p.uiStyle);
+    final uiStyle =
+        context.select<DashboardProvider, UIStyle>((p) => p.uiStyle);
     final isMobile = Responsive.isMobile(context);
 
     Widget shellChild;

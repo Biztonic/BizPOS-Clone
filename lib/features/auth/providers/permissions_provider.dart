@@ -40,9 +40,14 @@ class PermissionsHelper {
     }
 
     final activeRole = profile?.role;
-    if (activeRole != 'Store Owner' && activeRole != 'Admin' && activeRole != 'Super Admin' && activeRole != 'Franchise Owner') {
+    if (activeRole != 'Store Owner' &&
+        activeRole != 'Admin' &&
+        activeRole != 'Super Admin' &&
+        activeRole != 'Franchise Owner') {
       if (key == 'admin') return false;
-      if (activeStore != null && activeRole != null && activeStore!.rolePermissions.containsKey(activeRole)) {
+      if (activeStore != null &&
+          activeRole != null &&
+          activeStore!.rolePermissions.containsKey(activeRole)) {
         final perms = activeStore!.rolePermissions[activeRole]!;
         if (perms.containsKey(key)) {
           return perms[key] == true;
@@ -59,7 +64,9 @@ class PermissionsHelper {
 
     // Resolve feature status based on store type configurations cached in Hive
     final type = activeStore!.storeType;
-    final box = Hive.isBoxOpen('store_type_configs') ? Hive.box('store_type_configs') : null;
+    final box = Hive.isBoxOpen('store_type_configs')
+        ? Hive.box('store_type_configs')
+        : null;
     final configs = box?.get('configs') as Map?;
     final config = configs?[type];
     if (config is Map && config.containsKey(key)) {
@@ -68,16 +75,25 @@ class PermissionsHelper {
 
     // Default templates if no custom config exists yet
     if (type == 'Restaurant') {
-      if (['table_reservation', 'kds_management', 'employee_management'].contains(key)) return true;
+      if (['table_reservation', 'kds_management', 'employee_management']
+          .contains(key)) return true;
       if (['barcode_scanner'].contains(key)) return false;
     } else if (type == 'Grocery' || type == 'Supermarket') {
-      if (['barcode_scanner', 'customer_management', 'supplier_management', 'data_center'].contains(key)) return true;
+      if ([
+        'barcode_scanner',
+        'customer_management',
+        'supplier_management',
+        'data_center'
+      ].contains(key)) return true;
       if (['table_reservation', 'kds_management'].contains(key)) return false;
     }
 
     if (activeStore!.subscriptionPlan != 'Standard') return false;
 
-    if (profile != null && profile!.role != 'Store Owner' && profile!.role != 'Franchise Owner' && profile!.accessibleAddons != null) {
+    if (profile != null &&
+        profile!.role != 'Store Owner' &&
+        profile!.role != 'Franchise Owner' &&
+        profile!.accessibleAddons != null) {
       if (!profile!.accessibleAddons!.contains(key)) return false;
     }
 

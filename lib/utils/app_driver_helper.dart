@@ -19,11 +19,11 @@ class AppDriver {
     await tester.tap(finder);
     await tester.pumpAndSettle();
   }
-  
+
   /// Taps a widget by text content
   Future<void> tapText(String text) async {
     final finder = find.text(text);
-     if (!tester.any(finder)) {
+    if (!tester.any(finder)) {
       throw Exception("Element with Text '$text' not found on screen.");
     }
     await tester.tap(finder);
@@ -33,7 +33,7 @@ class AppDriver {
   /// Taps a widget by its Tooltip message
   Future<void> tapTooltip(String message) async {
     final finder = find.byTooltip(message);
-     if (!tester.any(finder)) {
+    if (!tester.any(finder)) {
       throw Exception("Element with Tooltip '$message' not found.");
     }
     await tester.tap(finder);
@@ -49,21 +49,25 @@ class AppDriver {
 
   /// Verifies that a widget with the given Key exists.
   void expectKey(String key) {
-    expect(find.byKey(Key(key)), findsOneWidget, reason: "Expected to find widget with Key '$key'");
+    expect(find.byKey(Key(key)), findsOneWidget,
+        reason: "Expected to find widget with Key '$key'");
   }
 
   /// Verifies that text exists.
   void expectText(String text) {
-    expect(find.text(text), findsOneWidget, reason: "Expected to find text '$text'");
+    expect(find.text(text), findsOneWidget,
+        reason: "Expected to find text '$text'");
   }
-  
+
   /// Verifies text does NOT exist.
   void expectNoText(String text) {
-    expect(find.text(text), findsNothing, reason: "Expected NOT to find text '$text'");
+    expect(find.text(text), findsNothing,
+        reason: "Expected NOT to find text '$text'");
   }
 
   /// Waits for a Finder to find a widget.
-  Future<void> waitFor(Finder finder, {Duration timeout = const Duration(seconds: 20)}) async {
+  Future<void> waitFor(Finder finder,
+      {Duration timeout = const Duration(seconds: 20)}) async {
     final end = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(end)) {
       if (tester.any(finder)) return;
@@ -71,7 +75,7 @@ class AppDriver {
     }
     throw Exception("Timed out waiting for $finder");
   }
-  
+
   /// Waits for text to appear
   Future<void> waitForText(String text) async {
     await waitFor(find.text(text));

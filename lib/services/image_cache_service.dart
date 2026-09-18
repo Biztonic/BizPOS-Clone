@@ -14,7 +14,7 @@ class ImageCacheService {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final imagesDir = Directory(p.join(directory.path, 'inventory_images'));
-      
+
       if (!await imagesDir.exists()) {
         await imagesDir.create(recursive: true);
       }
@@ -31,7 +31,7 @@ class ImageCacheService {
 
       // Download
       await _dio.download(url, localPath);
-      
+
       return localPath;
     } catch (e) {
       debugPrint('❌ ImageCacheService: Error downloading image: $e');
@@ -41,10 +41,10 @@ class ImageCacheService {
 
   static Future<String?> getLocalPath(String fileName) async {
     if (kIsWeb) return null;
-    
+
     final directory = await getApplicationDocumentsDirectory();
     final imagesDir = Directory(p.join(directory.path, 'inventory_images'));
-    
+
     // We check for any extension
     final possibleExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
     for (var ext in possibleExtensions) {
@@ -55,7 +55,7 @@ class ImageCacheService {
     }
     return null;
   }
-  
+
   /// Saves a local file (e.g. from image_picker) to the app's persistent storage.
   static Future<String?> saveLocalImage(File file, String itemId) async {
     if (kIsWeb) return null;
@@ -63,18 +63,19 @@ class ImageCacheService {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final imagesDir = Directory(p.join(directory.path, 'inventory_images'));
-      
+
       if (!await imagesDir.exists()) {
         await imagesDir.create(recursive: true);
       }
 
       // Extract original extension
-      final ext = p.extension(file.path).isEmpty ? '.png' : p.extension(file.path);
+      final ext =
+          p.extension(file.path).isEmpty ? '.png' : p.extension(file.path);
       final localPath = p.join(imagesDir.path, '$itemId$ext');
 
       // Copy file to permanent storage
       final savedFile = await file.copy(localPath);
-      
+
       debugPrint('✅ ImageCacheService: Saved local image to ${savedFile.path}');
       return savedFile.path;
     } catch (e) {

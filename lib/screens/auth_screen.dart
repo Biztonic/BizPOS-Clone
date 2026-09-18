@@ -18,7 +18,8 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateMixin {
+class _AuthScreenState extends State<AuthScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -33,7 +34,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _animController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
   }
@@ -82,7 +84,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
-    
+
     // Basic email validation first to allow new customer check
     if (email.isEmpty || !email.contains('@')) {
       _formKey.currentState!.validate();
@@ -90,7 +92,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     try {
       if (_isLogin) {
         // 1. Check if this is a new customer from the Sales App activation flow
@@ -123,7 +125,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
+          SnackBar(
+              content: Text(e.toString()), backgroundColor: AppColors.error),
         );
       }
     }
@@ -152,7 +155,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             if (isWide) {
               return Row(
                 children: [
-                   // --- Left Branding Pane (Visible on Desktop/Tablet) ---
+                  // --- Left Branding Pane (Visible on Desktop/Tablet) ---
                   Expanded(
                     flex: 1,
                     child: _buildBrandingPane(isDark),
@@ -162,9 +165,15 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     flex: 1,
                     child: Container(
                       decoration: BoxDecoration(
-                         color: AppColors.surface(context),
+                        color: AppColors.surface(context),
                         boxShadow: [
-                          if (!isDark) BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.05), blurRadius: 40, offset: const Offset(-20, 0))
+                          if (!isDark)
+                            BoxShadow(
+                                color: Theme.of(context)
+                                    .shadowColor
+                                    .withValues(alpha: 0.05),
+                                blurRadius: 40,
+                                offset: const Offset(-20, 0))
                         ],
                       ),
                       child: Center(
@@ -174,7 +183,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                             constraints: const BoxConstraints(maxWidth: 450),
                             child: FadeTransition(
                               opacity: _fadeAnim,
-                              child: _buildAuthForm(context, isLoading, isDark, size, onGradient: false),
+                              child: _buildAuthForm(
+                                  context, isLoading, isDark, size,
+                                  onGradient: false),
                             ),
                           ),
                         ),
@@ -189,10 +200,12 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             return SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
                   child: FadeTransition(
                     opacity: _fadeAnim,
-                    child: _buildAuthForm(context, isLoading, isDark, size, onGradient: true),
+                    child: _buildAuthForm(context, isLoading, isDark, size,
+                        onGradient: true),
                   ),
                 ),
               ),
@@ -205,7 +218,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
   Widget _buildBrandingPane(bool isDark) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.xl),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xxl, vertical: AppSpacing.xl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,7 +238,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   offset: const Offset(0, 8),
                 )
               ],
-              border: Border.all(color: Colors.white.withOpacity(0.2), width: 2),
+              border:
+                  Border.all(color: Colors.white.withOpacity(0.2), width: 2),
             ),
             padding: const EdgeInsets.all(4),
             child: ClipRRect(
@@ -233,12 +248,13 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 'assets/logo.jpg',
                 fit: BoxFit.cover,
                 cacheWidth: 400,
-                errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 36, color: AppColors.primary),
+                errorBuilder: (_, __, ___) => const Icon(Icons.storefront,
+                    size: 36, color: AppColors.primary),
               ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          
+
           // Main Headline
           Text(
             AppLocalizations.t(context, 'BizTonic POS'),
@@ -249,10 +265,11 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          
+
           // Subtitle
           Text(
-            AppLocalizations.t(context, 'The all-in-one platform for modern commerce. Manage sales, inventory, and staff with surgical precision.'),
+            AppLocalizations.t(context,
+                'The all-in-one platform for modern commerce. Manage sales, inventory, and staff with surgical precision.'),
             style: TextStyle(
               fontSize: 16,
               color: Colors.white.withOpacity(0.85),
@@ -261,12 +278,12 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          
+
           // Custom Lottie-type Vector Animation Graphic
           const LottieTypeGraphic(),
-          
+
           const SizedBox(height: AppSpacing.xl),
-          
+
           // Features Section Header
           Text(
             AppLocalizations.t(context, 'TRUSTED BY ENTERPRISES WORLDWIDE'),
@@ -278,7 +295,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          
+
           // Modern feature cards in a 2x2 grid
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,8 +303,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               Expanded(
                 child: Column(
                   children: [
-                    _buildFeatureItem(Icons.bolt, "Lightning Fast Billing", "Process transactions in seconds, even offline."),
-                    _buildFeatureItem(Icons.cloud_sync, "Real-time Cloud Sync", "Your data is always backed up and accessible."),
+                    _buildFeatureItem(Icons.bolt, "Lightning Fast Billing",
+                        "Process transactions in seconds, even offline."),
+                    _buildFeatureItem(Icons.cloud_sync, "Real-time Cloud Sync",
+                        "Your data is always backed up and accessible."),
                   ],
                 ),
               ),
@@ -295,8 +314,12 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               Expanded(
                 child: Column(
                   children: [
-                    _buildFeatureItem(Icons.analytics_outlined, "Advanced Analytics", "Gain deep insights into your business performance."),
-                    _buildFeatureItem(Icons.security, "Bank-grade Security", "Securing your business data with enterprise standards."),
+                    _buildFeatureItem(
+                        Icons.analytics_outlined,
+                        "Advanced Analytics",
+                        "Gain deep insights into your business performance."),
+                    _buildFeatureItem(Icons.security, "Bank-grade Security",
+                        "Securing your business data with enterprise standards."),
                   ],
                 ),
               ),
@@ -331,7 +354,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title, 
+                  title,
                   style: AppTypography.titleSmall.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -339,7 +362,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 ),
                 const SizedBox(height: AppSpacing.xxs),
                 Text(
-                  desc, 
+                  desc,
                   style: AppTypography.bodySmall.copyWith(
                     color: Colors.white.withOpacity(0.65),
                     height: 1.4,
@@ -353,7 +376,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildAuthForm(BuildContext context, bool isLoading, bool isDark, Size size, {required bool onGradient}) {
+  Widget _buildAuthForm(
+      BuildContext context, bool isLoading, bool isDark, Size size,
+      {required bool onGradient}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -377,18 +402,19 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.asset(
-                'assets/logo.jpg', 
-                fit: BoxFit.cover, 
-                cacheWidth: 400, 
-                errorBuilder: (_, __, ___) => const Icon(Icons.storefront, size: 36, color: AppColors.primary),
+                'assets/logo.jpg',
+                fit: BoxFit.cover,
+                cacheWidth: 400,
+                errorBuilder: (_, __, ___) => const Icon(Icons.storefront,
+                    size: 36, color: AppColors.primary),
               ),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            AppLocalizations.t(context, 'BizTonic POS'), 
+            AppLocalizations.t(context, 'BizTonic POS'),
             style: AppTypography.headlineMedium.copyWith(
-              color: Colors.white, 
+              color: Colors.white,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
             ),
@@ -404,7 +430,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
+              color: isDark
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.black.withOpacity(0.06),
               width: 1,
             ),
             boxShadow: [
@@ -431,8 +459,11 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  _isLogin ? "Sign in to manage your store" : "Get started with BizTonic",
-                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
+                  _isLogin
+                      ? "Sign in to manage your store"
+                      : "Get started with BizTonic",
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.textSecondary(context)),
                 ),
                 const SizedBox(height: AppSpacing.xl),
 
@@ -446,7 +477,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   autofillHints: [AutofillHints.email],
                   isDark: isDark,
                   validator: (value) {
-                    if (value == null || value.isEmpty || !value.contains('@')) {
+                    if (value == null ||
+                        value.isEmpty ||
+                        !value.contains('@')) {
                       return 'Please enter a valid email';
                     }
                     return null;
@@ -465,11 +498,16 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   isDark: isDark,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility, 
-                      color: isDark ? Colors.white.withOpacity(0.38) : AppColors.primary.withOpacity(0.5), 
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: isDark
+                          ? Colors.white.withOpacity(0.38)
+                          : AppColors.primary.withOpacity(0.5),
                       size: 20,
                     ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                   validator: (value) {
                     if (value == null || value.length < 6) {
@@ -507,7 +545,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     maxLength: 6,
                     validator: (value) {
                       if (value != null && value.trim().isNotEmpty) {
-                        if (value.trim().length != 6 || int.tryParse(value.trim()) == null) {
+                        if (value.trim().length != 6 ||
+                            int.tryParse(value.trim()) == null) {
                           return 'Franchise code must be 6 digits';
                         }
                       }
@@ -533,8 +572,15 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                       shadowColor: AppColors.primary.withOpacity(0.25),
                     ),
                     child: isLoading
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                        : Text(_isLogin ? "SIGN IN" : "CREATE ACCOUNT", style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2.5))
+                        : Text(_isLogin ? "SIGN IN" : "CREATE ACCOUNT",
+                            style: AppTypography.labelLarge.copyWith(
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5)),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -546,10 +592,14 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                       TextButton(
                         onPressed: () => setState(() => _isLogin = !_isLogin),
                         child: Text(
-                          _isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In",
+                          _isLogin
+                              ? "Don't have an account? Sign Up"
+                              : "Already have an account? Sign In",
                           style: TextStyle(
-                            color: onGradient ? Colors.white.withOpacity(0.9) : AppColors.adaptivePrimary(context), 
-                            fontSize: 13, 
+                            color: onGradient
+                                ? Colors.white.withOpacity(0.9)
+                                : AppColors.adaptivePrimary(context),
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -561,15 +611,21 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                             final email = _emailController.text.trim();
                             if (email.isEmpty || !email.contains('@')) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(AppLocalizations.t(context, 'Please enter your email address first'))),
+                                SnackBar(
+                                    content: Text(AppLocalizations.t(context,
+                                        'Please enter your email address first'))),
                               );
                               return;
                             }
                             context.push('/set-password?email=$email');
                           },
-                          child: Text(AppLocalizations.t(context, 'Converted from Sales App? Activate Account'),
+                          child: Text(
+                            AppLocalizations.t(context,
+                                'Converted from Sales App? Activate Account'),
                             style: AppTypography.labelMedium.copyWith(
-                              color: onGradient ? Colors.white : AppColors.adaptivePrimary(context),
+                              color: onGradient
+                                  ? Colors.white
+                                  : AppColors.adaptivePrimary(context),
                               fontWeight: FontWeight.w700,
                               decoration: TextDecoration.underline,
                             ),
@@ -583,8 +639,6 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             ),
           ),
         ),
-
-
       ],
     );
   }
@@ -605,11 +659,11 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   }) {
     final Color textColor = AppColors.textPrimary(context);
     final Color labelColor = AppColors.textSecondary(context);
-    final Color fillColor = isDark 
+    final Color fillColor = isDark
         ? const Color(0xFF1E293B) // slate 800
         : const Color(0xFFF8FAFC); // slate 50
-    final Color borderColor = isDark 
-        ? Colors.white.withOpacity(0.08) 
+    final Color borderColor = isDark
+        ? Colors.white.withOpacity(0.08)
         : const Color(0xFFE2E8F0); // slate 200
     final Color activeColor = AppColors.primary;
 
@@ -620,21 +674,26 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       obscureText: obscure,
       autofillHints: autofillHints,
       maxLength: maxLength,
-      style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: 0.2),
+      style: TextStyle(
+          color: textColor,
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.2),
       decoration: InputDecoration(
         counterText: maxLength != null ? "" : null,
         labelText: label,
-        labelStyle: TextStyle(color: labelColor, fontSize: 13, fontWeight: FontWeight.w500),
+        labelStyle: TextStyle(
+            color: labelColor, fontSize: 13, fontWeight: FontWeight.w500),
         floatingLabelStyle: TextStyle(
           color: activeColor,
           fontWeight: FontWeight.bold,
           fontSize: 15,
         ),
         prefixIcon: Icon(
-          icon, 
-          color: isDark 
-              ? Colors.white.withOpacity(0.4) 
-              : activeColor.withOpacity(0.7), 
+          icon,
+          color: isDark
+              ? Colors.white.withOpacity(0.4)
+              : activeColor.withOpacity(0.7),
           size: 20,
         ),
         prefixText: prefix,
@@ -642,7 +701,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: fillColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -676,7 +736,8 @@ class LottieTypeGraphic extends StatefulWidget {
   State<LottieTypeGraphic> createState() => _LottieTypeGraphicState();
 }
 
-class _LottieTypeGraphicState extends State<LottieTypeGraphic> with SingleTickerProviderStateMixin {
+class _LottieTypeGraphicState extends State<LottieTypeGraphic>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -746,7 +807,7 @@ class _LottiePainter extends CustomPainter {
     final gridPaint = Paint()
       ..color = Colors.white.withOpacity(0.04)
       ..strokeWidth = 1.0;
-    
+
     // Draw 5 horizontal lines
     for (int i = 0; i < 5; i++) {
       final double y = 30.0 + i * (size.height - 80) / 4;
@@ -769,12 +830,14 @@ class _LottiePainter extends CustomPainter {
 
     final trendPath = Path();
     final List<Offset> trendPoints = [];
-    
+
     // Generate trend points with sine wave oscillation
     for (double x = 30; x < size.width - 30; x += 5) {
       final double normX = (x - 30) / (size.width - 60);
-      final double wave1 = 15 * math.sin(normX * 3 * math.pi - progress * 2 * math.pi);
-      final double wave2 = 8 * math.sin(normX * 8 * math.pi + progress * 4 * math.pi);
+      final double wave1 =
+          15 * math.sin(normX * 3 * math.pi - progress * 2 * math.pi);
+      final double wave2 =
+          8 * math.sin(normX * 8 * math.pi + progress * 4 * math.pi);
       final double y = (size.height - 70) - normX * 100 + wave1 + wave2;
       trendPoints.add(Offset(x, y));
     }
@@ -791,8 +854,9 @@ class _LottiePainter extends CustomPainter {
       final endGlowPaint = Paint()
         ..color = Colors.greenAccent.withOpacity(0.3)
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(endPoint, 10.0 + 3.0 * math.sin(progress * 2 * math.pi * 2), endGlowPaint);
-      
+      canvas.drawCircle(endPoint,
+          10.0 + 3.0 * math.sin(progress * 2 * math.pi * 2), endGlowPaint);
+
       final endDotPaint = Paint()
         ..color = Colors.greenAccent
         ..style = PaintingStyle.fill;
@@ -807,7 +871,7 @@ class _LottiePainter extends CustomPainter {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ).createShader(Rect.fromLTWH(center.dx - 20, center.dy + 15, 40, 50));
-    
+
     final standPath = Path()
       ..moveTo(center.dx - 8, center.dy + 15)
       ..lineTo(center.dx + 8, center.dy + 15)
@@ -820,9 +884,10 @@ class _LottiePainter extends CustomPainter {
     final bezelPaint = Paint()
       ..color = const Color(0xFF0F172A)
       ..style = PaintingStyle.fill;
-    
+
     final screenRect = Rect.fromCenter(center: center, width: 106, height: 74);
-    final rscreenRect = RRect.fromRectAndRadius(screenRect, const Radius.circular(10));
+    final rscreenRect =
+        RRect.fromRectAndRadius(screenRect, const Radius.circular(10));
     canvas.drawRRect(rscreenRect, bezelPaint);
 
     // Inner Screen
@@ -832,9 +897,11 @@ class _LottiePainter extends CustomPainter {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ).createShader(Rect.fromCenter(center: center, width: 98, height: 66));
-    
-    final innerScreenRect = Rect.fromCenter(center: center, width: 98, height: 66);
-    final rinnerScreenRect = RRect.fromRectAndRadius(innerScreenRect, const Radius.circular(8));
+
+    final innerScreenRect =
+        Rect.fromCenter(center: center, width: 98, height: 66);
+    final rinnerScreenRect =
+        RRect.fromRectAndRadius(innerScreenRect, const Radius.circular(8));
     canvas.drawRRect(rinnerScreenRect, screenInnerPaint);
 
     // Screen Glare
@@ -864,7 +931,8 @@ class _LottiePainter extends CustomPainter {
     final barPaint = Paint()..style = PaintingStyle.fill;
     final double barY = center.dy + 15;
     for (int i = 0; i < 4; i++) {
-      final double barHeight = 12.0 + (i * 6.0) + 4.0 * math.sin(progress * 2 * math.pi + i);
+      final double barHeight =
+          12.0 + (i * 6.0) + 4.0 * math.sin(progress * 2 * math.pi + i);
       final double barX = center.dx + 4 + (i * 9.0);
       barPaint.shader = LinearGradient(
         colors: [Colors.cyanAccent, Colors.blueAccent],
@@ -872,7 +940,9 @@ class _LottiePainter extends CustomPainter {
         end: Alignment.topCenter,
       ).createShader(Rect.fromLTWH(barX, barY - barHeight, 6, barHeight));
       canvas.drawRRect(
-        RRect.fromRectAndRadius(Rect.fromLTWH(barX, barY - barHeight, 6, barHeight), const Radius.circular(2)),
+        RRect.fromRectAndRadius(
+            Rect.fromLTWH(barX, barY - barHeight, 6, barHeight),
+            const Radius.circular(2)),
         barPaint,
       );
     }
@@ -881,7 +951,9 @@ class _LottiePainter extends CustomPainter {
       ..color = Colors.white.withOpacity(0.08)
       ..style = PaintingStyle.fill;
     canvas.drawRRect(
-      RRect.fromRectAndRadius(Rect.fromLTWH(center.dx - 32, center.dy + 3, 25, 10), const Radius.circular(2)),
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(center.dx - 32, center.dy + 3, 25, 10),
+          const Radius.circular(2)),
       textBackgroundPaint,
     );
 
@@ -905,9 +977,12 @@ class _LottiePainter extends CustomPainter {
 
       final coinPaint = Paint()
         ..shader = RadialGradient(
-          colors: [Colors.amberAccent.withOpacity(opacity), Colors.orange.withOpacity(opacity * 0.9)],
+          colors: [
+            Colors.amberAccent.withOpacity(opacity),
+            Colors.orange.withOpacity(opacity * 0.9)
+          ],
         ).createShader(Rect.fromCircle(center: offset, radius: 9));
-      
+
       canvas.drawOval(
         Rect.fromCenter(center: offset, width: 18 * widthRatio, height: 18),
         coinPaint,
@@ -925,7 +1000,8 @@ class _LottiePainter extends CustomPainter {
 
     // 6. Draw floating Credit Card (Tapping Vibe)
     final double cardOsc = math.sin(progress * 2 * math.pi) * 8;
-    final double cardRotation = 0.15 + math.sin(progress * 2 * math.pi + 1) * 0.05;
+    final double cardRotation =
+        0.15 + math.sin(progress * 2 * math.pi + 1) * 0.05;
     final cardCenter = center + Offset(72, -15 + cardOsc);
 
     canvas.save();
@@ -934,17 +1010,23 @@ class _LottiePainter extends CustomPainter {
 
     final cardPaint = Paint()
       ..shader = LinearGradient(
-        colors: [Colors.indigoAccent.withOpacity(0.95), Colors.blueAccent.withOpacity(0.9)],
+        colors: [
+          Colors.indigoAccent.withOpacity(0.95),
+          Colors.blueAccent.withOpacity(0.9)
+        ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-      ).createShader(Rect.fromCenter(center: Offset.zero, width: 48, height: 32));
-    
+      ).createShader(
+          Rect.fromCenter(center: Offset.zero, width: 48, height: 32));
+
     final cardBorderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0
       ..color = Colors.white.withOpacity(0.35);
 
-    final cardRRect = RRect.fromRectAndRadius(Rect.fromCenter(center: Offset.zero, width: 48, height: 32), const Radius.circular(4));
+    final cardRRect = RRect.fromRectAndRadius(
+        Rect.fromCenter(center: Offset.zero, width: 48, height: 32),
+        const Radius.circular(4));
     canvas.drawRRect(cardRRect, cardPaint);
     canvas.drawRRect(cardRRect, cardBorderPaint);
 
@@ -952,7 +1034,8 @@ class _LottiePainter extends CustomPainter {
       ..color = Colors.amberAccent.withOpacity(0.85)
       ..style = PaintingStyle.fill;
     canvas.drawRRect(
-      RRect.fromRectAndRadius(Rect.fromLTWH(-18, -6, 10, 8), const Radius.circular(1.5)),
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(-18, -6, 10, 8), const Radius.circular(1.5)),
       chipPaint,
     );
 
@@ -968,16 +1051,18 @@ class _LottiePainter extends CustomPainter {
       ..strokeWidth = 1.5
       ..color = Colors.cyanAccent.withOpacity(1.0 - signalPulse)
       ..strokeCap = StrokeCap.round;
-    
+
     canvas.drawArc(
-      Rect.fromCircle(center: const Offset(-28, 0), radius: 10 + signalPulse * 10),
+      Rect.fromCircle(
+          center: const Offset(-28, 0), radius: 10 + signalPulse * 10),
       -math.pi / 4,
       math.pi / 2,
       false,
       signalPaint,
     );
     canvas.drawArc(
-      Rect.fromCircle(center: const Offset(-28, 0), radius: 15 + signalPulse * 10),
+      Rect.fromCircle(
+          center: const Offset(-28, 0), radius: 15 + signalPulse * 10),
       -math.pi / 4,
       math.pi / 2,
       false,
@@ -992,7 +1077,10 @@ class _LottiePainter extends CustomPainter {
 
     final bagPaint = Paint()
       ..shader = RadialGradient(
-        colors: [Colors.cyanAccent.withOpacity(0.85), Colors.tealAccent.withOpacity(0.75)],
+        colors: [
+          Colors.cyanAccent.withOpacity(0.85),
+          Colors.tealAccent.withOpacity(0.75)
+        ],
       ).createShader(Rect.fromCircle(center: bagCenter, radius: 15));
 
     final bagPath = Path()
@@ -1008,7 +1096,7 @@ class _LottiePainter extends CustomPainter {
       ..strokeWidth = 1.8
       ..color = Colors.white.withOpacity(0.7)
       ..strokeCap = StrokeCap.round;
-    
+
     canvas.drawArc(
       Rect.fromLTWH(bagCenter.dx - 6, bagCenter.dy - 12, 12, 12),
       math.pi,

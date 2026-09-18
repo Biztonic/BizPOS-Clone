@@ -64,14 +64,14 @@ class SettingsNotifier extends _$SettingsNotifier {
 
   Future<void> loadSettings() async {
     final settings = await _repository.loadSettings();
-    
+
     final themeIdx = settings['theme'] as int;
     final styleIdx = settings['uiStyle'] as int;
-    
+
     state = state.copyWith(
       isDarkMode: settings['darkMode'] as bool,
-      currentTheme: themeIdx < AppColorTheme.values.length 
-          ? AppColorTheme.values[themeIdx] 
+      currentTheme: themeIdx < AppColorTheme.values.length
+          ? AppColorTheme.values[themeIdx]
           : AppColorTheme.blue,
       uiStyle: styleIdx < UIStyle.values.length
           ? UIStyle.values[styleIdx]

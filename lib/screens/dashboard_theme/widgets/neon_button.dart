@@ -47,7 +47,7 @@ class _NeonButtonState extends State<NeonButton> {
   @override
   Widget build(BuildContext context) {
     final scale = _isPressed ? 0.95 : 1.0;
-    
+
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,

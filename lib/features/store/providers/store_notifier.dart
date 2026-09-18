@@ -26,7 +26,7 @@ class StoreNotifier extends _$StoreNotifier {
     _storeRepo = ref.watch(storeFeatureRepositoryProvider);
     _subRepo = ref.watch(subscriptionRepositoryProvider);
     _syncService = ref.watch(syncServiceProvider);
-    
+
     // Watch Auth state to trigger fetch when user logs in
     final authState = ref.watch(authNotifierProvider);
     if (authState.user != null) {
@@ -44,67 +44,90 @@ class StoreNotifier extends _$StoreNotifier {
   Future<void> setActiveStoreId(String? storeId) async {
     if (storeId == state.activeStoreId) return;
     _storeSubscription?.cancel();
-    
+
     try {
-        state = state.copyWith(activeStoreId: storeId, isLoading: true);
-        _syncService.setActiveStoreId(storeId);
-        
-        if (storeId != null) {
-           final user = FirebaseAuth.instance.currentUser;
-           
-           // Aggressive Profile Sync (legacy logic)
-           if (user != null) {
-             FirebaseFirestore.instance.collection('users').doc(user.uid).set({'storeId': storeId}, SetOptions(merge: true));
-           }
+      state = state.copyWith(activeStoreId: storeId, isLoading: true);
+      _syncService.setActiveStoreId(storeId);
 
-           // Try Cache First
-           final cachedStores = state.stores.where((s) => s.id == storeId).toList();
-           if (cachedStores.isNotEmpty) {
-              state = state.copyWith(activeStore: cachedStores.first);
-              await _storeRepo.pinStore(state.activeStore!, uid: user?.uid);
-           }
-           
-           // Start Listener
-           _storeSubscription = _storeRepo.storeSnapshots(storeId).listen((snap) {
-              if (snap.exists) {
-                 final firestoreStore = Store.fromMap(snap.data() as Map<String, dynamic>, snap.id);
-                 final cachedStore = state.activeStore;
-                 
-                 final updatedStore = firestoreStore.copyWith(
-                    address: (firestoreStore.address == null || firestoreStore.address!.isEmpty) ? cachedStore?.address : firestoreStore.address,
-                    phone: (firestoreStore.phone == null || firestoreStore.phone!.isEmpty) ? cachedStore?.phone : firestoreStore.phone,
-                    gstin: (firestoreStore.gstin == null || firestoreStore.gstin!.isEmpty) ? cachedStore?.gstin : firestoreStore.gstin,
-                 );
+      if (storeId != null) {
+        final user = FirebaseAuth.instance.currentUser;
 
-                 state = state.copyWith(activeStore: updatedStore);
-                 _storeRepo.pinStore(updatedStore, uid: user?.uid);
-                 
-                 // Update in list
-                 final updatedList = state.stores.map((s) => s.id == updatedStore.id ? updatedStore : s).toList();
-                 state = state.copyWith(stores: updatedList);
-              }
-           });
-           
-           // Fetch Fresh
-           final onlineStore = await _storeRepo.getStoreOnline(storeId);
-           if (onlineStore != null) {
-              final cachedStore = state.activeStore;
-              final mergedStore = onlineStore.copyWith(
-                address: (onlineStore.address == null || onlineStore.address!.isEmpty) ? cachedStore?.address : onlineStore.address,
-                phone: (onlineStore.phone == null || onlineStore.phone!.isEmpty) ? cachedStore?.phone : onlineStore.phone,
-                gstin: (onlineStore.gstin == null || onlineStore.gstin!.isEmpty) ? cachedStore?.gstin : onlineStore.gstin,
-              );
-              state = state.copyWith(activeStore: mergedStore);
-              await _storeRepo.pinStore(mergedStore, uid: user?.uid);
-           }
-           
-           await fetchCounters();
-        } else {
-           state = state.copyWith(clearActiveStore: true);
-           _syncService.setActiveStoreId(null);
+        // Aggressive Profile Sync (legacy logic)
+        if (user != null) {
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({'storeId': storeId}, SetOptions(merge: true));
         }
+
+        // Try Cache First
+        final cachedStores =
+            state.stores.where((s) => s.id == storeId).toList();
+        if (cachedStores.isNotEmpty) {
+          state = state.copyWith(activeStore: cachedStores.first);
+          await _storeRepo.pinStore(state.activeStore!, uid: user?.uid);
+        }
+
+        // Start Listener
+        _storeSubscription = _storeRepo.storeSnapshots(storeId).listen((snap) {
+          if (snap.exists) {
+            final firestoreStore =
+                Store.fromMap(snap.data() as Map<String, dynamic>, snap.id);
+            final cachedStore = state.activeStore;
+
+            final updatedStore = firestoreStore.copyWith(
+              address: (firestoreStore.address == null ||
+                      firestoreStore.address!.isEmpty)
+                  ? cachedStore?.address
+                  : firestoreStore.address,
+              phone: (firestoreStore.phone == null ||
+                      firestoreStore.phone!.isEmpty)
+                  ? cachedStore?.phone
+                  : firestoreStore.phone,
+              gstin: (firestoreStore.gstin == null ||
+                      firestoreStore.gstin!.isEmpty)
+                  ? cachedStore?.gstin
+                  : firestoreStore.gstin,
+            );
+
+            state = state.copyWith(activeStore: updatedStore);
+            _storeRepo.pinStore(updatedStore, uid: user?.uid);
+
+            // Update in list
+            final updatedList = state.stores
+                .map((s) => s.id == updatedStore.id ? updatedStore : s)
+                .toList();
+            state = state.copyWith(stores: updatedList);
+          }
+        });
+
+        // Fetch Fresh
+        final onlineStore = await _storeRepo.getStoreOnline(storeId);
+        if (onlineStore != null) {
+          final cachedStore = state.activeStore;
+          final mergedStore = onlineStore.copyWith(
+            address:
+                (onlineStore.address == null || onlineStore.address!.isEmpty)
+                    ? cachedStore?.address
+                    : onlineStore.address,
+            phone: (onlineStore.phone == null || onlineStore.phone!.isEmpty)
+                ? cachedStore?.phone
+                : onlineStore.phone,
+            gstin: (onlineStore.gstin == null || onlineStore.gstin!.isEmpty)
+                ? cachedStore?.gstin
+                : onlineStore.gstin,
+          );
+          state = state.copyWith(activeStore: mergedStore);
+          await _storeRepo.pinStore(mergedStore, uid: user?.uid);
+        }
+
+        await fetchCounters();
+      } else {
+        state = state.copyWith(clearActiveStore: true);
+        _syncService.setActiveStoreId(null);
+      }
     } finally {
-        state = state.copyWith(isLoading: false);
+      state = state.copyWith(isLoading: false);
     }
   }
 
@@ -119,12 +142,12 @@ class StoreNotifier extends _$StoreNotifier {
       } else {
         final onlineStores = await _storeRepo.fetchUserStoresOnline(user);
         if (onlineStores.isNotEmpty) {
-           state = state.copyWith(stores: onlineStores);
-           await _storeRepo.cacheStores(onlineStores, uid: user.uid);
+          state = state.copyWith(stores: onlineStores);
+          await _storeRepo.cacheStores(onlineStores, uid: user.uid);
         } else {
-           // Fallback to cache if online fails/empty
-           final cached = await _storeRepo.getCachedStores(uid: user.uid);
-           state = state.copyWith(stores: cached);
+          // Fallback to cache if online fails/empty
+          final cached = await _storeRepo.getCachedStores(uid: user.uid);
+          state = state.copyWith(stores: cached);
         }
       }
     } finally {
@@ -132,7 +155,8 @@ class StoreNotifier extends _$StoreNotifier {
     }
   }
 
-  Future<String> addStore(String name, String ownerEmail, {String? address, String? phone, String storeType = 'Restaurant'}) async {
+  Future<String> addStore(String name, String ownerEmail,
+      {String? address, String? phone, String storeType = 'Restaurant'}) async {
     final user = FirebaseAuth.instance.currentUser;
     final email = ownerEmail.toLowerCase().trim();
 
@@ -140,7 +164,7 @@ class StoreNotifier extends _$StoreNotifier {
     try {
       // Search for pending subscription
       final subRequest = await _subRepo.findPendingSubscription(email);
-      
+
       String subscriptionPlan = 'Basic';
       List<String> addons = [];
       DateTime? expiry;
@@ -148,12 +172,18 @@ class StoreNotifier extends _$StoreNotifier {
 
       if (subRequest != null) {
         foundRequestId = subRequest['id'];
-        subscriptionPlan = subRequest['planType'] ?? subRequest['planName'] ?? subRequest['plan'] ?? 'Standard';
-        if (subscriptionPlan.toLowerCase() == 'basic' || subscriptionPlan.isEmpty) {
+        subscriptionPlan = subRequest['planType'] ??
+            subRequest['planName'] ??
+            subRequest['plan'] ??
+            'Standard';
+        if (subscriptionPlan.toLowerCase() == 'basic' ||
+            subscriptionPlan.isEmpty) {
           subscriptionPlan = 'Standard';
         }
-        addons = List<String>.from(subRequest['selectedAddons'] ?? subRequest['addons'] ?? []);
-        final duration = subRequest['durationInDays'] ?? subRequest['duration'] ?? 365;
+        addons = List<String>.from(
+            subRequest['selectedAddons'] ?? subRequest['addons'] ?? []);
+        final duration =
+            subRequest['durationInDays'] ?? subRequest['duration'] ?? 365;
         expiry = DateTime.now().add(Duration(days: duration));
       }
 
@@ -179,20 +209,28 @@ class StoreNotifier extends _$StoreNotifier {
       await docRef.set(newStore.toMap());
 
       if (foundRequestId != null) {
-        await _subRepo.approveSubscriptionRequest(foundRequestId, docRef.id, name);
-        await _subRepo.addSubscriptionHistory(docRef.id, subscriptionPlan, expiry);
+        await _subRepo.approveSubscriptionRequest(
+            foundRequestId, docRef.id, name);
+        await _subRepo.addSubscriptionHistory(
+            docRef.id, subscriptionPlan, expiry);
       }
 
       // Link to User
       if (user != null) {
         if (user.email == ownerEmail) {
-          await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({
             'storeId': docRef.id,
             'storeIds': FieldValue.arrayUnion([docRef.id]),
             'role': 'Store Owner'
           }, SetOptions(merge: true));
         } else {
-          await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({
             'accessibleStoreIds': FieldValue.arrayUnion([docRef.id]),
           }, SetOptions(merge: true));
         }
@@ -211,7 +249,9 @@ class StoreNotifier extends _$StoreNotifier {
     try {
       await _storeRepo.updateStore(updatedStore);
       state = state.copyWith(activeStore: updatedStore);
-      final updatedList = state.stores.map((s) => s.id == updatedStore.id ? updatedStore : s).toList();
+      final updatedList = state.stores
+          .map((s) => s.id == updatedStore.id ? updatedStore : s)
+          .toList();
       state = state.copyWith(stores: updatedList);
     } finally {
       state = state.copyWith(isLoading: false);
@@ -227,14 +267,16 @@ class StoreNotifier extends _$StoreNotifier {
 
   Future<void> addCounter(CounterModel counter) async {
     if (state.activeStoreId == null) return;
-    final newCounter = await _storeRepo.addCounter(state.activeStoreId!, counter);
+    final newCounter =
+        await _storeRepo.addCounter(state.activeStoreId!, counter);
     state = state.copyWith(counters: [...state.counters, newCounter]);
   }
 
   Future<void> updateCounter(CounterModel counter) async {
     if (state.activeStoreId == null) return;
     await _storeRepo.updateCounter(state.activeStoreId!, counter);
-    final updated = state.counters.map((c) => c.id == counter.id ? counter : c).toList();
+    final updated =
+        state.counters.map((c) => c.id == counter.id ? counter : c).toList();
     state = state.copyWith(counters: updated);
   }
 

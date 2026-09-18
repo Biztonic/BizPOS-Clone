@@ -44,17 +44,18 @@ class SyncDiagnostics {
     if (_logBox == null || !_logBox!.isOpen) return [];
     final all = _logBox!.values.toList();
     final start = all.length > limit ? all.length - limit : 0;
-    return all.sublist(start).map((e) =>
-      Map<String, dynamic>.from(e as Map)
-    ).toList();
+    return all
+        .sublist(start)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
   }
 
   /// Get error-only logs.
   List<Map<String, dynamic>> getErrorLogs({int limit = 10}) {
     return getRecentLogs(limit: 50)
-      .where((e) => e['isError'] == true)
-      .take(limit)
-      .toList();
+        .where((e) => e['isError'] == true)
+        .take(limit)
+        .toList();
   }
 
   /// Clear all diagnostic logs.

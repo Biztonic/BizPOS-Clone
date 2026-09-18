@@ -20,16 +20,17 @@ import '../engines/voice_engine.dart';
 import '../engines/haptic_engine.dart';
 import '../engines/flutter_audio_engine.dart';
 import '../engines/flutter_tts_engine.dart';
-import '../engines/web_audio_helper.dart' if (dart.library.js) '../engines/web_audio_helper_web.dart';
+import '../engines/web_audio_helper.dart'
+    if (dart.library.js) '../engines/web_audio_helper_web.dart';
 
 enum PosTouchAction {
-  tap,        // Standard UI navigation, tabs, dialog buttons, card click
-  scanItem,   // High-tech barcode scan blip
-  addQty,     // Item added to cart / quantity incremented (rising chime)
-  removeQty,  // Item removed / quantity decremented / cart cleared (descending pop)
-  keypad,     // PIN pad / numeric keypad / calculator button (tactile switch)
-  success,    // Checkout / payment / login / operation successful (major chord)
-  alert,      // Error / invalid PIN / warning / out of stock (alert pip)
+  tap, // Standard UI navigation, tabs, dialog buttons, card click
+  scanItem, // High-tech barcode scan blip
+  addQty, // Item added to cart / quantity incremented (rising chime)
+  removeQty, // Item removed / quantity decremented / cart cleared (descending pop)
+  keypad, // PIN pad / numeric keypad / calculator button (tactile switch)
+  success, // Checkout / payment / login / operation successful (major chord)
+  alert, // Error / invalid PIN / warning / out of stock (alert pip)
 }
 
 class AnnouncementService {
@@ -48,14 +49,15 @@ class AnnouncementService {
 
   final List<AnnouncementLog> _logs = [];
   final Map<AnnouncementType, DateTime> _lastTriggered = {};
-  
+
   // Touch action audio tracking & debouncing
   Timer? _pendingTapTimer;
   DateTime _lastActionTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   // Local marketing audio storage
   final List<MarketingAudio> _marketingAudios = [];
-  List<MarketingAudio> get marketingAudios => List.unmodifiable(_marketingAudios);
+  List<MarketingAudio> get marketingAudios =>
+      List.unmodifiable(_marketingAudios);
 
   Timer? _marketingTimer;
   int _currentMarketingIndex = 0;
@@ -103,7 +105,8 @@ class AnnouncementService {
     }
   }
 
-  void announce(AnnouncementType type, {Map<String, dynamic> metadata = const {}, Duration? delay}) {
+  void announce(AnnouncementType type,
+      {Map<String, dynamic> metadata = const {}, Duration? delay}) {
     try {
       // 1. Policy check: Cooldown Suppression
       if (_isCooldownActive(type)) {
@@ -112,7 +115,8 @@ class AnnouncementService {
           priority: _builder.getPriorityForType(type),
           suppressed: true,
         ));
-        debugPrint('📣 [AnnouncementService] Announcement $type suppressed by cooldown policy');
+        debugPrint(
+            '📣 [AnnouncementService] Announcement $type suppressed by cooldown policy');
         return;
       }
 
@@ -241,8 +245,8 @@ class AnnouncementService {
       final audio = MarketingAudio(id: id, name: name, bytes: bytes);
       _marketingAudios.add(audio);
 
-      final mBox = Hive.isBoxOpen('marketing_audio') 
-          ? Hive.box('marketing_audio') 
+      final mBox = Hive.isBoxOpen('marketing_audio')
+          ? Hive.box('marketing_audio')
           : await Hive.openBox('marketing_audio');
       await mBox.put(id, audio.toMap());
 
@@ -255,8 +259,8 @@ class AnnouncementService {
   Future<void> deleteMarketingAudio(String id) async {
     try {
       _marketingAudios.removeWhere((audio) => audio.id == id);
-      final mBox = Hive.isBoxOpen('marketing_audio') 
-          ? Hive.box('marketing_audio') 
+      final mBox = Hive.isBoxOpen('marketing_audio')
+          ? Hive.box('marketing_audio')
           : await Hive.openBox('marketing_audio');
       await mBox.delete(id);
 
@@ -298,10 +302,12 @@ class AnnouncementService {
   }
 
   void _playNextMarketingLoop() {
-    if (_settings.marketingPlayMode != 'loop' || _marketingAudios.isEmpty) return;
+    if (_settings.marketingPlayMode != 'loop' || _marketingAudios.isEmpty)
+      return;
 
     final audio = _marketingAudios[_currentMarketingIndex];
-    _currentMarketingIndex = (_currentMarketingIndex + 1) % _marketingAudios.length;
+    _currentMarketingIndex =
+        (_currentMarketingIndex + 1) % _marketingAudios.length;
 
     _playMarketingAudioItem(audio, onComplete: () {
       if (_settings.marketingPlayMode == 'loop') {
@@ -315,11 +321,13 @@ class AnnouncementService {
     if (_marketingAudios.isEmpty) return;
 
     final audio = _marketingAudios[_currentMarketingIndex];
-    _currentMarketingIndex = (_currentMarketingIndex + 1) % _marketingAudios.length;
+    _currentMarketingIndex =
+        (_currentMarketingIndex + 1) % _marketingAudios.length;
     _playMarketingAudioItem(audio);
   }
 
-  void _playMarketingAudioItem(MarketingAudio audio, {VoidCallback? onComplete}) {
+  void _playMarketingAudioItem(MarketingAudio audio,
+      {VoidCallback? onComplete}) {
     if (!_settings.enableSounds) {
       onComplete?.call();
       return;
@@ -355,12 +363,15 @@ class AnnouncementService {
 
   void updateSettings(AnnouncementSettings newSettings) {
     try {
-      final modeChanged = _settings.marketingPlayMode != newSettings.marketingPlayMode ||
-          _settings.marketingIntervalSeconds != newSettings.marketingIntervalSeconds;
+      final modeChanged =
+          _settings.marketingPlayMode != newSettings.marketingPlayMode ||
+              _settings.marketingIntervalSeconds !=
+                  newSettings.marketingIntervalSeconds;
 
       _settings = newSettings;
       unawaited(_settings.save());
-      debugPrint('📣 [AnnouncementService] Settings updated: profile=${newSettings.profile}');
+      debugPrint(
+          '📣 [AnnouncementService] Settings updated: profile=${newSettings.profile}');
 
       if (modeChanged) {
         restartMarketingScheduler();

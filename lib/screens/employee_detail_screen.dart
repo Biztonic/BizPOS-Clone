@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:provider/provider.dart';
@@ -30,19 +30,21 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _permissions = Map<String, bool>.from(widget.employee.permissions ?? {
-      'pos': true,
-      'inventory': false,
-      'reports': false,
-      'settings': false,
-      'employees': false,
-      'crm': false,
-    });
-    _accessibleAddons = List<String>.from(widget.employee.accessibleAddons ?? []);
+    _permissions = Map<String, bool>.from(widget.employee.permissions ??
+        {
+          'pos': true,
+          'inventory': false,
+          'reports': false,
+          'settings': false,
+          'employees': false,
+          'crm': false,
+        });
+    _accessibleAddons =
+        List<String>.from(widget.employee.accessibleAddons ?? []);
     _preferredTheme = widget.employee.preferredTheme ?? 'standard';
     _hourlyCtrl.text = widget.employee.hourlyRate?.toString() ?? '0.0';
     _salaryCtrl.text = widget.employee.monthlySalary?.toString() ?? '0.0';
-    
+
     // Fetch History
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<DashboardProvider>(context, listen: false);
@@ -63,7 +65,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
           label: "Save",
           onPressed: () async {
             await provider.updateEmployeePermissions(
-              widget.employee.uid, 
+              widget.employee.uid,
               _permissions,
               accessibleAddons: _accessibleAddons,
               preferredTheme: _preferredTheme,
@@ -75,7 +77,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             );
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(AppLocalizations.t(context, 'Profile Updated')), behavior: SnackBarBehavior.floating),
+              SnackBar(
+                  content: Text(AppLocalizations.t(context, 'Profile Updated')),
+                  behavior: SnackBarBehavior.floating),
             );
           },
         ),
@@ -105,8 +109,11 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             radius: 30,
             backgroundColor: AppColors.primary.withValues(alpha: 0.1),
             child: Text(
-              widget.employee.name.isNotEmpty ? widget.employee.name[0].toUpperCase() : '?', 
-              style: AppTypography.headlineSmall.copyWith(color: AppColors.primary),
+              widget.employee.name.isNotEmpty
+                  ? widget.employee.name[0].toUpperCase()
+                  : '?',
+              style: AppTypography.headlineSmall
+                  .copyWith(color: AppColors.primary),
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -114,11 +121,14 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.employee.name, style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+                Text(widget.employee.name,
+                    style: AppTypography.titleLarge
+                        .copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   "Role: ${widget.employee.role} • ID: ${widget.employee.employeeId}",
-                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.textSecondary(context)),
                 ),
               ],
             ),
@@ -132,7 +142,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.t(context, 'Payroll Configuration'), style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+        Text(AppLocalizations.t(context, 'Payroll Configuration'),
+            style: AppTypography.titleMedium
+                .copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: AppSpacing.sm),
         AppCard(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -191,7 +203,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
   Widget _buildAttendanceHistory() {
     final provider = Provider.of<DashboardProvider>(context);
-    final records = provider.attendanceRecords.where((r) => r['employeeId'] == widget.employee.uid).toList();
+    final records = provider.attendanceRecords
+        .where((r) => r['employeeId'] == widget.employee.uid)
+        .toList();
 
     if (records.isEmpty) {
       return Center(
@@ -200,7 +214,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
           children: [
             Icon(Icons.history, size: 48, color: AppColors.border(context)),
             const SizedBox(height: AppSpacing.sm),
-            Text(AppLocalizations.t(context, 'No attendance records'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+            Text(AppLocalizations.t(context, 'No attendance records'),
+                style: AppTypography.bodyMedium
+                    .copyWith(color: AppColors.textSecondary(context))),
           ],
         ),
       );
@@ -217,10 +233,15 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
               color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.zero,
             ),
-            child: const Icon(Icons.history, color: AppColors.primary, size: 20),
+            child:
+                const Icon(Icons.history, color: AppColors.primary, size: 20),
           ),
-          title: Text("In: ${rec['checkIn']}", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
-          subtitle: Text("Out: ${rec['checkOut'] ?? 'Active'}", style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context))),
+          title: Text("In: ${rec['checkIn']}",
+              style: AppTypography.bodyMedium
+                  .copyWith(fontWeight: FontWeight.w600)),
+          subtitle: Text("Out: ${rec['checkOut'] ?? 'Active'}",
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textSecondary(context))),
         );
       },
     );
@@ -228,16 +249,21 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
   Widget _buildPayrollHistory() {
     final provider = Provider.of<DashboardProvider>(context);
-    final records = provider.payrollRecords.where((r) => r['employeeId'] == widget.employee.uid).toList();
+    final records = provider.payrollRecords
+        .where((r) => r['employeeId'] == widget.employee.uid)
+        .toList();
 
     if (records.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.payments_outlined, size: 48, color: AppColors.border(context)),
+            Icon(Icons.payments_outlined,
+                size: 48, color: AppColors.border(context)),
             const SizedBox(height: AppSpacing.sm),
-            Text(AppLocalizations.t(context, 'No payroll records'), style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary(context))),
+            Text(AppLocalizations.t(context, 'No payroll records'),
+                style: AppTypography.bodyMedium
+                    .copyWith(color: AppColors.textSecondary(context))),
           ],
         ),
       );
@@ -248,13 +274,14 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
       itemBuilder: (context, index) {
         final rec = records[index];
         return ListTile(
-          title: Text("Period: ${rec['periodStart'].split('T')[0]}", style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
-          trailing: Text("${rec['totalAmount']}", style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.success)),
+          title: Text("Period: ${rec['periodStart'].split('T')[0]}",
+              style: AppTypography.bodyMedium
+                  .copyWith(fontWeight: FontWeight.w600)),
+          trailing: Text("${rec['totalAmount']}",
+              style: AppTypography.titleMedium.copyWith(
+                  fontWeight: FontWeight.bold, color: AppColors.success)),
         );
       },
     );
   }
 }
-
-
-

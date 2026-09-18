@@ -15,7 +15,8 @@ class ReleaseManagementScreen extends StatefulWidget {
   const ReleaseManagementScreen({super.key});
 
   @override
-  State<ReleaseManagementScreen> createState() => _ReleaseManagementScreenState();
+  State<ReleaseManagementScreen> createState() =>
+      _ReleaseManagementScreenState();
 }
 
 class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
@@ -36,7 +37,10 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
   Future<void> _loadCurrentConfig() async {
     setState(() => _isLoading = true);
     try {
-      final doc = await FirebaseFirestore.instance.collection('settings').doc('app_version').get();
+      final doc = await FirebaseFirestore.instance
+          .collection('settings')
+          .doc('app_version')
+          .get();
       if (doc.exists) {
         final data = doc.data()!;
         _versionController.text = data['version'] ?? '';
@@ -49,8 +53,10 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
       } else {
         try {
           final info = await PackageInfo.fromPlatform();
-          _versionController.text = info.version.isEmpty ? "1.0.0" : info.version;
-          _buildController.text = info.buildNumber.isEmpty ? "1" : info.buildNumber;
+          _versionController.text =
+              info.version.isEmpty ? "1.0.0" : info.version;
+          _buildController.text =
+              info.buildNumber.isEmpty ? "1" : info.buildNumber;
         } catch (infoError) {
           _versionController.text = "1.0.0";
           _buildController.text = "1";
@@ -58,7 +64,8 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error loading config: $e")));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Error loading config: $e")));
       }
     } finally {
       setState(() => _isLoading = false);
@@ -70,9 +77,13 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
 
     setState(() => _isLoading = true);
     final messenger = ScaffoldMessenger.of(context);
-    final successMsg = AppLocalizations.t(context, 'Release published successfully!');
+    final successMsg =
+        AppLocalizations.t(context, 'Release published successfully!');
     try {
-      await FirebaseFirestore.instance.collection('settings').doc('app_version').set({
+      await FirebaseFirestore.instance
+          .collection('settings')
+          .doc('app_version')
+          .set({
         'version': _versionController.text.trim(),
         'build': int.tryParse(_buildController.text.trim()) ?? 0,
         'url': _urlController.text.trim(),
@@ -85,7 +96,8 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
       }
     } catch (e) {
       if (mounted) {
-        messenger.showSnackBar(SnackBar(content: Text("Error saving release: $e")));
+        messenger
+            .showSnackBar(SnackBar(content: Text("Error saving release: $e")));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -105,84 +117,94 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
         ),
         const SizedBox(width: AppSpacing.md),
       ],
-      mainContent: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(AppLocalizations.t(context, 'Publish New Version'),
-                  style: AppTypography.h3,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(AppLocalizations.t(context, 'Updates published here will immediately prompt users to update if their version is lower.'),
-                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                
-                AppCard(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    children: [
-                      Row(
+      mainContent: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.t(context, 'Publish New Version'),
+                      style: AppTypography.h3,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      AppLocalizations.t(context,
+                          'Updates published here will immediately prompt users to update if their version is lower.'),
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.textSecondary(context)),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    AppCard(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Column(
                         children: [
-                          Expanded(
-                            child: AppTextField(
-                              controller: _versionController,
-                              labelText: 'Version Name',
-                              hintText: 'e.g. 1.0.5',
-                              prefixIcon: const Icon(Icons.tag),
-                              validator: (v) => v!.isEmpty ? 'Required' : null,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppTextField(
+                                  controller: _versionController,
+                                  labelText: 'Version Name',
+                                  hintText: 'e.g. 1.0.5',
+                                  prefixIcon: const Icon(Icons.tag),
+                                  validator: (v) =>
+                                      v!.isEmpty ? 'Required' : null,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: AppTextField(
+                                  controller: _buildController,
+                                  labelText: 'Build Number',
+                                  hintText: 'e.g. 15',
+                                  prefixIcon: const Icon(Icons.numbers),
+                                  keyboardType: TextInputType.number,
+                                  validator: (v) =>
+                                      v!.isEmpty ? 'Required' : null,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: AppTextField(
-                              controller: _buildController,
-                              labelText: 'Build Number',
-                              hintText: 'e.g. 15',
-                              prefixIcon: const Icon(Icons.numbers),
-                              keyboardType: TextInputType.number,
-                              validator: (v) => v!.isEmpty ? 'Required' : null,
-                            ),
+                          const SizedBox(height: AppSpacing.lg),
+                          AppTextField(
+                            controller: _urlController,
+                            labelText: 'APK / App Store URL',
+                            hintText: 'https://...',
+                            prefixIcon: const Icon(Icons.link),
+                            validator: (v) => v!.isEmpty ? 'Required' : null,
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          AppTextField(
+                            controller: _notesController,
+                            labelText: 'Release Notes',
+                            hintText: 'What\'s new in this version?',
+                            prefixIcon: const Icon(Icons.note_alt_outlined),
+                            maxLines: 4,
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          SwitchListTile(
+                            title: Text(
+                                AppLocalizations.t(context, 'Force Update'),
+                                style: AppTypography.bodyMedium
+                                    .copyWith(fontWeight: FontWeight.bold)),
+                            subtitle: Text(AppLocalizations.t(
+                                context, 'Users cannot skip this update')),
+                            value: _forceUpdate,
+                            onChanged: (val) =>
+                                setState(() => _forceUpdate = val),
+                            contentPadding: EdgeInsets.zero,
+                            activeColor: AppColors.primary,
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-                      AppTextField(
-                        controller: _urlController,
-                        labelText: 'APK / App Store URL',
-                        hintText: 'https://...',
-                        prefixIcon: const Icon(Icons.link),
-                        validator: (v) => v!.isEmpty ? 'Required' : null,
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      AppTextField(
-                        controller: _notesController,
-                        labelText: 'Release Notes',
-                        hintText: 'What\'s new in this version?',
-                        prefixIcon: const Icon(Icons.note_alt_outlined),
-                        maxLines: 4,
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      SwitchListTile(
-                        title: Text(AppLocalizations.t(context, 'Force Update'), style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-                        subtitle: Text(AppLocalizations.t(context, 'Users cannot skip this update')),
-                        value: _forceUpdate,
-                        onChanged: (val) => setState(() => _forceUpdate = val),
-                        contentPadding: EdgeInsets.zero,
-                        activeColor: AppColors.primary,
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
     );
   }
 }

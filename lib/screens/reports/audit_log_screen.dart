@@ -55,7 +55,8 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => context.go('/reports'),
               ),
-              title: Text(AppLocalizations.t(context, 'Audit Log'), style: const TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(AppLocalizations.t(context, 'Audit Log'),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.refresh),
@@ -78,9 +79,13 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.history_toggle_off, size: 64, color: AppColors.textSecondary(context)),
+                      Icon(Icons.history_toggle_off,
+                          size: 64, color: AppColors.textSecondary(context)),
                       const SizedBox(height: AppSpacing.md),
-                      Text(AppLocalizations.t(context, 'No audit logs found'), style: TextStyle(color: AppColors.textSecondary(context), fontSize: 16)),
+                      Text(AppLocalizations.t(context, 'No audit logs found'),
+                          style: TextStyle(
+                              color: AppColors.textSecondary(context),
+                              fontSize: 16)),
                     ],
                   ),
                 ),
@@ -93,7 +98,8 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final log = logs[index];
-                      final timeStr = DateFormat('MMM dd, hh:mm a').format(log['createdAt'] ?? DateTime.now());
+                      final timeStr = DateFormat('MMM dd, hh:mm a')
+                          .format(log['createdAt'] ?? DateTime.now());
 
                       IconData icon = Icons.history;
                       Color iconColor = AppColors.primaryLight;
@@ -140,27 +146,40 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
-                                        color: isDark ? AppColors.surfaceLight : AppColors.textPrimaryLight,
+                                        color: isDark
+                                            ? AppColors.surfaceLight
+                                            : AppColors.textPrimaryLight,
                                       ),
                                     ),
                                     const SizedBox(height: AppSpacing.xs),
                                     Text(
                                       "$timeStr • ID: ${(log['entityId'] ?? '---').toString().substring(0, 8)}...",
-                                      style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
+                                      style: TextStyle(
+                                          color:
+                                              AppColors.textSecondary(context),
+                                          fontSize: 13),
                                     ),
                                   ],
                                 ),
                               ),
                               if ((log['amount'] ?? 0) > 0)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: isDark ? AppColors.success.withValues(alpha: 0.1) : AppColors.success.withValues(alpha: 0.08),
+                                    color: isDark
+                                        ? AppColors.success
+                                            .withValues(alpha: 0.1)
+                                        : AppColors.success
+                                            .withValues(alpha: 0.08),
                                     borderRadius: AppRadius.borderXs,
                                   ),
                                   child: Text(
                                     "₹${log['amount'].toStringAsFixed(2)}",
-                                    style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.success, fontSize: 14),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.success,
+                                        fontSize: 14),
                                   ),
                                 ),
                             ],

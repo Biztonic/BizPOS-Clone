@@ -6,7 +6,8 @@ import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:permission_handler/permission_handler.dart';
 import '../services/printer_manager_service.dart';
 import '../services/printer_log_service.dart';
@@ -48,15 +49,20 @@ class _PrinterScreenState extends State<PrinterScreen>
 
     // Listen to logs
     // Listen to devices from UniversalService
-    _scanSubscription = _printerManager.universalService.devicesStream.listen((devices) {
+    _scanSubscription =
+        _printerManager.universalService.devicesStream.listen((devices) {
       if (mounted) {
         setState(() {
           // Clear current lists (optional, or merge)
-          _btDevices = devices.where((d) => d.type == PrinterConnectionType.bluetooth).toList();
-          _usbDevices = devices.where((d) => d.type == PrinterConnectionType.usb).toList();
-          
+          _btDevices = devices
+              .where((d) => d.type == PrinterConnectionType.bluetooth)
+              .toList();
+          _usbDevices = devices
+              .where((d) => d.type == PrinterConnectionType.usb)
+              .toList();
+
           // Stop loaders if we got results (or keep them running for a fixed time)
-             //  Actually, stream updates continuosly. We stop loaders after timeout in startScan.
+          //  Actually, stream updates continuosly. We stop loaders after timeout in startScan.
         });
       }
     });
@@ -97,14 +103,19 @@ class _PrinterScreenState extends State<PrinterScreen>
     // Platform Check
     bool isMobile = false;
     try {
-       if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
-          isMobile = true;
-       }
-    } catch (e) { isMobile = false; }
+      if (!kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.android ||
+              defaultTargetPlatform == TargetPlatform.iOS)) {
+        isMobile = true;
+      }
+    } catch (e) {
+      isMobile = false;
+    }
 
     if (!isMobile) {
-       _showPlatformError("Bluetooth scanning is only available on Mobile platforms.");
-       return;
+      _showPlatformError(
+          "Bluetooth scanning is only available on Mobile platforms.");
+      return;
     }
 
     // Request Permissions
@@ -118,10 +129,11 @@ class _PrinterScreenState extends State<PrinterScreen>
 
     if (!allGranted) {
       if (statuses.values.any((status) => status.isPermanentlyDenied)) {
-         _showPermissionDialog();
+        _showPermissionDialog();
       } else {
-         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(AppLocalizations.t(context, 'Bluetooth permissions are required to scan.')),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.t(
+                context, 'Bluetooth permissions are required to scan.')),
             backgroundColor: AppColors.error));
       }
       return;
@@ -132,10 +144,10 @@ class _PrinterScreenState extends State<PrinterScreen>
       _btDevices.clear();
     });
     _logger.log("Starting Bluetooth Scan...");
-    
+
     // Start unified scan
     _printerManager.universalService.startScan();
-    
+
     // Auto-stop loader
     Future.delayed(const Duration(seconds: 8), () {
       if (mounted && _isScanningBt) setState(() => _isScanningBt = false);
@@ -147,7 +159,8 @@ class _PrinterScreenState extends State<PrinterScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(AppLocalizations.t(context, 'Permissions Required')),
-        content: Text(AppLocalizations.t(context, 'Bluetooth and Location permissions are required to scan for printers. Please enable them in settings.')),
+        content: Text(AppLocalizations.t(context,
+            'Bluetooth and Location permissions are required to scan for printers. Please enable them in settings.')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -171,14 +184,17 @@ class _PrinterScreenState extends State<PrinterScreen>
     // usb_serial package is typically Android.
     bool isAndroid = false;
     try {
-       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-          isAndroid = true;
-       }
-    } catch (e) { isAndroid = false; }
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        isAndroid = true;
+      }
+    } catch (e) {
+      isAndroid = false;
+    }
 
     if (!isAndroid) {
-       _showPlatformError("USB scanning via this method is only available on Android.");
-       return;
+      _showPlatformError(
+          "USB scanning via this method is only available on Android.");
+      return;
     }
 
     setState(() {
@@ -186,7 +202,7 @@ class _PrinterScreenState extends State<PrinterScreen>
       _usbDevices.clear();
     });
     _logger.log("Starting USB Scan...");
-    
+
     _printerManager.universalService.startScan();
 
     Future.delayed(const Duration(seconds: 5), () {
@@ -196,15 +212,16 @@ class _PrinterScreenState extends State<PrinterScreen>
 
   void _showPlatformError(String message) {
     showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(AppLocalizations.t(context, 'Feature Not Available')),
-        content: Text(message),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.t(context, 'OK')))
-        ],
-      )
-    );
+        context: context,
+        builder: (ctx) => AlertDialog(
+              title: Text(AppLocalizations.t(context, 'Feature Not Available')),
+              content: Text(message),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(AppLocalizations.t(context, 'OK')))
+              ],
+            ));
   }
 
   Future<void> _connectAndAssign(PrinterDevice device) async {
@@ -231,13 +248,16 @@ class _PrinterScreenState extends State<PrinterScreen>
                   items: [
                     DropdownMenuItem(
                         value: PrinterPaperSize.mm58,
-                        child: Text(AppLocalizations.t(context, '58mm Thermal'))),
+                        child:
+                            Text(AppLocalizations.t(context, '58mm Thermal'))),
                     DropdownMenuItem(
                         value: PrinterPaperSize.mm80,
-                        child: Text(AppLocalizations.t(context, '80mm Thermal'))),
+                        child:
+                            Text(AppLocalizations.t(context, '80mm Thermal'))),
                     DropdownMenuItem(
                         value: PrinterPaperSize.isoA4,
-                        child: Text(AppLocalizations.t(context, 'A4 / Letter'))),
+                        child:
+                            Text(AppLocalizations.t(context, 'A4 / Letter'))),
                   ],
                   onChanged: (val) {
                     if (val != null) {
@@ -328,7 +348,7 @@ class _PrinterScreenState extends State<PrinterScreen>
 
   Future<void> _connectNetworkManual() async {
     if (_ipController.text.isEmpty) return;
-    
+
     final device = PrinterDevice(
         name: "Network Printer (${_ipController.text})",
         address: _ipController.text,
@@ -429,8 +449,7 @@ class _PrinterScreenState extends State<PrinterScreen>
         // --- 1. BLUETOOTH SECTION ---
         Card(
           elevation: 2,
-          shape:
-              const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           child: ExpansionTile(
             initiallyExpanded: true,
             leading: const Icon(Icons.bluetooth, color: AppColors.primaryLight),
@@ -450,10 +469,14 @@ class _PrinterScreenState extends State<PrinterScreen>
               if (_btDevices.isEmpty && !_isScanningBt)
                 Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Text(AppLocalizations.t(context, 'No bluetooth devices found.'),
-                        style: TextStyle(color: AppColors.textSecondary(context)))),
+                    child: Text(
+                        AppLocalizations.t(
+                            context, 'No bluetooth devices found.'),
+                        style: TextStyle(
+                            color: AppColors.textSecondary(context)))),
               ..._btDevices.map((device) => ListTile(
-                    leading: const Icon(Icons.print, color: AppColors.primaryLightGrey),
+                    leading: const Icon(Icons.print,
+                        color: AppColors.primaryLightGrey),
                     title: Text(device.name),
                     subtitle: Text(device.address ?? "Unknown MAC"),
                     trailing: TextButton(
@@ -470,8 +493,7 @@ class _PrinterScreenState extends State<PrinterScreen>
         // --- 2. USB SECTION ---
         Card(
           elevation: 2,
-          shape:
-              const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           child: ExpansionTile(
             initiallyExpanded: true,
             leading: const Icon(Icons.usb, color: AppColors.warning),
@@ -491,10 +513,13 @@ class _PrinterScreenState extends State<PrinterScreen>
               if (_usbDevices.isEmpty && !_isScanningUsb)
                 Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Text(AppLocalizations.t(context, 'No USB devices found.'),
-                        style: TextStyle(color: AppColors.textSecondary(context)))),
+                    child: Text(
+                        AppLocalizations.t(context, 'No USB devices found.'),
+                        style: TextStyle(
+                            color: AppColors.textSecondary(context)))),
               ..._usbDevices.map((device) => ListTile(
-                    leading: const Icon(Icons.print, color: AppColors.primaryLightGrey),
+                    leading: const Icon(Icons.print,
+                        color: AppColors.primaryLightGrey),
                     title: Text(device.name),
                     subtitle:
                         Text("VID:${device.vendorId} PID:${device.productId}"),
@@ -512,13 +537,13 @@ class _PrinterScreenState extends State<PrinterScreen>
         // --- 3. NETWORK SECTION ---
         Card(
           elevation: 2,
-          shape:
-              const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           child: ExpansionTile(
             initiallyExpanded: false,
             leading: const Icon(Icons.wifi, color: AppColors.success),
             title: Text(AppLocalizations.t(context, 'Network Printer')),
-            subtitle: Text(AppLocalizations.t(context, 'Connect via IP Address')),
+            subtitle:
+                Text(AppLocalizations.t(context, 'Connect via IP Address')),
             children: [
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
@@ -560,7 +585,8 @@ class _PrinterScreenState extends State<PrinterScreen>
         controller: _logScrollController,
         itemCount: _logs.length,
         itemBuilder: (context, index) => Text(_logs[index],
-            style: const TextStyle(color: AppColors.success, fontFamily: 'Courier')),
+            style: const TextStyle(
+                color: AppColors.success, fontFamily: 'Courier')),
       ),
     );
   }
@@ -578,7 +604,3 @@ class _PrinterScreenState extends State<PrinterScreen>
     }
   }
 }
-
-
-
-

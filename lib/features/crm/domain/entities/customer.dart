@@ -70,18 +70,27 @@ class Customer {
       billingAddress: data['billingAddress'],
       shippingAddress: data['shippingAddress'],
       avatar: data['avatar'],
-      joinDate: data['joinDate'] != null 
-          ? (data['joinDate'] is Timestamp ? (data['joinDate'] as Timestamp).toDate() : DateTime.tryParse(data['joinDate']?.toString() ?? '') ?? DateTime.now()) 
+      joinDate: data['joinDate'] != null
+          ? (data['joinDate'] is Timestamp
+              ? (data['joinDate'] as Timestamp).toDate()
+              : DateTime.tryParse(data['joinDate']?.toString() ?? '') ??
+                  DateTime.now())
           : DateTime.now(),
       totalSpent: (data['totalSpent'] ?? 0).toDouble(),
       loyaltyPoints: parseInt(data['loyaltyPoints']),
       tier: data['tier'] ?? 'New',
       visitCount: parseInt(data['visitCount']),
-      lastVisit: data['lastVisit'] != null 
-          ? (data['lastVisit'] is Timestamp ? (data['lastVisit'] as Timestamp).toDate() : DateTime.tryParse(data['lastVisit']?.toString() ?? '')) 
+      lastVisit: data['lastVisit'] != null
+          ? (data['lastVisit'] is Timestamp
+              ? (data['lastVisit'] as Timestamp).toDate()
+              : DateTime.tryParse(data['lastVisit']?.toString() ?? ''))
           : null,
-      updatedAt: (data['updatedAt'] is Timestamp) ? (data['updatedAt'] as Timestamp).toDate() : DateTime.tryParse(data['updatedAt']?.toString() ?? ''),
-      deletedAt: (data['deletedAt'] is Timestamp) ? (data['deletedAt'] as Timestamp).toDate() : DateTime.tryParse(data['deletedAt']?.toString() ?? ''),
+      updatedAt: (data['updatedAt'] is Timestamp)
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.tryParse(data['updatedAt']?.toString() ?? ''),
+      deletedAt: (data['deletedAt'] is Timestamp)
+          ? (data['deletedAt'] as Timestamp).toDate()
+          : DateTime.tryParse(data['deletedAt']?.toString() ?? ''),
       syncStatus: data['syncStatus'] ?? 'PENDING',
       deviceId: data['deviceId'],
       version: parseInt(data['version']) > 0 ? parseInt(data['version']) : 1,
@@ -114,7 +123,7 @@ class Customer {
     };
   }
 
-    Map<String, dynamic> toMapForLocal() {
+  Map<String, dynamic> toMapForLocal() {
     return {
       ...toMap(),
       'updatedAt': updatedAt,
@@ -148,6 +157,7 @@ class Customer {
       'version': version,
     };
   }
+
   // --- SQFlite Adapters ---
   Map<String, dynamic> toSqlMap() {
     return {
@@ -194,7 +204,8 @@ class Customer {
       loyaltyPoints: (row['loyaltyPoints'] ?? 0).toInt(),
       tier: row['tier'] ?? 'New',
       visitCount: (row['visitCount'] ?? 0).toInt(),
-      lastVisit: row['lastVisit'] != null ? DateTime.tryParse(row['lastVisit']) : null,
+      lastVisit:
+          row['lastVisit'] != null ? DateTime.tryParse(row['lastVisit']) : null,
       updatedAt: DateTime.tryParse(row['updatedAt'] ?? ''),
       deletedAt: DateTime.tryParse(row['deletedAt'] ?? ''),
       syncStatus: row['syncStatus'] ?? 'PENDING',

@@ -4,7 +4,7 @@ import 'package:biztonic_pos/models/store_hardware.dart';
 import 'package:biztonic_pos/features/store/domain/entities/subscription_request.dart';
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/dashboard_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:biztonic_pos/features/subscriptions/data/subscription_repository.dart';
 import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/core/design/tokens/app_typography.dart';
 import 'package:go_router/go_router.dart';
@@ -23,16 +23,17 @@ class _EmiPaymentScreenState extends State<EmiPaymentScreen> {
 
   void _submitPayment() async {
     setState(() => _isSubmitting = true);
-    
+
     try {
       final provider = Provider.of<DashboardProvider>(context, listen: false);
       final store = provider.activeStore;
-      
-      final emiAmount = widget.hardware.remainingAmount / (widget.hardware.totalEmis - widget.hardware.emisPaid);
+
+      final emiAmount = widget.hardware.remainingAmount /
+          (widget.hardware.totalEmis - widget.hardware.emisPaid);
       final currentUser = FirebaseAuth.instance.currentUser;
-      
+
       final request = SubscriptionRequest(
-        id: '', 
+        id: '',
         storeId: store?.id ?? '',
         storeName: store?.name ?? '',
         ownerEmail: currentUser?.email ?? '',
@@ -48,18 +49,22 @@ class _EmiPaymentScreenState extends State<EmiPaymentScreen> {
         // In a real flow, a receipt image URL would be attached here
         receiptUrl: 'dummy_receipt.jpg',
       );
-      
-      await FirebaseFirestore.instance.collection('subscription_requests').add(request.toMap());
-      
+
+      await SubscriptionRepository().createSubscriptionRequest(request.toMap());
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('EMI Payment request submitted for approval!'), backgroundColor: AppColors.success),
+        const SnackBar(
+            content: Text('EMI Payment request submitted for approval!'),
+            backgroundColor: AppColors.success),
       );
       context.pop();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error submitting EMI payment: $e'), backgroundColor: AppColors.error),
+        SnackBar(
+            content: Text('Error submitting EMI payment: $e'),
+            backgroundColor: AppColors.error),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -68,8 +73,9 @@ class _EmiPaymentScreenState extends State<EmiPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final emiAmount = widget.hardware.remainingAmount / (widget.hardware.totalEmis - widget.hardware.emisPaid);
-    
+    final emiAmount = widget.hardware.remainingAmount /
+        (widget.hardware.totalEmis - widget.hardware.emisPaid);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pay Hardware EMI'),
@@ -83,7 +89,10 @@ class _EmiPaymentScreenState extends State<EmiPaymentScreen> {
             color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4)),
             ],
           ),
           child: Column(
@@ -91,9 +100,12 @@ class _EmiPaymentScreenState extends State<EmiPaymentScreen> {
             children: [
               Text('Hardware EMI Payment', style: AppTypography.headlineMedium),
               const SizedBox(height: 16),
-              Text('Hardware ID: ${widget.hardware.hardwareId}', style: AppTypography.titleMedium),
+              Text('Hardware ID: ${widget.hardware.hardwareId}',
+                  style: AppTypography.titleMedium),
               const SizedBox(height: 8),
-              Text('EMI Amount: ₹${emiAmount.toStringAsFixed(2)}', style: AppTypography.headlineLarge.copyWith(color: AppColors.primary)),
+              Text('EMI Amount: ₹${emiAmount.toStringAsFixed(2)}',
+                  style: AppTypography.headlineLarge
+                      .copyWith(color: AppColors.primary)),
               const SizedBox(height: 32),
               Container(
                 padding: const EdgeInsets.all(24),
@@ -102,10 +114,12 @@ class _EmiPaymentScreenState extends State<EmiPaymentScreen> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.grey.shade300),
                 ),
-                child: const Icon(Icons.qr_code_2, size: 200, color: Colors.black87), // Mock QR
+                child: const Icon(Icons.qr_code_2,
+                    size: 200, color: Colors.black87), // Mock QR
               ),
               const SizedBox(height: 16),
-              Text('Scan this QR code with any UPI app to pay', style: AppTypography.bodyMedium),
+              Text('Scan this QR code with any UPI app to pay',
+                  style: AppTypography.bodyMedium),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,

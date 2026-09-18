@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class HardwareMaster {
   final String id;
   final String name;
@@ -45,7 +43,8 @@ class HardwareMaster {
       emiAmount: (data['emiAmount'] ?? 0).toDouble(),
       emiType: data['emiType'] ?? 'monthly',
       totalEmiCount: data['totalEmiCount'] ?? 0,
-      buybackDepreciationPerDay: (data['buybackDepreciationPerDay'] ?? 0).toDouble(),
+      buybackDepreciationPerDay:
+          (data['buybackDepreciationPerDay'] ?? 0).toDouble(),
       gracePeriodDays: data['gracePeriodDays'] ?? 2,
       serialPrefix: data['serialPrefix'] ?? '',
       imageUrl: data['imageUrl'],
@@ -111,7 +110,8 @@ class HardwareMaster {
       emiAmount: emiAmount ?? this.emiAmount,
       emiType: emiType ?? this.emiType,
       totalEmiCount: totalEmiCount ?? this.totalEmiCount,
-      buybackDepreciationPerDay: buybackDepreciationPerDay ?? this.buybackDepreciationPerDay,
+      buybackDepreciationPerDay:
+          buybackDepreciationPerDay ?? this.buybackDepreciationPerDay,
       gracePeriodDays: gracePeriodDays ?? this.gracePeriodDays,
       serialPrefix: serialPrefix ?? this.serialPrefix,
       imageUrl: imageUrl ?? this.imageUrl,

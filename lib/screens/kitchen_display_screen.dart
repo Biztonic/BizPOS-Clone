@@ -36,7 +36,10 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
     final storeId = provider.activeStoreId;
 
     if (storeId == null) {
-      return Scaffold(body: Center(child: Text(AppLocalizations.t(context, 'Please select a store first.'))));
+      return Scaffold(
+          body: Center(
+              child: Text(AppLocalizations.t(
+                  context, 'Please select a store first.'))));
     }
 
     // Stream of Active Orders (New OR Preparing)
@@ -49,16 +52,17 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.t(context, 'Kitchen Display System (KDS)')),
+        title:
+            Text(AppLocalizations.t(context, 'Kitchen Display System (KDS)')),
         actions: [
-          IconButton(icon: const Icon(Icons.history), onPressed: () {}), 
+          IconButton(icon: const Icon(Icons.history), onPressed: () {}),
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: ordersStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-             return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -66,16 +70,23 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
 
           final docs = snapshot.data?.docs ?? [];
           if (docs.isEmpty) {
-            return Center(child: Text(AppLocalizations.t(context, 'No active orders'), style: TextStyle(fontSize: 24, color: AppColors.textSecondary(context))));
+            return Center(
+                child: Text(AppLocalizations.t(context, 'No active orders'),
+                    style: TextStyle(
+                        fontSize: 24,
+                        color: AppColors.textSecondary(context))));
           }
 
-          final orders = docs.map((d) => OrderModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
+          final orders = docs
+              .map((d) =>
+                  OrderModel.fromMap(d.data() as Map<String, dynamic>, d.id))
+              .toList();
 
           return GridView.builder(
             padding: const EdgeInsets.all(AppSpacing.md),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 350,
-              childAspectRatio: 0.75, 
+              childAspectRatio: 0.75,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
             ),
@@ -83,9 +94,7 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
             // Use key based on ID to prevent unnecessary rebuilds of inner state
             itemBuilder: (context, index) {
               return OrderTicket(
-                key: ValueKey(orders[index].id), 
-                order: orders[index]
-              );
+                  key: ValueKey(orders[index].id), order: orders[index]);
             },
           );
         },
@@ -102,7 +111,8 @@ class OrderTicket extends StatefulWidget {
   State<OrderTicket> createState() => _OrderTicketState();
 }
 
-class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClientMixin {
+class _OrderTicketState extends State<OrderTicket>
+    with AutomaticKeepAliveClientMixin {
   bool _isLoading = false;
   Timer? _ticker;
 
@@ -111,10 +121,10 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
     super.initState();
     // Update "Time Ago" every minute
     _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
-       if (mounted) setState(() {});
+      if (mounted) setState(() {});
     });
   }
-  
+
   @override
   void dispose() {
     _ticker?.cancel();
@@ -126,22 +136,24 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
 
   Future<void> _advanceOrderStatus() async {
     setState(() => _isLoading = true);
-    
+
     // Simulate slight delay for UX or ensure smooth transition if instant
     // But actual Firestore update is async.
-    
-    final nextStatus = widget.order.status == 'New' ? 'Preparing' : 'Ready'; 
-    
+
+    final nextStatus = widget.order.status == 'New' ? 'Preparing' : 'Ready';
+
     try {
-      await FirebaseFirestore.instance.collection('orders').doc(widget.order.id).update({
-        'status': nextStatus,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      // UI will update automatically via Stream when Firestore changes
+      final dashboardProvider =
+          Provider.of<DashboardProvider>(context, listen: false);
+      await dashboardProvider.updateOrderStatus(widget.order.id, nextStatus);
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
+    } finally {
+      if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
       }
     }
   }
@@ -157,34 +169,51 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
       elevation: 4,
       color: AppColors.surfaceLight,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-        side: BorderSide(
-          color: isLate ? AppColors.error : (order.status == 'New' ? AppColors.primaryLight : AppColors.warning), 
-          width: 2
-        )
-      ),
+          borderRadius: BorderRadius.zero,
+          side: BorderSide(
+              color: isLate
+                  ? AppColors.error
+                  : (order.status == 'New'
+                      ? AppColors.primaryLight
+                      : AppColors.warning),
+              width: 2)),
       child: Column(
         children: [
           // Header
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
-            color: isLate ? AppColors.error : (order.status == 'New' ? AppColors.primaryLight : AppColors.warning),
+            color: isLate
+                ? AppColors.error
+                : (order.status == 'New'
+                    ? AppColors.primaryLight
+                    : AppColors.warning),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('#${order.shortId}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text('#${order.shortId}',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 18)),
                     if (order.tableName != null || order.tableId != null)
-                      Text(order.tableName ?? order.tableId!, style: TextStyle(fontSize: 14, color: AppColors.textSecondary(context), fontWeight: FontWeight.w500)),
+                      Text(order.tableName ?? order.tableId!,
+                          style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary(context),
+                              fontWeight: FontWeight.w500)),
                   ],
                 ),
-                Text("${duration.inMinutes}m ago", style: TextStyle(color: isLate ? AppColors.error : AppColors.textPrimaryLight, fontWeight: FontWeight.bold)),
+                Text("${duration.inMinutes}m ago",
+                    style: TextStyle(
+                        color: isLate
+                            ? AppColors.error
+                            : AppColors.textPrimaryLight,
+                        fontWeight: FontWeight.bold)),
               ],
             ),
           ),
-          
+
           // Items List
           Expanded(
             child: ListView.separated(
@@ -194,15 +223,20 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
               itemBuilder: (context, index) {
                 final item = order.items[index];
                 // Accessing provider here is fine, but for optimization we could pass font size
-                final provider = Provider.of<DashboardProvider>(context, listen: false); 
+                final provider =
+                    Provider.of<DashboardProvider>(context, listen: false);
                 final fontSize = provider.storeSettings?.kds.fontSize ?? 16.0;
-                
+
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("${item.quantity}x", style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize)),
+                    Text("${item.quantity}x",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: fontSize)),
                     const SizedBox(width: AppSpacing.md),
-                    Expanded(child: Text(item.item.name, style: TextStyle(fontSize: fontSize))),
+                    Expanded(
+                        child: Text(item.item.name,
+                            style: TextStyle(fontSize: fontSize))),
                   ],
                 );
               },
@@ -217,15 +251,23 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
               height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: order.status == 'New' ? AppColors.warning : AppColors.success,
+                  backgroundColor: order.status == 'New'
+                      ? AppColors.warning
+                      : AppColors.success,
                 ),
                 onPressed: _isLoading ? null : _advanceOrderStatus,
-                child: _isLoading 
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppColors.surfaceLight, strokeWidth: 2))
-                  : Text(
-                      order.status == 'New' ? 'Start Preparing' : 'Mark Ready', 
-                      style: const TextStyle(fontSize: 18, color: AppColors.surfaceLight)
-                    ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                            color: AppColors.surfaceLight, strokeWidth: 2))
+                    : Text(
+                        order.status == 'New'
+                            ? 'Start Preparing'
+                            : 'Mark Ready',
+                        style: const TextStyle(
+                            fontSize: 18, color: AppColors.surfaceLight)),
               ),
             ),
           )
@@ -234,6 +276,3 @@ class _OrderTicketState extends State<OrderTicket> with AutomaticKeepAliveClient
     );
   }
 }
-
-
-

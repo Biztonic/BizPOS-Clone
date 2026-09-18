@@ -20,7 +20,7 @@ class _ClockTamperedScreenState extends State<ClockTamperedScreen> {
   void _handleRetry(BuildContext context) async {
     setState(() => _isChecking = true);
     await Future.delayed(const Duration(seconds: 1));
-    
+
     if (context.mounted) {
       final provider = Provider.of<DashboardProvider>(context, listen: false);
       provider.recheckClockStatus();
@@ -33,9 +33,10 @@ class _ClockTamperedScreenState extends State<ClockTamperedScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : AppColors.surfaceLight,
+      backgroundColor:
+          isDark ? const Color(0xFF0F172A) : AppColors.surfaceLight,
       body: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 450),
@@ -52,7 +53,9 @@ class _ClockTamperedScreenState extends State<ClockTamperedScreen> {
               ),
             ],
             border: Border.all(
-              color: isDark ? const Color(0xFF334155) : Colors.black.withValues(alpha: 0.05),
+              color: isDark
+                  ? const Color(0xFF334155)
+                  : Colors.black.withValues(alpha: 0.05),
             ),
           ),
           child: Column(
@@ -91,22 +94,28 @@ class _ClockTamperedScreenState extends State<ClockTamperedScreen> {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF0F172A) : AppColors.surfaceLight,
+                  color:
+                      isDark ? const Color(0xFF0F172A) : AppColors.surfaceLight,
                   borderRadius: AppRadius.borderSm,
                   border: Border.all(
-                    color: isDark ? const Color(0xFF334155) : Colors.black.withValues(alpha: 0.05),
+                    color: isDark
+                        ? const Color(0xFF334155)
+                        : Colors.black.withValues(alpha: 0.05),
                   ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+                    const Icon(Icons.info_outline,
+                        color: AppColors.primary, size: 20),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
                         "Please correct your device settings to automatic network time and restart the app.",
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? const Color(0xFF94A3B8) : AppColors.secondary,
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : AppColors.secondary,
                         ),
                       ),
                     ),

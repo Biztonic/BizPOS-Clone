@@ -38,7 +38,10 @@ class StoreSettings {
       modules: ModuleSettings.fromMap(data['modules'] ?? {}),
       dashboard: DashboardSettings.fromMap(data['dashboard'] ?? {}),
       syncSettings: SyncSettings.fromMap(data['syncSettings'] ?? {}),
-      counters: (data['counters'] as List<dynamic>?)?.map((e) => e?.toString() ?? '').toList() ?? ['Main Counter'],
+      counters: (data['counters'] as List<dynamic>?)
+              ?.map((e) => e?.toString() ?? '')
+              .toList() ??
+          ['Main Counter'],
       kds: KdsSettings.fromMap(data['kds'] ?? {}),
       payment: PaymentSettings.fromMap(data['payment'] ?? {}),
     );
@@ -127,7 +130,7 @@ class ReceiptSettings {
   final bool showTaxDetails;
   final bool showTokenNo;
   final int receiptWidth; // 58 or 80
-  
+
   // Advanced Visibility Toggles
   final bool showStoreName;
   final bool showAddress;
@@ -188,40 +191,40 @@ class ReceiptSettings {
       customHeaderMessage: data['customHeaderMessage'] ?? '',
       qrData: data['qrData'] ?? '',
       printAction: data['printAction'] ?? 'Main',
-      prominentStyle: data['prominentStyle'] != null 
-          ? ReceiptTextStyle.fromMap(data['prominentStyle']) 
+      prominentStyle: data['prominentStyle'] != null
+          ? ReceiptTextStyle.fromMap(data['prominentStyle'])
           : const ReceiptTextStyle(size: 0, isBold: false),
-      headerStyle: data['headerStyle'] != null 
-          ? ReceiptTextStyle.fromMap(data['headerStyle']) 
+      headerStyle: data['headerStyle'] != null
+          ? ReceiptTextStyle.fromMap(data['headerStyle'])
           : const ReceiptTextStyle(size: 0, isBold: false),
-      regularStyle: data['regularStyle'] != null 
-          ? ReceiptTextStyle.fromMap(data['regularStyle']) 
+      regularStyle: data['regularStyle'] != null
+          ? ReceiptTextStyle.fromMap(data['regularStyle'])
           : const ReceiptTextStyle(size: 0),
     );
   }
 
   Map<String, dynamic> toMap() => {
-    'header': header,
-    'footer': footer,
-    'showLogo': showLogo,
-    'showTaxDetails': showTaxDetails,
-    'showTokenNo': showTokenNo,
-    'receiptWidth': receiptWidth,
-    'showStoreName': showStoreName,
-    'showAddress': showAddress,
-    'showPhone': showPhone,
-    'showOrderNo': showOrderNo,
-    'showDiscount': showDiscount,
-    'showFooter': showFooter,
-    'showQr': showQr,
-    'upsellMessage': upsellMessage,
-    'customHeaderMessage': customHeaderMessage,
-    'qrData': qrData,
-    'printAction': printAction,
-    'prominentStyle': prominentStyle.toMap(),
-    'headerStyle': headerStyle.toMap(),
-    'regularStyle': regularStyle.toMap(),
-  };
+        'header': header,
+        'footer': footer,
+        'showLogo': showLogo,
+        'showTaxDetails': showTaxDetails,
+        'showTokenNo': showTokenNo,
+        'receiptWidth': receiptWidth,
+        'showStoreName': showStoreName,
+        'showAddress': showAddress,
+        'showPhone': showPhone,
+        'showOrderNo': showOrderNo,
+        'showDiscount': showDiscount,
+        'showFooter': showFooter,
+        'showQr': showQr,
+        'upsellMessage': upsellMessage,
+        'customHeaderMessage': customHeaderMessage,
+        'qrData': qrData,
+        'printAction': printAction,
+        'prominentStyle': prominentStyle.toMap(),
+        'headerStyle': headerStyle.toMap(),
+        'regularStyle': regularStyle.toMap(),
+      };
 
   ReceiptSettings copyWith({
     String? header,
@@ -299,13 +302,13 @@ class ModuleSettings {
   }
 
   Map<String, dynamic> toMap() => {
-    'pos': pos,
-    'kds': kds,
-    'tableManagement': tableManagement,
-    'inventory': inventory,
-    'customers': customers,
-    'reports': reports,
-  };
+        'pos': pos,
+        'kds': kds,
+        'tableManagement': tableManagement,
+        'inventory': inventory,
+        'customers': customers,
+        'reports': reports,
+      };
 }
 
 class DashboardSettings {
@@ -336,9 +339,9 @@ class SyncSettings {
   }
 
   Map<String, dynamic> toMap() => {
-    'interval': interval,
-    'autoSync': autoSync,
-  };
+        'interval': interval,
+        'autoSync': autoSync,
+      };
 }
 
 class KdsSettings {
@@ -359,16 +362,19 @@ class KdsSettings {
       soundEnabled: data['soundEnabled'] ?? true,
       fontSize: (data['fontSize'] ?? 16.0).toDouble(),
       layout: data['layout'] ?? 'Grid',
-      categoryFilters: (data['categoryFilters'] as List<dynamic>?)?.map((e) => e?.toString() ?? '').toList() ?? [],
+      categoryFilters: (data['categoryFilters'] as List<dynamic>?)
+              ?.map((e) => e?.toString() ?? '')
+              .toList() ??
+          [],
     );
   }
 
   Map<String, dynamic> toMap() => {
-    'soundEnabled': soundEnabled,
-    'fontSize': fontSize,
-    'layout': layout,
-    'categoryFilters': categoryFilters,
-  };
+        'soundEnabled': soundEnabled,
+        'fontSize': fontSize,
+        'layout': layout,
+        'categoryFilters': categoryFilters,
+      };
 
   KdsSettings copyWith({
     bool? soundEnabled,
@@ -402,10 +408,10 @@ class PaymentSettings {
   }
 
   Map<String, dynamic> toMap() => {
-    'upiId': upiId,
-    'upiName': upiName,
-  };
-  
+        'upiId': upiId,
+        'upiName': upiName,
+      };
+
   PaymentSettings copyWith({
     String? upiId,
     String? upiName,
@@ -416,4 +422,3 @@ class PaymentSettings {
     );
   }
 }
-

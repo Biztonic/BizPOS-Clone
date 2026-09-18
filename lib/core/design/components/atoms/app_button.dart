@@ -4,6 +4,7 @@ import '../../tokens/app_radius.dart';
 import '../../tokens/app_spacing.dart';
 
 enum AppButtonVariant { primary, secondary, danger, outline, ghost, text }
+
 enum AppButtonSize { small, medium, large }
 
 class AppButton extends StatelessWidget {
@@ -60,7 +61,7 @@ class AppButton extends StatelessWidget {
     this.width,
     this.foregroundColor,
   }) : variant = AppButtonVariant.danger;
-  
+
   const AppButton.outline({
     super.key,
     this.label,
@@ -131,7 +132,7 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     // Base styles
     Color bgColor;
     Color fgColor;
@@ -168,17 +169,21 @@ class AppButton extends StatelessWidget {
     }
 
     // Interactive state colors for Ghost/Text
-    final isGhost = variant == AppButtonVariant.ghost || variant == AppButtonVariant.text;
+    final isGhost =
+        variant == AppButtonVariant.ghost || variant == AppButtonVariant.text;
 
     final buttonStyle = ButtonStyle(
       backgroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
-          if (isGhost || variant == AppButtonVariant.outline) return AppColors.transparent;
+          if (isGhost || variant == AppButtonVariant.outline)
+            return AppColors.transparent;
           return colorScheme.onSurface.withValues(alpha: 0.12);
         }
         if (isGhost) {
-          if (states.contains(WidgetState.pressed)) return fgColor.withValues(alpha: 0.12);
-          if (states.contains(WidgetState.hovered)) return fgColor.withValues(alpha: 0.08);
+          if (states.contains(WidgetState.pressed))
+            return fgColor.withValues(alpha: 0.12);
+          if (states.contains(WidgetState.hovered))
+            return fgColor.withValues(alpha: 0.08);
           return AppColors.transparent;
         }
         return bgColor;
@@ -194,7 +199,9 @@ class AppButton extends StatelessWidget {
         return fgColor.withValues(alpha: 0.1);
       }),
       elevation: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.disabled) || isGhost || variant == AppButtonVariant.outline) return 0;
+        if (states.contains(WidgetState.disabled) ||
+            isGhost ||
+            variant == AppButtonVariant.outline) return 0;
         if (states.contains(WidgetState.pressed)) return 0;
         if (states.contains(WidgetState.hovered)) return 2;
         return 1;
@@ -207,7 +214,9 @@ class AppButton extends StatelessWidget {
       ),
       padding: WidgetStateProperty.all(_getPadding()),
       minimumSize: WidgetStateProperty.all(Size(width ?? 0, _getHeight())),
-      fixedSize: width != null ? WidgetStateProperty.all(Size(width!, _getHeight())) : null,
+      fixedSize: width != null
+          ? WidgetStateProperty.all(Size(width!, _getHeight()))
+          : null,
     );
 
     Widget content = Row(
@@ -246,4 +255,3 @@ class AppButton extends StatelessWidget {
     );
   }
 }
-

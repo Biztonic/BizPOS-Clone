@@ -65,7 +65,9 @@ class SubscriptionRequest {
       emiCount: data['emiCount'],
       paymentReference: data['paymentReference'],
       receiptUrl: data['receiptUrl'],
-      requestedAmount: data['requestedAmount'] != null ? (data['requestedAmount'] as num).toDouble() : null,
+      requestedAmount: data['requestedAmount'] != null
+          ? (data['requestedAmount'] as num).toDouble()
+          : null,
       paymentMode: data['paymentMode'],
     );
   }

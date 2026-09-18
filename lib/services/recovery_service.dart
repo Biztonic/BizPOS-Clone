@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 
-Map<String, dynamic> _decodeJson(String json) => jsonDecode(json) as Map<String, dynamic>;
+Map<String, dynamic> _decodeJson(String json) =>
+    jsonDecode(json) as Map<String, dynamic>;
 
 class RecoveryService {
   final DatabaseHelper _dbHelper = DatabaseHelper();
@@ -23,11 +24,11 @@ class RecoveryService {
     for (var record in pendingRecords) {
       final txId = record['id'] as String;
       final operationsJson = record['operations'] as String;
-      
+
       try {
         final payload = await compute(_decodeJson, operationsJson);
         final orderMap = payload['order'] as Map<String, dynamic>?;
-        
+
         if (orderMap == null || !orderMap.containsKey('id')) {
           // Invalid payload, mark as failed
           await _markStatus(db, txId, 'FAILED');
@@ -38,18 +39,21 @@ class RecoveryService {
 
         // Check if the transaction actually succeeded (order exists)
         final orderExists = await _dbHelper.count(
-          'orders',
-          where: 'id = ?',
-          whereArgs: [orderId],
-        ) > 0;
+              'orders',
+              where: 'id = ?',
+              whereArgs: [orderId],
+            ) >
+            0;
 
         if (orderExists) {
           // Transaction succeeded, but journal wasn't updated
-          debugPrint('RecoveryService: Auto-recovering TX $txId (already completed)');
+          debugPrint(
+              'RecoveryService: Auto-recovering TX $txId (already completed)');
           await _markStatus(db, txId, 'COMPLETED');
         } else {
           // Transaction failed/rolled back
-          debugPrint('RecoveryService: TX $txId is pending and order is missing.');
+          debugPrint(
+              'RecoveryService: TX $txId is pending and order is missing.');
           unresolvedTransactions.add({
             'txId': txId,
             'payload': payload,

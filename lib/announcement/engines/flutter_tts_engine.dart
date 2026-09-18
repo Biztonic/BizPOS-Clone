@@ -33,14 +33,20 @@ class AndroidTtsEngine implements VoiceEngine {
   }
 
   @override
-  Future<void> speak(String text, {double volume = 1.0, double rate = 1.0, String lang = 'en', String? englishFallback}) async {
+  Future<void> speak(String text,
+      {double volume = 1.0,
+      double rate = 1.0,
+      String lang = 'en',
+      String? englishFallback}) async {
     try {
       var targetLang = lang;
       var targetText = text;
 
       if (targetLang != 'en') {
         try {
-          final ttsLang = targetLang == 'hi' ? 'hi-IN' : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
+          final ttsLang = targetLang == 'hi'
+              ? 'hi-IN'
+              : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
           final isAvailable = await _flutterTts.isLanguageAvailable(ttsLang);
           if (isAvailable == false) {
             targetLang = 'en';
@@ -49,7 +55,9 @@ class AndroidTtsEngine implements VoiceEngine {
         } catch (_) {}
       }
 
-      final resolvedLang = targetLang == 'hi' ? 'hi-IN' : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
+      final resolvedLang = targetLang == 'hi'
+          ? 'hi-IN'
+          : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
       await _flutterTts.setLanguage(resolvedLang);
       await _flutterTts.setVolume(volume);
       await _flutterTts.setSpeechRate(rate * 0.5);
@@ -93,14 +101,20 @@ class IosTtsEngine implements VoiceEngine {
   }
 
   @override
-  Future<void> speak(String text, {double volume = 1.0, double rate = 1.0, String lang = 'en', String? englishFallback}) async {
+  Future<void> speak(String text,
+      {double volume = 1.0,
+      double rate = 1.0,
+      String lang = 'en',
+      String? englishFallback}) async {
     try {
       var targetLang = lang;
       var targetText = text;
 
       if (targetLang != 'en') {
         try {
-          final ttsLang = targetLang == 'hi' ? 'hi-IN' : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
+          final ttsLang = targetLang == 'hi'
+              ? 'hi-IN'
+              : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
           final isAvailable = await _flutterTts.isLanguageAvailable(ttsLang);
           if (isAvailable == false) {
             targetLang = 'en';
@@ -109,7 +123,9 @@ class IosTtsEngine implements VoiceEngine {
         } catch (_) {}
       }
 
-      final resolvedLang = targetLang == 'hi' ? 'hi-IN' : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
+      final resolvedLang = targetLang == 'hi'
+          ? 'hi-IN'
+          : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
       await _flutterTts.setLanguage(resolvedLang);
       await _flutterTts.setVolume(volume);
       await _flutterTts.setSpeechRate(rate * 0.5);
@@ -136,14 +152,20 @@ class WebSpeechEngine implements VoiceEngine {
   final FlutterTts _flutterTts = FlutterTts();
 
   @override
-  Future<void> speak(String text, {double volume = 1.0, double rate = 1.0, String lang = 'en', String? englishFallback}) async {
+  Future<void> speak(String text,
+      {double volume = 1.0,
+      double rate = 1.0,
+      String lang = 'en',
+      String? englishFallback}) async {
     try {
       var targetLang = lang;
       var targetText = text;
 
       if (targetLang != 'en') {
         try {
-          final ttsLang = targetLang == 'hi' ? 'hi-IN' : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
+          final ttsLang = targetLang == 'hi'
+              ? 'hi-IN'
+              : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
           final isAvailable = await _flutterTts.isLanguageAvailable(ttsLang);
           if (isAvailable == false) {
             targetLang = 'en';
@@ -152,12 +174,15 @@ class WebSpeechEngine implements VoiceEngine {
         } catch (_) {}
       }
 
-      final resolvedLang = targetLang == 'hi' ? 'hi-IN' : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
+      final resolvedLang = targetLang == 'hi'
+          ? 'hi-IN'
+          : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
       await _flutterTts.setLanguage(resolvedLang);
       await _flutterTts.setVolume(volume);
       await _flutterTts.setSpeechRate(rate * 0.5);
       await _flutterTts.speak(targetText);
-      debugPrint('🌐 WebSpeech: "$targetText" (lang: $resolvedLang, volume: $volume, rate: $rate)');
+      debugPrint(
+          '🌐 WebSpeech: "$targetText" (lang: $resolvedLang, volume: $volume, rate: $rate)');
     } catch (e) {
       debugPrint('❌ WebSpeech synthesis failed: $e');
     }
@@ -180,8 +205,13 @@ class WebSpeechEngine implements VoiceEngine {
 
 class NoVoiceEngine implements VoiceEngine {
   @override
-  Future<void> speak(String text, {double volume = 1.0, double rate = 1.0, String lang = 'en', String? englishFallback}) async {
-    debugPrint('🔇 NoVoiceEngine: "$text" (Speech disabled or platform not supported)');
+  Future<void> speak(String text,
+      {double volume = 1.0,
+      double rate = 1.0,
+      String lang = 'en',
+      String? englishFallback}) async {
+    debugPrint(
+        '🔇 NoVoiceEngine: "$text" (Speech disabled or platform not supported)');
   }
 
   @override

@@ -23,91 +23,84 @@ class DisplayManagementScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          Text(AppLocalizations.t(context, 'External Displays'),
+          Text(
+            AppLocalizations.t(context, 'External Displays'),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppSpacing.md),
-            
-           _buildGrid(context),
+          _buildGrid(context),
         ],
       ),
     );
   }
 
   Widget _buildGrid(BuildContext context) {
-      final List<Widget> displayCards = [
-          _buildDisplayCard(
+    final List<Widget> displayCards = [
+      _buildDisplayCard(
+          context,
+          "Customer Order Display",
+          "Show cart & totals",
+          Icons.monitor,
+          AppColors.primaryLight,
+          () => Navigator.push(
+              context, MaterialPageRoute(builder: (_) => const CFDScreen()))),
+      _buildDisplayCard(
+          context,
+          "Order Ready Screen",
+          "Status board (Preparing/Ready)",
+          Icons.tv,
+          AppColors.success,
+          () => Navigator.push(
               context,
-              "Customer Order Display",
-              "Show cart & totals",
-              Icons.monitor,
-              AppColors.primaryLight,
-              () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const CFDScreen()))),
-          _buildDisplayCard(
-              context,
-              "Order Ready Screen",
-              "Status board (Preparing/Ready)",
-              Icons.tv,
-              AppColors.success,
-              () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) =>
-                          const CustomerDisplayScreen()))),
+              MaterialPageRoute(
+                  builder: (_) => const CustomerDisplayScreen()))),
 
-          // NEW CARDS
-          _buildDisplayCard(
-              context,
-              "Digital Menu Board",
-              "Live menu on TV screens",
-              Icons.restaurant_menu,
-              AppColors.primaryLight,
-              () => _showMenuModeDialog(context)),
-            _buildDisplayCard(
-              context,
-              "Promotional Signage",
-              "Ads & Offers slideshow",
-              Icons.campaign,
-              AppColors.error,
-              () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const PromotionalSignage()))),
-            _buildDisplayCard(
-              context,
-              "Waiter Calling System",
-              "Staff alert board",
-              Icons.notifications_active,
-              AppColors.primary,
-              () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const WaiterCallingSystem()))),
-      ];
+      // NEW CARDS
+      _buildDisplayCard(
+          context,
+          "Digital Menu Board",
+          "Live menu on TV screens",
+          Icons.restaurant_menu,
+          AppColors.primaryLight,
+          () => _showMenuModeDialog(context)),
+      _buildDisplayCard(
+          context,
+          "Promotional Signage",
+          "Ads & Offers slideshow",
+          Icons.campaign,
+          AppColors.error,
+          () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const PromotionalSignage()))),
+      _buildDisplayCard(
+          context,
+          "Waiter Calling System",
+          "Staff alert board",
+          Icons.notifications_active,
+          AppColors.primary,
+          () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const WaiterCallingSystem()))),
+    ];
 
-      // Responsive Grid
-      if (Responsive.isMobile(context)) {
-         return Column(
-            children: displayCards.map((card) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: card
-            )).toList(),
-          );
-      } else {
-         int columns = Responsive.isTablet(context) ? 2 : 3;
-         return GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: columns,
-            childAspectRatio: 2.5,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            children: displayCards,
-          );
-      }
+    // Responsive Grid
+    if (Responsive.isMobile(context)) {
+      return Column(
+        children: displayCards
+            .map((card) => Padding(
+                padding: const EdgeInsets.only(bottom: 12), child: card))
+            .toList(),
+      );
+    } else {
+      int columns = Responsive.isTablet(context) ? 2 : 3;
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: columns,
+        childAspectRatio: 2.5,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        children: displayCards,
+      );
+    }
   }
 
   Widget _buildDisplayCard(BuildContext context, String title, String subtitle,
@@ -145,18 +138,21 @@ class DisplayManagementScreen extends StatelessWidget {
                     Text(subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style:
-                            TextStyle(fontSize: 13, color: AppColors.textSecondary(context))),
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary(context))),
                   ],
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.settings, color: AppColors.textSecondary(context)),
+                icon: Icon(Icons.settings,
+                    color: AppColors.textSecondary(context)),
                 onPressed: () => _showDisplaySettingsDialog(context, title),
                 tooltip: 'Configure Physical Display',
               ),
               const SizedBox(width: AppSpacing.sm),
-              Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondary(context)),
+              Icon(Icons.arrow_forward_ios,
+                  size: 16, color: AppColors.textSecondary(context)),
             ],
           ),
         ),
@@ -173,7 +169,8 @@ class DisplayManagementScreen extends StatelessWidget {
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const DigitalMenuBoard()));
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const DigitalMenuBoard()));
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -181,7 +178,10 @@ class DisplayManagementScreen extends StatelessWidget {
                 children: [
                   const Icon(Icons.tv, color: AppColors.primaryLight),
                   const SizedBox(width: AppSpacing.md),
-                  Text(AppLocalizations.t(context, 'Digital Display Mode (View Only)'), style: const TextStyle(fontSize: 16)),
+                  Text(
+                      AppLocalizations.t(
+                          context, 'Digital Display Mode (View Only)'),
+                      style: const TextStyle(fontSize: 16)),
                 ],
               ),
             ),
@@ -189,7 +189,10 @@ class DisplayManagementScreen extends StatelessWidget {
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SelfOrderingScreen()));
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const SelfOrderingScreen()));
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -197,7 +200,10 @@ class DisplayManagementScreen extends StatelessWidget {
                 children: [
                   const Icon(Icons.touch_app, color: AppColors.success),
                   const SizedBox(width: AppSpacing.md),
-                  Text(AppLocalizations.t(context, 'Self-Ordering Kiosk (Interactive)'), style: const TextStyle(fontSize: 16)),
+                  Text(
+                      AppLocalizations.t(
+                          context, 'Self-Ordering Kiosk (Interactive)'),
+                      style: const TextStyle(fontSize: 16)),
                 ],
               ),
             ),
@@ -210,59 +216,64 @@ class DisplayManagementScreen extends StatelessWidget {
   void _showDisplaySettingsDialog(BuildContext context, String displayName) {
     // Fetch real devices from DeviceManager
     final devices = DeviceManagerService().savedDisplays;
-    final List<String> physicalDisplays = devices.isEmpty 
-        ? ["No devices found"] 
+    final List<String> physicalDisplays = devices.isEmpty
+        ? ["No devices found"]
         : devices.map((d) => d.name).toList();
-    
+
     // Also add "None/Local" option
     // physicalDisplays.insert(0, "Local Device (This Screen)");
 
-    String selectedDisplay = physicalDisplays.isNotEmpty ? physicalDisplays[0] : "No devices found";
+    String selectedDisplay =
+        physicalDisplays.isNotEmpty ? physicalDisplays[0] : "No devices found";
 
     showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(builder: (context, setState) {
             return AlertDialog(
               title: Text("$displayName Settings"),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Text(AppLocalizations.t(context, 'Target Physical Display:'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                   const SizedBox(height: AppSpacing.sm),
-                   DropdownButton<String>(
-                     isExpanded: true,
-                     value: selectedDisplay,
-                     items: physicalDisplays.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(), 
-                     onChanged: (val) {
-                       setState(() => selectedDisplay = val!);
-                     }
-                   ),
-                   const SizedBox(height: AppSpacing.md),
-                   Text("Note: Connecting to a physical display requires 'desktop_multi_window' package support. This setting is currently saved but will not actively move the window until the package is integrated.", style: TextStyle(fontSize: 12, color: AppColors.textSecondary(context), fontStyle: FontStyle.italic))
+                  Text(AppLocalizations.t(context, 'Target Physical Display:'),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: AppSpacing.sm),
+                  DropdownButton<String>(
+                      isExpanded: true,
+                      value: selectedDisplay,
+                      items: physicalDisplays
+                          .map(
+                              (d) => DropdownMenuItem(value: d, child: Text(d)))
+                          .toList(),
+                      onChanged: (val) {
+                        setState(() => selectedDisplay = val!);
+                      }),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                      "Note: Connecting to a physical display requires 'desktop_multi_window' package support. This setting is currently saved but will not actively move the window until the package is integrated.",
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary(context),
+                          fontStyle: FontStyle.italic))
                 ],
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.t(context, 'Cancel'))),
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(AppLocalizations.t(context, 'Cancel'))),
                 ElevatedButton(
                   onPressed: () {
                     // Start saving preference logic here (e.g., SharedPreferences)
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Display mapped to $selectedDisplay")));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text("Display mapped to $selectedDisplay")));
                     Navigator.pop(context);
                   },
                   child: Text(AppLocalizations.t(context, 'Save')),
                 )
               ],
             );
-          }
-        );
-      }
-    );
+          });
+        });
   }
 }
-
-
-
-

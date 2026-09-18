@@ -34,15 +34,22 @@ final repositoryProvider = Provider<Repository>((ref) {
 });
 
 /// Specialized Repository Providers
-final orderRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).orders);
-final inventoryRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).inventory);
-final customerRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).customers);
-final storeRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).store);
-final reportingRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).reporting);
-final syncRepositoryProvider = Provider((ref) => ref.watch(repositoryProvider).sync);
+final orderRepositoryProvider =
+    Provider((ref) => ref.watch(repositoryProvider).orders);
+final inventoryRepositoryProvider =
+    Provider((ref) => ref.watch(repositoryProvider).inventory);
+final customerRepositoryProvider =
+    Provider((ref) => ref.watch(repositoryProvider).customers);
+final storeRepositoryProvider =
+    Provider((ref) => ref.watch(repositoryProvider).store);
+final reportingRepositoryProvider =
+    Provider((ref) => ref.watch(repositoryProvider).reporting);
+final syncRepositoryProvider =
+    Provider((ref) => ref.watch(repositoryProvider).sync);
 
 // Inventory Feature Providers
-final inventoryRepositoryInterfaceProvider = Provider<InventoryRepositoryInterface>((ref) {
+final inventoryRepositoryInterfaceProvider =
+    Provider<InventoryRepositoryInterface>((ref) {
   final legacyRepo = ref.watch(inventoryRepositoryProvider);
   return InventoryRepositoryImpl(legacyRepo: legacyRepo);
 });
@@ -125,9 +132,9 @@ final dashboardProvider = ChangeNotifierProvider<DashboardProvider>((ref) {
   final customers = ref.read(customerProvider);
   final stores = ref.read(storeProvider);
   final routerNotifier = ref.read(routerNotifierProvider);
-  
+
   final themeNotifier = ref.watch(themeProvider.notifier);
-  
+
   final dashboard = DashboardProvider();
   dashboard.injectAuthProvider(auth);
   dashboard.injectInventory(inventory);
@@ -136,9 +143,9 @@ final dashboardProvider = ChangeNotifierProvider<DashboardProvider>((ref) {
   dashboard.injectStoreProvider(stores);
   dashboard.injectRouterNotifier(routerNotifier);
   dashboard.injectThemeNotifier(themeNotifier);
-  
+
   // Call init after all dependencies are injected
   dashboard.init();
-  
+
   return dashboard;
 });

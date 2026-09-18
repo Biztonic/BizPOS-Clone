@@ -12,11 +12,8 @@ class CustomerRepository {
   Future<void> insertCustomer(Customer customer) async {
     final db = await dbHelper.database;
     try {
-      await db.insert(
-        'customers',
-        customer.toSqlMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace
-      );
+      await db.insert('customers', customer.toSqlMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       rethrow;
     }

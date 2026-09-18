@@ -32,7 +32,8 @@ class BackupEncryption {
   static String decrypt(String cipherTextWithMetadata, String password) {
     final parts = cipherTextWithMetadata.split('.');
     if (parts.length != 3) {
-      throw Exception("Invalid backup file format. File may be corrupted or unencrypted.");
+      throw Exception(
+          "Invalid backup file format. File may be corrupted or unencrypted.");
     }
 
     final saltBase64 = parts[0];
@@ -46,7 +47,7 @@ class BackupEncryption {
     // 2. Re-create IV and decrypt
     final iv = enc.IV.fromBase64(ivBase64);
     final encrypter = enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc));
-    
+
     return encrypter.decrypt64(encryptedBase64, iv: iv);
   }
 }

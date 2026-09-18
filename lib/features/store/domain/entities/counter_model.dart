@@ -2,7 +2,8 @@ class CounterModel {
   final String id;
   final String name;
   final String? assignedPrinterId;
-  final Map<String, dynamic>? printerDevice; // Stored as json map for simplicity or we can use ID
+  final Map<String, dynamic>?
+      printerDevice; // Stored as json map for simplicity or we can use ID
   final bool isCfdEnabled;
 
   CounterModel({

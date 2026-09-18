@@ -10,7 +10,6 @@ import '../core/design/tokens/app_typography.dart';
 import '../core/design/tokens/app_radius.dart';
 import '../core/design/tokens/app_shadows.dart';
 
-
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
 
@@ -125,14 +124,18 @@ class AdminDashboardScreen extends StatelessWidget {
                                 color: Colors.white.withValues(alpha: 0.15),
                                 borderRadius: AppRadius.borderSm,
                               ),
-                              child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white, size: 28),
+                              child: const Icon(
+                                  Icons.admin_panel_settings_rounded,
+                                  color: Colors.white,
+                                  size: 28),
                             ),
                             const SizedBox(width: AppSpacing.md),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  AppLocalizations.t(context, 'Admin Dashboard'),
+                                  AppLocalizations.t(
+                                      context, 'Admin Dashboard'),
                                   style: AppTypography.headlineMedium.copyWith(
                                     fontWeight: FontWeight.w800,
                                     color: Colors.white,
@@ -141,7 +144,8 @@ class AdminDashboardScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  AppLocalizations.t(context, 'Super Admin tools and system configuration.'),
+                                  AppLocalizations.t(context,
+                                      'Super Admin tools and system configuration.'),
                                   style: AppTypography.bodyMedium.copyWith(
                                     color: Colors.white.withValues(alpha: 0.7),
                                   ),
@@ -161,7 +165,8 @@ class AdminDashboardScreen extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: AppRadius.borderLg,
                     ),
-                    child: Icon(Icons.settings_rounded, color: Colors.white.withValues(alpha: 0.2), size: 48),
+                    child: Icon(Icons.settings_rounded,
+                        color: Colors.white.withValues(alpha: 0.2), size: 48),
                   ),
                 ],
               ),
@@ -170,7 +175,8 @@ class AdminDashboardScreen extends StatelessWidget {
 
           // ── Section Title ──
           SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: density.cardPadding).copyWith(bottom: AppSpacing.md),
+            padding: EdgeInsets.symmetric(horizontal: density.cardPadding)
+                .copyWith(bottom: AppSpacing.md),
             sliver: SliverToBoxAdapter(
               child: Row(
                 children: [
@@ -287,7 +293,8 @@ class _PremiumAdminCard extends StatefulWidget {
   State<_PremiumAdminCard> createState() => _PremiumAdminCardState();
 }
 
-class _PremiumAdminCardState extends State<_PremiumAdminCard> with SingleTickerProviderStateMixin {
+class _PremiumAdminCardState extends State<_PremiumAdminCard>
+    with SingleTickerProviderStateMixin {
   bool _isHovered = false;
   late final AnimationController _controller;
   late final Animation<double> _scaleAnim;
@@ -354,7 +361,8 @@ class _PremiumAdminCardState extends State<_PremiumAdminCard> with SingleTickerP
                   boxShadow: _isHovered
                       ? [
                           BoxShadow(
-                            color: gradientColor.withValues(alpha: isDark ? 0.15 : 0.1),
+                            color: gradientColor.withValues(
+                                alpha: isDark ? 0.15 : 0.1),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -373,8 +381,8 @@ class _PremiumAdminCardState extends State<_PremiumAdminCard> with SingleTickerP
     );
   }
 
-  Widget _buildVerticalLayout(BuildContext context, _AdminMenuItem item, Color gradientColor) {
-
+  Widget _buildVerticalLayout(
+      BuildContext context, _AdminMenuItem item, Color gradientColor) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -450,7 +458,9 @@ class _PremiumAdminCardState extends State<_PremiumAdminCard> with SingleTickerP
                   child: Icon(
                     Icons.arrow_forward_rounded,
                     size: 18,
-                    color: _isHovered ? gradientColor : AppColors.textHint(context),
+                    color: _isHovered
+                        ? gradientColor
+                        : AppColors.textHint(context),
                   ),
                 ),
               ),
@@ -461,9 +471,11 @@ class _PremiumAdminCardState extends State<_PremiumAdminCard> with SingleTickerP
     );
   }
 
-  Widget _buildHorizontalLayout(BuildContext context, _AdminMenuItem item, Color gradientColor) {
+  Widget _buildHorizontalLayout(
+      BuildContext context, _AdminMenuItem item, Color gradientColor) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       child: Row(
         children: [
           Container(
@@ -493,14 +505,16 @@ class _PremiumAdminCardState extends State<_PremiumAdminCard> with SingleTickerP
               children: [
                 Text(
                   item.label,
-                  style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
+                  style: AppTypography.titleMedium
+                      .copyWith(fontWeight: FontWeight.w700),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   item.description,
-                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary(context)),
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textSecondary(context)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -510,7 +524,8 @@ class _PremiumAdminCardState extends State<_PremiumAdminCard> with SingleTickerP
           AnimatedOpacity(
             opacity: _isHovered ? 1.0 : 0.4,
             duration: const Duration(milliseconds: 200),
-            child: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: gradientColor),
+            child: Icon(Icons.arrow_forward_ios_rounded,
+                size: 16, color: gradientColor),
           ),
         ],
       ),

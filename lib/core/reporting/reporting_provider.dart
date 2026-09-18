@@ -83,22 +83,24 @@ class Reporting extends _$Reporting {
       final repository = ref.read(repositoryProvider);
       final orders = ref.read(orderProvider).orders;
       final dashboard = ref.read(dashboardProvider);
-      
+
       final useCase = GetDashboardStatsUseCase(repository);
       final params = GetDashboardStatsParams(
         orders: orders,
         activeStoreId: dashboard.activeStoreId,
         period: state.selectedPeriod,
-        isNative: !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS),
+        isNative: !kIsWeb &&
+            (defaultTargetPlatform == TargetPlatform.android ||
+                defaultTargetPlatform == TargetPlatform.iOS),
       );
 
       final newStats = await useCase.execute(params);
-      
+
       // Generate some smart insights based on stats
       final insights = _generateInsights(newStats);
-      
+
       state = state.copyWith(
-        stats: newStats, 
+        stats: newStats,
         isComputing: false,
         smartInsights: insights,
       );
@@ -111,7 +113,8 @@ class Reporting extends _$Reporting {
   List<String> _generateInsights(DashboardStats stats) {
     final List<String> insights = [];
     if (stats.totalSales > 0) {
-      insights.add("Your average order value is ${stats.avgOrderValue.toStringAsFixed(2)}.");
+      insights.add(
+          "Your average order value is ${stats.avgOrderValue.toStringAsFixed(2)}.");
       if (stats.peakHour >= 0) {
         insights.add("Peak sales hour detected at ${stats.peakHour}:00.");
       }
