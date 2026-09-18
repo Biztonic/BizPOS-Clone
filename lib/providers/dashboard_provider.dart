@@ -964,7 +964,27 @@ class DashboardProvider with ChangeNotifier {
   }
 
   Future<void> updateUserRole(String uid, String role) async {
-    await _db.collection('users').doc(uid).update({'role': role});
+    if (_activeStoreId != null) {
+      try {
+        await _db
+            .collection('stores')
+            .doc(_activeStoreId)
+            .collection('members')
+            .doc(uid)
+            .set({
+          'uid': uid,
+          'storeId': _activeStoreId,
+          'role': role,
+          'status': 'ACTIVE',
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('⚠️ Error updating store member role: $e');
+      }
+    }
+    try {
+      await _db.collection('users').doc(uid).update({'role': role});
+    } catch (_) {}
     notifyListeners();
   }
 
@@ -2527,6 +2547,22 @@ class DashboardProvider with ChangeNotifier {
   List<Franchise> get franchises => _franchises;
 
   Future<void> removeEmployee(String uid) async {
+    if (_activeStoreId != null) {
+      try {
+        await _db
+            .collection('stores')
+            .doc(_activeStoreId)
+            .collection('members')
+            .doc(uid)
+            .set({
+          'status': 'REMOVED',
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('⚠️ Error setting member status to REMOVED: $e');
+      }
+    }
+
     await _syncService.performLocalWrite(
         collection: 'employees',
         docId: uid,

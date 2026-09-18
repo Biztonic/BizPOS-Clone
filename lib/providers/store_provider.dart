@@ -731,6 +731,25 @@ class StoreProvider with ChangeNotifier {
     if (uid != null) {
       // 1. If Creator is the Owner
       if (userEmail == ownerEmail) {
+        // Create server-controlled membership doc
+        try {
+          await _db
+              .collection('stores')
+              .doc(docRef.id)
+              .collection('members')
+              .doc(uid)
+              .set({
+            'uid': uid,
+            'storeId': docRef.id,
+            'role': 'Owner',
+            'status': 'ACTIVE',
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } catch (e) {
+          debugPrint('⚠️ StoreProvider: Failed to create owner member doc: $e');
+        }
+
         await _db.collection('users').doc(uid).set({
           'storeId': docRef.id,
           'storeIds': FieldValue.arrayUnion([docRef.id]),

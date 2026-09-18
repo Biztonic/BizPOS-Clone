@@ -5,100 +5,171 @@ service cloud.firestore {
     // --- Helper Functions ---
     
     function isAuthenticated() {
-      return request.auth != null;
+      return request.auth != null && 
+        (!('firebase' in request.auth.token) || request.auth.token.firebase.sign_in_provider != 'anonymous');
     }
 
     function isSuperAdmin() {
-      return isAuthenticated() && (
-        ('email' in request.auth.token && (
-          request.auth.token.email.lower() == 'pthorat600@gmail.com'.lower() ||
-          request.auth.token.email.lower() == 'biztonicautomation@gmail.com'.lower()
-        )) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin' ||
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin'
-        ))
-      );
-    }
-
-    // Generic helper for subcollections
-    function storeAccess(storeId) {
-      // Use get() to check the store document
-      let storeData = get(/databases/$(database)/documents/stores/$(storeId)).data;
-      let userData = exists(/databases/$(database)/documents/users/$(request.auth.uid)) ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data : {};
-      
-      return isSuperAdmin() || (
-        isAuthenticated() && (
-          storeData.owner == request.auth.uid ||
-          ('email' in request.auth.token && storeData.ownerEmail == request.auth.token.email) ||
-          (userData.size() > 0 && (
-            userData.storeId == storeId || 
-            (userData.accessibleStoreIds != null && storeId in userData.accessibleStoreIds) ||
-            (userData.storeIds != null && storeId in userData.storeIds)
-          ))
+      return request.auth != null && (
+        ('role' in request.auth.token && request.auth.token.role == 'super_admin') ||
+        ('isSuperAdmin' in request.auth.token && request.auth.token.isSuperAdmin == true) ||
+        (
+          'email' in request.auth.token && 
+          request.auth.token.email_verified == true && (
+            request.auth.token.email.lower() == 'pthorat600@gmail.com'.lower() ||
+            request.auth.token.email.lower() == 'biztonicautomation@gmail.com'.lower()
+          )
+        ) ||
+        (
+          exists(/databases/$(database)/documents/platform_admins/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/platform_admins/$(request.auth.uid)).data.status == 'ACTIVE'
         )
       );
     }
 
+    // Server-Authoritative Store Membership Verification
+    function isStoreMember(storeId) {
+      let memberPath = /databases/$(database)/documents/stores/$(storeId)/members/$(request.auth.uid);
+      let storePath = /databases/$(database)/documents/stores/$(storeId);
+      return isSuperAdmin() || (
+        isAuthenticated() && (
+          (exists(memberPath) && get(memberPath).data.status == 'ACTIVE') ||
+          (!exists(memberPath) && exists(storePath) && 'owner' in get(storePath).data && get(storePath).data.owner == request.auth.uid)
+        )
+      );
+    }
+
+    function isStoreOwnerOrManager(storeId) {
+      let memberPath = /databases/$(database)/documents/stores/$(storeId)/members/$(request.auth.uid);
+      let storePath = /databases/$(database)/documents/stores/$(storeId);
+      return isSuperAdmin() || (
+        isAuthenticated() && (
+          (
+            exists(memberPath) && 
+            get(memberPath).data.status == 'ACTIVE' &&
+            'role' in get(memberPath).data &&
+            (get(memberPath).data.role == 'Owner' || get(memberPath).data.role == 'Store Owner' || get(memberPath).data.role == 'Manager')
+          ) ||
+          (!exists(memberPath) && exists(storePath) && 'owner' in get(storePath).data && get(storePath).data.owner == request.auth.uid)
+        )
+      );
+    }
+
+    function isStoreOwner(storeId) {
+      let memberPath = /databases/$(database)/documents/stores/$(storeId)/members/$(request.auth.uid);
+      let storePath = /databases/$(database)/documents/stores/$(storeId);
+      return isSuperAdmin() || (
+        isAuthenticated() && (
+          (
+            exists(memberPath) && 
+            get(memberPath).data.status == 'ACTIVE' &&
+            'role' in get(memberPath).data &&
+            (get(memberPath).data.role == 'Owner' || get(memberPath).data.role == 'Store Owner')
+          ) ||
+          (!exists(memberPath) && exists(storePath) && 'owner' in get(storePath).data && get(storePath).data.owner == request.auth.uid)
+        )
+      );
+    }
+
+    function storeAccess(storeId) {
+      return isStoreMember(storeId);
+    }
+
     // --- Collection Rules ---
 
-    // 1. Users Collection
+    // 1. Users Collection (USER_PRIVATE)
     match /users/{uid} {
-      // Allow unauthenticated read ONLY if the document is marked for initial password setup (activation flow)
-      // This is safe because these are placeholder documents with no sensitive data.
-      allow read: if (isAuthenticated() && (request.auth.uid == uid || isSuperAdmin())) || 
-                   (resource.data.needsInitialPassword == true || resource.data.needsInitialPassword == 'true');
+      // Allow unauthenticated read ONLY if the document is explicitly marked for initial password setup
+      allow get: if (isAuthenticated() && (request.auth.uid == uid || isSuperAdmin())) || 
+                    (resource.data.needsInitialPassword == true || resource.data.needsInitialPassword == 'true');
+      allow list: if isSuperAdmin();
       
       allow create: if isAuthenticated() && (
         isSuperAdmin() || (
           request.auth.uid == uid &&
           (!('role' in request.resource.data) || 
-           (request.resource.data.role != 'Super Admin' && request.resource.data.role != 'super_admin'))
+           (request.resource.data.role != 'Super Admin' && 
+            request.resource.data.role != 'super_admin' && 
+            request.resource.data.role != 'Admin'))
         )
       );
+
+      // Normal users CANNOT modify privileged authorization fields
       allow update: if isSuperAdmin() || (
         isAuthenticated() && request.auth.uid == uid && 
-        (!('storeId' in request.resource.data) || request.resource.data.storeId == resource.data.storeId) &&
-        (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
+        (!('role' in request.resource.data) || ('role' in resource.data && request.resource.data.role == resource.data.role)) &&
+        (!('storeId' in request.resource.data) || ('storeId' in resource.data && request.resource.data.storeId == resource.data.storeId)) &&
+        (!('storeIds' in request.resource.data) || ('storeIds' in resource.data && request.resource.data.storeIds == resource.data.storeIds)) &&
+        (!('accessibleStoreIds' in request.resource.data) || ('accessibleStoreIds' in resource.data && request.resource.data.accessibleStoreIds == resource.data.accessibleStoreIds)) &&
+        (!('franchiseId' in request.resource.data) || ('franchiseId' in resource.data && request.resource.data.franchiseId == resource.data.franchiseId))
       );
+
       allow delete: if isSuperAdmin();
-      
-      // Allow listing users by storeId for employees/owners of that store
-      allow list: if isAuthenticated() && (
-        isSuperAdmin() || 
-        (request.query.limit <= 100 && (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.storeId == request.query.storeId ||
-          ('email' in request.auth.token && request.auth.token.email == 'pthorat600@gmail.com')
-        ))
-      );
     }
 
-    // 2. Stores Collection
+    // 2. Stores Collection (STORE_PRIVATE)
     match /stores/{storeId} {
-      // Split list and get to allow collection queries for owners
-      allow list: if isSuperAdmin() || 
-                     isAuthenticated() && (
-                       resource.data.owner == request.auth.uid || 
-                       resource.data.ownerEmail == request.auth.token.email ||
-                       resource.data.ownerEmail == request.auth.token.email.lower()
-                     );
-                     
-      allow get: if storeAccess(storeId); 
+      allow get: if isSuperAdmin() || isStoreMember(storeId);
+      allow list: if isSuperAdmin() || (isAuthenticated() && resource.data.owner == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.owner == request.auth.uid;
+      allow update: if isSuperAdmin() || isStoreOwnerOrManager(storeId);
+      allow delete: if isSuperAdmin();
       
-      allow create: if isAuthenticated();
-      allow update, delete: if isSuperAdmin() || 
-                             (isAuthenticated() && (
-                               resource.data.owner == request.auth.uid || 
-                               resource.data.ownerEmail == request.auth.token.email
-                             ));
-      
-      // Sub-collections (orders, products, tables, etc.)
+      // Server-Controlled Store Membership Model
+      match /members/{memberUid} {
+        allow get, list: if isSuperAdmin() || isStoreMember(storeId);
+
+        allow create: if isSuperAdmin() || (
+          isAuthenticated() && (
+            // Initial store creator creates own Owner membership
+            (
+              request.auth.uid == memberUid && 
+              get(/databases/$(database)/documents/stores/$(storeId)).data.owner == request.auth.uid &&
+              request.resource.data.role != 'Super Admin' &&
+              request.resource.data.role != 'super_admin'
+            ) ||
+            // Active Owner/Manager adding team member (cannot grant Super Admin or self-add)
+            (
+              isStoreOwnerOrManager(storeId) &&
+              request.auth.uid != memberUid &&
+              request.resource.data.role != 'Super Admin' &&
+              request.resource.data.role != 'super_admin'
+            )
+          )
+        );
+
+        allow update: if isSuperAdmin() || (
+          isStoreOwnerOrManager(storeId) &&
+          request.auth.uid != memberUid && // Cannot self-promote or un-suspend self
+          request.resource.data.role != 'Super Admin' &&
+          request.resource.data.role != 'super_admin'
+        );
+
+        allow delete: if isSuperAdmin() || (
+          isStoreOwner(storeId) &&
+          request.auth.uid != memberUid
+        );
+      }
+
+      // Sub-collections in stores/{storeId}
       match /{allSubcollections=**} {
-        allow read, write: if storeAccess(storeId);
+        allow read, write: if isSuperAdmin() || isStoreMember(storeId);
       }
     }
 
-    // 3. Settings / Admin Config
+    // 3. Platform Admins (PLATFORM_ADMIN)
+    match /platform_admins/{adminUid} {
+      allow read: if isSuperAdmin();
+      allow write: if false; // Strictly server-side via Firebase Admin SDK
+    }
+
+    // 4. Franchises (FRANCHISE_PRIVATE)
+    match /franchises/{franchiseId} {
+      allow read: if isSuperAdmin() || (isAuthenticated() && resource.data.ownerId == request.auth.uid);
+      allow write: if isSuperAdmin() || (isAuthenticated() && resource.data.ownerId == request.auth.uid);
+    }
+
+    // 5. Settings / Admin Config (PLATFORM_ADMIN / STORE_PRIVATE)
     match /settings/admin_config {
       allow read: if isAuthenticated();
       allow write: if isSuperAdmin();
@@ -114,170 +185,152 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
-    // Settings for a specific store
-    match /settings/{id} {
-      allow read: if isAuthenticated() && (isSuperAdmin() || storeAccess(id));
-      allow write: if isSuperAdmin() || (isAuthenticated() && storeAccess(id));
+    // Settings for a specific store (STORE_PRIVATE)
+    match /settings/{storeId} {
+      allow read: if isSuperAdmin() || isStoreMember(storeId);
+      allow write: if isSuperAdmin() || isStoreOwnerOrManager(storeId);
     }
 
-    // 4. Subscription System
+    // 6. Subscription System (USER_PRIVATE / STORE_PRIVATE / PLATFORM_ADMIN)
     match /subscription_requests/{docId} {
-      // Allow unauthenticated read of pending requests to facilitate onboarding detection
-      allow read: if isAuthenticated() || resource.data.status == 'PENDING';
-      // Regular authenticated users can only submit new PENDING requests
+      // User can only read their own subscription requests; Super Admin reads all
+      allow read: if isSuperAdmin() || (
+        isAuthenticated() && (
+          resource.data.userId == request.auth.uid || 
+          resource.data.ownerEmail == request.auth.token.email
+        )
+      );
+      // Regular authenticated users can submit new PENDING requests for themselves
       allow create: if isAuthenticated() && 
-                    (!('status' in request.resource.data) || request.resource.data.status == 'PENDING');
+                    request.resource.data.status == 'PENDING' &&
+                    (!('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid);
       // Only Super Admin can approve, modify, or delete subscription requests
       allow update, delete: if isSuperAdmin();
     }
 
     match /subscription_history/{histId} {
-      allow read: if storeAccess(resource.data.storeId); 
+      allow read: if resource.data.storeId != null && isStoreMember(resource.data.storeId); 
       allow write: if isSuperAdmin();
     }
 
-    // 5. Addon Reviews
+    // 7. Addon Reviews (PUBLIC)
     match /addon_reviews/{reviewId} {
       allow read: if true; // Publicly viewable
       allow create: if isAuthenticated();
       allow update, delete: if isSuperAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // 6. Central Catalog
+    // 8. Central Catalog (PLATFORM_ADMIN)
     match /central_catalog/{itemId} {
       allow read: if isAuthenticated();
-      // Allow any authenticated user to contribute to the community catalog
       allow create: if isAuthenticated();
-      // Only Super Admins can update or delete global entries
       allow update, delete: if isSuperAdmin();
     }
-    // 7. Root Collections with storeId filtering
+
+    // 9. Root Collections with storeId filtering (STORE_PRIVATE)
     match /orders/{id} {
-      allow read: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
       allow delete: if isSuperAdmin();
     }
+
     match /inventory/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
+      allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
     }
+
     match /customers/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
+      allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
     }
+
     match /inventory_movements/{id} {
-      allow read: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
       allow delete: if isSuperAdmin();
     }
+
     match /business_events/{id} {
-      allow read: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
       allow delete: if isSuperAdmin();
     }
+
     match /activity_logs/{id} {
-      allow read: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
       allow delete: if isSuperAdmin();
     }
 
     match /counters/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
+      allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
     }
 
     match /suppliers/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
+      allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
     }
 
     match /notes/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
+      allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
     }
     
     match /employees/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreOwnerOrManager(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
+      allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
     }
 
     match /floors/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreOwnerOrManager(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
+      allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
     }
 
     match /tables/{id} {
-      allow read, delete: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId)));
-      allow create: if isAuthenticated() && (isSuperAdmin() || 
-                           (request.resource.data.storeId != null && storeAccess(request.resource.data.storeId)));
-      allow update: if isAuthenticated() && (isSuperAdmin() || 
-                           (resource.data.storeId != null && storeAccess(resource.data.storeId) && 
-                            request.resource.data.storeId == resource.data.storeId));
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreOwnerOrManager(request.resource.data.storeId));
+      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId) && 
+                                           request.resource.data.storeId == resource.data.storeId);
+      allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
     }
 
-    // 8. Roles Collection
+    // 10. Roles Collection (PLATFORM_ADMIN)
     match /roles/{roleId} {
       allow read: if isAuthenticated();
       allow write: if isSuperAdmin();
     }
 
-    // 9. Leads Collection
+    // 11. Leads Collection (PUBLIC)
     match /leads/{leadId} {
       allow create: if true;
       allow read, update, delete: if isSuperAdmin();

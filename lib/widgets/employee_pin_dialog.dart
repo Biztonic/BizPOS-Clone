@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hive/hive.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../sync/sync_engine.dart';
 
 import '../l10n/app_localizations.dart';
@@ -75,103 +76,76 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
     final empId = widget.empId!;
 
     try {
-      if (FirebaseAuth.instance.currentUser == null) {
-        await FirebaseAuth.instance
-            .signInAnonymously()
-            .timeout(const Duration(seconds: 5));
+      // 1. Check local cache first
+      if (Hive.isBoxOpen('cache_employees')) {
+        final box = Hive.box('cache_employees');
+        final empMap = box.values.firstWhere((e) {
+          final map = e as Map;
+          return map['employeeId']?.toString() == empId;
+        }, orElse: () => null);
+        if (empMap != null) {
+          setState(() {
+            _employee = Map<String, dynamic>.from(empMap as Map);
+            _isFetchingDetails = false;
+          });
+          return;
+        }
       }
 
       final cleanCode = storeCode.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
       String? storeId = widget.storeId;
 
-      if (storeId == null) {
-        QuerySnapshot storeQuery = await getFirestore()
-            .collection('stores')
-            .where('shortCode', isEqualTo: cleanCode)
-            .limit(1)
-            .get();
+      // Only query network if already authenticated
+      if (FirebaseAuth.instance.currentUser != null) {
+        if (storeId == null) {
+          QuerySnapshot storeQuery = await getFirestore()
+              .collection('stores')
+              .where('shortCode', isEqualTo: cleanCode)
+              .limit(1)
+              .get();
 
-        if (storeQuery.docs.isEmpty) {
-          final doc =
-              await getFirestore().collection('stores').doc(cleanCode).get();
-          if (doc.exists) {
-            storeId = cleanCode;
+          if (storeQuery.docs.isEmpty) {
+            final doc =
+                await getFirestore().collection('stores').doc(cleanCode).get();
+            if (doc.exists) {
+              storeId = cleanCode;
+            }
+          } else {
+            storeId = storeQuery.docs.first.id;
           }
-        } else {
-          storeId = storeQuery.docs.first.id;
         }
-      }
 
-      if (storeId == null) {
-        throw AppLocalizations.t(context, 'Store Not Found');
-      }
+        if (storeId != null) {
+          QuerySnapshot subQuery = await getFirestore()
+              .collection('stores')
+              .doc(storeId)
+              .collection('employees')
+              .where('employeeId', isEqualTo: empId)
+              .limit(1)
+              .get();
 
-      QuerySnapshot subQuery = await getFirestore()
-          .collection('stores')
-          .doc(storeId)
-          .collection('employees')
-          .where('employeeId', isEqualTo: empId)
-          .limit(1)
-          .get();
-
-      if (subQuery.docs.isEmpty) {
-        subQuery = await getFirestore()
-            .collection('employees')
-            .where('storeId', isEqualTo: storeId)
-            .where('employeeId', isEqualTo: empId)
-            .limit(1)
-            .get();
-        if (subQuery.docs.isEmpty) {
-          final intId = int.tryParse(empId);
-          if (intId != null) {
-            subQuery = await getFirestore()
-                .collection('employees')
-                .where('storeId', isEqualTo: storeId)
-                .where('employeeId', isEqualTo: intId)
-                .limit(1)
-                .get();
+          if (subQuery.docs.isNotEmpty) {
+            final data = subQuery.docs.first.data() as Map<String, dynamic>;
+            setState(() {
+              _employee = {
+                ...data,
+                'uid': subQuery.docs.first.id,
+              };
+            });
+            return;
           }
         }
       }
 
-      if (subQuery.docs.isNotEmpty) {
-        final data = subQuery.docs.first.data() as Map<String, dynamic>;
-        setState(() {
-          _employee = {
-            ...data,
-            'uid': subQuery.docs.first.id,
-          };
-        });
-      } else {
-        final dummyEmail = "${storeId}_$empId@biztonic.pos".toLowerCase();
-        QuerySnapshot userQuery = await getFirestore()
-            .collection('users')
-            .where('email', isEqualTo: dummyEmail)
-            .limit(1)
-            .get();
-        if (userQuery.docs.isEmpty) {
-          final intId = int.tryParse(empId);
-          if (intId != null) {
-            final intEmail = "${storeId}_$intId@biztonic.pos".toLowerCase();
-            userQuery = await getFirestore()
-                .collection('users')
-                .where('email', isEqualTo: intEmail)
-                .limit(1)
-                .get();
-          }
-        }
-        if (userQuery.docs.isNotEmpty) {
-          final data = userQuery.docs.first.data() as Map<String, dynamic>;
-          setState(() {
-            _employee = {
-              ...data,
-              'uid': userQuery.docs.first.id,
-            };
-          });
-        } else {
-          throw AppLocalizations.t(context, 'Employee profile not found');
-        }
-      }
+      // Default placeholder if profile not fetched yet; server function will validate on submit
+      setState(() {
+        _employee = {
+          'employeeId': empId,
+          'name': 'Employee #$empId',
+          'role': 'Staff',
+          if (storeId != null) 'storeId': storeId,
+        };
+      });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -227,22 +201,15 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
     final pin = _pinController.text.trim();
     final empId = widget.empId ?? (_employee!['employeeId'] ?? '').toString();
     final storeCode = widget.storeCode;
+    final cleanStoreCode = storeCode.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    String? targetStoreId = widget.storeId ?? _employee!['storeId'];
+
+    final invalidPinMsg = AppLocalizations.t(context, 'Invalid PIN');
+    final unableVerifyMsg = AppLocalizations.t(context,
+        'Unable to verify PIN. Please check connectivity or credentials.');
 
     try {
-      if (FirebaseAuth.instance.currentUser == null) {
-        try {
-          await FirebaseAuth.instance
-              .signInAnonymously()
-              .timeout(const Duration(seconds: 5));
-        } catch (e) {
-          debugPrint("Auth non-critical failure: $e");
-        }
-      }
-
-      final cleanStoreCode = storeCode.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
-      String? targetStoreId = widget.storeId ?? _employee!['storeId'];
-
-      // 1. LOCAL CACHE FIRST
+      // 1. RESOLVE STORE ID FROM LOCAL CACHE IF NEEDED
       if (targetStoreId == null && Hive.isBoxOpen('cache_stores')) {
         final box = Hive.box('cache_stores');
         final storeMap = box.values.firstWhere((s) {
@@ -253,6 +220,38 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
         if (storeMap != null) targetStoreId = (storeMap as Map)['id'];
       }
 
+      // 2. SERVER-AUTHORITATIVE VERIFICATION VIA CALLABLE CLOUD FUNCTION
+      try {
+        final callable =
+            FirebaseFunctions.instance.httpsCallable('verifyEmployeePin');
+        final response = await callable.call({
+          if (targetStoreId != null) 'storeId': targetStoreId,
+          'storeCode': cleanStoreCode,
+          'employeeId': empId,
+          'pin': pin,
+        }).timeout(const Duration(seconds: 8));
+
+        final resData = Map<String, dynamic>.from(response.data as Map);
+        final token = resData['token'] as String?;
+        final empProfile =
+            Map<String, dynamic>.from(resData['employee'] as Map);
+        final uid = empProfile['uid'] as String;
+
+        // Authenticate with the server-minted store-scoped custom token
+        if (token != null && token.isNotEmpty) {
+          await FirebaseAuth.instance.signInWithCustomToken(token);
+        }
+
+        await _finalizeLogin(uid, empProfile);
+        return;
+      } on FirebaseFunctionsException catch (fe) {
+        throw fe.message ?? invalidPinMsg;
+      } catch (cloudErr) {
+        debugPrint("Server PIN verification offline or error: $cloudErr");
+        // Proceed to offline local cache fallback below
+      }
+
+      // 3. OFFLINE CACHE FALLBACK (for offline POS continuity)
       if (targetStoreId != null && Hive.isBoxOpen('cache_employees')) {
         final box = Hive.box('cache_employees');
         final empMap = box.values.firstWhere((e) {
@@ -269,106 +268,12 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
             await _finalizeLogin(uid, Map.from(map));
             return;
           } else {
-            throw AppLocalizations.t(context, 'Invalid PIN');
+            throw invalidPinMsg;
           }
         }
       }
 
-      // 2. NETWORK FALLBACK
-      if (targetStoreId == null) {
-        final storeQuery = await getFirestore()
-            .collection('stores')
-            .where('shortCode', isEqualTo: cleanStoreCode)
-            .limit(1)
-            .get();
-        if (storeQuery.docs.isNotEmpty) {
-          targetStoreId = storeQuery.docs.first.id;
-        } else {
-          final doc = await getFirestore()
-              .collection('stores')
-              .doc(cleanStoreCode)
-              .get();
-          if (doc.exists) targetStoreId = cleanStoreCode;
-        }
-      }
-
-      if (targetStoreId == null)
-        throw AppLocalizations.t(context, 'Store Not Found');
-
-      QuerySnapshot subQuery = await getFirestore()
-          .collection('stores')
-          .doc(targetStoreId)
-          .collection('employees')
-          .where('employeeId', isEqualTo: empId)
-          .limit(1)
-          .get();
-
-      if (subQuery.docs.isEmpty) {
-        subQuery = await getFirestore()
-            .collection('employees')
-            .where('storeId', isEqualTo: targetStoreId)
-            .where('employeeId', isEqualTo: empId)
-            .limit(1)
-            .get();
-
-        if (subQuery.docs.isEmpty) {
-          final intId = int.tryParse(empId);
-          if (intId != null) {
-            subQuery = await getFirestore()
-                .collection('employees')
-                .where('storeId', isEqualTo: targetStoreId)
-                .where('employeeId', isEqualTo: intId)
-                .limit(1)
-                .get();
-          }
-        }
-      }
-
-      if (subQuery.docs.isNotEmpty) {
-        final Map<String, dynamic> userData =
-            subQuery.docs.first.data() as Map<String, dynamic>;
-        final storedPin = userData['pinHash'] ?? userData['pin'];
-        final uid = subQuery.docs.first.id;
-        if (PinUtils.verifyPin(pin, uid, storedPin)) {
-          await _finalizeLogin(uid, userData);
-          return;
-        }
-        throw AppLocalizations.t(context, 'Invalid PIN');
-      }
-
-      // LEGACY Root User Check
-      final dummyEmail = "${targetStoreId}_$empId@biztonic.pos".toLowerCase();
-      QuerySnapshot query = await getFirestore()
-          .collection('users')
-          .where('email', isEqualTo: dummyEmail)
-          .limit(1)
-          .get();
-
-      if (query.docs.isEmpty) {
-        final intId = int.tryParse(empId);
-        if (intId != null) {
-          final intEmail = "${targetStoreId}_$intId@biztonic.pos".toLowerCase();
-          query = await getFirestore()
-              .collection('users')
-              .where('email', isEqualTo: intEmail)
-              .limit(1)
-              .get();
-        }
-      }
-
-      if (query.docs.isNotEmpty) {
-        final Map<String, dynamic> userData =
-            query.docs.first.data() as Map<String, dynamic>;
-        final storedPin = userData['pin'];
-        final uid = query.docs.first.id;
-        if (PinUtils.verifyPin(pin, uid, storedPin)) {
-          await _finalizeLogin(uid, userData);
-          return;
-        }
-        throw AppLocalizations.t(context, 'Invalid PIN');
-      }
-
-      throw AppLocalizations.t(context, 'Employee profile not found');
+      throw unableVerifyMsg;
     } catch (e) {
       AnnouncementService().playAlertSound();
       if (mounted) {
