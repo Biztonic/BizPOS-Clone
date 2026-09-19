@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive/hive.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../sync/sync_engine.dart';
@@ -14,6 +14,9 @@ import '../core/design/tokens/app_colors.dart';
 import '../core/design/tokens/app_spacing.dart';
 import '../core/design/tokens/app_typography.dart';
 import '../providers/dashboard_provider.dart';
+import '../providers/auth_provider.dart';
+import '../core/auth/auth_session_types.dart';
+import '../services/offline_service.dart';
 import '../utils/pin_utils.dart';
 import '../services/firestore_helper.dart';
 import '../announcement/service/announcement_service.dart';
@@ -207,6 +210,7 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
     final invalidPinMsg = AppLocalizations.t(context, 'Invalid PIN');
     final unableVerifyMsg = AppLocalizations.t(context,
         'Unable to verify PIN. Please check connectivity or credentials.');
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     try {
       // 1. RESOLVE STORE ID FROM LOCAL CACHE IF NEEDED
@@ -218,6 +222,14 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
               map['id'] == cleanStoreCode;
         }, orElse: () => null);
         if (storeMap != null) targetStoreId = (storeMap as Map)['id'];
+      }
+
+      // Check lockout protection before processing attempt
+      if (targetStoreId != null &&
+          OfflineService().isEmployeePinLockedOut(targetStoreId, empId)) {
+        final remaining = OfflineService()
+            .getRemainingPinLockoutSeconds(targetStoreId, empId);
+        throw 'PIN is temporarily locked out due to too many failed attempts. Please wait $remaining seconds.';
       }
 
       // 2. SERVER-AUTHORITATIVE VERIFICATION VIA CALLABLE CLOUD FUNCTION
@@ -237,10 +249,24 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
             Map<String, dynamic>.from(resData['employee'] as Map);
         final uid = empProfile['uid'] as String;
 
+        // Reset pin attempts on success
+        if (targetStoreId != null) {
+          OfflineService().resetPinAttempts(targetStoreId, empId);
+        }
+
         // Authenticate with the server-minted store-scoped custom token
         if (token != null && token.isNotEmpty) {
           await FirebaseAuth.instance.signInWithCustomToken(token);
         }
+
+        authProvider.setEmployeeSession(ActiveAuthSession(
+          type: SessionType.EMPLOYEE_POS_SESSION,
+          uid: uid,
+          email: empProfile['email']?.toString() ?? '$empId@bizpos.com',
+          storeId: targetStoreId,
+          role: empProfile['role']?.toString() ?? 'Staff',
+          authenticatedAt: DateTime.now(),
+        ));
 
         await _finalizeLogin(uid, empProfile);
         return;
@@ -265,9 +291,22 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
           final uid = map['uid'];
           final storedPin = map['pinHash'] ?? map['pin'];
           if (PinUtils.verifyPin(pin, uid, storedPin)) {
+            OfflineService().resetPinAttempts(targetStoreId, empId);
+            authProvider.setEmployeeSession(ActiveAuthSession(
+              type: SessionType.EMPLOYEE_POS_SESSION,
+              uid: uid,
+              email: map['email']?.toString() ?? '$empId@bizpos.com',
+              storeId: targetStoreId,
+              role: map['role']?.toString() ?? 'Staff',
+              authenticatedAt: DateTime.now(),
+            ));
             await _finalizeLogin(uid, Map.from(map));
             return;
           } else {
+            OfflineService().recordFailedPinAttempt(targetStoreId, empId);
+            if (OfflineService().isEmployeePinLockedOut(targetStoreId, empId)) {
+              throw 'PIN is locked out due to 5 consecutive failed attempts. Please wait 5 minutes.';
+            }
             throw invalidPinMsg;
           }
         }

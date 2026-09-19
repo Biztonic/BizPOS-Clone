@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:biztonic_pos/services/firestore_helper.dart';
 import '../services/offline_service.dart';
+import '../core/auth/auth_session_types.dart';
 
 /// A virtual user for offline sessions to prevent null checks in UI
 class OfflineUser {
@@ -25,8 +26,27 @@ class AuthProvider with ChangeNotifier {
   User? _user;
   bool _isLoading = true;
 
+  AuthStatus _status = AuthStatus.UNKNOWN;
+  ActiveAuthSession? _firebaseSession;
+  ActiveAuthSession? _offlineSession;
+  ActiveAuthSession? _employeeSession;
+
   User? get user => _user;
   bool get isLoading => _isLoading;
+
+  AuthStatus get status => _status;
+  ActiveAuthSession? get firebaseSession => _firebaseSession;
+  ActiveAuthSession? get offlineSession => _offlineSession;
+  ActiveAuthSession? get employeeSession => _employeeSession;
+  ActiveAuthSession? get currentSession =>
+      _employeeSession ?? _firebaseSession ?? _offlineSession;
+
+  bool _isOfflineLoggedIn = false;
+  bool get isOfflineLoggedIn => _status == AuthStatus.OFFLINE_AUTHENTICATED;
+  bool get isLoggedIn =>
+      _status == AuthStatus.ONLINE_AUTHENTICATED ||
+      _status == AuthStatus.OFFLINE_AUTHENTICATED;
+  bool get isLocked => _status == AuthStatus.LOCKED;
 
   AuthProvider({FirebaseAuth? auth}) : _auth = auth ?? _getDefaultAuth() {
     _initAuth();
@@ -46,6 +66,26 @@ class AuthProvider with ChangeNotifier {
 
     final auth = _auth;
     if (auth == null) {
+      if (_isOfflineLoggedIn) {
+        final offlineEmail = OfflineService().getOfflineLoginEmail();
+        if (offlineEmail != null &&
+            OfflineService().isOfflineLockedOut(offlineEmail)) {
+          _status = AuthStatus.LOCKED;
+        } else {
+          _status = AuthStatus.OFFLINE_AUTHENTICATED;
+          final cachedUid =
+              OfflineService().getCachedUserId(email: offlineEmail) ??
+                  'offline_user';
+          _offlineSession = ActiveAuthSession(
+            type: SessionType.LOCAL_OFFLINE_SESSION,
+            uid: cachedUid,
+            email: offlineEmail ?? '',
+            authenticatedAt: DateTime.now(),
+          );
+        }
+      } else {
+        _status = AuthStatus.SIGNED_OUT;
+      }
       _isLoading = false;
       notifyListeners();
       return;
@@ -54,15 +94,40 @@ class AuthProvider with ChangeNotifier {
     auth.authStateChanges().listen((User? user) async {
       if (user != null) {
         _user = user;
+        _firebaseSession = ActiveAuthSession(
+          type: SessionType.FIREBASE_AUTH_SESSION,
+          uid: user.uid,
+          email: user.email ?? '',
+          authenticatedAt: DateTime.now(),
+        );
+        _offlineSession = null;
+        _status = AuthStatus.ONLINE_AUTHENTICATED;
         _isOfflineLoggedIn = false;
         await OfflineService().setOfflineLoginState(false);
         _isLoading = false;
       } else {
-        // If Firebase says no user, check if we were offline-logged-in
+        _firebaseSession = null;
+        _user = null;
         if (_isOfflineLoggedIn) {
-          _user = null;
+          final offlineEmail = OfflineService().getOfflineLoginEmail();
+          if (offlineEmail != null &&
+              OfflineService().isOfflineLockedOut(offlineEmail)) {
+            _status = AuthStatus.LOCKED;
+          } else {
+            _status = AuthStatus.OFFLINE_AUTHENTICATED;
+            final cachedUid =
+                OfflineService().getCachedUserId(email: offlineEmail) ??
+                    'offline_user';
+            _offlineSession = ActiveAuthSession(
+              type: SessionType.LOCAL_OFFLINE_SESSION,
+              uid: cachedUid,
+              email: offlineEmail ?? '',
+              authenticatedAt: DateTime.now(),
+            );
+          }
         } else {
-          _user = null;
+          _status = AuthStatus.SIGNED_OUT;
+          _offlineSession = null;
           _isOfflineLoggedIn = false;
         }
         _isLoading = false;
@@ -74,7 +139,7 @@ class AuthProvider with ChangeNotifier {
   /// Returns the Firebase User or a Virtual User if offline
   dynamic get currentUser {
     if (_user != null) return _user;
-    if (_isOfflineLoggedIn) {
+    if (_status == AuthStatus.OFFLINE_AUTHENTICATED || _isOfflineLoggedIn) {
       // Use the cached real Firebase UID for this specific offline user
       final offlineEmail = OfflineService().getOfflineLoginEmail();
       final cachedUid = OfflineService().getCachedUserId(email: offlineEmail) ??
@@ -99,9 +164,9 @@ class AuthProvider with ChangeNotifier {
       final credential = await auth.signInWithEmailAndPassword(
           email: email, password: password);
 
-      // 1. Cache Credentials + UID for offline fallback (keyed by email)
+      // 1. Cache Salted Verifier + UID for offline fallback (Zero raw password storage)
       await OfflineService()
-          .cacheCredentials(email, password, uid: credential.user?.uid);
+          .cacheOfflineVerifier(email, password, uid: credential.user?.uid);
       if (credential.user != null) {
         await OfflineService().cacheUserId(credential.user!.uid, email: email);
       }
@@ -118,7 +183,20 @@ class AuthProvider with ChangeNotifier {
         }
       }
 
+      _user = credential.user;
+      if (_user != null) {
+        _firebaseSession = ActiveAuthSession(
+          type: SessionType.FIREBASE_AUTH_SESSION,
+          uid: _user!.uid,
+          email: _user!.email ?? email,
+          authenticatedAt: DateTime.now(),
+        );
+      }
+      _offlineSession = null;
+      _status = AuthStatus.ONLINE_AUTHENTICATED;
       _isOfflineLoggedIn = false;
+      _isLoading = false;
+      notifyListeners();
     } catch (e) {
       // OFFLINE-FIRST: Broader offline detection
       // Catches FirebaseAuthException (network-request-failed, unavailable)
@@ -139,13 +217,52 @@ class AuthProvider with ChangeNotifier {
       }
 
       if (isNetworkError) {
-        final isValid = OfflineService().verifyOfflinePassword(email, password);
+        // Check lockout first
+        if (OfflineService().isOfflineLockedOut(email)) {
+          _status = AuthStatus.LOCKED;
+          _isLoading = false;
+          notifyListeners();
+          final remaining = OfflineService().getRemainingLockoutSeconds(email);
+          throw Exception(
+              'Account is temporarily locked out due to too many failed offline attempts. Please wait $remaining seconds or sign in online.');
+        }
+
+        // Strict check: Offline POS functionality must continue for the last authorized local user only.
+        final lastAuth = OfflineService().getLastAuthorizedEmail();
+        if (lastAuth != null &&
+            lastAuth.isNotEmpty &&
+            lastAuth != email.toLowerCase().trim()) {
+          _isLoading = false;
+          notifyListeners();
+          throw Exception(
+              'Offline POS access is restricted to the last authorized account on this device ($lastAuth).');
+        }
+
+        final isValid =
+            await OfflineService().verifyOfflinePassword(email, password);
         if (isValid) {
           _isOfflineLoggedIn = true;
           await OfflineService().setOfflineLoginState(true, email: email);
+          final cachedUid =
+              OfflineService().getCachedUserId(email: email) ?? 'offline_user';
+          _offlineSession = ActiveAuthSession(
+            type: SessionType.LOCAL_OFFLINE_SESSION,
+            uid: cachedUid,
+            email: email,
+            authenticatedAt: DateTime.now(),
+          );
+          _status = AuthStatus.OFFLINE_AUTHENTICATED;
           _isLoading = false;
           notifyListeners();
           return;
+        } else {
+          if (OfflineService().isOfflineLockedOut(email)) {
+            _status = AuthStatus.LOCKED;
+            _isLoading = false;
+            notifyListeners();
+            throw Exception(
+                'Account has been locked out due to 5 consecutive failed offline attempts. Please wait 15 minutes or sign in online.');
+          }
         }
       }
 
@@ -154,9 +271,6 @@ class AuthProvider with ChangeNotifier {
       rethrow;
     }
   }
-
-  bool _isOfflineLoggedIn = false;
-  bool get isOfflineLoggedIn => _isOfflineLoggedIn;
 
   // Override to check offline status
   bool get isLoggedIn => _user != null || _isOfflineLoggedIn;
@@ -257,6 +371,15 @@ class AuthProvider with ChangeNotifier {
         if (doc.exists) {
           await OfflineService().cacheUserProfile(doc.data()!, uid: user.uid);
         }
+
+        _firebaseSession = ActiveAuthSession(
+          type: SessionType.FIREBASE_AUTH_SESSION,
+          uid: user.uid,
+          email: user.email ?? '',
+          authenticatedAt: DateTime.now(),
+        );
+        _offlineSession = null;
+        _status = AuthStatus.ONLINE_AUTHENTICATED;
       }
 
       _isOfflineLoggedIn = false;
@@ -268,12 +391,27 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  void setEmployeeSession(ActiveAuthSession session) {
+    _employeeSession = session;
+    notifyListeners();
+  }
+
+  void clearEmployeeSession() {
+    _employeeSession = null;
+    notifyListeners();
+  }
+
   Future<void> signOut() async {
     await _auth?.signOut();
     await OfflineService().clearCredentials();
     // NOTE: We intentionally do NOT call unpinStore() here.
     // The pinned store must survive logout so _restorePinnedStore
     // can instantly restore the user's last active store on re-login.
+    _user = null;
+    _firebaseSession = null;
+    _offlineSession = null;
+    _employeeSession = null;
+    _status = AuthStatus.SIGNED_OUT;
     _isOfflineLoggedIn = false;
     await OfflineService().setOfflineLoginState(false);
     notifyListeners();

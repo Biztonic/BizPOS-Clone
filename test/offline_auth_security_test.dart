@@ -60,12 +60,12 @@ void main() {
 
       // Valid password must succeed
       final isValid =
-          offlineService.verifyOfflinePassword(testEmail, testPassword);
+          await offlineService.verifyOfflinePassword(testEmail, testPassword);
       expect(isValid, isTrue);
 
       // Invalid password must fail
-      final isInvalid =
-          offlineService.verifyOfflinePassword(testEmail, 'WrongPassword!');
+      final isInvalid = await offlineService.verifyOfflinePassword(
+          testEmail, 'WrongPassword!');
       expect(isInvalid, isFalse);
     });
 
@@ -77,7 +77,7 @@ void main() {
 
       // Attempt 5 wrong passwords
       for (int i = 0; i < 5; i++) {
-        offlineService.verifyOfflinePassword(testEmail, 'BadGuess_$i');
+        await offlineService.verifyOfflinePassword(testEmail, 'BadGuess_$i');
       }
 
       // Must be locked out now
@@ -85,13 +85,14 @@ void main() {
 
       // Even correct password should be rejected while locked out
       final attemptDuringLockout =
-          offlineService.verifyOfflinePassword(testEmail, testPassword);
+          await offlineService.verifyOfflinePassword(testEmail, testPassword);
       expect(attemptDuringLockout, isFalse);
 
       // Resetting failed attempts unlocks account
-      offlineService.resetFailedAttempts(testEmail);
+      await offlineService.resetFailedAttempts(testEmail);
       expect(offlineService.isOfflineLockedOut(testEmail), isFalse);
-      expect(offlineService.verifyOfflinePassword(testEmail, testPassword),
+      expect(
+          await offlineService.verifyOfflinePassword(testEmail, testPassword),
           isTrue);
     });
   });

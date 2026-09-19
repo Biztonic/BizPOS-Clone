@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/dashboard_provider.dart';
 import 'package:biztonic_pos/widgets/employee_pin_dialog.dart';
 import '../../utils/pin_utils.dart';
+import '../../services/offline_service.dart';
 
 class StationLockScreen extends StatefulWidget {
   const StationLockScreen({super.key});
@@ -185,13 +186,27 @@ class _StationLockScreenState extends State<StationLockScreen> {
                     final owner =
                         provider.originalProfile ?? provider.userProfile;
                     if (owner?.pinHash != null && owner!.pinHash!.isNotEmpty) {
+                      final storeId = provider.activeStoreId ?? 'default_store';
+                      if (OfflineService()
+                          .isEmployeePinLockedOut(storeId, owner.uid)) {
+                        final remaining = OfflineService()
+                            .getRemainingPinLockoutSeconds(storeId, owner.uid);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(
+                                'Station unlock is locked out. Please wait $remaining seconds.')));
+                        return;
+                      }
+
                       if (!PinUtils.verifyPin(
                           _pinController.text, owner.uid, owner.pinHash!)) {
+                        OfflineService()
+                            .recordFailedPinAttempt(storeId, owner.uid);
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text(
                                 AppLocalizations.t(context, 'Invalid PIN'))));
                         return;
                       }
+                      OfflineService().resetPinAttempts(storeId, owner.uid);
                     } else {
                       // No PIN set? Warn but allow?
                       // Or check against '1234' default?

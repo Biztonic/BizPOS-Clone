@@ -46,7 +46,8 @@ class AuthRepository {
 
       final user = credential.user;
       if (user != null) {
-        await _offlineService.cacheCredentials(email, password, uid: user.uid);
+        await _offlineService.cacheOfflineVerifier(email, password,
+            uid: user.uid);
         await _offlineService.cacheUserId(user.uid, email: email);
 
         final doc = await _firestore.collection('users').doc(user.uid).get();
@@ -57,6 +58,18 @@ class AuthRepository {
       await _offlineService.setOfflineLoginState(false);
     } catch (e) {
       if (await _isNetworkError(e)) {
+        if (_offlineService.isOfflineLockedOut(email)) {
+          final remaining = _offlineService.getRemainingLockoutSeconds(email);
+          throw Exception(
+              'Account is temporarily locked out. Please wait $remaining seconds.');
+        }
+        final lastAuth = _offlineService.getLastAuthorizedEmail();
+        if (lastAuth != null &&
+            lastAuth.isNotEmpty &&
+            lastAuth != email.toLowerCase().trim()) {
+          throw Exception(
+              'Offline POS access is restricted to the last authorized account on this device ($lastAuth).');
+        }
         final isValid = _offlineService.verifyOfflinePassword(email, password);
         if (isValid) {
           await _offlineService.setOfflineLoginState(true, email: email);

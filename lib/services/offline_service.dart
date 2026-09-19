@@ -9,6 +9,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/order_model.dart';
+import '../utils/pin_utils.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
@@ -155,39 +156,67 @@ class OfflineService {
     _connectivityController.close();
   }
 
-  // --- Auth Cache (Multi-User Isolated) ---
+  // --- Auth Cache (Multi-User Isolated, Salted Verifiers Only) ---
   static const _secureStorage = FlutterSecureStorage();
   static const int _maxFailedAttempts = 5;
+  static const Duration _lockoutDuration = Duration(minutes: 15);
 
-  /// Cache credentials keyed by email so multiple users can coexist offline.
-  Future<void> cacheCredentials(String email, String password,
+  static const int _maxFailedPinAttempts = 5;
+  static const Duration _pinLockoutDuration = Duration(minutes: 5);
+
+  /// Cache offline verifier (Salted SHA-256 hash + salt) for secure offline login.
+  /// Strictly complies with Zero Raw Password Storage: no plaintext or reversible
+  /// credentials are ever saved.
+  Future<void> cacheOfflineVerifier(String email, String password,
       {String? uid}) async {
     if (!Hive.isBoxOpen(_authBoxName)) await Hive.openBox(_authBoxName);
     final box = Hive.box(_authBoxName);
     final emailKey = email.toLowerCase().trim();
 
-    // 1. Generate salt and hash for secure offline check
+    // 1. Generate salt and salted SHA-256 hash for secure offline verifier
     final salt = _generateRandomSalt(16);
     final hash = _hashPassword(password, salt);
     await box.put('salt_$emailKey', salt);
     await box.put('hash_$emailKey', hash);
 
-    // 2. Security Compliance: Zero raw password storage (Principle 9).
-    // Purge any legacy cached password for this account.
+    // 2. Zero raw password storage (Principle 9) - purge any legacy key
     try {
       await _secureStorage.delete(key: 'cred_$emailKey');
     } catch (_) {}
 
-    // 3. Reset failed attempts count upon successful online login/credentials caching
+    // 3. Reset failed attempts count and lockout on successful authorized login
     await box.put('failed_attempts_$emailKey', 0);
+    await box.delete('locked_until_$emailKey');
 
+    // 4. Record last authorized merchant credentials
     await box.put('last_login', DateTime.now().toIso8601String());
     await box.put('last_login_email', emailKey);
+    await box.put('last_authorized_email', emailKey);
     if (uid != null) {
       await box.put('uid_$emailKey', uid);
-      await box.put(
-          'cached_uid', uid); // Keep global fallback for backward compat
+      await box.put('last_authorized_uid', uid);
+      await box.put('cached_uid', uid); // Global fallback for backward compat
     }
+  }
+
+  /// Backward-compatible alias for cacheOfflineVerifier.
+  Future<void> cacheCredentials(String email, String password,
+      {String? uid}) async {
+    await cacheOfflineVerifier(email, password, uid: uid);
+  }
+
+  /// Get the email of the last authorized user on this terminal.
+  String? getLastAuthorizedEmail() {
+    if (!Hive.isBoxOpen(_authBoxName)) return null;
+    final box = Hive.box(_authBoxName);
+    return box.get('last_authorized_email') ?? box.get('last_login_email');
+  }
+
+  /// Get the UID of the last authorized user on this terminal.
+  String? getLastAuthorizedUid() {
+    if (!Hive.isBoxOpen(_authBoxName)) return null;
+    final box = Hive.box(_authBoxName);
+    return box.get('last_authorized_uid') ?? box.get('cached_uid');
   }
 
   String _generateRandomSalt(int length) {
@@ -201,22 +230,34 @@ class OfflineService {
     return sha256.convert(bytes).toString();
   }
 
-  /// Verify offline credentials using salted SHA-256 hashes synchronously from Hive cache.
-  bool verifyOfflinePassword(String email, String password) {
-    if (isOfflineLockedOut(email)) {
+  /// Verify offline credentials using salted SHA-256 hashes from Hive cache.
+  /// Requirement 6: Offline POS functionality must continue for the last authorized local user only.
+  Future<bool> verifyOfflinePassword(String email, String password) async {
+    final emailKey = email.toLowerCase().trim();
+
+    if (isOfflineLockedOut(emailKey)) {
       debugPrint(
           '🔒 OfflineService: Offline login locked out for $email due to too many failed attempts.');
       return false;
     }
 
-    if (!Hive.isBoxOpen(_authBoxName)) return false;
+    if (!Hive.isBoxOpen(_authBoxName)) await Hive.openBox(_authBoxName);
     final box = Hive.box(_authBoxName);
-    final emailKey = email.toLowerCase().trim();
+
+    // Strict check: only the last authorized user can use offline POS functionality
+    final lastAuth = getLastAuthorizedEmail();
+    if (lastAuth != null && lastAuth.isNotEmpty && lastAuth != emailKey) {
+      debugPrint(
+          '🚫 OfflineService: Denied offline access for $emailKey. Last authorized user is $lastAuth.');
+      await incrementFailedAttempts(emailKey);
+      return false;
+    }
+
     final salt = box.get('salt_$emailKey');
     final hash = box.get('hash_$emailKey');
 
     if (salt == null || hash == null) {
-      incrementFailedAttempts(email);
+      await incrementFailedAttempts(emailKey);
       return false;
     }
 
@@ -224,10 +265,10 @@ class OfflineService {
     final isValid = attemptHash == hash.toString();
 
     if (isValid) {
-      resetFailedAttempts(email);
+      await resetFailedAttempts(emailKey);
       return true;
     } else {
-      incrementFailedAttempts(email);
+      await incrementFailedAttempts(emailKey);
       return false;
     }
   }
@@ -239,25 +280,133 @@ class OfflineService {
     final emailKey = email.toLowerCase().trim();
     final failedCount =
         box.get('failed_attempts_$emailKey', defaultValue: 0) as int;
-    return failedCount >= _maxFailedAttempts;
+
+    if (failedCount < _maxFailedAttempts) return false;
+
+    final lockedUntilStr = box.get('locked_until_$emailKey') as String?;
+    if (lockedUntilStr != null) {
+      final lockedUntil = DateTime.tryParse(lockedUntilStr);
+      if (lockedUntil != null) {
+        if (DateTime.now().isBefore(lockedUntil)) {
+          return true;
+        } else {
+          // Lockout duration has expired, reset counter
+          box.put('failed_attempts_$emailKey', 0);
+          box.delete('locked_until_$emailKey');
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
-  /// Reset failed attempts count (e.g. on online login).
+  /// Returns the remaining lockout seconds for [email], or 0 if not locked.
+  int getRemainingLockoutSeconds(String email) {
+    if (!Hive.isBoxOpen(_authBoxName)) return 0;
+    final box = Hive.box(_authBoxName);
+    final emailKey = email.toLowerCase().trim();
+    final lockedUntilStr = box.get('locked_until_$emailKey') as String?;
+    if (lockedUntilStr != null) {
+      final lockedUntil = DateTime.tryParse(lockedUntilStr);
+      if (lockedUntil != null && DateTime.now().isBefore(lockedUntil)) {
+        return lockedUntil.difference(DateTime.now()).inSeconds;
+      }
+    }
+    return 0;
+  }
+
+  /// Reset failed attempts count and lockout window.
   Future<void> resetFailedAttempts(String email) async {
     if (!Hive.isBoxOpen(_authBoxName)) await Hive.openBox(_authBoxName);
     final box = Hive.box(_authBoxName);
     final emailKey = email.toLowerCase().trim();
     await box.put('failed_attempts_$emailKey', 0);
+    await box.delete('locked_until_$emailKey');
   }
 
-  /// Increment failed attempts count.
+  /// Increment failed attempts count and initiate lockout if threshold reached.
   Future<void> incrementFailedAttempts(String email) async {
     if (!Hive.isBoxOpen(_authBoxName)) await Hive.openBox(_authBoxName);
     final box = Hive.box(_authBoxName);
     final emailKey = email.toLowerCase().trim();
     final current =
         box.get('failed_attempts_$emailKey', defaultValue: 0) as int;
-    await box.put('failed_attempts_$emailKey', current + 1);
+    final newCount = current + 1;
+    await box.put('failed_attempts_$emailKey', newCount);
+
+    if (newCount >= _maxFailedAttempts) {
+      final lockedUntil = DateTime.now().add(_lockoutDuration);
+      await box.put('locked_until_$emailKey', lockedUntil.toIso8601String());
+      debugPrint(
+          '🔒 OfflineService: Threshold reached. Account $email locked out until $lockedUntil');
+    }
+  }
+
+  // --- Employee POS PIN Lockout & Verification Protection ---
+
+  bool isEmployeePinLockedOut(String storeId, String empId) {
+    if (!Hive.isBoxOpen(_employeesCacheBoxName)) return false;
+    final box = Hive.box(_employeesCacheBoxName);
+    final key = 'failed_pin_${storeId}_$empId';
+    final count = box.get(key, defaultValue: 0) as int;
+    if (count < _maxFailedPinAttempts) return false;
+
+    final lockKey = 'pin_locked_until_${storeId}_$empId';
+    final untilStr = box.get(lockKey) as String?;
+    if (untilStr != null) {
+      final lockedUntil = DateTime.tryParse(untilStr);
+      if (lockedUntil != null) {
+        if (DateTime.now().isBefore(lockedUntil)) {
+          return true;
+        } else {
+          box.put(key, 0);
+          box.delete(lockKey);
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  int getRemainingPinLockoutSeconds(String storeId, String empId) {
+    if (!Hive.isBoxOpen(_employeesCacheBoxName)) return 0;
+    final box = Hive.box(_employeesCacheBoxName);
+    final lockKey = 'pin_locked_until_${storeId}_$empId';
+    final untilStr = box.get(lockKey) as String?;
+    if (untilStr != null) {
+      final lockedUntil = DateTime.tryParse(untilStr);
+      if (lockedUntil != null && DateTime.now().isBefore(lockedUntil)) {
+        return lockedUntil.difference(DateTime.now()).inSeconds;
+      }
+    }
+    return 0;
+  }
+
+  Future<void> recordFailedPinAttempt(String storeId, String empId) async {
+    if (!Hive.isBoxOpen(_employeesCacheBoxName)) {
+      await Hive.openBox(_employeesCacheBoxName);
+    }
+    final box = Hive.box(_employeesCacheBoxName);
+    final key = 'failed_pin_${storeId}_$empId';
+    final count = (box.get(key, defaultValue: 0) as int) + 1;
+    await box.put(key, count);
+
+    if (count >= _maxFailedPinAttempts) {
+      final lockedUntil = DateTime.now().add(_pinLockoutDuration);
+      await box.put(
+          'pin_locked_until_${storeId}_$empId', lockedUntil.toIso8601String());
+      debugPrint(
+          '🔒 OfflineService: Employee PIN locked for store $storeId emp $empId until $lockedUntil');
+    }
+  }
+
+  Future<void> resetPinAttempts(String storeId, String empId) async {
+    if (!Hive.isBoxOpen(_employeesCacheBoxName)) {
+      await Hive.openBox(_employeesCacheBoxName);
+    }
+    final box = Hive.box(_employeesCacheBoxName);
+    await box.put('failed_pin_${storeId}_$empId', 0);
+    await box.delete('pin_locked_until_${storeId}_$empId');
   }
 
   /// Cache the real Firebase UID for offline login sessions (keyed by email).
@@ -330,7 +479,9 @@ class OfflineService {
     return Hive.box(_authBoxName).get('offline_email');
   }
 
-  /// Clear credentials for the current session only (not all users).
+  /// Clear credentials for the active session only.
+  /// Requirement 10 & 11: Clears session-specific data while preserving
+  /// other legitimate local user profiles, cached stores, and salted verifiers.
   Future<void> clearCredentials({String? email}) async {
     if (Hive.isBoxOpen(_authBoxName)) {
       final box = Hive.box(_authBoxName);
@@ -344,6 +495,7 @@ class OfflineService {
           await _secureStorage.delete(key: 'cred_$emailKey');
         } catch (_) {}
       }
+      // Purge ONLY active session keys
       await box.delete('is_offline_logged_in');
       await box.delete('offline_email');
       await box.delete('cached_uid');
@@ -434,8 +586,9 @@ class OfflineService {
   static const String _employeesCacheBoxName = 'cache_employees';
 
   Future<void> pinStore(Map<String, dynamic> storeData, {String? uid}) async {
-    if (!Hive.isBoxOpen(_pinnedStoreBoxName))
+    if (!Hive.isBoxOpen(_pinnedStoreBoxName)) {
       await Hive.openBox(_pinnedStoreBoxName);
+    }
     final box = Hive.box(_pinnedStoreBoxName);
     final key = uid != null ? "current_$uid" : "current";
     await box.put(key, _sanitizeForHive(storeData));
@@ -443,8 +596,9 @@ class OfflineService {
   }
 
   Future<Map?> getPinnedStore({String? uid}) async {
-    if (!Hive.isBoxOpen(_pinnedStoreBoxName))
+    if (!Hive.isBoxOpen(_pinnedStoreBoxName)) {
       await Hive.openBox(_pinnedStoreBoxName);
+    }
     final box = Hive.box(_pinnedStoreBoxName);
     final key = uid != null ? "current_$uid" : "current";
     final data = box.get(key);
@@ -458,8 +612,9 @@ class OfflineService {
   /// preserving employee caches of other stores.
   Future<void> cacheStoreEmployees(
       String storeId, List<Map<String, dynamic>> employees) async {
-    if (!Hive.isBoxOpen(_employeesCacheBoxName))
+    if (!Hive.isBoxOpen(_employeesCacheBoxName)) {
       await Hive.openBox(_employeesCacheBoxName);
+    }
     final box = Hive.box(_employeesCacheBoxName);
 
     // Remove old employee entries for THIS store only (not box.clear()!)
@@ -470,14 +625,29 @@ class OfflineService {
     }
 
     for (var emp in employees) {
+      final map = Map<String, dynamic>.from(emp);
+      // Requirements 7 & 8: Never store plaintext PINs in offline cache.
+      if (map.containsKey('pin')) {
+        final rawPin = map['pin']?.toString() ?? '';
+        final empUid = map['uid']?.toString() ?? '';
+        if (!map.containsKey('pinHash') ||
+            map['pinHash'] == null ||
+            map['pinHash'].toString().isEmpty) {
+          if (rawPin.isNotEmpty && empUid.isNotEmpty) {
+            map['pinHash'] = PinUtils.hashPin(rawPin, empUid);
+          }
+        }
+        map.remove('pin');
+      }
       final key = "${storeId}_${emp['employeeId']}";
-      await box.put(key, _sanitizeForHive(emp));
+      await box.put(key, _sanitizeForHive(map));
     }
   }
 
   Future<List<Map>> getCachedStoreEmployees(String storeId) async {
-    if (!Hive.isBoxOpen(_employeesCacheBoxName))
+    if (!Hive.isBoxOpen(_employeesCacheBoxName)) {
       await Hive.openBox(_employeesCacheBoxName);
+    }
     final box = Hive.box(_employeesCacheBoxName);
     return box.values
         .where((e) => (e as Map)['storeId'] == storeId)
@@ -499,8 +669,9 @@ class OfflineService {
   /// Cache a user's store list keyed by [uid]. Does NOT wipe other users' caches.
   Future<void> cacheUserStores(List<Map<String, dynamic>> stores,
       {String? uid}) async {
-    if (!Hive.isBoxOpen(_storesCacheBoxName))
+    if (!Hive.isBoxOpen(_storesCacheBoxName)) {
       await Hive.openBox(_storesCacheBoxName);
+    }
     final box = Hive.box(_storesCacheBoxName);
     final key = uid != null ? 'stores_$uid' : 'stores_global';
     // Store as a single serializable list under the user's key
@@ -509,8 +680,9 @@ class OfflineService {
 
   /// Get the cached store list for a specific [uid].
   Future<List<Map>> getCachedUserStores({String? uid}) async {
-    if (!Hive.isBoxOpen(_storesCacheBoxName))
+    if (!Hive.isBoxOpen(_storesCacheBoxName)) {
       await Hive.openBox(_storesCacheBoxName);
+    }
     final box = Hive.box(_storesCacheBoxName);
     final key = uid != null ? 'stores_$uid' : 'stores_global';
     final data = box.get(key);
