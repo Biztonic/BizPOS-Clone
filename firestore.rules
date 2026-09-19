@@ -111,8 +111,26 @@ service cloud.firestore {
     match /stores/{storeId} {
       allow get: if isSuperAdmin() || isStoreMember(storeId);
       allow list: if isSuperAdmin() || (isAuthenticated() && resource.data.owner == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.owner == request.auth.uid;
-      allow update: if isSuperAdmin() || isStoreOwnerOrManager(storeId);
+      allow create: if isAuthenticated() && 
+                    request.resource.data.owner == request.auth.uid &&
+                    // Restrict baseline plan initialization for non-super-admins
+                    (isSuperAdmin() || (
+                      (!('subscriptionPlan' in request.resource.data) || 
+                       request.resource.data.subscriptionPlan in ['Starting', 'Basic', 'starting', 'basic']) &&
+                      (!('addons' in request.resource.data) || request.resource.data.addons.size() == 0) &&
+                      (!('purchasedAddons' in request.resource.data) || request.resource.data.purchasedAddons.size() == 0)
+                    ));
+      allow update: if isSuperAdmin() || (
+        isStoreOwnerOrManager(storeId) &&
+        // Anti-Bypass: Non-super-admins CANNOT alter subscription, plan, or entitlement fields
+        (!('subscriptionPlan' in request.resource.data) || request.resource.data.subscriptionPlan == resource.data.subscriptionPlan) &&
+        (!('subscriptionStatus' in request.resource.data) || request.resource.data.subscriptionStatus == resource.data.subscriptionStatus) &&
+        (!('subscriptionExpiry' in request.resource.data) || request.resource.data.subscriptionExpiry == resource.data.subscriptionExpiry) &&
+        (!('addons' in request.resource.data) || request.resource.data.addons == resource.data.addons) &&
+        (!('purchasedAddons' in request.resource.data) || request.resource.data.purchasedAddons == resource.data.purchasedAddons) &&
+        (!('entitlements' in request.resource.data) || request.resource.data.entitlements == resource.data.entitlements) &&
+        (!('entitlementVersion' in request.resource.data) || request.resource.data.entitlementVersion == resource.data.entitlementVersion)
+      );
       allow delete: if isSuperAdmin();
       
       // Server-Controlled Store Membership Model

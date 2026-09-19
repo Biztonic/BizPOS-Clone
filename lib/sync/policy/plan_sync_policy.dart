@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
 
 /// Encapsulates ALL subscription plan / throttling / limits logic.
 ///
@@ -46,6 +47,10 @@ class PlanSyncPolicy {
     if (userRole == 'Super Admin') return true;
     if (storeId == null) return false;
 
+    // Check authoritative entitlement status
+    final entitlement = EntitlementService.instance.getEntitlement(storeId);
+    if (entitlement.isSuspended || entitlement.isExpired) return false;
+
     final plan = await getSubscriptionPlan(storeId);
     final hasAddon = await hasDataCenterAddon(storeId);
 
@@ -78,6 +83,12 @@ class PlanSyncPolicy {
   Future<String> getSubscriptionPlan(String? storeId) async {
     if (storeId == null) return 'Basic';
 
+    // 1. Authoritative EntitlementService lookup
+    final authoritativePlan = EntitlementService.instance.planName(storeId);
+    if (authoritativePlan != 'Basic' || _cachedStoreId == storeId) {
+      return authoritativePlan;
+    }
+
     // Return cached value if for the same store
     if (_cachedPlan != null && _cachedStoreId == storeId) {
       return _cachedPlan!;
@@ -95,15 +106,21 @@ class PlanSyncPolicy {
         _cachedStoreId = storeId;
         return plan;
       }
-      return 'Basic';
+      return authoritativePlan;
     } catch (e) {
-      return 'Basic';
+      return authoritativePlan;
     }
   }
 
   /// Checks if the store has the Data Center addon active.
   Future<bool> hasDataCenterAddon(String? storeId) async {
     if (storeId == null) return false;
+
+    // Authoritative EntitlementService
+    if (EntitlementService.instance.hasAddon('data_center', storeId: storeId)) {
+      return true;
+    }
+
     try {
       // Try local cache first
       if (Hive.isBoxOpen('cache_stores')) {
@@ -147,28 +164,10 @@ class PlanSyncPolicy {
     required Future<Map<String, int>> Function(String storeId)
         getLocalOrderCounts,
   }) async {
-    final plan = await getSubscriptionPlan(storeId);
+    if (userRole == 'Super Admin') return;
 
-    // Unlimited plans
-    if (plan == 'Standard' || userRole == 'Super Admin') return;
-
-    // Basic Plan (Limited)
-    final limits = await retrievePlatformLimits();
-    int dailyLimit = limits['daily'] ?? 50;
-    int monthlyLimit = limits['monthly'] ?? 1500;
-
-    final counts = await getLocalOrderCounts(storeId);
-    final dailyCount = counts['daily'] ?? 0;
-    final monthlyCount = counts['monthly'] ?? 0;
-
-    if (dailyCount >= dailyLimit) {
-      throw Exception(
-          "Daily Order Limit Reached ($dailyCount/$dailyLimit). Upgrade to 'Standard Plan' for Unlimited Orders.");
-    }
-    if (monthlyCount >= monthlyLimit) {
-      throw Exception(
-          "Monthly Order Limit Reached ($monthlyCount/$monthlyLimit). Upgrade to 'Standard Plan' for Unlimited Orders.");
-    }
+    // Delegate to authoritative EntitlementService
+    await EntitlementService.instance.checkOrderLimit(storeId);
   }
 
   // ─── Retention Policy ──────────────────────────────────────

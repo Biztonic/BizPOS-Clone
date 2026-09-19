@@ -70,7 +70,8 @@ class AuthRepository {
           throw Exception(
               'Offline POS access is restricted to the last authorized account on this device ($lastAuth).');
         }
-        final isValid = _offlineService.verifyOfflinePassword(email, password);
+        final isValid =
+            await _offlineService.verifyOfflinePassword(email, password);
         if (isValid) {
           await _offlineService.setOfflineLoginState(true, email: email);
           return;

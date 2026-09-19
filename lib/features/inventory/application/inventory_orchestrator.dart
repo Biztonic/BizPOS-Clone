@@ -7,6 +7,7 @@
 ///   - Idempotency guards
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';

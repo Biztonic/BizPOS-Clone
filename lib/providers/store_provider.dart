@@ -16,6 +16,8 @@ import 'package:biztonic_pos/models/role_model.dart';
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:biztonic_pos/services/database_helper.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_model.dart';
 import 'dart:convert';
 import 'dart:io' as io;
 import 'package:file_picker/file_picker.dart';
@@ -222,6 +224,13 @@ class StoreProvider with ChangeNotifier {
               Hive.box('cache_stores').put(storeId, _activeStore!.toMap());
             }
             await OfflineService().pinStore(_activeStore!.toMap(), uid: uid);
+            await EntitlementService.instance.syncFromStore(
+              storeId: storeId,
+              planName: _activeStore!.subscriptionPlan,
+              status: _activeStore!.status,
+              addons: _activeStore!.addons,
+              endDate: _activeStore!.subscriptionExpiry,
+            );
           }
         } catch (e) {
           debugPrint(
@@ -821,6 +830,13 @@ class StoreProvider with ChangeNotifier {
     await _db.collection('stores').doc(id).update({'status': status});
     if (_activeStoreId == id && _activeStore != null) {
       _activeStore = _activeStore!.copyWith(status: status);
+      await EntitlementService.instance.syncFromStore(
+        storeId: id,
+        planName: _activeStore!.subscriptionPlan,
+        status: status,
+        addons: _activeStore!.addons,
+        endDate: _activeStore!.subscriptionExpiry,
+      );
       notifyListeners();
     }
     // Update local list
@@ -866,10 +882,17 @@ class StoreProvider with ChangeNotifier {
     }
     notifyListeners();
 
-    // 2. Persist to Hive
-    if (Hive.isBoxOpen('cache_stores')) {
-      final store = index != -1 ? _stores[index] : _activeStore;
-      if (store != null) {
+    // 2. Persist to Hive & sync EntitlementService
+    final store = index != -1 ? _stores[index] : _activeStore;
+    if (store != null) {
+      await EntitlementService.instance.syncFromStore(
+        storeId: storeId,
+        planName: store.subscriptionPlan,
+        status: store.status,
+        addons: newAddons,
+        endDate: store.subscriptionExpiry,
+      );
+      if (Hive.isBoxOpen('cache_stores')) {
         Hive.box('cache_stores').put(storeId, store.toMap());
       }
     }
@@ -962,12 +985,27 @@ class StoreProvider with ChangeNotifier {
   // --- SUBSCRIPTION HELPERS ---
 
   bool canPerformAction(String action, {int? ordersCount}) {
-    // Always Allow
-    return true;
+    final storeId = _activeStoreId ?? _activeStore?.id ?? '';
+    return EntitlementService.instance.canPerformAction(
+      action,
+      storeId: storeId,
+      currentCount: ordersCount,
+    );
   }
 
   String getBlockReason(String action) {
-    return "";
+    final storeId = _activeStoreId ?? _activeStore?.id ?? '';
+    return EntitlementService.instance.getBlockReason(action, storeId: storeId);
+  }
+
+  PlanStatus get planStatus {
+    final storeId = _activeStoreId ?? _activeStore?.id ?? '';
+    return EntitlementService.instance.planStatus(storeId);
+  }
+
+  bool hasAddon(String addonKey) {
+    final storeId = _activeStoreId ?? _activeStore?.id ?? '';
+    return EntitlementService.instance.hasAddon(addonKey, storeId: storeId);
   }
 
   // --- COUNTERS ---

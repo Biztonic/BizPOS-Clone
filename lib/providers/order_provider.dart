@@ -14,6 +14,7 @@ import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/features/billing/domain/use_cases/checkout_order.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
 import 'package:intl/intl.dart';
 
 class OrderProvider with ChangeNotifier {
@@ -219,8 +220,14 @@ class OrderProvider with ChangeNotifier {
   Future<void> placeOrder(OrderModel order, Store? activeStore) async {
     if (activeStore == null) throw Exception("No active store selected");
 
-    // 1. Enforce Subscription Limits (Fast check via memory cache)
+    // 1. Enforce Subscription Limits (Authoritative check via EntitlementService)
     if (!_isUnrestricted) {
+      if (!EntitlementService.instance
+          .canPerformAction('create_order', storeId: activeStore.id)) {
+        final reason = EntitlementService.instance
+            .getBlockReason('create_order', storeId: activeStore.id);
+        throw PlanLimitExceededException(reason);
+      }
       await _syncService.checkOrderLimit(activeStore.id);
     }
 
@@ -379,7 +386,7 @@ class OrderProvider with ChangeNotifier {
           type: MovementType.refund,
           delta: item.quantity, // Positive delta
           orderId: orderId,
-          unitCost: item.cost,
+          unitCost: item.costSnapshot ?? item.item.cost,
           reason: 'Order Refund',
           deviceId: _syncService.deviceId ?? 'unknown',
           operationId: 'refund_${orderId}_${item.item.id}',

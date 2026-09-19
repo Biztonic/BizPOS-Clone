@@ -28,6 +28,8 @@ import 'package:biztonic_pos/services/google_drive_service.dart';
 import 'package:biztonic_pos/providers/order_provider.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:biztonic_pos/services/recovery_service.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_model.dart';
 import 'package:biztonic_pos/services/offline_service.dart';
 import 'package:biztonic_pos/providers/customer_provider.dart';
 import '../routing/router_notifier.dart';
@@ -1103,6 +1105,11 @@ class DashboardProvider with ChangeNotifier {
       return false;
     }
 
+    final storeId = activeStore!.id;
+    if (EntitlementService.instance.hasAddon(key, storeId: storeId)) {
+      return true;
+    }
+
     // Resolve feature status based on store type configurations
     final type = activeStore!.storeType;
     final config = _storeTypeConfigs[type];
@@ -1128,7 +1135,8 @@ class DashboardProvider with ChangeNotifier {
       if (['table_reservation', 'kds_management'].contains(key)) return false;
     }
 
-    if (activeStore!.subscriptionPlan != 'Standard') {
+    if (activeStore!.subscriptionPlan != 'Standard' &&
+        activeStore!.subscriptionPlan != 'Enterprise') {
       debugPrint(
           '🔒 hasAddon($key): BLOCKED - store is on ${activeStore!.subscriptionPlan} plan (not Standard)');
       return false;
@@ -1368,7 +1376,20 @@ class DashboardProvider with ChangeNotifier {
   }
 
   bool isFeatureEnabled(String key) {
-    // Core features that are always enabled
+    if (isSuperAdmin) return true;
+
+    final storeId = _activeStoreId ?? activeStore?.id ?? '';
+    if (storeId.isNotEmpty) {
+      if (!EntitlementService.instance.isFeatureEnabled(
+        key,
+        storeId: storeId,
+        userRole: activeRole,
+      )) {
+        return false;
+      }
+    }
+
+    // Core features that are permitted if plan is active
     if (['dashboard', 'pos', 'reports', 'settings'].contains(key)) return true;
     String internalAddonKey = key;
     if (key == 'crm') internalAddonKey = 'customer_management';
@@ -1412,7 +1433,7 @@ class DashboardProvider with ChangeNotifier {
         }
         return false;
       }
-      return true;
+      return false; // Restrict unmapped roles
     }
     return true;
   }
@@ -2018,6 +2039,33 @@ class DashboardProvider with ChangeNotifier {
             '⚠️ DashboardProvider: Error updating purchasedAddons locally: $e');
       }
     }
+
+    // Update authoritative EntitlementService & record audit event
+    final newPlanTier = PlanTier.fromValue(request.planType);
+    final entitlement = StoreEntitlement.create(
+      storeId: storeId,
+      plan: newPlanTier,
+      status: PlanStatus.active,
+      startDate: now,
+      endDate: expiry,
+      addons: Set<String>.from(finalActive),
+      limits: EntitlementService.defaultPlanLimits[newPlanTier] ??
+          EntitlementService.defaultPlanLimits[PlanTier.basic]!,
+      features: EntitlementService.defaultPlanFeatures[newPlanTier] ??
+          EntitlementService.defaultPlanFeatures[PlanTier.basic]!,
+      version: 1,
+    );
+    await EntitlementService.instance.updateEntitlement(entitlement);
+    await EntitlementService.instance.auditSubscriptionChange(
+      storeId: storeId,
+      oldPlan: PlanTier.fromValue(activeStore?.subscriptionPlan),
+      newPlan: newPlanTier,
+      oldStatus: PlanStatus.active,
+      newStatus: PlanStatus.active,
+      changedBy: _userProfile?.email ?? 'SUPER_ADMIN',
+      reason: 'Subscription request approved: ${request.id}',
+      addedAddons: request.selectedAddons,
+    );
 
     // Update local user role state if matching current user
     final matchesUid =

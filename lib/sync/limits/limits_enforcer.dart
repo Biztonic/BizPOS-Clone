@@ -4,6 +4,8 @@ import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/core/config/plan_config.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_model.dart';
 
 /// Enforces subscription plan limits (order counts, inventory limits, etc.)
 ///
@@ -46,12 +48,24 @@ class LimitsEnforcer {
   /// Fires [PlanLimitReachedEvent] if limit is reached.
   Future<void> checkOrderLimit(String storeId) async {
     try {
-      final plan = _cachedSubscriptionPlan ?? 'Basic';
+      final entitlement = EntitlementService.instance.getEntitlement(storeId);
+      final plan = entitlement.plan.value;
+      _cachedSubscriptionPlan = plan;
+
+      if (entitlement.plan == PlanTier.standard ||
+          entitlement.plan == PlanTier.professional ||
+          entitlement.plan == PlanTier.enterprise) {
+        _isLimitReached = false;
+        return;
+      }
+
       final limits = _cachedPlatformLimits ?? {};
 
-      // Get configured limits
-      _dailyLimit = _extractLimit(limits, 'dailyOrderLimit');
-      _monthlyLimit = _extractLimit(limits, 'monthlyOrderLimit');
+      // Get configured limits or entitlement defaults
+      _dailyLimit = entitlement.limits['dailyOrders'] ??
+          _extractLimit(limits, 'dailyOrderLimit');
+      _monthlyLimit = entitlement.limits['monthlyOrders'] ??
+          _extractLimit(limits, 'monthlyOrderLimit');
 
       // Fall back to plan defaults if not configured
       if (_dailyLimit <= 0) {
@@ -144,6 +158,11 @@ class LimitsEnforcer {
 
   /// Check if a feature is available under the current plan.
   bool isFeatureAvailable(String feature) {
+    final storeId = getActiveStoreId();
+    if (storeId != null && storeId.isNotEmpty) {
+      return EntitlementService.instance
+          .isFeatureEnabled(feature, storeId: storeId);
+    }
     final plan = _cachedSubscriptionPlan ?? 'Basic';
     return PlanConfig.isFeatureAvailable(plan, feature);
   }

@@ -24,6 +24,7 @@ import 'package:biztonic_pos/sync/diagnostics/stats_engine.dart';
 import 'package:biztonic_pos/sync/maintenance/sync_maintenance.dart';
 import 'package:biztonic_pos/sync/policy/plan_sync_policy.dart';
 import 'package:biztonic_pos/sync/limits/limits_engine.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
 import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
 import 'package:biztonic_pos/sync/network/sync_network_manager.dart';
 import 'package:biztonic_pos/sync/outbox/outbox_operation.dart';
@@ -473,22 +474,26 @@ class SyncService with ChangeNotifier {
 
   /// Validates if an order can be created based on plan limits.
   Future<void> checkOrderLimit(String storeId) async {
-    await _limitsEngine.validateOrderCreation(
-      storeId: storeId,
-      userRole: _userRole,
-      getLocalOrderCounts: _statsEngine.getLocalOrderCounts,
-    );
+    if (_userRole == 'Super Admin') return;
+    await EntitlementService.instance.checkOrderLimit(storeId);
   }
 
   /// Whether the store is currently subscribed.
   bool get isSubscribed {
-    // A store is considered subscribed if a plan beyond 'Basic' is cached.
+    if (_activeStoreId != null && _activeStoreId!.isNotEmpty) {
+      return EntitlementService.instance.isSubscribed(_activeStoreId!);
+    }
     final plan = _cachedSubscriptionPlan ?? 'Basic';
     return plan != 'Basic';
   }
 
   /// Human-readable plan name.
-  String get planName => _cachedSubscriptionPlan ?? 'Basic';
+  String get planName {
+    if (_activeStoreId != null && _activeStoreId!.isNotEmpty) {
+      return EntitlementService.instance.planName(_activeStoreId!);
+    }
+    return _cachedSubscriptionPlan ?? 'Basic';
+  }
 
   /// Retrieves platform limits (with caching).
   Future<Map<String, dynamic>> retrievePlatformLimits() async {

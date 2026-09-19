@@ -16,6 +16,7 @@ import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/announcement/service/announcement_service.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
 
 import '../../domain/entities/order_entity.dart';
 import '../../domain/repositories/billing_repository.dart';
@@ -114,8 +115,14 @@ class BillingProvider with ChangeNotifier {
     _setStatus(BillingStatus.loading);
 
     try {
-      // 1. Subscription limit check (delegates to SyncService)
+      // 1. Subscription limit check (delegates to EntitlementService & SyncService)
       if (checkLimits) {
+        if (!EntitlementService.instance
+            .canPerformAction('create_order', storeId: activeStoreId)) {
+          final reason = EntitlementService.instance
+              .getBlockReason('create_order', storeId: activeStoreId);
+          throw PlanLimitExceededException(reason);
+        }
         await _syncService.checkOrderLimit(activeStoreId);
       }
 

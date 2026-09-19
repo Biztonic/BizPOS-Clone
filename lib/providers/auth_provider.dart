@@ -272,9 +272,6 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Override to check offline status
-  bool get isLoggedIn => _user != null || _isOfflineLoggedIn;
-
   Future<void> signUpWithEmail(String email, String password, String mobile,
       {String? franchiseCode}) async {
     try {

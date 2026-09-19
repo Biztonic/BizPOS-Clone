@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hive/hive.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
 import '../../auth/domain/entities/user_profile.dart';
 import '../../store/domain/entities/store.dart';
 import '../../auth/providers/profile_notifier.dart';
@@ -16,6 +17,17 @@ class PermissionsHelper {
 
   bool isFeatureEnabled(String key) {
     if (profile?.role == 'Super Admin') return true;
+
+    // Authoritative entitlement check
+    if (activeStore != null) {
+      if (!EntitlementService.instance.isFeatureEnabled(
+        key,
+        storeId: activeStore!.id,
+        userRole: profile?.role,
+      )) {
+        return false;
+      }
+    }
 
     String internalAddonKey = key;
     if (key == 'crm') internalAddonKey = 'customer_management';
@@ -62,33 +74,41 @@ class PermissionsHelper {
   bool hasAddon(String key) {
     if (activeStore == null) return false;
 
-    // Resolve feature status based on store type configurations cached in Hive
-    final type = activeStore!.storeType;
-    final box = Hive.isBoxOpen('store_type_configs')
-        ? Hive.box('store_type_configs')
-        : null;
-    final configs = box?.get('configs') as Map?;
-    final config = configs?[type];
-    if (config is Map && config.containsKey(key)) {
-      return config[key] == true;
-    }
+    final entitlement =
+        EntitlementService.instance.getEntitlement(activeStore!.id);
+    if (!entitlement.isUsable) return false;
 
-    // Default templates if no custom config exists yet
-    if (type == 'Restaurant') {
-      if (['table_reservation', 'kds_management', 'employee_management']
-          .contains(key)) return true;
-      if (['barcode_scanner'].contains(key)) return false;
-    } else if (type == 'Grocery' || type == 'Supermarket') {
-      if ([
-        'barcode_scanner',
-        'customer_management',
-        'supplier_management',
-        'data_center'
-      ].contains(key)) return true;
-      if (['table_reservation', 'kds_management'].contains(key)) return false;
-    }
+    // Check authoritative EntitlementService or store addons
+    final hasStoreEntitlement =
+        EntitlementService.instance.hasAddon(key, storeId: activeStore!.id) ||
+            activeStore!.addons.contains(key) ||
+            activeStore!.purchasedAddons.contains(key);
 
-    if (activeStore!.subscriptionPlan != 'Standard') return false;
+    if (!hasStoreEntitlement) {
+      // Resolve feature status based on store type configurations cached in Hive
+      final type = activeStore!.storeType;
+      final box = Hive.isBoxOpen('store_type_configs')
+          ? Hive.box('store_type_configs')
+          : null;
+      final configs = box?.get('configs') as Map?;
+      final config = configs?[type];
+      if (config is Map && config.containsKey(key)) {
+        if (config[key] != true) return false;
+      } else if (type == 'Restaurant') {
+        // Default templates if no custom config exists yet
+        if (!['table_reservation', 'kds_management', 'employee_management']
+            .contains(key)) return false;
+      } else if (type == 'Grocery' || type == 'Supermarket') {
+        if (![
+          'barcode_scanner',
+          'customer_management',
+          'supplier_management',
+          'data_center'
+        ].contains(key)) return false;
+      } else {
+        return false;
+      }
+    }
 
     if (profile != null &&
         profile!.role != 'Store Owner' &&
@@ -97,7 +117,7 @@ class PermissionsHelper {
       if (!profile!.accessibleAddons!.contains(key)) return false;
     }
 
-    return activeStore!.addons.contains(key);
+    return true;
   }
 }
 
