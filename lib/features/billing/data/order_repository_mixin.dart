@@ -5,11 +5,8 @@ import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
+import 'package:biztonic_pos/services/recovery_service.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
-
-Map<String, dynamic> _decodeJson(String json) =>
-    jsonDecode(json) as Map<String, dynamic>;
 
 mixin OrderRepositoryMixin {
   Future<Database> get database;
@@ -161,72 +158,11 @@ mixin OrderRepositoryMixin {
   }
 
   Future<void> replayTransaction(String txId, String operationsJson) async {
-    final db = await dbHelper.database;
-    final Map<String, dynamic> data =
-        await compute(_decodeJson, operationsJson);
-
-    final orderMap = data['order'] as Map<String, dynamic>;
-    final itemsList = data['orderItems'] as List<dynamic>;
-    final eventMap = data['event'] as Map<String, dynamic>;
-    final movementsList = data['movements'] as List<dynamic>;
-    final yearMonth = data['yearMonth'] as String;
-
-    await db.transaction((txn) async {
-      // 1. Insert Order
-      await txn.insert('orders', orderMap,
-          conflictAlgorithm: ConflictAlgorithm.replace);
-
-      // 2. Insert Order Items
-      for (var item in itemsList) {
-        await txn.insert('order_items', item as Map<String, dynamic>,
-            conflictAlgorithm: ConflictAlgorithm.replace);
-      }
-
-      // 3. Insert Business Event
-      await txn.insert('business_events', eventMap,
-          conflictAlgorithm: ConflictAlgorithm.replace);
-
-      // 4. Update Token Counter (Logic simplified for replay)
-      final counterResults = await txn.query(
-        'monthly_order_counter',
-        where: 'storeId = ? AND yearMonth = ?',
-        whereArgs: [orderMap['storeId'], yearMonth],
-      );
-
-      if (counterResults.isEmpty) {
-        await txn.insert('monthly_order_counter', {
-          'storeId': orderMap['storeId'],
-          'yearMonth': yearMonth,
-          'count': 1,
-        });
-      } else {
-        int currentCount = counterResults.first['count'] as int;
-        await txn.update(
-          'monthly_order_counter',
-          {'count': currentCount + 1},
-          where: 'storeId = ? AND yearMonth = ?',
-          whereArgs: [orderMap['storeId'], yearMonth],
-        );
-      }
-
-      // 5. Insert Inventory Movements
-      for (var movementMap in movementsList) {
-        final movement = InventoryMovement.fromMap(
-            movementMap as Map<String, dynamic>, movementMap['id']);
-        await movementRepo.insertMovement(movement, txn: txn);
-      }
-
-      // 6. Mark Journal Complete
-      await txn.update(
-        'transaction_journal',
-        {
-          'status': 'COMPLETED',
-          'completedAt': DateTime.now().toIso8601String(),
-        },
-        where: 'id = ?',
-        whereArgs: [txId],
-      );
-    });
+    final recoveryService = RecoveryService(
+      dbHelper: dbHelper,
+      movementRepo: movementRepo,
+    );
+    await recoveryService.reconcileTransaction(txId, autoReconcile: true);
   }
 
   // --- BATCH ORDERS ---

@@ -35,7 +35,7 @@ class DatabaseHelper {
     return _database!;
   }
 
-  static const int _version = 25;
+  static const int _version = 26;
   static String? _testDbName;
   @visibleForTesting
   static void setDbName(String name) => _testDbName = name;
@@ -208,19 +208,22 @@ class DatabaseHelper {
         final inventoryItems =
             await db.query('inventory', where: 'quantity > 0');
         for (var item in inventoryItems) {
-          final movementId =
-              'MOV-MIGR-${DateTime.now().millisecondsSinceEpoch}-${item['id']}';
-          await db.insert('inventory_movements', {
-            'id': movementId,
-            'itemId': item['id'],
-            'storeId': item['storeId'],
-            'type': 'INITIAL_STOCK',
-            'delta': item['quantity'],
-            'reason': 'Migration from v4 to v5',
-            'deviceId': 'MIGRATION',
-            'createdAt': DateTime.now().toIso8601String(),
-            'syncStatus': 'SYNCED',
-          });
+          final movementId = 'MOV-MIGR-V5-${item['id']}';
+          await db.insert(
+            'inventory_movements',
+            {
+              'id': movementId,
+              'itemId': item['id'],
+              'storeId': item['storeId'],
+              'type': 'INITIAL_STOCK',
+              'delta': item['quantity'],
+              'reason': 'Migration from v4 to v5',
+              'deviceId': 'MIGRATION',
+              'createdAt': DateTime.now().toIso8601String(),
+              'syncStatus': 'SYNCED',
+            },
+            conflictAlgorithm: ConflictAlgorithm.ignore,
+          );
         }
       } catch (e) {/* Error ignored */}
     }
@@ -793,6 +796,160 @@ class DatabaseHelper {
         }
       } catch (e) {/* Error ignored */}
     }
+
+    // Migration V26: Production-Grade Hardening (Uniqueness Constraints, Deduplication & Session Integrity)
+    if (oldVersion < 26) {
+      try {
+        // 1. Deduplicate legacy employees by (storeId, employeeId) before creating unique index
+        try {
+          final dupEmployees = await db.rawQuery('''
+            SELECT storeId, employeeId, COUNT(*) as count 
+            FROM employees 
+            WHERE employeeId IS NOT NULL AND employeeId != '' AND (isDeleted = 0 OR isDeleted IS NULL)
+            GROUP BY storeId, employeeId 
+            HAVING count > 1
+          ''');
+
+          for (var dup in dupEmployees) {
+            final storeId = dup['storeId'];
+            final employeeId = dup['employeeId'];
+            final rows = await db.query(
+              'employees',
+              where: 'storeId = ? AND employeeId = ?',
+              whereArgs: [storeId, employeeId],
+              orderBy: 'updatedAt DESC, rowid DESC',
+            );
+            if (rows.length > 1) {
+              for (int i = 1; i < rows.length; i++) {
+                final dupId = rows[i]['id'] as String;
+                await db.update(
+                  'employees',
+                  {
+                    'isDeleted': 1,
+                    'deletedAt': DateTime.now().toIso8601String(),
+                    'employeeId': '${employeeId}_dup_${i}_${rows[i]['id']}',
+                  },
+                  where: 'id = ?',
+                  whereArgs: [dupId],
+                );
+              }
+            }
+          }
+        } catch (_) {}
+
+        // 2. Create authoritative unique index on employees(storeId, employeeId)
+        try {
+          await db.execute('''
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_employees_store_emp_id 
+            ON employees(storeId, employeeId) 
+            WHERE employeeId IS NOT NULL AND employeeId != '' AND isDeleted = 0
+          ''');
+        } catch (_) {}
+
+        // 3. Deduplicate legacy inventory_movements by (storeId, operationId) before creating unique index
+        try {
+          final dupMovements = await db.rawQuery('''
+            SELECT storeId, operationId, COUNT(*) as count 
+            FROM inventory_movements 
+            WHERE operationId IS NOT NULL AND operationId != ''
+            GROUP BY storeId, operationId 
+            HAVING count > 1
+          ''');
+
+          for (var dup in dupMovements) {
+            final storeId = dup['storeId'];
+            final opId = dup['operationId'];
+            final rows = await db.query(
+              'inventory_movements',
+              where: 'storeId = ? AND operationId = ?',
+              whereArgs: [storeId, opId],
+              orderBy: 'createdAt ASC, rowid ASC',
+            );
+            if (rows.length > 1) {
+              for (int i = 1; i < rows.length; i++) {
+                final dupRowId = rows[i]['id'] as String;
+                await db.delete(
+                  'inventory_movements',
+                  where: 'id = ?',
+                  whereArgs: [dupRowId],
+                );
+              }
+            }
+          }
+        } catch (_) {}
+
+        // 4. Create authoritative unique index on inventory_movements(storeId, operationId)
+        try {
+          await db.execute('''
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_movements_store_operation 
+            ON inventory_movements(storeId, operationId) 
+            WHERE operationId IS NOT NULL AND operationId != ''
+          ''');
+        } catch (_) {}
+
+        // 5. Create business_days table (Enforcing store + business date uniqueness)
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS business_days (
+            id TEXT PRIMARY KEY,
+            storeId TEXT NOT NULL,
+            businessDate TEXT NOT NULL,
+            status TEXT DEFAULT 'OPEN',
+            openedAt TEXT,
+            closedAt TEXT,
+            totalSales REAL DEFAULT 0.0,
+            orderCount INTEGER DEFAULT 0,
+            UNIQUE(storeId, businessDate)
+          )
+        ''');
+
+        // 6. Create daily_order_counter table
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS daily_order_counter (
+            storeId TEXT NOT NULL,
+            businessDate TEXT NOT NULL,
+            count INTEGER DEFAULT 0,
+            PRIMARY KEY (storeId, businessDate)
+          )
+        ''');
+
+        // 7. Indexes for performance & query isolation
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_orders_business_day ON orders(storeId, businessDayId)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_journal_status ON transaction_journal(status)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_journal_store ON transaction_journal(storeId)');
+
+        // 8. Ensure version and soft-delete columns on all core tables
+        for (var table in [
+          'orders',
+          'inventory',
+          'customers',
+          'employees',
+          'roles',
+          'floors',
+          'tables',
+          'suppliers',
+          'notes',
+          'store_settings'
+        ]) {
+          try {
+            await db.execute(
+                'ALTER TABLE $table ADD COLUMN version INTEGER DEFAULT 1');
+          } catch (_) {}
+          try {
+            await db.execute(
+                'ALTER TABLE $table ADD COLUMN isDeleted INTEGER DEFAULT 0');
+          } catch (_) {}
+          try {
+            await db.execute('ALTER TABLE $table ADD COLUMN deletedBy TEXT');
+          } catch (_) {}
+          try {
+            await db.execute('ALTER TABLE $table ADD COLUMN lastSyncedAt TEXT');
+          } catch (_) {}
+        }
+      } catch (e) {/* Error ignored */}
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -1266,6 +1423,50 @@ class DatabaseHelper {
     ''');
     await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_conflict_store ON conflict_records(storeId)');
+
+    // 14. Business Days & Daily Counters (Session & Operational Hardening)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS business_days (
+        id TEXT PRIMARY KEY,
+        storeId TEXT NOT NULL,
+        businessDate TEXT NOT NULL,
+        status TEXT DEFAULT 'OPEN',
+        openedAt TEXT,
+        closedAt TEXT,
+        totalSales REAL DEFAULT 0.0,
+        orderCount INTEGER DEFAULT 0,
+        UNIQUE(storeId, businessDate)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS daily_order_counter (
+        storeId TEXT NOT NULL,
+        businessDate TEXT NOT NULL,
+        count INTEGER DEFAULT 0,
+        PRIMARY KEY (storeId, businessDate)
+      )
+    ''');
+
+    // 15. Authoritative Business-Critical Unique Indexes & Query Indexes
+    await db.execute('''
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_employees_store_emp_id 
+      ON employees(storeId, employeeId) 
+      WHERE employeeId IS NOT NULL AND employeeId != '' AND isDeleted = 0
+    ''');
+
+    await db.execute('''
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_movements_store_operation 
+      ON inventory_movements(storeId, operationId) 
+      WHERE operationId IS NOT NULL AND operationId != ''
+    ''');
+
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_orders_business_day ON orders(storeId, businessDayId)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_journal_status ON transaction_journal(status)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_journal_store ON transaction_journal(storeId)');
   }
 
   // --- Helper Methods ---
@@ -1302,6 +1503,8 @@ class DatabaseHelper {
       'employee_attendance',
       'employee_leaves',
       'employee_payroll',
+      'business_days',
+      'daily_order_counter',
       'expense_categories',
       'expenses',
       'payment_methods',

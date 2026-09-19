@@ -147,6 +147,8 @@ class DashboardProvider with ChangeNotifier {
   final RecoveryService _recoveryService = RecoveryService();
   List<Map<String, dynamic>> _pendingRecoveries = [];
   List<Map<String, dynamic>> get pendingRecoveries => _pendingRecoveries;
+  List<TransactionReconciliationReport> get recoveryReports =>
+      _recoveryService.reports;
 
   DashboardProvider({FirebaseAuth? auth}) : _auth = auth ?? _getDefaultAuth() {
     debugPrint('🏗️ DashboardProvider Constructor START');
