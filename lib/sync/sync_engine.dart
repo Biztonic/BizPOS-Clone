@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:biztonic_pos/services/repository.dart';
@@ -27,6 +25,10 @@ import 'package:biztonic_pos/sync/maintenance/sync_maintenance.dart';
 import 'package:biztonic_pos/sync/policy/plan_sync_policy.dart';
 import 'package:biztonic_pos/sync/limits/limits_engine.dart';
 import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
+import 'package:biztonic_pos/sync/network/sync_network_manager.dart';
+import 'package:biztonic_pos/sync/outbox/outbox_operation.dart';
+import 'package:biztonic_pos/sync/outbox/outbox_store.dart';
+import 'package:biztonic_pos/sync/conflict/conflict_record.dart';
 
 // --- Adapter Imports (only files that exist) ---
 import 'package:biztonic_pos/sync/adapters/sync_adapter.dart';
@@ -91,6 +93,10 @@ class SyncService with ChangeNotifier {
     if (lastSyncWarning != null) return _extractIndexLink(lastSyncWarning!);
     return null;
   }
+
+  late final SyncNetworkManager _networkManager = SyncNetworkManager();
+  SyncNetworkState get networkState => _networkManager.currentState;
+  bool get isFirebaseAvailable => _networkManager.canSync;
 
   String? _deviceId;
   String? get deviceId => _deviceId;
@@ -291,6 +297,8 @@ class SyncService with ChangeNotifier {
 
       // 6. Run Maintenance (Background)
       unawaited(_maintenanceEngine.repairAllModules());
+      // Recover stale in-flight outbox operations from previous crashes
+      unawaited(_outboundManager.recoverStaleOperations());
 
       _isInitialized = true;
       debugPrint("✅ SyncService Decomposed Initialized");
@@ -356,27 +364,21 @@ class SyncService with ChangeNotifier {
   }
 
   void _initConnectivity() {
-    Connectivity().checkConnectivity().then((result) {
-      final status = result.isNotEmpty ? result.first : ConnectivityResult.none;
-      _updateConnectionStatus(status);
-    });
-    Connectivity()
-        .onConnectivityChanged
-        .listen((List<ConnectivityResult> result) {
-      _updateConnectionStatus(
-          result.isNotEmpty ? result.first : ConnectivityResult.none);
+    _networkManager.init();
+    _networkManager.onStateChanged.listen((state) {
+      _updateConnectionStatus(state);
     });
   }
 
-  void _updateConnectionStatus(ConnectivityResult result) {
+  void _updateConnectionStatus(SyncNetworkState state) {
     bool wasOffline = !_isOnline;
-    _isOnline = (result != ConnectivityResult.none);
+    _isOnline = (state == SyncNetworkState.firebaseAvailable);
     notifyListeners();
 
     if (_isOnline) {
       if (!_hasCloudAccess && OfflineService().getOfflineLoginState()) {
         _diagnostics.log(
-            "Network Restored ($result) but no cloud access. Attempting auto-login...");
+            "Firebase Available (${state.toDisplayString()}) but no cloud access. Attempting auto-login...");
         _checkAndPerformAutoCloudLogin().then((_) {
           if (_hasCloudAccess) {
             _diagnostics.log(
@@ -385,7 +387,8 @@ class SyncService with ChangeNotifier {
           }
         });
       } else if (wasOffline && _hasCloudAccess) {
-        _diagnostics.log("Network Restored ($result). Triggering sync...");
+        _diagnostics.log(
+            "Firebase Available (${state.toDisplayString()}). Triggering sync...");
         processSync();
       }
     }
@@ -527,8 +530,9 @@ class SyncService with ChangeNotifier {
     try {
       final start = error.indexOf("https://console.firebase.google.com");
       final end = error.indexOf(" ", start);
-      if (end == -1)
+      if (end == -1) {
         return error.substring(start).replaceAll("]", "").replaceAll(")", "");
+      }
       return error
           .substring(start, end)
           .replaceAll("]", "")
@@ -689,30 +693,64 @@ class SyncService with ChangeNotifier {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // OUTBOUND QUEUE
+  // OUTBOUND QUEUE & OUTBOX
   // ─────────────────────────────────────────────────────────────
 
-  /// Queues an operation for background synchronization.
-  Future<void> queueOperation({
+  OutboxStore get outboxStore => _outboundManager.outboxStore;
+
+  Map<String, int> getOutboxStats() =>
+      _outboundManager.getQueueStats(storeId: activeStoreId);
+
+  List<OutboxOperation> getDeadLetterOperations() =>
+      _outboundManager.outboxStore
+          .getDeadLetterOperations(storeId: activeStoreId);
+
+  Future<void> retryOperation(String operationId) async {
+    await _outboundManager.outboxStore.retryOperation(operationId);
+    notifyListeners();
+  }
+
+  Future<int> retryAllDeadLetter() async {
+    final count = await _outboundManager.resetRetries(storeId: activeStoreId);
+    notifyListeners();
+    return count;
+  }
+
+  Future<List<ConflictRecord>> getConflictRecords() =>
+      _repository.getConflictRecords(storeId: activeStoreId);
+
+  Future<void> resolveConflictRecord(
+          String id, String resolution, String resolvedBy) =>
+      _repository.resolveConflictRecord(id, resolution, resolvedBy);
+
+  /// Queues an operation for background synchronization with durable Outbox semantics.
+  Future<String> queueOperation({
     required String collection,
     required String docId,
     required String action,
     required Map<String, dynamic> payload,
+    String? operationId,
+    int? baseVersion,
+    int? newVersion,
   }) async {
-    await _outboundManager.queueOperation(
+    final opId = await _outboundManager.queueOperation(
       collection: collection,
       docId: docId,
       action: action,
       payload: payload,
+      operationId: operationId,
+      baseVersion: baseVersion,
+      newVersion: newVersion,
     );
 
     if (_isOnline && _hasCloudAccess) {
       unawaited(processSync());
     }
+    return opId;
   }
 
   // ─────────────────────────────────────────────────────────────
-  // LOCAL WRITE (Offline-First Write Path)
+  // LOCAL WRITE (Offline-First Write Path with Tombstones)
   // ─────────────────────────────────────────────────────────────
 
   Future<void> performLocalWrite({
@@ -722,10 +760,18 @@ class SyncService with ChangeNotifier {
     required String action,
     String? localCacheBox,
     bool refreshCounts = true,
+    String? operationId,
   }) async {
-    // 1. Tag with device ID
+    // 1. Tag with device ID & audit
     data['deviceId'] = data['deviceId'] ?? _deviceId;
     data['lastModifiedBy'] = _deviceId;
+
+    if (action.toLowerCase() == 'delete') {
+      data['isDeleted'] = true;
+      data['deletedAt'] = data['deletedAt'] ?? DateTime.now().toIso8601String();
+      data['deletedBy'] = data['deletedBy'] ?? (_userId ?? _deviceId);
+      data['version'] = ((data['version'] as num?)?.toInt() ?? 1) + 1;
+    }
 
     // 2. Offline-First Hive Write
     final boxName =
@@ -733,8 +779,13 @@ class SyncService with ChangeNotifier {
     if (boxName != null) {
       try {
         final box = await Hive.openBox(boxName);
-        if (action == 'delete') {
-          await box.delete(docId);
+        if (action.toLowerCase() == 'delete') {
+          // Soft-delete tombstone in Hive
+          final payload = Map<String, dynamic>.from(data);
+          payload['id'] = docId;
+          payload['isDeleted'] = true;
+          payload['syncStatus'] = 'PENDING';
+          await box.put(docId, _deepSanitize(payload));
         } else {
           final payload = Map<String, dynamic>.from(data);
           payload['id'] = docId;
@@ -760,7 +811,7 @@ class SyncService with ChangeNotifier {
     if (!kIsWeb) {
       final adapter = _adapters[collection];
       if (adapter != null) {
-        if (action == 'delete') {
+        if (action.toLowerCase() == 'delete') {
           await adapter.deleteLocal(docId, _repository);
         } else {
           await adapter.insertFromCloud(data, docId, _repository);
@@ -770,12 +821,17 @@ class SyncService with ChangeNotifier {
 
     if (refreshCounts) refreshLocalCounts();
 
-    // 5. Queue for Cloud Sync
+    // 5. Queue for Cloud Sync in durable Outbox
     await queueOperation(
       collection: collection,
       docId: docId,
       action: action,
       payload: Map<String, dynamic>.from(data),
+      operationId: operationId,
+      baseVersion: (data['version'] as num?)?.toInt() ?? 1,
+      newVersion: action.toLowerCase() == 'delete'
+          ? ((data['version'] as num?)?.toInt() ?? 1)
+          : ((data['version'] as num?)?.toInt() ?? 1) + 1,
     );
   }
 
@@ -797,16 +853,8 @@ class SyncService with ChangeNotifier {
   // ─────────────────────────────────────────────────────────────
 
   Future<bool> _checkInternetConnection() async {
-    if (kIsWeb) return true;
-    try {
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 3));
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } on SocketException catch (_) {
-      return false;
-    } catch (_) {
-      return false;
-    }
+    if (SyncNetworkManager.isTesting) return _isOnline;
+    return _networkManager.canSync;
   }
 
   // ─────────────────────────────────────────────────────────────

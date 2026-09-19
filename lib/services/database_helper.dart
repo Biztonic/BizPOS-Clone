@@ -35,7 +35,7 @@ class DatabaseHelper {
     return _database!;
   }
 
-  static const int _version = 24;
+  static const int _version = 25;
   static String? _testDbName;
   @visibleForTesting
   static void setDbName(String name) => _testDbName = name;
@@ -728,6 +728,71 @@ class DatabaseHelper {
             'CREATE INDEX IF NOT EXISTS idx_movements_operation ON inventory_movements(storeId, operationId)');
       } catch (_) {}
     }
+
+    // Migration V25: Durable Outbox & Conflict Tracking
+    if (oldVersion < 25) {
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS outbox_operations (
+            operationId TEXT PRIMARY KEY,
+            storeId TEXT,
+            userId TEXT,
+            deviceId TEXT,
+            collection TEXT,
+            entityId TEXT,
+            operation TEXT,
+            payload TEXT,
+            baseVersion INTEGER DEFAULT 1,
+            newVersion INTEGER DEFAULT 1,
+            createdAt INTEGER,
+            attemptCount INTEGER DEFAULT 0,
+            nextRetryAt INTEGER,
+            state TEXT DEFAULT 'PENDING',
+            lastError TEXT,
+            auditMetadata TEXT
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_outbox_state ON outbox_operations(state, nextRetryAt)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_outbox_store ON outbox_operations(storeId)');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS conflict_records (
+            id TEXT PRIMARY KEY,
+            storeId TEXT,
+            collection TEXT,
+            entityId TEXT,
+            conflictType TEXT,
+            localData TEXT,
+            cloudData TEXT,
+            resolution TEXT,
+            resolvedBy TEXT,
+            createdAt TEXT,
+            resolvedAt TEXT
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_conflict_store ON conflict_records(storeId)');
+
+        // Ensure deletedBy column on soft-deletable tables
+        for (var table in [
+          'orders',
+          'inventory',
+          'customers',
+          'employees',
+          'floors',
+          'tables',
+          'suppliers',
+          'notes',
+          'store_settings'
+        ]) {
+          try {
+            await db.execute('ALTER TABLE $table ADD COLUMN deletedBy TEXT');
+          } catch (_) {}
+        }
+      } catch (e) {/* Error ignored */}
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -825,6 +890,7 @@ class DatabaseHelper {
         lastSyncedAt TEXT,
         version INTEGER DEFAULT 1,
         isDeleted INTEGER DEFAULT 0,
+        deletedBy TEXT,
         lowStockThreshold INTEGER DEFAULT 10,
         localImage TEXT
       )
@@ -856,7 +922,8 @@ class DatabaseHelper {
         deviceId TEXT,
         lastSyncedAt TEXT,
         version INTEGER DEFAULT 1,
-        isDeleted INTEGER DEFAULT 0
+        isDeleted INTEGER DEFAULT 0,
+        deletedBy TEXT
       )
     ''');
 
@@ -1155,6 +1222,50 @@ class DatabaseHelper {
         error TEXT
       )
     ''');
+
+    // 13. Durable Outbox & Conflict Tracking
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS outbox_operations (
+        operationId TEXT PRIMARY KEY,
+        storeId TEXT,
+        userId TEXT,
+        deviceId TEXT,
+        collection TEXT,
+        entityId TEXT,
+        operation TEXT,
+        payload TEXT,
+        baseVersion INTEGER DEFAULT 1,
+        newVersion INTEGER DEFAULT 1,
+        createdAt INTEGER,
+        attemptCount INTEGER DEFAULT 0,
+        nextRetryAt INTEGER,
+        state TEXT DEFAULT 'PENDING',
+        lastError TEXT,
+        auditMetadata TEXT
+      )
+    ''');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_outbox_state ON outbox_operations(state, nextRetryAt)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_outbox_store ON outbox_operations(storeId)');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS conflict_records (
+        id TEXT PRIMARY KEY,
+        storeId TEXT,
+        collection TEXT,
+        entityId TEXT,
+        conflictType TEXT,
+        localData TEXT,
+        cloudData TEXT,
+        resolution TEXT,
+        resolvedBy TEXT,
+        createdAt TEXT,
+        resolvedAt TEXT
+      )
+    ''');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_conflict_store ON conflict_records(storeId)');
   }
 
   // --- Helper Methods ---
@@ -1196,7 +1307,9 @@ class DatabaseHelper {
       'payment_methods',
       'activity_logs',
       'idempotency_keys',
-      'transaction_journal'
+      'transaction_journal',
+      'outbox_operations',
+      'conflict_records'
     ];
 
     for (var table in tables) {

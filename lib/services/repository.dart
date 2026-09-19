@@ -20,6 +20,8 @@ import 'package:biztonic_pos/features/crm/data/customer_repository.dart';
 import 'package:biztonic_pos/features/reporting/data/reporting_repository.dart';
 import 'package:biztonic_pos/features/store/data/store_repository.dart';
 import 'package:biztonic_pos/sync/data/sync_repository.dart';
+import 'package:biztonic_pos/sync/outbox/outbox_operation.dart';
+import 'package:biztonic_pos/sync/conflict/conflict_record.dart';
 
 /// Legacy Repository Façade
 ///
@@ -210,4 +212,24 @@ class Repository {
       _sync.markAsConfirmed(table, id);
   Future<void> markAsSynced(String table, String id) =>
       _sync.markAsSynced(table, id);
+
+  // Outbox & Conflict Delegations
+  Future<void> insertOutboxOperation(OutboxOperation op) =>
+      _sync.insertOutboxOperation(op);
+  Future<void> updateOutboxOperation(OutboxOperation op) =>
+      _sync.updateOutboxOperation(op);
+  Future<List<OutboxOperation>> getOutboxOperations(
+          {String? storeId, dynamic state, int? limit}) =>
+      _sync.getOutboxOperations(storeId: storeId, state: state, limit: limit);
+  Future<void> deleteOutboxOperation(String operationId) =>
+      _sync.deleteOutboxOperation(operationId);
+
+  Future<void> insertConflictRecord(ConflictRecord record) =>
+      _sync.insertConflictRecord(record);
+  Future<List<ConflictRecord>> getConflictRecords(
+          {String? storeId, int? limit}) =>
+      _sync.getConflictRecords(storeId: storeId, limit: limit);
+  Future<void> resolveConflictRecord(
+          String id, String resolution, String resolvedBy) =>
+      _sync.resolveConflictRecord(id, resolution, resolvedBy);
 }

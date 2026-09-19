@@ -111,4 +111,21 @@ class SyncDiagnostics {
 
     return sb.toString();
   }
+
+  /// Formats outbox stats and failed operations for diagnostic views.
+  Map<String, dynamic> formatOutboxDiagnostics(
+      Map<String, int> stats, List<dynamic> deadLetters) {
+    return {
+      'stats': stats,
+      'deadLetterCount': deadLetters.length,
+      'deadLetters': deadLetters.map((op) {
+        if (op is Map) return op;
+        try {
+          return (op as dynamic).toMap();
+        } catch (_) {
+          return {'raw': op.toString()};
+        }
+      }).toList(),
+    };
+  }
 }

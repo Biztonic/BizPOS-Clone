@@ -8,12 +8,10 @@ import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/sync/adapters/sync_adapter.dart';
 import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
 import 'package:biztonic_pos/sync/conflict/conflict_engine.dart';
+import 'package:biztonic_pos/sync/inbound/inbox_store.dart';
 
-/// Manages inbound sync — pulling cloud changes into local Hive & SQLite.
-///
-/// This engine is now the primary orchestrator for inbound data flow,
-/// utilizing [SyncAdapter]s for collection-specific logic and
-/// [ConflictEngine] for state-driven reconciliation.
+/// Manages inbound sync — pulling cloud changes into local Hive & SQLite
+/// with multi-page pagination, verified orphan reconciliation, and deterministic conflicts.
 class PullEngine {
   final FirebaseFirestore _db;
   final Repository Function() getRepository;
@@ -24,10 +22,14 @@ class PullEngine {
       saveLastSyncTime;
   final Future<void> Function(String message, {bool isError}) logEvent;
   final Map<String, SyncAdapter> _adapters;
+
   final ConflictEngine _conflictEngine = ConflictEngine();
+  final InboxStore _inboxStore = InboxStore();
 
   bool _isPulling = false;
   bool get isPulling => _isPulling;
+
+  static const int pageSize = 200;
 
   PullEngine({
     FirebaseFirestore? db,
@@ -39,7 +41,9 @@ class PullEngine {
     required this.logEvent,
     required Map<String, SyncAdapter> adapters,
   })  : _db = db ?? FirebaseFirestore.instance,
-        _adapters = adapters;
+        _adapters = adapters {
+    unawaited(_inboxStore.init());
+  }
 
   /// Pull all registered modules from Firestore.
   Future<void> pullAll({bool forceFull = false}) async {
@@ -53,13 +57,14 @@ class PullEngine {
       const modules = SyncCollectionRegistry.pullModules;
       int totalPulled = 0;
 
-      // Parallelize pulls with individual error handling
-      await Future.wait(modules.map(
-          (m) => pullCollection(m, forceFull: forceFull).then((pulledCount) {
-                totalPulled += pulledCount;
-              }).catchError((e) {
-                debugPrint('📥 [PullEngine] Error pulling $m: $e');
-              })));
+      for (var m in modules) {
+        try {
+          final count = await pullCollection(m, forceFull: forceFull);
+          totalPulled += count;
+        } catch (e) {
+          debugPrint('📥 [PullEngine] Error pulling $m: $e');
+        }
+      }
 
       if (totalPulled > 0) {
         EventBus.instance.fire(SyncCompletedEvent(
@@ -74,7 +79,7 @@ class PullEngine {
     }
   }
 
-  /// Pull a single collection from Firestore.
+  /// Pull a single collection from Firestore using verified multi-page pagination.
   Future<int> pullCollection(String collection,
       {bool forceFull = false}) async {
     final storeId = getActiveStoreId();
@@ -88,12 +93,7 @@ class PullEngine {
 
     try {
       final lastSync = forceFull ? null : await getLastSyncTime(collection);
-
-      // DELEGATED: Query building moved to adapter
-      Query query = adapter.buildQuery(_db, storeId, lastSync);
-
-      final snapshot = await query.limit(500).get();
-      if (snapshot.docs.isEmpty) return 0;
+      Query baseQuery = adapter.buildQuery(_db, storeId, lastSync);
 
       final boxName =
           SyncCollectionRegistry.getBoxName(collection, storeId: storeId);
@@ -104,91 +104,204 @@ class PullEngine {
 
       final repo = getRepository();
       int pulledCount = 0;
-      final Set<String> cloudIds = {};
+      final Set<String> verifiedCloudIds = {};
+      DocumentSnapshot? lastVisibleDoc;
+      bool isCompleteDataset = true;
 
-      for (var doc in snapshot.docs) {
+      // 1. Multi-Page Pagination Loop
+      while (true) {
+        Query pageQuery = baseQuery.limit(pageSize);
+        if (lastVisibleDoc != null) {
+          pageQuery = pageQuery.startAfterDocument(lastVisibleDoc);
+        }
+
+        QuerySnapshot pageSnapshot;
         try {
-          final data = doc.data() as Map<String, dynamic>;
-          data['id'] = doc.id;
-          cloudIds.add(doc.id);
-
-          final localData = box?.get(doc.id);
-
-          // DELEGATED: Conflict resolution moved to ConflictEngine
-          if (!_conflictEngine.shouldCloudWin(
-              cloudData: data,
-              localData: localData is Map
-                  ? Map<String, dynamic>.from(localData)
-                  : null)) {
-            continue;
-          }
-
-          // Handle deletions
-          bool isDeleted = data['deletedAt'] != null ||
-              data['isDeleted'] == true ||
-              data['isDeleted'] == 1;
-          if (isDeleted) {
-            if (!kIsWeb) await adapter.deleteLocal(doc.id, repo);
-            if (box != null) await box.delete(doc.id);
-            continue;
-          }
-
-          // Sanitize and mark as confirmed
-          data['syncStatus'] = 'CONFIRMED';
-          final sanitizedData = _deepSanitize(data);
-
-          // 1. Hive Persistence (Cache)
-          if (box != null) await box.put(doc.id, sanitizedData);
-
-          // 2. Adapter Persistence (SQLite)
-          if (!kIsWeb) {
-            await adapter.insertFromCloud(sanitizedData, doc.id, repo);
-            await adapter.reconcileAfterPull(sanitizedData, doc.id, repo);
-          }
-          pulledCount++;
+          pageSnapshot = await pageQuery.get();
         } catch (e) {
-          debugPrint(
-              '📥 [PullEngine] Error processing $collection/${doc.id}: $e');
+          isCompleteDataset = false;
+          debugPrint('📥 [PullEngine] Page fetch failed for $collection: $e');
+          await logEvent('Page fetch failed for $collection: $e',
+              isError: true);
+          break;
+        }
+
+        if (pageSnapshot.docs.isEmpty) {
+          break; // All pages fetched
+        }
+
+        for (var doc in pageSnapshot.docs) {
+          try {
+            final data = doc.data() as Map<String, dynamic>;
+            data['id'] = doc.id;
+            verifiedCloudIds.add(doc.id);
+
+            // Tenant isolation verification
+            final docStore = data['storeId']?.toString();
+            if (docStore != null &&
+                docStore.isNotEmpty &&
+                docStore != storeId) {
+              debugPrint(
+                  '🚫 [PullEngine] Tenant mismatch on incoming doc ${doc.id}: $docStore != $storeId');
+              continue;
+            }
+
+            final version = _parseInt(data['version'], 1);
+            final operationId = data['operationId']?.toString();
+
+            // Inbound Deduplication for financial ledgers
+            if (collection == SyncCollectionRegistry.inventoryMovements ||
+                collection == SyncCollectionRegistry.businessEvents) {
+              if (_inboxStore.isAlreadyProcessed(collection, doc.id,
+                  version: version, operationId: operationId)) {
+                continue; // Skip duplicate financial event
+              }
+            }
+
+            final localData = box?.get(doc.id);
+            final localMap =
+                localData is Map ? Map<String, dynamic>.from(localData) : null;
+
+            // Deterministic Conflict Resolution
+            final resolution = _conflictEngine.resolve(
+              collection: collection,
+              cloudData: data,
+              localData: localMap,
+              storeId: storeId,
+            );
+
+            if (resolution.action == ResolutionAction.localWins) {
+              continue; // Local mutation preserved
+            }
+
+            if (resolution.action == ResolutionAction.recordConflict &&
+                resolution.conflictRecord != null) {
+              if (!kIsWeb) {
+                try {
+                  await repo.insertConflictRecord(resolution.conflictRecord!);
+                } catch (_) {}
+              }
+              await logEvent(
+                  'Recorded conflict on $collection/${doc.id}: ${resolution.conflictRecord!.conflictType}',
+                  isError: true);
+              continue;
+            }
+
+            // Handle Tombsones / Soft Deletions
+            final bool isDeleted = data['deletedAt'] != null ||
+                data['isDeleted'] == true ||
+                data['isDeleted'] == 1;
+
+            if (isDeleted) {
+              if (!kIsWeb) {
+                await adapter.deleteLocal(doc.id, repo);
+              }
+              if (box != null) {
+                await box.delete(doc.id);
+              }
+              await _inboxStore.recordProcessed(collection, doc.id,
+                  version: version, operationId: operationId, storeId: storeId);
+              continue;
+            }
+
+            final sanitizedData = _deepSanitize(
+                resolution.mergedData != null ? resolution.mergedData! : data);
+            sanitizedData['syncStatus'] = 'CONFIRMED';
+
+            // 1. Hive Persistence (Cache)
+            if (box != null) {
+              await box.put(doc.id, sanitizedData);
+            }
+
+            // 2. SQLite Persistence
+            if (!kIsWeb) {
+              await adapter.insertFromCloud(sanitizedData, doc.id, repo);
+              await adapter.reconcileAfterPull(sanitizedData, doc.id, repo);
+            }
+
+            await _inboxStore.recordProcessed(collection, doc.id,
+                version: version, operationId: operationId, storeId: storeId);
+
+            pulledCount++;
+          } catch (e) {
+            debugPrint(
+                '📥 [PullEngine] Error processing $collection/${doc.id}: $e');
+          }
+        }
+
+        lastVisibleDoc = pageSnapshot.docs.last;
+        if (pageSnapshot.docs.length < pageSize) {
+          break; // Reached end of collection
         }
       }
 
-      // RECONCILIATION: Orphan cleanup on full sync
+      // 2. VERIFIED ORPHAN RECONCILIATION
+      // Only perform orphan cleanup after a verified complete dataset!
       if (forceFull &&
           SyncCollectionRegistry.reconcilableCollections.contains(collection)) {
-        await _cleanupOrphans(collection, storeId, cloudIds, box, repo);
+        if (isCompleteDataset) {
+          await _cleanupOrphans(
+              collection, storeId, verifiedCloudIds, box, repo);
+        } else {
+          debugPrint(
+              '⚠️ [PullEngine] Incomplete dataset for $collection. Skipped orphan cleanup to protect local data.');
+          await logEvent(
+              'Skipped orphan cleanup for $collection: dataset incomplete.',
+              isError: true);
+        }
       }
 
-      // Post-pull hook
+      // Post-pull hook (e.g. inventory ledger reconciliation)
       await adapter.onPullComplete(storeId, repo);
 
       await saveLastSyncTime(collection, DateTime.now());
       return pulledCount;
     } catch (e) {
       debugPrint('📥 [PullEngine] Pull failed for $collection: $e');
-      await logEvent('Pull error for $collection: $e', isError: true);
+      await logEvent('Pull failed for $collection: $e', isError: true);
       return 0;
     }
   }
 
-  Future<void> _cleanupOrphans(String collection, String storeId,
-      Set<String> cloudIds, Box? box, Repository repo) async {
+  /// Safe orphan cleanup: only deletes CONFIRMED items that are missing from cloud.
+  /// Never touches local items with PENDING or IN_FLIGHT status.
+  Future<void> _cleanupOrphans(
+    String collection,
+    String storeId,
+    Set<String> cloudIds,
+    Box? box,
+    Repository repo,
+  ) async {
     // 1. Hive cleanup
     if (box != null) {
-      final keysToDelete = [];
+      final keysToDelete = <dynamic>[];
       for (var key in box.keys) {
-        if (!cloudIds.contains(key.toString())) {
+        final idStr = key.toString();
+        if (!cloudIds.contains(idStr)) {
           final val = box.get(key);
-          if (val is Map && val['syncStatus'] == 'CONFIRMED') {
-            keysToDelete.add(key);
+          // Never delete items with pending offline changes!
+          if (val is Map) {
+            final syncStatus = val['syncStatus']?.toString();
+            if (syncStatus == 'CONFIRMED' || syncStatus == 'PUSHED') {
+              keysToDelete.add(key);
+            }
           }
         }
       }
-      if (keysToDelete.isNotEmpty) await box.deleteAll(keysToDelete);
+      if (keysToDelete.isNotEmpty) {
+        await box.deleteAll(keysToDelete);
+        debugPrint(
+            '🧹 [PullEngine] Hive pruned ${keysToDelete.length} orphans in $collection');
+      }
     }
 
     // 2. SQLite cleanup
     if (!kIsWeb) {
-      await repo.deleteOrphans(collection, storeId, cloudIds.toList());
+      try {
+        await repo.deleteOrphans(collection, storeId, cloudIds.toList());
+      } catch (e) {
+        debugPrint('⚠️ [PullEngine] SQLite orphan cleanup error: $e');
+      }
     }
   }
 
@@ -208,5 +321,13 @@ class PullEngine {
       }
     });
     return sanitized;
+  }
+
+  int _parseInt(dynamic value, int defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
   }
 }

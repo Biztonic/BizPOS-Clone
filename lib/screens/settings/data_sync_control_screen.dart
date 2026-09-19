@@ -177,6 +177,11 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
           const SizedBox(height: AppSpacing.lg),
           _buildGlobalActions(context, syncService, isOnline, stats, provider),
           const SizedBox(height: AppSpacing.xl * 2),
+          Text(AppLocalizations.t(context, 'Outbox Diagnostics'),
+              style: AppTypography.h4),
+          const SizedBox(height: AppSpacing.lg),
+          _buildOutboxDiagnosticsSection(context, syncService),
+          const SizedBox(height: AppSpacing.xl * 2),
           Text(AppLocalizations.t(context, 'Backup & Restore'),
               style: AppTypography.h4),
           const SizedBox(height: AppSpacing.lg),
@@ -196,6 +201,11 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
             style: AppTypography.h4),
         const SizedBox(height: AppSpacing.lg),
         _buildGlobalActions(context, syncService, isOnline, stats, provider),
+        const SizedBox(height: AppSpacing.xl * 2),
+        Text(AppLocalizations.t(context, 'Outbox Diagnostics'),
+            style: AppTypography.h4),
+        const SizedBox(height: AppSpacing.lg),
+        _buildOutboxDiagnosticsSection(context, syncService),
         const SizedBox(height: AppSpacing.xl * 2),
         Text(AppLocalizations.t(context, 'Backup & Restore'),
             style: AppTypography.h4),
@@ -371,9 +381,10 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
         }
       }
     } catch (e) {
-      if (context.mounted)
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text("Error: $e"), backgroundColor: AppColors.error));
+      }
     }
   }
 
@@ -408,7 +419,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
 
     if (!isOnline) {
       title = "Offline Mode";
-      sub = "Changes queued locally";
+      sub = "Changes queued locally in durable outbox";
       statusColor = AppColors.textSecondary(context);
     } else if (totalPending > 0) {
       title = "Syncing...";
@@ -452,10 +463,32 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                     style: AppTypography.bodySmall
                         .copyWith(color: AppColors.textSecondary(context))),
                 const SizedBox(height: AppSpacing.sm),
-                Text(
-                  "Last Sync: ${service.lastSyncTime != null ? _timeAgo(service.lastSyncTime!) : 'Never'}",
-                  style: AppTypography.bodySmall.copyWith(
-                      fontSize: 10, color: AppColors.textSecondary(context)),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        service.networkState.toDisplayString(),
+                        style: AppTypography.bodySmall.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      "Last Sync: ${service.lastSyncTime != null ? _timeAgo(service.lastSyncTime!) : 'Never'}",
+                      style: AppTypography.bodySmall.copyWith(
+                          fontSize: 10,
+                          color: AppColors.textSecondary(context)),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1040,5 +1073,184 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
     if (diff.inHours > 0) return "${diff.inHours}h ago";
     if (diff.inMinutes > 0) return "${diff.inMinutes}m ago";
     return "Just now";
+  }
+
+  Widget _buildOutboxDiagnosticsSection(
+      BuildContext context, SyncService service) {
+    final outboxStats = service.getOutboxStats();
+    final deadLetters = service.getDeadLetterOperations();
+
+    final pending = outboxStats['pending'] ?? 0;
+    final inFlight = outboxStats['inFlight'] ?? 0;
+    final failed = outboxStats['failed'] ?? 0;
+    final deadLetterCount = outboxStats['deadLetter'] ?? deadLetters.length;
+    final conflicted = outboxStats['conflicted'] ?? 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            _outboxStatBadge("Pending", pending, Colors.blue),
+            _outboxStatBadge("In-Flight", inFlight, Colors.orange),
+            _outboxStatBadge("Failed", failed, AppColors.warning),
+            _outboxStatBadge("Dead Letter", deadLetterCount, AppColors.error),
+            if (conflicted > 0)
+              _outboxStatBadge("Conflicted", conflicted, Colors.purple),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (deadLetters.isNotEmpty) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Dead Letter Queue (${deadLetters.length})",
+                style: AppTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.error,
+                ),
+              ),
+              AppButton(
+                label: "Retry All",
+                variant: AppButtonVariant.secondary,
+                size: AppButtonSize.small,
+                onPressed: () async {
+                  final count = await service.retryAllDeadLetter();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content:
+                              Text("Requeued $count dead-letter operations")),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: deadLetters.take(5).length,
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
+            itemBuilder: (context, index) {
+              final op = deadLetters[index];
+              return Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.08),
+                  borderRadius: AppRadius.borderSm,
+                  border:
+                      Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${op.collection.toUpperCase()}: ${op.entityId}",
+                            style: AppTypography.bodySmall
+                                .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            "Action: ${op.operation} • Attempts: ${op.attemptCount}",
+                            style:
+                                AppTypography.bodySmall.copyWith(fontSize: 10),
+                          ),
+                          if (op.lastError != null)
+                            Text(
+                              op.lastError!,
+                              style: AppTypography.bodySmall.copyWith(
+                                fontSize: 10,
+                                color: AppColors.error,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh, size: 18),
+                      tooltip: "Retry Operation",
+                      onPressed: () async {
+                        await service.retryOperation(op.operationId);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    "Requeued ${op.collection}/${op.entityId}")),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ] else if (pending == 0 && inFlight == 0 && failed == 0) ...[
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.08),
+              borderRadius: AppRadius.borderSm,
+              border:
+                  Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle_outline,
+                    color: AppColors.success, size: 20),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    "Outbox is clear. All mutations are synchronized.",
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.success),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _outboxStatBadge(String label, int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: AppRadius.borderSm,
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            "$label: ",
+            style: AppTypography.bodySmall.copyWith(
+              fontWeight: FontWeight.w500,
+              fontSize: 11,
+            ),
+          ),
+          Text(
+            "$count",
+            style: AppTypography.bodySmall.copyWith(
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
