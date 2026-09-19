@@ -1,6 +1,5 @@
 import '../../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
@@ -42,33 +41,9 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
     setState(() => _isLoadingStats = true);
 
     try {
-      final db = FirebaseFirestore.instance;
-      final Map<String, Map<String, dynamic>> newStats = {};
-
-      for (var store in stores) {
-        final ordersQuery = await db
-            .collection('stores')
-            .doc(store.id)
-            .collection('orders')
-            .get();
-
-        double totalSales = 0.0;
-        int totalOrders = ordersQuery.docs.length;
-
-        for (var doc in ordersQuery.docs) {
-          final data = doc.data();
-          final total = (data['total'] ??
-              data['grandTotal'] ??
-              data['amount'] ??
-              0.0) as num;
-          totalSales += total.toDouble();
-        }
-
-        newStats[store.id] = {
-          'sales': totalSales,
-          'orders': totalOrders,
-        };
-      }
+      final dashboardProvider =
+          Provider.of<DashboardProvider>(context, listen: false);
+      final newStats = await dashboardProvider.getFranchiseStoresStats(stores);
 
       if (mounted) {
         setState(() {

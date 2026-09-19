@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:biztonic_pos/services/firestore_helper.dart';
 import '../services/offline_service.dart';
 import '../core/auth/auth_session_types.dart';
+import '../features/auth/data/auth_repository.dart';
 
 /// A virtual user for offline sessions to prevent null checks in UI
 class OfflineUser {
@@ -500,5 +501,34 @@ class AuthProvider with ChangeNotifier {
       debugPrint('⚠️ AuthProvider: Error in checkIfNewCustomer: $e');
       return false;
     }
+  }
+
+  final AuthRepository _authRepo = AuthRepository();
+
+  Future<void> completePasswordSetup({
+    required String email,
+    required String password,
+    required String uid,
+  }) async {
+    await _authRepo.completePasswordSetup(
+      email: email,
+      password: password,
+      uid: uid,
+    );
+    notifyListeners();
+  }
+
+  Future<String?> getPendingFranchiseCode(String uid) async {
+    return await _authRepo.getPendingFranchiseCode(uid);
+  }
+
+  Future<Map<String, dynamic>?> lookupEmployee({
+    required String storeCodeOrId,
+    required String employeeId,
+  }) async {
+    return await _authRepo.lookupEmployee(
+      storeCodeOrId: storeCodeOrId,
+      employeeId: employeeId,
+    );
   }
 }

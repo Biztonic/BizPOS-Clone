@@ -466,6 +466,7 @@ class DashboardProvider with ChangeNotifier {
 
   InventoryProvider? _inventoryProvider;
   OrderProvider? _orderProvider;
+  OrderProvider? get orderProvider => _orderProvider;
   CustomerProvider? _customerProvider;
   CustomerProvider? get customerProvider => _customerProvider;
   StoreProvider? _storeProvider;
@@ -2730,6 +2731,29 @@ class DashboardProvider with ChangeNotifier {
 
   Future<OrderModel?> getOrder(String id) async {
     return await _orderProvider?.getOrder(id);
+  }
+
+  Stream<List<OrderModel>> watchKitchenOrders(String storeId) {
+    if (_orderProvider != null) {
+      return _orderProvider!.watchKitchenOrders(storeId);
+    }
+    return Stream.value([]);
+  }
+
+  Stream<List<Map<String, dynamic>>> watchCustomerDisplayOrders(
+      String storeId) {
+    if (_orderProvider != null) {
+      return _orderProvider!.watchCustomerDisplayOrders(storeId);
+    }
+    return Stream.value([]);
+  }
+
+  Future<Map<String, Map<String, dynamic>>> getFranchiseStoresStats(
+      List<Store> stores) async {
+    if (_storeProvider != null) {
+      return await _storeProvider!.getFranchiseStoresStats(stores);
+    }
+    return {};
   }
 
   // --- AUTH & USER LINKING ---

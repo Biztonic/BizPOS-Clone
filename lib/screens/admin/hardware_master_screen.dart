@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/models/hardware_master.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:biztonic_pos/repositories/hardware_repository.dart';
 import 'package:biztonic_pos/core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/core/design/tokens/app_typography.dart';
-import 'package:biztonic_pos/services/firestore_helper.dart';
 
 class HardwareMasterScreen extends StatefulWidget {
   const HardwareMasterScreen({super.key});
@@ -13,7 +12,7 @@ class HardwareMasterScreen extends StatefulWidget {
 }
 
 class _HardwareMasterScreenState extends State<HardwareMasterScreen> {
-  final FirebaseFirestore _db = getFirestore();
+  final HardwareRepository _hardwareRepo = HardwareRepository();
   List<HardwareMaster> _hardwares = [];
   bool _isLoading = true;
 
@@ -26,9 +25,7 @@ class _HardwareMasterScreenState extends State<HardwareMasterScreen> {
   Future<void> _fetchHardwares() async {
     setState(() => _isLoading = true);
     try {
-      final snap = await _db.collection('hardware_master').get();
-      _hardwares =
-          snap.docs.map((d) => HardwareMaster.fromMap(d.data(), d.id)).toList();
+      _hardwares = await _hardwareRepo.getHardwareMasters();
     } catch (e) {
       debugPrint('Error fetching hardwares: $e');
     } finally {
@@ -87,10 +84,8 @@ class _HardwareMasterScreenState extends State<HardwareMasterScreen> {
                             Switch(
                               value: hw.isActive,
                               onChanged: (val) async {
-                                await _db
-                                    .collection('hardware_master')
-                                    .doc(hw.id)
-                                    .update({'isActive': val});
+                                await _hardwareRepo.setHardwareActive(
+                                    hw.id, val);
                                 _fetchHardwares();
                               },
                             ),
@@ -194,14 +189,11 @@ class _HardwareDialogState extends State<_HardwareDialog> {
       updatedAt: DateTime.now(),
     );
 
-    final db = getFirestore();
+    final repo = HardwareRepository();
     if (widget.hardware == null) {
-      await db.collection('hardware_master').add(hw.toMap());
+      await repo.addHardware(hw);
     } else {
-      await db
-          .collection('hardware_master')
-          .doc(widget.hardware!.id)
-          .update(hw.toMap());
+      await repo.updateHardware(hw);
     }
     widget.onSave();
     if (mounted) Navigator.pop(context);

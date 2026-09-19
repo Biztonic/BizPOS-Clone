@@ -5,7 +5,7 @@ import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../features/orders/domain/usecases/update_order_status_use_case.dart';
 import '../providers/dashboard_provider.dart';
 import '../models/order_model.dart';
 import 'dart:async'; // Add Timer
@@ -42,13 +42,9 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
                   context, 'Please select a store first.'))));
     }
 
-    // Stream of Active Orders (New OR Preparing)
-    final Stream<QuerySnapshot> ordersStream = FirebaseFirestore.instance
-        .collection('orders')
-        .where('storeId', isEqualTo: storeId)
-        .where('status', whereIn: ['New', 'Preparing'])
-        .orderBy('date', descending: false) // Oldest first
-        .snapshots();
+    // Stream of Active Orders (New OR Preparing) via Provider/Application layer
+    final Stream<List<OrderModel>> ordersStream =
+        provider.watchKitchenOrders(storeId);
 
     return Scaffold(
       appBar: AppBar(
@@ -58,7 +54,7 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
           IconButton(icon: const Icon(Icons.history), onPressed: () {}),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
+      body: StreamBuilder<List<OrderModel>>(
         stream: ordersStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -68,19 +64,14 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final docs = snapshot.data?.docs ?? [];
-          if (docs.isEmpty) {
+          final orders = snapshot.data ?? [];
+          if (orders.isEmpty) {
             return Center(
                 child: Text(AppLocalizations.t(context, 'No active orders'),
                     style: TextStyle(
                         fontSize: 24,
                         color: AppColors.textSecondary(context))));
           }
-
-          final orders = docs
-              .map((d) =>
-                  OrderModel.fromMap(d.data() as Map<String, dynamic>, d.id))
-              .toList();
 
           return GridView.builder(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -137,15 +128,23 @@ class _OrderTicketState extends State<OrderTicket>
   Future<void> _advanceOrderStatus() async {
     setState(() => _isLoading = true);
 
-    // Simulate slight delay for UX or ensure smooth transition if instant
-    // But actual Firestore update is async.
+    // Asynchronous state transition via Use Case / Outbox pipeline.
 
     final nextStatus = widget.order.status == 'New' ? 'Preparing' : 'Ready';
 
     try {
       final dashboardProvider =
           Provider.of<DashboardProvider>(context, listen: false);
-      await dashboardProvider.updateOrderStatus(widget.order.id, nextStatus);
+      if (dashboardProvider.orderProvider != null) {
+        final useCase =
+            UpdateOrderStatusUseCase(dashboardProvider.orderProvider!);
+        await useCase.execute(UpdateOrderStatusParams(
+          orderId: widget.order.id,
+          newStatus: nextStatus,
+        ));
+      } else {
+        await dashboardProvider.updateOrderStatus(widget.order.id, nextStatus);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)

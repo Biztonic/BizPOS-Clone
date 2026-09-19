@@ -334,6 +334,62 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
+  /// Authoritative stream for Kitchen Display System (KDS).
+  /// Subscribes to active kitchen orders without leaking Firestore to presentation.
+  Stream<List<OrderModel>> watchKitchenOrders(String storeId) {
+    try {
+      return getFirestore()
+          .collection('orders')
+          .where('storeId', isEqualTo: storeId)
+          .where('status', whereIn: ['New', 'Preparing'])
+          .orderBy('date', descending: false)
+          .snapshots()
+          .map((snapshot) => snapshot.docs
+              .map((d) => OrderModel.fromMap(d.data(), d.id))
+              .toList());
+    } catch (_) {
+      return Stream.value(
+        _orders
+            .where((o) =>
+                o.storeId == storeId &&
+                (o.status == 'New' || o.status == 'Preparing'))
+            .toList(),
+      );
+    }
+  }
+
+  /// Authoritative stream for Customer Display screen.
+  /// Streams public order statuses (Preparing, Ready) without UI-level Firestore usage.
+  Stream<List<Map<String, dynamic>>> watchCustomerDisplayOrders(
+      String storeId) {
+    try {
+      return getFirestore()
+          .collection('orders')
+          .where('storeId', isEqualTo: storeId)
+          .where('status', whereIn: ['Preparing', 'Ready'])
+          .snapshots()
+          .map((snapshot) => snapshot.docs.map((d) {
+                final data = Map<String, dynamic>.from(d.data());
+                data['orderId'] = d.id;
+                return data;
+              }).toList());
+    } catch (_) {
+      return Stream.value(
+        _orders
+            .where((o) =>
+                o.storeId == storeId &&
+                (o.status == 'Preparing' || o.status == 'Ready'))
+            .map((o) => {
+                  'orderId': o.id,
+                  'status': o.status,
+                  'date': o.date,
+                  'total': o.total,
+                })
+            .toList(),
+      );
+    }
+  }
+
   Future<void> refundOrder(String orderId) async {
     try {
       final index = _orders.indexWhere((o) => o.id == orderId);

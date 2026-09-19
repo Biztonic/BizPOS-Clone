@@ -1,4 +1,6 @@
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../services/firestore_helper.dart';
 
 class SettingsRepository {
   static const String _settingsBoxName = 'settings';
@@ -59,4 +61,26 @@ class SettingsRepository {
       'backupTimeMinute': box.get('backupTimeMinute', defaultValue: 0),
     };
   }
+
+  Future<Map<String, dynamic>?> getAppReleaseConfig() async {
+    final doc = await _firestoreHelper()
+        .collection('settings')
+        .doc('app_version')
+        .get();
+    if (doc.exists && doc.data() != null) {
+      return doc.data();
+    }
+    return null;
+  }
+
+  Future<void> publishAppReleaseConfig(Map<String, dynamic> config) async {
+    final data = Map<String, dynamic>.from(config);
+    data['updatedAt'] = FieldValue.serverTimestamp();
+    await _firestoreHelper()
+        .collection('settings')
+        .doc('app_version')
+        .set(data, SetOptions(merge: true));
+  }
+
+  FirebaseFirestore _firestoreHelper() => getFirestore();
 }

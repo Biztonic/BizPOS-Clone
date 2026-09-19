@@ -6,7 +6,6 @@ import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../models/inventory_item.dart';
 import 'import_item_dialog.dart';
@@ -26,8 +25,8 @@ class _CentralItemSelectionDialogState
   List<InventoryItem> _items = [];
   bool _isLoading = true;
   final int _limit = 10;
-  final List<DocumentSnapshot?> _lastDocs = [null];
-  DocumentSnapshot? _currentLastDoc;
+  final List<dynamic> _lastDocs = [null];
+  dynamic _currentLastDoc;
   int _currentPage = 0;
 
   bool _hasMore = true;
@@ -42,7 +41,7 @@ class _CentralItemSelectionDialogState
   Future<void> _loadItems({bool next = false, bool prev = false}) async {
     setState(() => _isLoading = true);
 
-    DocumentSnapshot? startAfter;
+    dynamic startAfter;
     if (next) {
       startAfter = _currentLastDoc;
       _lastDocs.add(_currentLastDoc);
@@ -72,7 +71,7 @@ class _CentralItemSelectionDialogState
       if (mounted) {
         setState(() {
           _items = res['items'] as List<InventoryItem>;
-          _currentLastDoc = res['lastDoc'] as DocumentSnapshot?;
+          _currentLastDoc = res['lastDoc'];
 
           if (next) _currentPage++;
           if (prev) _currentPage--;

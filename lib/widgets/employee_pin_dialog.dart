@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive/hive.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../sync/sync_engine.dart';
 
@@ -18,7 +17,6 @@ import '../providers/auth_provider.dart';
 import '../core/auth/auth_session_types.dart';
 import '../services/offline_service.dart';
 import '../utils/pin_utils.dart';
-import '../services/firestore_helper.dart';
 import '../announcement/service/announcement_service.dart';
 
 class EmployeePinDialog extends StatefulWidget {
@@ -95,49 +93,18 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
         }
       }
 
-      final cleanCode = storeCode.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
-      String? storeId = widget.storeId;
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final employeeData = await authProvider.lookupEmployee(
+        storeCodeOrId: widget.storeId ?? storeCode,
+        employeeId: empId,
+      );
 
-      // Only query network if already authenticated
-      if (FirebaseAuth.instance.currentUser != null) {
-        if (storeId == null) {
-          QuerySnapshot storeQuery = await getFirestore()
-              .collection('stores')
-              .where('shortCode', isEqualTo: cleanCode)
-              .limit(1)
-              .get();
-
-          if (storeQuery.docs.isEmpty) {
-            final doc =
-                await getFirestore().collection('stores').doc(cleanCode).get();
-            if (doc.exists) {
-              storeId = cleanCode;
-            }
-          } else {
-            storeId = storeQuery.docs.first.id;
-          }
-        }
-
-        if (storeId != null) {
-          QuerySnapshot subQuery = await getFirestore()
-              .collection('stores')
-              .doc(storeId)
-              .collection('employees')
-              .where('employeeId', isEqualTo: empId)
-              .limit(1)
-              .get();
-
-          if (subQuery.docs.isNotEmpty) {
-            final data = subQuery.docs.first.data() as Map<String, dynamic>;
-            setState(() {
-              _employee = {
-                ...data,
-                'uid': subQuery.docs.first.id,
-              };
-            });
-            return;
-          }
-        }
+      if (employeeData != null) {
+        setState(() {
+          _employee = employeeData;
+          _isFetchingDetails = false;
+        });
+        return;
       }
 
       // Default placeholder if profile not fetched yet; server function will validate on submit
@@ -146,7 +113,7 @@ class _EmployeePinDialogState extends State<EmployeePinDialog> {
           'employeeId': empId,
           'name': 'Employee #$empId',
           'role': 'Staff',
-          if (storeId != null) 'storeId': storeId,
+          if (widget.storeId != null) 'storeId': widget.storeId,
         };
       });
     } catch (e) {

@@ -4,9 +4,10 @@ import 'package:biztonic_pos/l10n/app_localizations.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import '../../core/design/tokens/app_colors.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import '../../providers/auth_provider.dart';
 
 class SetPasswordScreen extends StatefulWidget {
   final String email;
@@ -38,60 +39,13 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
       );
       final uid = credential.user!.uid;
 
-      // 2. Fetch data from email-keyed doc (pre-provisioned by Sales App)
-      // Check both literal and lowercase doc IDs
-      final inputEmail = widget.email.trim();
-      final cleanEmail = inputEmail.toLowerCase();
-
-      DocumentSnapshot? emailDoc;
-      final docIdsToCheck = {inputEmail, cleanEmail};
-
-      for (final docId in docIdsToCheck) {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(docId)
-            .get();
-        if (doc.exists) {
-          emailDoc = doc;
-          break;
-        }
-      }
-
-      // If still not found by doc ID, try by email field
-      if (emailDoc == null) {
-        final query = await FirebaseFirestore.instance
-            .collection('users')
-            .where('email', whereIn: [inputEmail, cleanEmail]).get();
-        if (query.docs.isNotEmpty) {
-          emailDoc = query.docs.first;
-        }
-      }
-
-      final Map<String, dynamic> userData =
-          (emailDoc != null && emailDoc.exists)
-              ? (emailDoc.data() as Map<String, dynamic>? ?? {})
-              : {};
-
-      // 3. Prepare data for the new UID-keyed doc (Standard for the app)
-      userData['uid'] = uid;
-      userData['email'] = widget.email.toLowerCase().trim();
-      userData['needsInitialPassword'] = false;
-      userData['updatedAt'] = FieldValue.serverTimestamp();
-
-      // Ensure essential fields exist if doc was missing
-      userData['role'] ??= 'Store Owner';
-      userData['name'] ??= widget.email.split('@')[0];
-
-      // 4. Save to UID-keyed doc
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .set(userData);
-
-      // 5. Clean up the placeholder email-keyed doc
-      if (emailDoc != null && emailDoc.exists) {
-        await emailDoc.reference.delete();
-      }
+      // 2. Complete password setup and provision user account via AuthProvider
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.completePasswordSetup(
+        email: widget.email,
+        password: _passwordController.text.trim(),
+        uid: uid,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

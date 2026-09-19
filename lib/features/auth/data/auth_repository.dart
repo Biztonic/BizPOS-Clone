@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import '../../../services/offline_service.dart';
 import '../../../services/firestore_helper.dart';
 import '../domain/models/app_user.dart';
@@ -265,5 +266,133 @@ class AuthRepository {
         msg.contains('unreachable') ||
         msg.contains('connection') ||
         msg.contains('errno');
+  }
+
+  Future<void> completePasswordSetup({
+    required String email,
+    required String password,
+    required String uid,
+  }) async {
+    final inputEmail = email.trim();
+    final cleanEmail = inputEmail.toLowerCase();
+
+    DocumentSnapshot? emailDoc;
+    final docIdsToCheck = {inputEmail, cleanEmail};
+
+    for (final docId in docIdsToCheck) {
+      final doc = await _firestore.collection('users').doc(docId).get();
+      if (doc.exists) {
+        emailDoc = doc;
+        break;
+      }
+    }
+
+    if (emailDoc == null) {
+      final query = await _firestore
+          .collection('users')
+          .where('email', whereIn: [inputEmail, cleanEmail]).get();
+      if (query.docs.isNotEmpty) {
+        emailDoc = query.docs.first;
+      }
+    }
+
+    final Map<String, dynamic> userData = (emailDoc != null && emailDoc.exists)
+        ? (emailDoc.data() as Map<String, dynamic>? ?? {})
+        : {};
+
+    userData['uid'] = uid;
+    userData['email'] = cleanEmail;
+    userData['needsInitialPassword'] = false;
+    userData['updatedAt'] = FieldValue.serverTimestamp();
+    userData['role'] ??= 'Store Owner';
+    userData['name'] ??= email.split('@')[0];
+
+    await _firestore.collection('users').doc(uid).set(userData);
+
+    if (emailDoc != null && emailDoc.exists) {
+      await emailDoc.reference.delete();
+    }
+
+    await _offlineService.cacheUserProfile(userData, uid: uid);
+    await _offlineService.cacheOfflineVerifier(cleanEmail, password, uid: uid);
+    await _offlineService.cacheUserId(uid, email: cleanEmail);
+  }
+
+  Future<String?> getPendingFranchiseCode(String uid) async {
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists &&
+          doc.data()?.containsKey('pendingFranchiseCode') == true) {
+        final code = doc.data()?['pendingFranchiseCode']?.toString();
+        if (code != null && code.isNotEmpty) {
+          return code;
+        }
+      }
+    } catch (e) {
+      debugPrint('AuthRepository: Error loading pending franchise code: $e');
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> lookupEmployee({
+    required String storeCodeOrId,
+    required String employeeId,
+  }) async {
+    // 1. Offline cache check
+    if (Hive.isBoxOpen('cache_employees')) {
+      final box = Hive.box('cache_employees');
+      final key = "${storeCodeOrId}_$employeeId";
+      final empMap = box.get(key);
+      if (empMap != null) {
+        return Map<String, dynamic>.from(empMap as Map);
+      }
+    }
+
+    // 2. Cloud lookup fallback if authenticated
+    if (_auth.currentUser != null) {
+      try {
+        final cleanCode = storeCodeOrId.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+        String? targetStoreId = storeCodeOrId.isNotEmpty ? storeCodeOrId : null;
+
+        if (targetStoreId == null || targetStoreId.isEmpty) {
+          final storeQuery = await _firestore
+              .collection('stores')
+              .where('shortCode', isEqualTo: cleanCode)
+              .limit(1)
+              .get();
+
+          if (storeQuery.docs.isEmpty) {
+            final doc =
+                await _firestore.collection('stores').doc(cleanCode).get();
+            if (doc.exists) {
+              targetStoreId = cleanCode;
+            }
+          } else {
+            targetStoreId = storeQuery.docs.first.id;
+          }
+        }
+
+        if (targetStoreId != null) {
+          final subQuery = await _firestore
+              .collection('stores')
+              .doc(targetStoreId)
+              .collection('employees')
+              .where('employeeId', isEqualTo: employeeId)
+              .limit(1)
+              .get();
+
+          if (subQuery.docs.isNotEmpty) {
+            final data = subQuery.docs.first.data();
+            return {
+              ...data,
+              'uid': subQuery.docs.first.id,
+            };
+          }
+        }
+      } catch (e) {
+        debugPrint('AuthRepository: Error looking up employee: $e');
+      }
+    }
+    return null;
   }
 }

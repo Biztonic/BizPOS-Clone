@@ -239,4 +239,40 @@ class StoreRepository with StoreRepositoryMixin {
     }
     return chunks;
   }
+
+  Future<Map<String, Map<String, dynamic>>> getFranchiseStoresStats(
+      List<Store> stores) async {
+    final Map<String, Map<String, dynamic>> stats = {};
+    for (var store in stores) {
+      try {
+        final ordersQuery = await _db
+            .collection('stores')
+            .doc(store.id)
+            .collection('orders')
+            .get();
+
+        double totalSales = 0.0;
+        int totalOrders = ordersQuery.docs.length;
+
+        for (var doc in ordersQuery.docs) {
+          final data = doc.data();
+          final total = (data['total'] ??
+              data['grandTotal'] ??
+              data['amount'] ??
+              0.0) as num;
+          totalSales += total.toDouble();
+        }
+
+        stats[store.id] = {
+          'sales': totalSales,
+          'orders': totalOrders,
+        };
+      } catch (e) {
+        debugPrint(
+            'StoreRepository: Error loading stats for store ${store.id}: $e');
+        stats[store.id] = {'sales': 0.0, 'orders': 0};
+      }
+    }
+    return stats;
+  }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../../features/settings/data/settings_repository.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import '../../core/design/components/atoms/app_card.dart';
 import '../../core/design/components/atoms/app_text_field.dart';
@@ -27,6 +27,7 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
   final _notesController = TextEditingController();
   bool _forceUpdate = false;
   bool _isLoading = false;
+  final SettingsRepository _settingsRepo = SettingsRepository();
 
   @override
   void initState() {
@@ -37,12 +38,8 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
   Future<void> _loadCurrentConfig() async {
     setState(() => _isLoading = true);
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('settings')
-          .doc('app_version')
-          .get();
-      if (doc.exists) {
-        final data = doc.data()!;
+      final data = await _settingsRepo.getAppReleaseConfig();
+      if (data != null) {
         _versionController.text = data['version'] ?? '';
         _buildController.text = (data['build'] ?? '').toString();
         _urlController.text = data['url'] ?? '';
@@ -80,16 +77,12 @@ class _ReleaseManagementScreenState extends State<ReleaseManagementScreen> {
     final successMsg =
         AppLocalizations.t(context, 'Release published successfully!');
     try {
-      await FirebaseFirestore.instance
-          .collection('settings')
-          .doc('app_version')
-          .set({
+      await _settingsRepo.publishAppReleaseConfig({
         'version': _versionController.text.trim(),
         'build': int.tryParse(_buildController.text.trim()) ?? 0,
         'url': _urlController.text.trim(),
         'notes': _notesController.text.trim(),
         'force': _forceUpdate,
-        'updatedAt': FieldValue.serverTimestamp(),
       });
       if (mounted) {
         messenger.showSnackBar(SnackBar(content: Text(successMsg)));

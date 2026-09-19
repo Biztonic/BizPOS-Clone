@@ -7,7 +7,7 @@ import 'package:biztonic_pos/core/design/layouts/pos_scaffold.dart';
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:biztonic_pos/repositories/addon_review_repository.dart';
 import 'package:biztonic_pos/providers/dashboard_provider.dart';
 import 'payment_qr_dialog.dart';
 
@@ -251,47 +251,45 @@ class _AddonDetailScreenState extends State<AddonDetailScreen>
     super.dispose();
   }
 
+  final AddonReviewRepository _reviewRepo = AddonReviewRepository();
+
+  DateTime? _parseDate(dynamic d) {
+    if (d == null) return null;
+    if (d is DateTime) return d;
+    if (d.runtimeType.toString().contains('Timestamp')) {
+      try {
+        return (d as dynamic).toDate();
+      } catch (_) {}
+    }
+    if (d is String) return DateTime.tryParse(d);
+    if (d is int) return DateTime.fromMillisecondsSinceEpoch(d);
+    return null;
+  }
+
   Future<void> _loadReviews() async {
     try {
-      final db = FirebaseFirestore.instance;
-      final snapshot = await db
-          .collection('addon_reviews')
-          .where('addonKey', isEqualTo: _addonKey)
-          .get();
-
+      final reviews = await _reviewRepo.getReviews(_addonKey);
       final provider = Provider.of<DashboardProvider>(context, listen: false);
       final currentUserId = provider.userProfile?.uid;
 
-      final reviews = <Map<String, dynamic>>[];
       double totalStars = 0;
       final dist = <int, int>{5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
       bool hasUserReview = false;
 
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final rating = (data['rating'] as num?)?.toInt() ?? 5;
-        reviews.add({
-          'id': doc.id,
-          'userId': data['userId'] ?? '',
-          'userName': data['userName'] ?? 'Anonymous',
-          'rating': rating,
-          'comment': data['comment'] ?? '',
-          'createdAt': data['createdAt'],
-        });
+      for (final r in reviews) {
+        final rating = (r['rating'] as int?) ?? 5;
         totalStars += rating;
         dist[rating] = (dist[rating] ?? 0) + 1;
-        if (data['userId'] == currentUserId) hasUserReview = true;
+        if (r['userId'] == currentUserId) hasUserReview = true;
       }
 
       reviews.sort((a, b) {
-        final aTime = a['createdAt'];
-        final bTime = b['createdAt'];
+        final aTime = _parseDate(a['createdAt']);
+        final bTime = _parseDate(b['createdAt']);
         if (aTime == null && bTime == null) return 0;
         if (aTime == null) return 1;
         if (bTime == null) return -1;
-        if (aTime is Timestamp && bTime is Timestamp)
-          return bTime.compareTo(aTime);
-        return 0;
+        return bTime.compareTo(aTime);
       });
 
       if (mounted) {
@@ -330,7 +328,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen>
         'userName': userName,
         'rating': _userRating,
         'comment': comment,
-        'createdAt': Timestamp.now(),
+        'createdAt': DateTime.now(),
       });
       _hasUserReview = true;
       _showReviewForm = false;
@@ -350,14 +348,13 @@ class _AddonDetailScreenState extends State<AddonDetailScreen>
     ));
 
     try {
-      await FirebaseFirestore.instance.collection('addon_reviews').add({
-        'addonKey': _addonKey,
-        'userId': user.uid,
-        'userName': userName,
-        'rating': _userRating,
-        'comment': comment,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      await _reviewRepo.submitReview(
+        addonKey: _addonKey,
+        userId: user.uid,
+        userName: userName,
+        rating: _userRating,
+        comment: comment,
+      );
       _loadReviews();
     } catch (e) {
       if (mounted)
@@ -389,7 +386,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen>
         'userName': userName,
         'rating': stars,
         'comment': '',
-        'createdAt': Timestamp.now(),
+        'createdAt': DateTime.now(),
       });
       _hasUserReview = true;
       _recalcStats();
@@ -407,14 +404,13 @@ class _AddonDetailScreenState extends State<AddonDetailScreen>
     ));
 
     try {
-      await FirebaseFirestore.instance.collection('addon_reviews').add({
-        'addonKey': _addonKey,
-        'userId': user.uid,
-        'userName': userName,
-        'rating': stars,
-        'comment': '',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      await _reviewRepo.submitReview(
+        addonKey: _addonKey,
+        userId: user.uid,
+        userName: userName,
+        rating: stars,
+        comment: '',
+      );
       _loadReviews();
     } catch (e) {
       debugPrint('Quick rating sync error: $e');
@@ -438,10 +434,7 @@ class _AddonDetailScreenState extends State<AddonDetailScreen>
 
   Future<void> _deleteReview(String reviewId) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('addon_reviews')
-          .doc(reviewId)
-          .delete();
+      await _reviewRepo.deleteReview(reviewId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(AppLocalizations.t(context, 'Review deleted.'))));
@@ -1434,8 +1427,8 @@ class _AddonDetailScreenState extends State<AddonDetailScreen>
     final isOwn = review['userId'] == currentUserId;
     final createdAt = review['createdAt'];
     String dateStr = '';
-    if (createdAt is Timestamp) {
-      final dt = createdAt.toDate();
+    final dt = _parseDate(createdAt);
+    if (dt != null) {
       final months = [
         'Jan',
         'Feb',

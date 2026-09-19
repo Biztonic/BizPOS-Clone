@@ -6,7 +6,6 @@ import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 // ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/dashboard_provider.dart';
 
 class CustomerDisplayScreen extends StatelessWidget {
@@ -24,14 +23,8 @@ class CustomerDisplayScreen extends StatelessWidget {
                   context, 'Please select a store first.'))));
     }
 
-    final Stream<QuerySnapshot> statusStream = FirebaseFirestore.instance
-        .collection('orders')
-        .where('storeId', isEqualTo: storeId)
-        .where('status', whereIn: [
-      'Preparing',
-      'Ready'
-    ]) // Preparing and Ready are relevant for public
-        .snapshots();
+    final Stream<List<Map<String, dynamic>>> statusStream =
+        provider.watchCustomerDisplayOrders(storeId);
 
     return Scaffold(
       backgroundColor:
@@ -42,7 +35,7 @@ class CustomerDisplayScreen extends StatelessWidget {
         foregroundColor: AppColors.surfaceLight,
         centerTitle: true,
       ),
-      body: StreamBuilder<QuerySnapshot>(
+      body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: statusStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -55,51 +48,46 @@ class CustomerDisplayScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final docs = snapshot.data?.docs ?? [];
+          final docs = List<Map<String, dynamic>>.from(snapshot.data ?? []);
           // Client-side sort: Oldest first (FIFO)
           docs.sort((a, b) {
-            dynamic dateA = (a.data() as Map<String, dynamic>)['date'];
-            dynamic dateB = (b.data() as Map<String, dynamic>)['date'];
+            dynamic dateA = a['date'];
+            dynamic dateB = b['date'];
 
             DateTime? dA, dB;
 
             // Robust Parse A
-            if (dateA is Timestamp) {
-              dA = dateA.toDate();
-            } else if (dateA is String)
+            if (dateA is DateTime) {
+              dA = dateA;
+            } else if (dateA != null &&
+                dateA.runtimeType.toString().contains('Timestamp')) {
+              dA = (dateA as dynamic).toDate();
+            } else if (dateA is String) {
               dA = DateTime.tryParse(dateA);
-            else if (dateA is int)
+            } else if (dateA is int) {
               dA = DateTime.fromMillisecondsSinceEpoch(dateA);
+            }
 
             // Robust Parse B
-            if (dateB is Timestamp) {
-              dB = dateB.toDate();
-            } else if (dateB is String)
+            if (dateB is DateTime) {
+              dB = dateB;
+            } else if (dateB != null &&
+                dateB.runtimeType.toString().contains('Timestamp')) {
+              dB = (dateB as dynamic).toDate();
+            } else if (dateB is String) {
               dB = DateTime.tryParse(dateB);
-            else if (dateB is int)
+            } else if (dateB is int) {
               dB = DateTime.fromMillisecondsSinceEpoch(dateB);
+            }
 
             if (dA == null || dB == null) return 0;
             return dA.compareTo(dB);
           });
 
-          final preparing = docs
-              .map((d) {
-                final data = d.data() as Map<String, dynamic>;
-                data['orderId'] = d.id; // Inject Document ID
-                return data;
-              })
-              .where((d) => d['status'] == 'Preparing')
-              .toList();
+          final preparing =
+              docs.where((d) => d['status'] == 'Preparing').toList();
 
-          final ready = docs
-              .map((d) {
-                final data = d.data() as Map<String, dynamic>;
-                data['orderId'] = d.id; // Inject Document ID
-                return data;
-              })
-              .where((d) => d['status'] == 'Ready')
-              .toList();
+          final ready = docs.where((d) => d['status'] == 'Ready').toList();
 
           return LayoutBuilder(builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 600;

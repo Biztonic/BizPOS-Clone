@@ -5,7 +5,6 @@ import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/design/tokens/app_colors.dart';
@@ -44,18 +43,11 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (auth.user != null) {
       try {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(auth.user!.uid)
-            .get();
-        if (doc.exists &&
-            doc.data()?.containsKey('pendingFranchiseCode') == true) {
-          final code = doc.data()?['pendingFranchiseCode']?.toString();
-          if (code != null && code.isNotEmpty && mounted) {
-            setState(() {
-              _franchiseCodeController.text = code;
-            });
-          }
+        final code = await auth.getPendingFranchiseCode(auth.user!.uid);
+        if (code != null && code.isNotEmpty && mounted) {
+          setState(() {
+            _franchiseCodeController.text = code;
+          });
         }
       } catch (e) {
         debugPrint('Error loading pending franchise code: $e');
