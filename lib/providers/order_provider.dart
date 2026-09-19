@@ -368,9 +368,6 @@ class OrderProvider with ChangeNotifier {
       );
 
       // --- INVENTORY REVERSAL ---
-      // We assume the caller (DashboardProvider) provides store info if needed,
-      // but here we can check if it's already "Refunded" handled above.
-      // We loop through items and create positive delta movements.
       for (var item in currentOrder.items) {
         if (!item.item.trackStock) continue;
 
@@ -379,10 +376,13 @@ class OrderProvider with ChangeNotifier {
           id: movementId,
           itemId: item.item.id,
           storeId: currentOrder.storeId,
-          type: 'REFUND',
+          type: MovementType.refund,
           delta: item.quantity, // Positive delta
           orderId: orderId,
+          unitCost: item.cost,
+          reason: 'Order Refund',
           deviceId: _syncService.deviceId ?? 'unknown',
+          operationId: 'refund_${orderId}_${item.item.id}',
           createdAt: DateTime.now(),
           syncStatus: 'PENDING',
         );
@@ -425,6 +425,55 @@ class OrderProvider with ChangeNotifier {
       ));
 
       // We already optimistically updated the UI, so no need to do it again here.
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> voidOrder(String orderId,
+      {String? voidedBy, String? reason}) async {
+    try {
+      final index = _orders.indexWhere((o) => o.id == orderId);
+      final currentOrder =
+          index != -1 ? _orders[index] : (await _repository.getOrder(orderId))!;
+
+      if (currentOrder.status == 'VOID') return;
+      if (currentOrder.status == 'Refunded') {
+        throw Exception("Cannot void refunded order");
+      }
+
+      final updatedOrder = currentOrder.copyWith(status: 'VOID');
+
+      if (index != -1) {
+        _orders[index] = updatedOrder;
+        notifyListeners();
+      }
+
+      await _syncService.performLocalWrite(
+          collection: 'orders',
+          docId: orderId,
+          data: updatedOrder.toMap(),
+          action: 'update',
+          localCacheBox: 'cache_orders',
+          refreshCounts: true);
+
+      // Reversal in movement repo
+      if (!kIsWeb) {
+        await _movementRepo.voidOrderStock(
+          orderId: orderId,
+          storeId: currentOrder.storeId,
+          deviceId: _syncService.deviceId ?? 'unknown',
+          reason: reason,
+          voidedBy: voidedBy,
+        );
+      }
+
+      EventBus.instance.fire(OrderVoidedEvent(
+        orderId: orderId,
+        storeId: currentOrder.storeId,
+        reason: reason,
+        voidedBy: voidedBy,
+      ));
     } catch (e) {
       rethrow;
     }

@@ -2450,22 +2450,28 @@ class DashboardProvider with ChangeNotifier {
                   category: '',
                   trackStock: false));
           if (item.id.isNotEmpty) {
+            final movementId = const Uuid().v4();
             await useCase.execute(AdjustStockParams(
                 movement: InventoryMovement(
-              id: const Uuid().v4(),
+              id: movementId,
               itemId: itemId,
               storeId: _activeStoreId ?? '',
-              type: 'ADJUSTMENT',
+              type: MovementType.adjustment,
               delta: delta,
               deviceId: 'system',
+              operationId:
+                  'adj_${itemId}_${DateTime.now().millisecondsSinceEpoch}',
               createdAt: DateTime.now(),
               cost: item.cost ?? 0.0,
               syncStatus: 'PENDING',
             )));
 
-            // Update the item's quantity locally so the UI reflects the change
-            final updatedItem = item.copyWith(quantity: newQty);
-            await updateInventoryItem(updatedItem);
+            // Update in-memory cache for immediate UI responsiveness
+            final idx = _storeInventory.indexWhere((i) => i.id == itemId);
+            if (idx != -1) {
+              _storeInventory[idx] =
+                  _storeInventory[idx].copyWith(quantity: newQty);
+            }
           }
         }
       }

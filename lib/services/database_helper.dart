@@ -35,7 +35,7 @@ class DatabaseHelper {
     return _database!;
   }
 
-  static const int _version = 23;
+  static const int _version = 24;
   static String? _testDbName;
   @visibleForTesting
   static void setDbName(String name) => _testDbName = name;
@@ -708,6 +708,26 @@ class DatabaseHelper {
         ''');
       } catch (e) {/* Error ignored */}
     }
+
+    // Migration V24: Authoritative Inventory Movement Ledger Integrity
+    if (oldVersion < 24) {
+      try {
+        await db.execute(
+            'ALTER TABLE inventory_movements ADD COLUMN operationId TEXT');
+      } catch (_) {}
+      try {
+        await db.execute(
+            'ALTER TABLE inventory_movements ADD COLUMN unitCost REAL');
+      } catch (_) {}
+      try {
+        await db.execute(
+            'ALTER TABLE inventory_movements ADD COLUMN version INTEGER DEFAULT 1');
+      } catch (_) {}
+      try {
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_movements_operation ON inventory_movements(storeId, operationId)');
+      } catch (_) {}
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -945,8 +965,11 @@ class DatabaseHelper {
         reason TEXT,
         referenceNumber TEXT,
         cost REAL,
+        unitCost REAL,
         deviceId TEXT,
+        operationId TEXT,
         createdAt TEXT NOT NULL,
+        version INTEGER DEFAULT 1,
         syncStatus TEXT DEFAULT 'PENDING',
         syncedAt TEXT,
         isDeleted INTEGER DEFAULT 0,
@@ -981,6 +1004,8 @@ class DatabaseHelper {
         'CREATE INDEX idx_movements_sync ON inventory_movements(syncStatus)');
     await db.execute(
         'CREATE INDEX idx_movements_created ON inventory_movements(createdAt)');
+    await db.execute(
+        'CREATE INDEX idx_movements_operation ON inventory_movements(storeId, operationId)');
     await db.execute(
         'CREATE INDEX idx_attr_emp ON employee_attendance(employeeId)');
     await db

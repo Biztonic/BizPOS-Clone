@@ -151,8 +151,11 @@ class CheckoutOrchestrator {
           storeId: params.activeStoreId,
           type: MovementType.sale,
           delta: -(item.quantity),
+          orderId: orderId,
+          unitCost: item.cost,
           reason: 'Sale',
           deviceId: params.deviceId,
+          operationId: 'sale_${orderId}_${item.itemId}',
           createdAt: now,
         ));
       }

@@ -4,6 +4,7 @@ import 'package:biztonic_pos/models/order_model.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
+import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
@@ -72,6 +73,7 @@ mixin OrderRepositoryMixin {
     required BusinessEvent event,
     required String storeId,
     required String yearMonth,
+    NegativeStockPolicy? negativeStockPolicy,
   }) async {
     final db = await dbHelper.database;
     final txId = 'TX-${DateTime.now().millisecondsSinceEpoch}-${order.id}';
@@ -141,7 +143,8 @@ mixin OrderRepositoryMixin {
 
       // 5. Insert Inventory Movements (Centralized logic updates cache)
       for (var movement in movements) {
-        await movementRepo.insertMovement(movement, txn: txn);
+        await movementRepo.insertMovement(movement,
+            txn: txn, negativeStockPolicy: negativeStockPolicy);
       }
 
       // 6. Mark Journal Complete

@@ -1,10 +1,123 @@
 /// Pure domain policies for inventory validation.
 ///
 /// These are stateless business rules that enforce invariants
-/// on inventory entities. No infrastructure imports allowed.
+/// on inventory entities and movements. No infrastructure imports allowed.
 library;
 
 import '../entities/inventory_entity.dart';
+import '../entities/inventory_movement.dart';
+
+/// Explicit policy governing negative stock behavior per store.
+enum NegativeStockPolicy {
+  /// Block any operation that causes stock to drop below zero.
+  block,
+
+  /// Allow stock to drop below zero, but log a diagnostic warning.
+  allowWithWarning,
+
+  /// Allow stock to drop below zero without restriction.
+  allow;
+
+  static NegativeStockPolicy fromString(String? value) {
+    switch (value?.toUpperCase()) {
+      case 'ALLOW':
+        return NegativeStockPolicy.allow;
+      case 'ALLOW_WITH_WARNING':
+        return NegativeStockPolicy.allowWithWarning;
+      case 'BLOCK':
+      default:
+        return NegativeStockPolicy.block;
+    }
+  }
+
+  String toValue() {
+    switch (this) {
+      case NegativeStockPolicy.block:
+        return 'BLOCK';
+      case NegativeStockPolicy.allowWithWarning:
+        return 'ALLOW_WITH_WARNING';
+      case NegativeStockPolicy.allow:
+        return 'ALLOW';
+    }
+  }
+}
+
+// ─── Domain Exceptions ───────────────────────────────────────
+
+class InsufficientStockException implements Exception {
+  final String itemId;
+  final String storeId;
+  final int currentStock;
+  final int requestedDelta;
+  final String message;
+
+  InsufficientStockException({
+    required this.itemId,
+    required this.storeId,
+    required this.currentStock,
+    required this.requestedDelta,
+  }) : message =
+            'Insufficient stock for item $itemId in store $storeId. Current stock: $currentStock, requested delta: $requestedDelta. Operation blocked by store negative-stock policy.';
+
+  @override
+  String toString() => 'InsufficientStockException: $message';
+}
+
+class DuplicateMovementException implements Exception {
+  final String? movementId;
+  final String? operationId;
+  final String storeId;
+  final String message;
+
+  DuplicateMovementException({
+    this.movementId,
+    this.operationId,
+    required this.storeId,
+  }) : message =
+            'Duplicate inventory movement detected for store $storeId (movementId: $movementId, operationId: $operationId).';
+
+  @override
+  String toString() => 'DuplicateMovementException: $message';
+}
+
+class CrossStoreViolationException implements Exception {
+  final String movementStoreId;
+  final String itemStoreId;
+  final String itemId;
+  final String message;
+
+  CrossStoreViolationException({
+    required this.movementStoreId,
+    required this.itemStoreId,
+    required this.itemId,
+  }) : message =
+            'Cross-store movement prohibited: item $itemId belongs to store $itemStoreId, but movement targets store $movementStoreId.';
+
+  @override
+  String toString() => 'CrossStoreViolationException: $message';
+}
+
+class InvalidRefundException implements Exception {
+  final String orderId;
+  final String itemId;
+  final int requestedQuantity;
+  final int soldQuantity;
+  final int alreadyRefundedQuantity;
+  final String message;
+
+  InvalidRefundException({
+    required this.orderId,
+    required this.itemId,
+    required this.requestedQuantity,
+    required this.soldQuantity,
+    required this.alreadyRefundedQuantity,
+    String? customMessage,
+  }) : message = customMessage ??
+            'Invalid refund for item $itemId on order $orderId: attempted to refund $requestedQuantity, but original sold was $soldQuantity and already refunded was $alreadyRefundedQuantity.';
+
+  @override
+  String toString() => 'InvalidRefundException: $message';
+}
 
 /// Result of a policy validation.
 class PolicyValidation {
@@ -40,6 +153,27 @@ class InventoryPolicy {
   }
 
   // ─── Stock Rules ───────────────────────────────────────────
+
+  /// Enforce negative stock policy for a proposed movement delta against current stock.
+  static void validateMovementDelta({
+    required String itemId,
+    required String storeId,
+    required int currentStock,
+    required int delta,
+    required NegativeStockPolicy policy,
+  }) {
+    final projected = currentStock + delta;
+    if (projected < 0) {
+      if (policy == NegativeStockPolicy.block) {
+        throw InsufficientStockException(
+          itemId: itemId,
+          storeId: storeId,
+          currentStock: currentStock,
+          requestedDelta: delta,
+        );
+      }
+    }
+  }
 
   /// Check if an item has sufficient stock for a sale of [requiredQty].
   static PolicyValidation hasSufficientStock(

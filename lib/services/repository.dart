@@ -9,6 +9,7 @@ import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/customer.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/models/user_profile.dart';
+import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
 
 import 'package:biztonic_pos/services/sync_service.dart';
 
@@ -66,13 +67,15 @@ class Repository {
     required BusinessEvent event,
     required String storeId,
     required String yearMonth,
+    NegativeStockPolicy? negativeStockPolicy,
   }) =>
       _orders.performAtomicCheckout(
           order: order,
           movements: movements,
           event: event,
           storeId: storeId,
-          yearMonth: yearMonth);
+          yearMonth: yearMonth,
+          negativeStockPolicy: negativeStockPolicy);
   Future<void> replayTransaction(String txId, String operationsJson) =>
       _orders.replayTransaction(txId, operationsJson);
   Future<void> batchInsertOrders(List<OrderModel> orders) =>
@@ -108,10 +111,17 @@ class Repository {
   Future<void> updateInventoryCache(
           String itemId, int quantity, String storeId) =>
       _inventory.updateInventoryCache(itemId, quantity, storeId);
-  Future<void> insertMovement(InventoryMovement movement, {Transaction? txn}) =>
-      _inventory.insertMovement(movement, txn: txn);
+  Future<void> insertMovement(InventoryMovement movement,
+          {Transaction? txn, NegativeStockPolicy? negativeStockPolicy}) =>
+      _inventory.insertMovement(movement,
+          txn: txn, negativeStockPolicy: negativeStockPolicy);
+  Future<Map<String, int>> rebuildInventoryProjection(String storeId) =>
+      _inventory.rebuildInventoryProjection(storeId);
   Future<void> rebuildQuantityCache(String storeId) =>
       _inventory.rebuildQuantityCache(storeId);
+  Future<ReconciliationReport> reconcileInventory(String storeId,
+          {bool autoRepair = true}) =>
+      _inventory.reconcileInventory(storeId, autoRepair: autoRepair);
   Future<Map<String, int>> reconcileInventoryStock(String storeId) =>
       _inventory.reconcileInventoryStock(storeId);
   Future<void> batchInsertInventory(List<InventoryItem> items) =>

@@ -2,17 +2,25 @@ class InventoryMovement {
   final String id;
   final String itemId;
   final String storeId;
-  final String
-      type; // SALE, PURCHASE, ADJUSTMENT, RETURN, WASTE, TRANSFER_IN, TRANSFER_OUT
-  final int delta; // Negative for sales/waste, positive for purchases/returns
-  final String? orderId; // Reference to order if movement is from sale
-  final String? reason; // Human-readable reason for adjustment
-  final String? referenceNumber; // PO number, invoice number, etc.
-  final double? cost; // Cost per unit for purchases
+  final String type;
+  final int delta;
+  final String? orderId;
+  final String? reason;
+  final String? referenceNumber;
+  final double? unitCost;
   final String deviceId;
+  final String operationId;
   final DateTime createdAt;
-  final String syncStatus; // PENDING, SYNCED, FAILED
+  final int version;
+  final String syncStatus; // PENDING, SYNCED, CONFIRMED, FAILED
   final DateTime? syncedAt;
+  final bool isDeleted;
+
+  /// Compatibility alias for movementId
+  String get movementId => id;
+
+  /// Compatibility alias for unitCost
+  double? get cost => unitCost;
 
   InventoryMovement({
     required this.id,
@@ -23,40 +31,60 @@ class InventoryMovement {
     this.orderId,
     this.reason,
     this.referenceNumber,
-    this.cost,
+    double? unitCost,
+    double? cost,
     required this.deviceId,
+    String? operationId,
     required this.createdAt,
+    this.version = 1,
     this.syncStatus = 'PENDING',
     this.syncedAt,
-  });
+    this.isDeleted = false,
+  })  : unitCost = unitCost ?? cost,
+        operationId = operationId ?? id;
 
   factory InventoryMovement.fromMap(Map<String, dynamic> data, String id) {
+    final parsedCost = data['unitCost'] != null
+        ? (data['unitCost'] as num).toDouble()
+        : (data['cost'] != null ? (data['cost'] as num).toDouble() : null);
+
     return InventoryMovement(
       id: id,
-      itemId: data['itemId'] ?? '',
-      storeId: data['storeId'] ?? '',
-      type: data['type'] ?? 'ADJUSTMENT',
-      delta: data['delta'] ?? 0,
-      orderId: data['orderId'],
-      reason: data['reason'],
-      referenceNumber: data['referenceNumber'],
-      cost: data['cost']?.toDouble(),
-      deviceId: data['deviceId'] ?? '',
+      itemId: data['itemId']?.toString() ?? '',
+      storeId: data['storeId']?.toString() ?? '',
+      type: data['type']?.toString() ?? MovementType.adjustment,
+      delta: (data['delta'] as num?)?.toInt() ?? 0,
+      orderId: data['orderId']?.toString(),
+      reason: data['reason']?.toString(),
+      referenceNumber: data['referenceNumber']?.toString(),
+      unitCost: parsedCost,
+      deviceId: data['deviceId']?.toString() ?? '',
+      operationId: data['operationId']?.toString() ??
+          data['movementId']?.toString() ??
+          id,
       createdAt: data['createdAt'] is DateTime
           ? data['createdAt']
           : DateTime.tryParse(data['createdAt']?.toString() ?? '') ??
               DateTime.now(),
-      syncStatus: data['syncStatus'] ?? 'PENDING',
+      version: (data['version'] as num?)?.toInt() ?? 1,
+      syncStatus: data['syncStatus']?.toString() ?? 'PENDING',
       syncedAt: data['syncedAt'] != null
           ? (data['syncedAt'] is DateTime
               ? data['syncedAt']
               : DateTime.tryParse(data['syncedAt']?.toString() ?? ''))
           : null,
+      isDeleted: data['isDeleted'] == true || data['isDeleted'] == 1,
     );
+  }
+
+  factory InventoryMovement.fromSql(Map<String, dynamic> data) {
+    return InventoryMovement.fromMap(data, data['id']?.toString() ?? '');
   }
 
   Map<String, dynamic> toMap() {
     return {
+      'movementId': id,
+      'id': id,
       'itemId': itemId,
       'storeId': storeId,
       'type': type,
@@ -64,11 +92,15 @@ class InventoryMovement {
       'orderId': orderId,
       'reason': reason,
       'referenceNumber': referenceNumber,
-      'cost': cost,
+      'unitCost': unitCost,
+      'cost': unitCost,
       'deviceId': deviceId,
-      'createdAt': createdAt,
+      'operationId': operationId,
+      'createdAt': createdAt.toIso8601String(),
+      'version': version,
       'syncStatus': syncStatus,
-      'syncedAt': syncedAt,
+      'syncedAt': syncedAt?.toIso8601String(),
+      'isDeleted': isDeleted,
     };
   }
 
@@ -82,11 +114,15 @@ class InventoryMovement {
       'orderId': orderId,
       'reason': reason,
       'referenceNumber': referenceNumber,
-      'cost': cost,
+      'cost': unitCost,
+      'unitCost': unitCost,
       'deviceId': deviceId,
+      'operationId': operationId,
       'createdAt': createdAt.toIso8601String(),
+      'version': version,
       'syncStatus': syncStatus,
       'syncedAt': syncedAt?.toIso8601String(),
+      'isDeleted': isDeleted ? 1 : 0,
     };
   }
 
@@ -99,11 +135,14 @@ class InventoryMovement {
     String? orderId,
     String? reason,
     String? referenceNumber,
-    double? cost,
+    double? unitCost,
     String? deviceId,
+    String? operationId,
     DateTime? createdAt,
+    int? version,
     String? syncStatus,
     DateTime? syncedAt,
+    bool? isDeleted,
   }) {
     return InventoryMovement(
       id: id ?? this.id,
@@ -114,23 +153,32 @@ class InventoryMovement {
       orderId: orderId ?? this.orderId,
       reason: reason ?? this.reason,
       referenceNumber: referenceNumber ?? this.referenceNumber,
-      cost: cost ?? this.cost,
+      unitCost: unitCost ?? this.unitCost,
       deviceId: deviceId ?? this.deviceId,
+      operationId: operationId ?? this.operationId,
       createdAt: createdAt ?? this.createdAt,
+      version: version ?? this.version,
       syncStatus: syncStatus ?? this.syncStatus,
       syncedAt: syncedAt ?? this.syncedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 }
 
-// Movement type constants
+/// Movement type constants aligned with actual business operations
 class MovementType {
-  static const String sale = 'SALE';
+  static const String initialStock = 'INITIAL_STOCK';
   static const String purchase = 'PURCHASE';
+  static const String sale = 'SALE';
+  static const String saleReversal = 'SALE_REVERSAL';
+  static const String refund = 'REFUND';
   static const String adjustment = 'ADJUSTMENT';
-  static const String returnItem = 'RETURN';
-  static const String waste = 'WASTE';
   static const String transferIn = 'TRANSFER_IN';
   static const String transferOut = 'TRANSFER_OUT';
-  static const String initialStock = 'INITIAL_STOCK';
+  static const String damage = 'DAMAGE';
+  static const String returnItem = 'RETURN';
+  static const String voidReversal = 'VOID_REVERSAL';
+
+  /// Legacy alias
+  static const String waste = damage;
 }

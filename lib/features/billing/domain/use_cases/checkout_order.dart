@@ -12,6 +12,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:biztonic_pos/kernel/idempotency/idempotency_service.dart';
+import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
 
 class CheckoutOrderParams {
   final OrderModel order;
@@ -97,10 +98,13 @@ class CheckoutOrderUseCase
           id: movementId,
           itemId: item.item.id,
           storeId: activeStore.id,
-          type: 'SALE',
+          type: MovementType.sale,
           delta: -item.quantity,
           orderId: orderId,
+          unitCost: item.item.cost,
+          reason: 'Sale',
           deviceId: deviceId,
+          operationId: 'sale_${orderId}_${item.item.id}',
           createdAt: now,
           syncStatus: 'PENDING',
         ));
@@ -119,7 +123,11 @@ class CheckoutOrderUseCase
           if (raw != null && raw is Map) {
             final itemData = Map<String, dynamic>.from(raw);
             final currentQty = (itemData['quantity'] as num?)?.toInt() ?? 0;
-            itemData['quantity'] = max(0, currentQty + m.delta);
+            final newQty = currentQty + m.delta;
+            itemData['quantity'] =
+                activeStore.negativeStockPolicyEnum == NegativeStockPolicy.block
+                    ? max(0, newQty)
+                    : newQty;
             await invBox.put(m.itemId, itemData);
           }
         }
@@ -133,6 +141,7 @@ class CheckoutOrderUseCase
           movements: movements,
           storeId: activeStore.id,
           yearMonth: yearMonth,
+          negativeStockPolicy: activeStore.negativeStockPolicyEnum,
         );
       } else {
         await tokenService.incrementOrderCounter(activeStore.id);

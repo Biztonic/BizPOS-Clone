@@ -7,13 +7,14 @@
 ///   - Idempotency guards
 library;
 
-import 'package:flutter/foundation.dart';
-
+import 'package:uuid/uuid.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/kernel/idempotency/idempotency_service.dart';
+import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 
 import '../domain/entities/inventory_entity.dart';
+import '../domain/entities/inventory_movement.dart';
 import '../domain/repositories/inventory_repository_interface.dart';
 import '../domain/policies/inventory_policy.dart';
 
@@ -58,10 +59,13 @@ class InventoryOrchestratorResult {
 /// 5. Fire InventoryUpdatedEvent for SyncEngine
 class InventoryOrchestrator {
   final InventoryRepositoryInterface _repository;
+  final InventoryMovementRepository _movementRepo;
 
   InventoryOrchestrator({
     required InventoryRepositoryInterface repository,
-  }) : _repository = repository;
+    InventoryMovementRepository? movementRepo,
+  })  : _repository = repository,
+        _movementRepo = movementRepo ?? InventoryMovementRepository();
 
   /// Create or update an inventory item.
   Future<InventoryOrchestratorResult> upsertItem(
@@ -117,6 +121,28 @@ class InventoryOrchestrator {
       final insertResult = await _repository.insertItem(enriched);
       if (!insertResult.isSuccess) {
         return InventoryOrchestratorResult.failure(insertResult.error);
+      }
+
+      // ─── Step 6b: If item has initial quantity > 0 and no movements exist, record INITIAL_STOCK
+      if (enriched.trackStock && enriched.quantity > 0) {
+        final existingQty = await _movementRepo.getItemQuantity(enriched.id,
+            storeId: params.activeStoreId);
+        if (existingQty == 0) {
+          final initMovement = InventoryMovement(
+            id: const Uuid().v4(),
+            itemId: enriched.id,
+            storeId: params.activeStoreId,
+            type: MovementType.initialStock,
+            delta: enriched.quantity,
+            unitCost: enriched.cost,
+            reason: 'Initial Stock Creation',
+            deviceId: params.deviceId,
+            operationId: 'init_${enriched.id}',
+            createdAt: DateTime.now(),
+            syncStatus: 'PENDING',
+          );
+          await _movementRepo.insertMovement(initMovement);
+        }
       }
 
       // ─── Step 7: Fire Decoupled Event ───────────────────────

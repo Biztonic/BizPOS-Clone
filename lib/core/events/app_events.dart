@@ -98,6 +98,24 @@ class InventoryChangedEvent {
   });
 }
 
+class InventoryDriftDetectedEvent {
+  final String storeId;
+  final String itemId;
+  final int expectedQuantity;
+  final int actualQuantity;
+  final int drift;
+  final bool autoRepaired;
+
+  InventoryDriftDetectedEvent({
+    required this.storeId,
+    required this.itemId,
+    required this.expectedQuantity,
+    required this.actualQuantity,
+    required this.drift,
+    required this.autoRepaired,
+  });
+}
+
 // ─── CRM Events ──────────────────────────────────────────────
 class CustomerCreatedEvent {
   final String customerId;

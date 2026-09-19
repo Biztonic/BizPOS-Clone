@@ -15,6 +15,7 @@ import 'dart:io';
 import '../../domain/entities/inventory_entity.dart';
 import '../../domain/repositories/inventory_repository_interface.dart';
 import '../../application/inventory_orchestrator.dart';
+import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 
 /// Presentation layer state manager for the Inventory module.
 ///
@@ -404,6 +405,30 @@ class InventoryProvider extends ChangeNotifier {
     await _loadStats(storeId);
     notifyListeners();
     return true;
+  }
+
+  /// Rebuild the entire inventory quantity projection from the authoritative movements ledger
+  Future<Map<String, int>?> rebuildInventoryProjection() async {
+    final storeId = _storeProvider.activeStore?.id;
+    if (storeId == null) return null;
+    final repo = InventoryMovementRepository();
+    final result = await repo.rebuildInventoryProjection(storeId);
+    await loadInventory();
+    return result;
+  }
+
+  /// Reconcile inventory stock with movements ledger
+  Future<ReconciliationReport?> reconcileInventory(
+      {bool autoRepair = true}) async {
+    final storeId = _storeProvider.activeStore?.id;
+    if (storeId == null) return null;
+    final repo = InventoryMovementRepository();
+    final report =
+        await repo.reconcileInventory(storeId, autoRepair: autoRepair);
+    if (report.hasDiscrepancies && autoRepair) {
+      await loadInventory();
+    }
+    return report;
   }
 
   // ─── UI State Mutators ───────────────────────────────────

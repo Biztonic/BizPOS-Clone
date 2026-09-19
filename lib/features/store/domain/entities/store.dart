@@ -1,4 +1,5 @@
 import 'settings.dart'; // Same directory — no change needed
+import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
 
 class Store {
   final String id;
@@ -21,6 +22,7 @@ class Store {
   final double? taxRate;
   final bool isTaxEnabled;
   final bool trackInventory;
+  final String negativeStockPolicy; // BLOCK, ALLOW_WITH_WARNING, ALLOW
   final String? image;
   final String? gstin;
   final ReceiptSettings receipt;
@@ -28,6 +30,9 @@ class Store {
   final KdsSettings kds;
   final List<String> customRoles;
   final Map<String, Map<String, bool>> rolePermissions;
+
+  NegativeStockPolicy get negativeStockPolicyEnum =>
+      NegativeStockPolicy.fromString(negativeStockPolicy);
 
   Store({
     required this.id,
@@ -48,6 +53,7 @@ class Store {
     this.taxRate,
     this.isTaxEnabled = false,
     this.trackInventory = true,
+    this.negativeStockPolicy = 'BLOCK',
     this.image,
     this.gstin,
     required this.receipt,
@@ -90,6 +96,7 @@ class Store {
       taxRate: (data['taxRate'] ?? 0.0).toDouble(),
       isTaxEnabled: data['isTaxEnabled'] ?? false,
       trackInventory: data['trackInventory'] ?? true,
+      negativeStockPolicy: data['negativeStockPolicy'] ?? 'BLOCK',
       image: data['image'],
       gstin: data['gstin'],
       receipt: ReceiptSettings.fromMap(data['receipt'] ?? {}),
@@ -155,6 +162,7 @@ class Store {
       'taxRate': taxRate,
       'isTaxEnabled': isTaxEnabled,
       'trackInventory': trackInventory,
+      'negativeStockPolicy': negativeStockPolicy,
       'image': image,
       'gstin': gstin,
       'receipt': receipt.toMap(),
@@ -184,6 +192,7 @@ class Store {
     double? taxRate,
     bool? isTaxEnabled,
     bool? trackInventory,
+    String? negativeStockPolicy,
     String? image,
     String? gstin,
     ReceiptSettings? receipt,
@@ -212,6 +221,7 @@ class Store {
       taxRate: taxRate ?? this.taxRate,
       isTaxEnabled: isTaxEnabled ?? this.isTaxEnabled,
       trackInventory: trackInventory ?? this.trackInventory,
+      negativeStockPolicy: negativeStockPolicy ?? this.negativeStockPolicy,
       image: image ?? this.image,
       gstin: gstin ?? this.gstin,
       receipt: receipt ?? this.receipt,

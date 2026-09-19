@@ -3,6 +3,7 @@ import 'package:biztonic_pos/services/database_helper.dart';
 import 'package:biztonic_pos/models/inventory_item.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
+import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
 
 mixin InventoryRepositoryMixin {
   Future<Database> get database;
@@ -36,18 +37,34 @@ mixin InventoryRepositoryMixin {
   }
 
   Future<void> insertMovement(InventoryMovement movement,
-      {Transaction? txn}) async {
-    await movementRepo.insertMovement(movement, txn: txn);
+      {Transaction? txn, NegativeStockPolicy? negativeStockPolicy}) async {
+    await movementRepo.insertMovement(movement,
+        txn: txn, negativeStockPolicy: negativeStockPolicy);
   }
 
-  /// Rebuild the inventory quantity cache for a specific store
+  /// Rebuild the entire inventory quantity projection from the authoritative ledger
+  Future<Map<String, int>> rebuildInventoryProjection(String storeId) async {
+    return await movementRepo.rebuildInventoryProjection(storeId);
+  }
+
+  /// Backward-compatible alias for rebuildInventoryProjection
   Future<void> rebuildQuantityCache(String storeId) async {
-    await movementRepo.rebuildQuantityCache(storeId);
+    await movementRepo.rebuildInventoryProjection(storeId);
   }
 
   /// Reconcile inventory stock with movements ledger
+  Future<ReconciliationReport> reconcileInventory(String storeId,
+      {bool autoRepair = true}) async {
+    return await movementRepo.reconcileInventory(storeId,
+        autoRepair: autoRepair);
+  }
+
+  /// Backward-compatible alias for reconcileInventory
   Future<Map<String, int>> reconcileInventoryStock(String storeId) async {
-    return await movementRepo.reconcileInventoryStock(storeId);
+    final report =
+        await movementRepo.reconcileInventory(storeId, autoRepair: true);
+    return Map.fromEntries(report.discrepancies
+        .map((d) => MapEntry(d.itemId, d.expectedQuantity)));
   }
 
   // --- BATCH INVENTORY ---
