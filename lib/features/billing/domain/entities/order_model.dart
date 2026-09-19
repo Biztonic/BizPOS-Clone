@@ -265,6 +265,7 @@ class OrderModel {
       customerName: entity.customerName,
       customerPhone: entity.customerPhone,
       deviceId: entity.deviceId,
+      businessDayId: entity.businessDayId,
       taxRateSnapshot: entity.taxRateSnapshot,
     );
   }

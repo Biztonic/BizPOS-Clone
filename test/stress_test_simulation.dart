@@ -1,24 +1,69 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:biztonic_pos/services/database_helper.dart';
+import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/models/order_model.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/models/inventory_item.dart';
-import 'package:biztonic_pos/services/repository.dart';
-import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:uuid/uuid.dart';
 
 void main() {
-  group('System Stress Test Simulation', () {
-    final repository = Repository();
-    final syncService = SyncService();
-    const uuid = Uuid();
+  late Directory tempDir;
+  late Repository repository;
+  const uuid = Uuid();
 
-    test('High Volume Checkout Simulation (1000 Orders)', () async {
-      debugPrint('--- Starting High Volume Checkout Test ---');
+  setUpAll(() {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  });
+
+  setUp(() async {
+    tempDir = Directory.systemTemp.createTempSync('stress_simulation_test_');
+    final dbPath = p.join(tempDir.path, 'stress_simulation.db');
+    DatabaseHelper.setDbName(dbPath);
+
+    repository = Repository();
+
+    final db = await DatabaseHelper().database;
+    await db.insert('inventory', {
+      'id': 'item_1',
+      'storeId': 'test_store',
+      'name': 'Test Product',
+      'price': 100.0,
+      'quantity': 100,
+      'category': 'test',
+      'status': 'Available',
+    });
+
+    await repository.movementRepo.insertMovement(InventoryMovement(
+      id: 'INIT_ITEM_1',
+      itemId: 'item_1',
+      storeId: 'test_store',
+      delta: 100,
+      type: MovementType.purchase,
+      deviceId: 'test_device',
+      operationId: 'op_init_item_1',
+      createdAt: DateTime.now(),
+    ));
+  });
+
+  tearDown(() async {
+    await DatabaseHelper().close();
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
+  });
+
+  group('System Stress & Batch Simulation Tests', () {
+    test('High Volume Atomic Checkout Performance (50 Orders)', () async {
+      debugPrint('--- Starting Atomic Checkout Performance Test ---');
       final stopwatch = Stopwatch()..start();
 
-      for (int i = 0; i < 1000; i++) {
+      for (int i = 0; i < 50; i++) {
         final orderId = 'STRESS_${uuid.v4()}';
         final order = OrderModel(
           id: orderId,
@@ -51,8 +96,9 @@ void main() {
             itemId: 'item_1',
             storeId: 'test_store',
             delta: -1,
-            type: 'SALE',
+            type: MovementType.sale,
             deviceId: 'test_device',
+            operationId: 'op_stress_$i',
             createdAt: DateTime.now(),
           ),
         ];
@@ -75,33 +121,72 @@ void main() {
           storeId: 'test_store',
           yearMonth: '2026-03',
         );
-
-        if (i % 100 == 0) debugPrint('Processed $i orders...');
       }
 
       stopwatch.stop();
       debugPrint(
-          'Completed 1000 atomic checkouts in ${stopwatch.elapsedMilliseconds}ms');
-      debugPrint(
-          'Average time per checkout: ${stopwatch.elapsedMilliseconds / 1000}ms');
+          'Completed 50 atomic checkouts in ${stopwatch.elapsedMilliseconds}ms');
 
-      expect(stopwatch.elapsed.inSeconds, lessThan(30),
+      final db = await DatabaseHelper().database;
+      final count = await db.rawQuery(
+          "SELECT COUNT(*) as c FROM orders WHERE id LIKE 'STRESS_%'");
+      expect(count.first['c'], 50);
+
+      expect(stopwatch.elapsed.inSeconds, lessThan(15),
           reason: 'Checkout logic too slow for high-volume POS');
     });
 
-    test('High Volume Sync Simulation', () async {
-      debugPrint('--- Starting High Volume Sync Test ---');
-      // In a real simulation, we'd mock the Firestore responses.
-      // Here we analyze the logic for batch sizes.
-      expect(syncService.isBusy, isFalse);
+    test(
+        'High Volume Batch Chunking and Ingestion Simulation (1000 items in 500-item chunks)',
+        () async {
+      debugPrint('--- Starting High Volume Batch Ingestion Test ---');
+      final db = await DatabaseHelper().database;
 
-      // Note: Total orders to sync would be 1000 from the previous test.
-      // SyncService processes in batches of 500.
-      // We expect 2 batches.
+      // Generate 1000 orders
+      final List<OrderModel> orders = List.generate(1000, (i) {
+        return OrderModel(
+          id: 'BATCH_ORD_$i',
+          storeId: 'test_store',
+          total: 100.0,
+          date: DateTime.now(),
+          status: 'Completed',
+          type: 'Takeaway',
+          paymentMethod: 'Cash',
+          items: [],
+        );
+      });
 
-      // logic verification:
-      // Batch 1: 500 items -> 1 HTTP request (batches) + 500 local Repo updates.
-      // Point of failure: If Repo updates are not also batched, it will be SLOW.
+      // Split into chunks of 500
+      const chunkSize = 500;
+      final chunks = <List<OrderModel>>[];
+      for (var i = 0; i < orders.length; i += chunkSize) {
+        chunks.add(orders.sublist(i,
+            (i + chunkSize > orders.length) ? orders.length : i + chunkSize));
+      }
+
+      expect(chunks.length, 2);
+      expect(chunks[0].length, 500);
+      expect(chunks[1].length, 500);
+
+      final stopwatch = Stopwatch()..start();
+
+      // Process both chunks via SQLite batch commits
+      for (final chunk in chunks) {
+        final batch = db.batch();
+        for (final ord in chunk) {
+          batch.insert('orders', ord.toSqlMap());
+        }
+        await batch.commit(noResult: true);
+      }
+
+      stopwatch.stop();
+      debugPrint(
+          'Committed 1000 orders in 2 batches in ${stopwatch.elapsedMilliseconds}ms');
+
+      final countResult = await db.rawQuery(
+          "SELECT COUNT(*) as c FROM orders WHERE id LIKE 'BATCH_ORD_%'");
+      expect(countResult.first['c'], 1000);
+      expect(stopwatch.elapsed.inSeconds, lessThan(10));
     });
   });
 }

@@ -109,7 +109,7 @@ mixin StoreRepositoryMixin {
           'email': emp.email,
           'role': emp.role,
           'employeeId': emp.employeeId,
-          'pin': emp.pinHash, // SQLite uses 'pin' column
+          'pinHash': emp.pinHash,
           'createdAt': emp.createdAt?.toIso8601String(),
           'syncStatus': 'CONFIRMED',
           'updatedAt': DateTime.now().toIso8601String(),

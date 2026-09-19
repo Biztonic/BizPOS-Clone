@@ -1,4 +1,4 @@
-﻿const {
+const {
   initializeTestEnvironment,
   assertFails,
   assertSucceeds,
@@ -42,6 +42,16 @@ beforeEach(async () => {
     await db.collection("stores").doc("storeA").set({
       name: "Store A",
       owner: "ownerA",
+      subscriptionPlan: "Basic",
+      subscriptionStatus: "ACTIVE",
+      addons: [],
+    });
+    // Active Owner in Store A
+    await db.collection("stores").doc("storeA").collection("members").doc("ownerA").set({
+      uid: "ownerA",
+      storeId: "storeA",
+      role: "Owner",
+      status: "ACTIVE",
     });
     // Active member in Store A
     await db.collection("stores").doc("storeA").collection("members").doc("userA").set({
@@ -176,4 +186,28 @@ test("10. Removed membership accesses store -> DENY", async () => {
   const removedUserContext = testEnv.authenticatedContext("removedUser");
   await assertFails(removedUserContext.firestore().collection("orders").doc("orderA1").get());
   await assertFails(removedUserContext.firestore().collection("stores").doc("storeA").get());
+});
+
+test("11. Malicious payload: Store Owner attempts to arbitrarily elevate subscriptionPlan to Enterprise -> DENY", async () => {
+  const ownerAContext = testEnv.authenticatedContext("ownerA");
+  const storeRef = ownerAContext.firestore().collection("stores").doc("storeA");
+  await assertFails(storeRef.update({ subscriptionPlan: "Enterprise" }));
+});
+
+test("12. Malicious payload: Store Owner attempts to inject unauthorized addons -> DENY", async () => {
+  const ownerAContext = testEnv.authenticatedContext("ownerA");
+  const storeRef = ownerAContext.firestore().collection("stores").doc("storeA");
+  await assertFails(storeRef.update({ addons: ["crm", "kds", "multi_store"] }));
+});
+
+test("13. Malicious payload: Client attempts to directly write to platform_admins collection -> DENY", async () => {
+  const userAContext = testEnv.authenticatedContext("userA");
+  const adminDoc = userAContext.firestore().collection("platform_admins").doc("userA");
+  await assertFails(adminDoc.set({ uid: "userA", status: "ACTIVE" }));
+});
+
+test("14. Malicious payload: Normal user attempts to modify global settings/admin_config -> DENY", async () => {
+  const userAContext = testEnv.authenticatedContext("userA");
+  const configDoc = userAContext.firestore().collection("settings").doc("admin_config");
+  await assertFails(configDoc.update({ maintenanceMode: true }));
 });

@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:biztonic_pos/models/order_model.dart';
 import 'package:biztonic_pos/models/inventory_item.dart';
+import 'package:biztonic_pos/features/billing/domain/use_cases/calculate_tax.dart';
+import 'package:biztonic_pos/features/billing/domain/entities/order_entity.dart';
 
 void main() {
   group('Order Logic Tests', () {
@@ -46,16 +48,40 @@ void main() {
       expect(reconstructed.items.first.item.name, 'Burger');
     });
 
-    // 2. Test "Calculation" (Business Logic)
-    test('Should calculate total correctly', () {
-      // Ideally OrderModel should have a `calculateTotal()` method.
-      // Since it currently accepts total in constructor, we just verify the input logic/math here.
+    // 2. Test Real Tax & Total Calculation via CalculateTaxUseCase
+    test(
+        'Should calculate subtotal, CGST, SGST, and total using CalculateTaxUseCase',
+        () {
+      final useCase = CalculateTaxUseCase();
+      const items = [
+        OrderItemEntity(
+          itemId: 'item_1',
+          itemName: 'Burger',
+          price: 150.0,
+          quantity: 2,
+          cost: 70.0,
+        ),
+        OrderItemEntity(
+          itemId: 'item_2',
+          itemName: 'Fries',
+          price: 100.0,
+          quantity: 1,
+          cost: 40.0,
+        ),
+      ];
 
-      double price = 100.0;
-      int qty = 5;
-      double expectedTotal = price * qty;
+      // Subtotal = 150*2 + 100*1 = 400. Discount = 50. Taxable = 350. Tax = 5% (17.50: CGST 8.75, SGST 8.75). Total = 367.50.
+      final result = useCase.execute(const CalculateTaxParams(
+        items: items,
+        taxRate: 5.0,
+        discountAmount: 50.0,
+      ));
 
-      expect(expectedTotal, 500.0);
+      expect(result.subtotal, 400.0);
+      expect(result.discount, 50.0);
+      expect(result.cgst, 8.75);
+      expect(result.sgst, 8.75);
+      expect(result.total, 367.50);
     });
   });
 }
