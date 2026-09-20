@@ -349,6 +349,10 @@ class InventoryMovementRepository {
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
+  /// Alias for getItemQuantity
+  Future<int> getAggregatedQuantity(String itemId, {String? storeId}) =>
+      getItemQuantity(itemId, storeId: storeId);
+
   Future<int> _getItemQuantityWithTxn(
       Transaction txn, String itemId, String? storeId) async {
     String sql =

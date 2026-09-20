@@ -263,10 +263,9 @@ mixin SyncRepositoryMixin {
     if (operationIds.isEmpty) return;
     final db = await dbHelper.database;
     final placeholders = List.filled(operationIds.length, '?').join(',');
-    final nowIso = DateTime.now().toIso8601String();
     await db.rawUpdate(
-      'UPDATE outbox_operations SET state = ?, updatedAt = ? WHERE operationId IN ($placeholders)',
-      ['IN_FLIGHT', nowIso, ...operationIds],
+      'UPDATE outbox_operations SET state = ? WHERE operationId IN ($placeholders)',
+      ['IN_FLIGHT', ...operationIds],
     );
   }
 
@@ -275,10 +274,29 @@ mixin SyncRepositoryMixin {
     if (operationIds.isEmpty) return;
     final db = await dbHelper.database;
     final placeholders = List.filled(operationIds.length, '?').join(',');
-    final nowIso = DateTime.now().toIso8601String();
     await db.rawUpdate(
-      'UPDATE outbox_operations SET state = ?, updatedAt = ? WHERE operationId IN ($placeholders)',
-      ['PUSHED', nowIso, ...operationIds],
+      'UPDATE outbox_operations SET state = ? WHERE operationId IN ($placeholders)',
+      ['PUSHED', ...operationIds],
+    );
+  }
+
+  /// Batch mark operations in outbox as CONFIRMED
+  Future<void> markOutboxBatchConfirmed(List<String> operationIds) async {
+    if (operationIds.isEmpty) return;
+    final db = await dbHelper.database;
+    final placeholders = List.filled(operationIds.length, '?').join(',');
+    await db.rawUpdate(
+      'UPDATE outbox_operations SET state = ? WHERE operationId IN ($placeholders)',
+      ['CONFIRMED', ...operationIds],
+    );
+  }
+
+  /// Mark single outbox operation as CONFLICTED
+  Future<void> markOutboxConflicted(String operationId, String reason) async {
+    final db = await dbHelper.database;
+    await db.rawUpdate(
+      'UPDATE outbox_operations SET state = ?, lastError = ? WHERE operationId = ?',
+      ['CONFLICTED', reason, operationId],
     );
   }
 

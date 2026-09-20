@@ -52,6 +52,42 @@ class ConflictEngine {
       return ConflictResolutionResult.cloudWins();
     }
 
+    final localDeleted = localData['isDeleted'] == true ||
+        localData['isDeleted'] == 1 ||
+        localData['deletedAt'] != null;
+    final cloudDeleted = cloudData['isDeleted'] == true ||
+        cloudData['isDeleted'] == 1 ||
+        cloudData['deletedAt'] != null;
+
+    // TOMBSTONE PRESERVATION:
+    // If local or cloud is deleted, deletions take precedence over non-deleted records
+    // unless the non-deleted record is an explicit re-creation with a strictly newer timestamp.
+    if (localDeleted && !cloudDeleted) {
+      final localDeletedAt =
+          DateTime.tryParse(localData['deletedAt']?.toString() ?? '');
+      final cloudUpdatedAt =
+          DateTime.tryParse(cloudData['updatedAt']?.toString() ?? '');
+      if (localDeletedAt != null &&
+          cloudUpdatedAt != null &&
+          cloudUpdatedAt.isAfter(localDeletedAt)) {
+        return ConflictResolutionResult.cloudWins();
+      }
+      return ConflictResolutionResult.localWins();
+    }
+
+    if (cloudDeleted && !localDeleted) {
+      final cloudDeletedAt =
+          DateTime.tryParse(cloudData['deletedAt']?.toString() ?? '');
+      final localUpdatedAt =
+          DateTime.tryParse(localData['updatedAt']?.toString() ?? '');
+      if (localUpdatedAt != null &&
+          cloudDeletedAt != null &&
+          localUpdatedAt.isAfter(cloudDeletedAt)) {
+        return ConflictResolutionResult.localWins();
+      }
+      return ConflictResolutionResult.cloudWins();
+    }
+
     final localStatus = localData['syncStatus']?.toString() ?? '';
     final hasPendingLocalWrite =
         localStatus == 'PENDING' || localStatus == 'IN_FLIGHT';

@@ -173,11 +173,16 @@ class MovementType {
   static const String saleReversal = 'SALE_REVERSAL';
   static const String refund = 'REFUND';
   static const String adjustment = 'ADJUSTMENT';
+  static const String transfer = 'TRANSFER';
   static const String transferIn = 'TRANSFER_IN';
   static const String transferOut = 'TRANSFER_OUT';
   static const String damage = 'DAMAGE';
   static const String returnItem = 'RETURN';
   static const String voidReversal = 'VOID_REVERSAL';
+  static const String voidItem = 'VOID_ITEM';
+  static const String voidOrder = 'VOID';
+  static const String voidMovement = 'VOID';
+  static const String stockCount = 'STOCK_COUNT';
 
   /// Legacy alias
   static const String waste = damage;

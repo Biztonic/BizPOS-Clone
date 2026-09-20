@@ -50,12 +50,11 @@ mixin InventoryRepositoryMixin {
   Future<void> updateInventoryCache(
       String itemId, int quantity, String storeId) async {
     final db = await dbHelper.database;
-    final safeQty = quantity < 0 ? 0 : quantity;
     await db.insert('cache_inventory_quantities',
-        {'itemId': itemId, 'quantity': safeQty, 'storeId': storeId},
+        {'itemId': itemId, 'quantity': quantity, 'storeId': storeId},
         conflictAlgorithm: ConflictAlgorithm.replace);
     await db.rawUpdate(
-        'UPDATE inventory SET quantity = ? WHERE id = ?', [safeQty, itemId]);
+        'UPDATE inventory SET quantity = ? WHERE id = ?', [quantity, itemId]);
   }
 
   Future<void> insertMovement(InventoryMovement movement,

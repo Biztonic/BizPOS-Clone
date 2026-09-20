@@ -29,6 +29,8 @@ class ConflictRecord {
   })  : id = id ?? const Uuid().v4(),
         createdAt = createdAt ?? DateTime.now();
 
+  bool get isResolved => resolvedAt != null;
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

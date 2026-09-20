@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,6 +10,7 @@ import 'package:uuid/uuid.dart';
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/services/firestore_helper.dart';
 import 'package:biztonic_pos/services/offline_service.dart';
+import 'package:biztonic_pos/services/recovery_service.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/models/order_model.dart';
@@ -304,6 +306,10 @@ class SyncService with ChangeNotifier {
       unawaited(_maintenanceEngine.repairAllModules());
       // Recover stale in-flight outbox operations from previous crashes
       unawaited(_outboundManager.recoverStaleOperations());
+      // Recover interrupted transactions and journal entries
+      if (!kIsWeb) {
+        unawaited(RecoveryService().scanAndRecover());
+      }
 
       _isInitialized = true;
       debugPrint("✅ SyncService Decomposed Initialized");
@@ -753,6 +759,33 @@ class SyncService with ChangeNotifier {
   Future<void> resolveConflictRecord(
           String id, String resolution, String resolvedBy) =>
       _repository.resolveConflictRecord(id, resolution, resolvedBy);
+
+  /// Returns production sync diagnostics with all credentials, tokens, and secrets redacted.
+  Future<Map<String, dynamic>> getProductionDiagnostics() async {
+    final stats =
+        _outboundManager.outboxStore.getOutboxStats(storeId: _activeStoreId);
+
+    int conflictCount = stats['conflicted'] ?? 0;
+    try {
+      final records =
+          await _repository.getConflictRecords(storeId: _activeStoreId);
+      final unresolved = records.where((r) => !r.isResolved).length;
+      conflictCount = math.max(conflictCount, unresolved);
+    } catch (_) {}
+
+    final rawData = {
+      'pendingCount': stats['pending'] ?? 0,
+      'failedCount': stats['failed'] ?? 0,
+      'conflictCount': conflictCount,
+      'deadLetterCount': stats['deadLetter'] ?? 0,
+      'lastSuccessfulSync': _lastSyncTime?.toIso8601String(),
+      'lastError': lastSyncError,
+      'activeStore': _activeStoreId,
+      'deviceIdentifier': _deviceId,
+    };
+
+    return SyncDiagnostics.sanitizeData(rawData);
+  }
 
   /// Queues an operation for background synchronization with durable Outbox semantics.
   Future<String> queueOperation({

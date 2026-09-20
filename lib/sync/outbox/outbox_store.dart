@@ -239,7 +239,8 @@ class OutboxStore {
   }
 
   /// Marks an operation as CONFIRMED (safe for eventual pruning).
-  Future<void> markConfirmed(String operationId) async {
+  Future<void> markConfirmed(String operationId,
+      {Map<String, dynamic>? auditMetadata}) async {
     final box = getQueueBox();
     if (box != null && box.isOpen) {
       final val = box.get(operationId);
@@ -249,6 +250,7 @@ class OutboxStore {
           state: OutboxState.confirmed,
           auditMetadata: {
             ...?currentOp.auditMetadata,
+            ...?auditMetadata,
             'confirmedAt': DateTime.now().toIso8601String(),
           },
         );
@@ -259,6 +261,40 @@ class OutboxStore {
           } catch (_) {}
         }
       }
+    }
+  }
+
+  /// Marks a batch of operations as CONFIRMED.
+  Future<void> markBatchConfirmed(List<String> operationIds,
+      {Map<String, dynamic>? auditMetadata}) async {
+    if (operationIds.isEmpty) return;
+    final box = getQueueBox();
+    final Map<String, dynamic> hiveBatch = {};
+    final nowIso = DateTime.now().toIso8601String();
+    for (var id in operationIds) {
+      if (box != null && box.isOpen) {
+        final val = box.get(id);
+        if (val is Map) {
+          final currentOp = OutboxOperation.fromMap(val, id);
+          final op = currentOp.copyWith(
+            state: OutboxState.confirmed,
+            auditMetadata: {
+              ...?currentOp.auditMetadata,
+              ...?auditMetadata,
+              'confirmedAt': nowIso,
+            },
+          );
+          hiveBatch[id] = op.toMap();
+        }
+      }
+    }
+    if (box != null && box.isOpen && hiveBatch.isNotEmpty) {
+      await box.putAll(hiveBatch);
+    }
+    if (!kIsWeb) {
+      try {
+        await getRepository().markOutboxBatchConfirmed(operationIds);
+      } catch (_) {}
     }
   }
 
@@ -333,6 +369,33 @@ class OutboxStore {
 
         debugPrint(
             '💀 [OutboxStore] Operation $operationId moved to DEAD_LETTER: $error');
+      }
+    }
+  }
+
+  /// Marks an operation as CONFLICTED.
+  Future<void> markConflicted(String operationId, String reason) async {
+    final box = getQueueBox();
+    if (box != null && box.isOpen) {
+      final val = box.get(operationId);
+      if (val is Map) {
+        final currentOp = OutboxOperation.fromMap(val, operationId);
+        final conflictOp = currentOp.copyWith(
+          state: OutboxState.conflicted,
+          lastError: reason,
+          auditMetadata: {
+            ...?currentOp.auditMetadata,
+            'conflictedAt': DateTime.now().toIso8601String(),
+          },
+        );
+        await box.put(operationId, conflictOp.toMap());
+        if (!kIsWeb) {
+          try {
+            await getRepository().markOutboxConflicted(operationId, reason);
+          } catch (_) {}
+        }
+        debugPrint(
+            '⚔️ [OutboxStore] Operation $operationId marked as CONFLICTED: $reason');
       }
     }
   }
@@ -503,6 +566,29 @@ class OutboxStore {
             continue;
           }
           if (op.state == OutboxState.deadLetter) {
+            list.add(op);
+          }
+        }
+      }
+    }
+    return list;
+  }
+
+  /// Returns a list of operations currently in CONFLICTED state.
+  List<OutboxOperation> getConflictedOperations(
+      {String? storeId, int limit = 50}) {
+    final box = getQueueBox();
+    final list = <OutboxOperation>[];
+    if (box != null && box.isOpen) {
+      for (var key in box.keys) {
+        if (list.length >= limit) break;
+        final val = box.get(key);
+        if (val is Map) {
+          final op = OutboxOperation.fromMap(val, key.toString());
+          if (storeId != null && storeId.isNotEmpty && op.storeId != storeId) {
+            continue;
+          }
+          if (op.state == OutboxState.conflicted) {
             list.add(op);
           }
         }

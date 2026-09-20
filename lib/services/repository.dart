@@ -253,6 +253,10 @@ class Repository {
       _sync.markOutboxBatchInFlight(operationIds);
   Future<void> markOutboxBatchPushed(List<String> operationIds) =>
       _sync.markOutboxBatchPushed(operationIds);
+  Future<void> markOutboxBatchConfirmed(List<String> operationIds) =>
+      _sync.markOutboxBatchConfirmed(operationIds);
+  Future<void> markOutboxConflicted(String operationId, String reason) =>
+      _sync.markOutboxConflicted(operationId, reason);
   Future<void> markAsConfirmed(String table, String id) =>
       _sync.markAsConfirmed(table, id);
   Future<void> markAsSynced(String table, String id) =>

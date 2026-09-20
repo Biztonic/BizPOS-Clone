@@ -94,8 +94,9 @@ class SyncCollectionRegistry {
   ];
 
   /// Collections that support reconciliation (orphan cleanup).
+  /// FINANCIAL INTEGRITY RULE: Never include financial transactions (orders,
+  /// movements, events) in reconcilableCollections.
   static const List<String> reconcilableCollections = [
-    orders,
     inventory,
     customers,
     employees,

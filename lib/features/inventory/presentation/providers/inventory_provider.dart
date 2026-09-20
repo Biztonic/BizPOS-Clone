@@ -218,7 +218,7 @@ class InventoryProvider extends ChangeNotifier {
         final idx = _items.indexWhere((e) => e.id == itemId);
         if (idx != -1 && _items[idx].trackStock) {
           final currentQty = _items[idx].quantity;
-          final newQty = max(0, currentQty - qty);
+          final newQty = currentQty - qty; // Maintain true net stock
           _items[idx] = _items[idx].copyWith(quantity: newQty);
           didUpdate = true;
         }

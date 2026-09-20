@@ -119,13 +119,74 @@ class SyncDiagnostics {
       'stats': stats,
       'deadLetterCount': deadLetters.length,
       'deadLetters': deadLetters.map((op) {
-        if (op is Map) return op;
+        if (op is Map) return sanitizeData(Map<String, dynamic>.from(op));
         try {
-          return (op as dynamic).toMap();
+          return sanitizeData(Map<String, dynamic>.from((op as dynamic).toMap()));
         } catch (_) {
-          return {'raw': op.toString()};
+          return {'raw': sanitizeMessage(op.toString())};
         }
       }).toList(),
     };
+  }
+
+  /// Sanitizes messages by masking credentials, pins, and auth tokens.
+  static String sanitizeMessage(String message) {
+    var sanitized = message;
+    final sensitivePatterns = [
+      RegExp(r'(pin|password|token|secret|credential|api_?key)[=:\s]+([^\s,;]+)',
+          caseSensitive: false),
+      RegExp(r'(Bearer)\s+[A-Za-z0-9\-\._~\+\/]+=*', caseSensitive: false),
+    ];
+    for (var pattern in sensitivePatterns) {
+      sanitized = sanitized.replaceAllMapped(pattern, (match) {
+        final prefix =
+            match.groupCount >= 1 ? (match.group(1) ?? 'secret') : 'secret';
+        return '$prefix: [REDACTED]';
+      });
+    }
+    return sanitized;
+  }
+
+  /// Sanitizes key-value maps by deeply redacting sensitive credential keys.
+  static Map<String, dynamic> sanitizeData(Map<String, dynamic> data) {
+    final sanitized = <String, dynamic>{};
+    const sensitiveSubstrings = [
+      'pin',
+      'password',
+      'token',
+      'secret',
+      'credential',
+      'apikey',
+      'api_key',
+      'auth',
+    ];
+
+    data.forEach((key, value) {
+      final keyLower = key.toLowerCase();
+      final isSensitive =
+          sensitiveSubstrings.any((s) => keyLower.contains(s) && keyLower != 'authuid');
+
+      if (isSensitive) {
+        sanitized[key] = '[REDACTED]';
+      } else if (value is Map) {
+        sanitized[key] = sanitizeData(Map<String, dynamic>.from(value));
+      } else if (value is List) {
+        sanitized[key] = value.map((item) {
+          if (item is Map) {
+            return sanitizeData(Map<String, dynamic>.from(item));
+          }
+          if (item is String) {
+            return sanitizeMessage(item);
+          }
+          return item;
+        }).toList();
+      } else if (value is String) {
+        sanitized[key] = sanitizeMessage(value);
+      } else {
+        sanitized[key] = value;
+      }
+    });
+
+    return sanitized;
   }
 }

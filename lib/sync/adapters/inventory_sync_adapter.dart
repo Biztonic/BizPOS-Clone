@@ -41,18 +41,17 @@ class InventorySyncAdapter extends SyncAdapter {
       storeId: data['storeId'],
     );
     final safeQuantity = cloudQuantity + pendingDelta;
-    final nonNegativeQuantity = safeQuantity < 0 ? 0 : safeQuantity;
     await repository.updateInventoryCache(
       docId,
-      nonNegativeQuantity,
+      safeQuantity,
       data['storeId'] ?? '',
     );
   }
 
-  /// Rebuilds the full inventory quantity cache after a complete pull.
+  /// Rebuilds the full inventory quantity cache from the authoritative ledger after a complete pull.
   @override
   Future<void> onPullComplete(String storeId, Repository repository) async {
-    // Rebuilding cache from movement ledger is skipped to maintain reconciled baseline quantities.
+    await repository.rebuildInventoryProjection(storeId);
   }
 
   int _parseInt(dynamic v, [int fallback = 0]) {

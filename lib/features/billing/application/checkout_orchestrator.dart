@@ -219,8 +219,7 @@ class CheckoutOrchestrator {
           if (raw != null && raw is Map) {
             final itemData = Map<String, dynamic>.from(raw);
             final currentQty = (itemData['quantity'] as num?)?.toInt() ?? 0;
-            itemData['quantity'] =
-                max(0, currentQty + m.delta); // m.delta is negative
+            itemData['quantity'] = currentQty + m.delta; // Keep true net stock
             await invBox.put(m.itemId, itemData);
           }
         }

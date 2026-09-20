@@ -200,7 +200,12 @@ class PullEngine {
                 await adapter.deleteLocal(doc.id, repo);
               }
               if (box != null) {
-                await box.delete(doc.id);
+                final tombstone = Map<String, dynamic>.from(data);
+                tombstone['id'] = doc.id;
+                tombstone['isDeleted'] = true;
+                tombstone['deletedAt'] = tombstone['deletedAt'] ?? DateTime.now().toIso8601String();
+                tombstone['syncStatus'] = 'CONFIRMED';
+                await box.put(doc.id, _deepSanitize(tombstone));
               }
               pageInboxBatch.add({
                 'collection': collection,
@@ -290,6 +295,7 @@ class PullEngine {
 
   /// Safe orphan cleanup: only deletes CONFIRMED items that are missing from cloud.
   /// Never touches local items with PENDING or IN_FLIGHT status.
+  /// Aborts immediately if cloudIds is empty or drastically smaller than local dataset.
   Future<void> _cleanupOrphans(
     String collection,
     String storeId,
@@ -297,6 +303,22 @@ class PullEngine {
     Box? box,
     Repository repo,
   ) async {
+    // 0. Full-pull safety check: Never wipe local data if cloudIds returned empty!
+    if (cloudIds.isEmpty) {
+      debugPrint(
+          '🛡️ [PullEngine] Aborted orphan cleanup for $collection: cloudIds set is empty.');
+      return;
+    }
+
+    if (box != null && box.isNotEmpty) {
+      // If cloud returned fewer than 25% of local items and local has > 5 items, protect local data!
+      if (cloudIds.length < (box.length * 0.25) && box.length > 5) {
+        debugPrint(
+            '🛡️ [PullEngine] Aborted orphan cleanup for $collection: cloud count (${cloudIds.length}) drastically below local count (${box.length}). Possible partial query.');
+        return;
+      }
+    }
+
     // 1. Hive cleanup
     if (box != null) {
       final keysToDelete = <dynamic>[];
@@ -304,10 +326,11 @@ class PullEngine {
         final idStr = key.toString();
         if (!cloudIds.contains(idStr)) {
           final val = box.get(key);
-          // Never delete items with pending offline changes!
+          // Never delete items with pending offline changes or items already tombstoned
           if (val is Map) {
             final syncStatus = val['syncStatus']?.toString();
-            if (syncStatus == 'CONFIRMED' || syncStatus == 'PUSHED') {
+            final isDeleted = val['isDeleted'] == true || val['isDeleted'] == 1;
+            if (!isDeleted && (syncStatus == 'CONFIRMED' || syncStatus == 'PUSHED')) {
               keysToDelete.add(key);
             }
           }

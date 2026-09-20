@@ -1,6 +1,7 @@
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/sync/adapters/sync_adapter.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
+import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
 import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
 
 /// Sync adapter for the `inventory_movements` collection (event-sourced ledger).
@@ -17,7 +18,11 @@ class MovementSyncAdapter extends SyncAdapter {
     String docId,
     Repository repository,
   ) async {
-    await repository.insertMovement(InventoryMovement.fromMap(data, docId));
+    final movement = InventoryMovement.fromMap(data, docId);
+    await repository.insertMovement(
+      movement,
+      negativeStockPolicy: NegativeStockPolicy.allow,
+    );
   }
 
   @override

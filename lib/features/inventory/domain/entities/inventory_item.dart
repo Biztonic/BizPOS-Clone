@@ -42,7 +42,7 @@ class InventoryItem {
     required this.name,
     required this.category,
     required this.price,
-    int quantity = 0,
+    this.quantity = 0,
     required this.status,
     this.image,
     this.counterId,
@@ -67,7 +67,7 @@ class InventoryItem {
     this.featured = false,
     this.lowStockThreshold = 10,
     this.localImage,
-  }) : this.quantity = quantity < 0 ? 0 : quantity;
+  });
 
   factory InventoryItem.fromMap(Map<String, dynamic> data, String id) {
     // Helper for safe parsing
@@ -303,12 +303,12 @@ class InventoryItem {
 
   factory InventoryItem.fromSql(Map<String, dynamic> row) {
     return InventoryItem(
-      id: row['id'],
-      name: row['name'],
-      category: row['category'],
+      id: row['id']?.toString() ?? '',
+      name: row['name']?.toString() ?? '',
+      category: row['category']?.toString() ?? '',
       price: (row['price'] ?? 0).toDouble(),
       quantity: (row['quantity'] ?? 0).toInt(),
-      status: row['status'] ?? 'In Stock',
+      status: row['status']?.toString() ?? 'In Stock',
       image: row['image'],
       sku: row['sku'],
       cost: (row['cost'] ?? 0).toDouble(),

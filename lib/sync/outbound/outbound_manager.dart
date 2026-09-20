@@ -222,13 +222,13 @@ class OutboundManager {
         operation: () => batch.commit(),
       );
 
-      // Post-commit: batch mark operations PUSHED and update local entities
+      // Post-commit: batch mark operations CONFIRMED and update local entities
       final repo = getRepository();
-      await outboxStore.markBatchPushed(
+      await outboxStore.markBatchConfirmed(
         validOps.map((o) => o.operationId).toList(),
         auditMetadata: {
           'batchCommitted': true,
-          'committedAt': DateTime.now().toIso8601String(),
+          'confirmedAt': DateTime.now().toIso8601String(),
         },
       );
 
@@ -283,10 +283,10 @@ class OutboundManager {
           break;
       }
 
-      // Mark single item as PUSHED
-      await outboxStore.markPushed(op.operationId, auditMetadata: {
+      // Mark single item as CONFIRMED
+      await outboxStore.markConfirmed(op.operationId, auditMetadata: {
         'singleCommitted': true,
-        'committedAt': DateTime.now().toIso8601String(),
+        'confirmedAt': DateTime.now().toIso8601String(),
       });
 
       if (!kIsWeb) {
