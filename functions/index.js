@@ -400,3 +400,568 @@ exports.migrateMemberships = onCall(async (request) => {
   };
 });
 
+// ─────────────────────────────────────────────────────────────
+// SERVER-AUTHORITATIVE SUBSCRIPTION & ENTITLEMENT MANAGEMENT
+// ─────────────────────────────────────────────────────────────
+
+const DEFAULT_PLAN_FEATURES = {
+  Starting: ["billing", "basic_inventory"],
+  Basic: ["billing", "inventory", "customers", "basic_reports", "orders"],
+  Standard: [
+    "billing",
+    "inventory",
+    "customers",
+    "employees",
+    "reports",
+    "tables",
+    "floors",
+    "suppliers",
+    "orders",
+    "data_center",
+  ],
+  Professional: [
+    "billing",
+    "inventory",
+    "customers",
+    "employees",
+    "reports",
+    "tables",
+    "floors",
+    "suppliers",
+    "orders",
+    "advanced_reports",
+    "multi_store",
+    "api_access",
+    "data_center",
+  ],
+  Enterprise: ["*"],
+};
+
+const DEFAULT_PLAN_LIMITS = {
+  Starting: {
+    orders: 50,
+    dailyOrders: 20,
+    monthlyOrders: 50,
+    inventory: 30,
+    customers: 20,
+    employees: 2,
+    stores: 1,
+  },
+  Basic: {
+    orders: 500,
+    dailyOrders: 50,
+    monthlyOrders: 1500,
+    inventory: 200,
+    customers: 100,
+    employees: 5,
+    stores: 1,
+  },
+  Standard: {
+    orders: -1,
+    dailyOrders: -1,
+    monthlyOrders: -1,
+    inventory: -1,
+    customers: -1,
+    employees: 15,
+    stores: 3,
+  },
+  Professional: {
+    orders: -1,
+    dailyOrders: -1,
+    monthlyOrders: -1,
+    inventory: -1,
+    customers: -1,
+    employees: -1,
+    stores: 10,
+  },
+  Enterprise: {
+    orders: -1,
+    dailyOrders: -1,
+    monthlyOrders: -1,
+    inventory: -1,
+    customers: -1,
+    employees: -1,
+    stores: -1,
+  },
+};
+
+function computeEntitlementHash({
+  storeId,
+  plan,
+  status,
+  version,
+  addons = [],
+  purchasedAddons = [],
+  limits = {},
+  features = [],
+  endDate = null,
+  serverTimestamp = null,
+}) {
+  const sortedAddons = [...addons].sort();
+  const sortedPurchased = [...purchasedAddons].sort();
+  const sortedFeatures = [...features].sort();
+  const sortedLimitsKeys = Object.keys(limits).sort();
+  const limitsStr = sortedLimitsKeys.map((k) => `${k}:${limits[k]}`).join(",");
+
+  const endMs = endDate
+    ? endDate.toDate
+      ? endDate.toDate().getTime()
+      : new Date(endDate).getTime()
+    : "none";
+  const serverMs = serverTimestamp
+    ? serverTimestamp.toDate
+      ? serverTimestamp.toDate().getTime()
+      : new Date(serverTimestamp).getTime()
+    : "none";
+
+  const payload = [
+    storeId,
+    plan,
+    status,
+    String(version),
+    sortedAddons.join(","),
+    sortedPurchased.join(","),
+    limitsStr,
+    sortedFeatures.join(","),
+    String(endMs),
+    String(serverMs),
+    "BIZPOS_ENTITLEMENT_SALT_V1",
+  ].join("|");
+
+  return crypto.createHash("sha256").update(payload, "utf8").digest("hex");
+}
+
+/**
+ * Server-authoritative subscription activation.
+ * Callable strictly by Super Admins.
+ */
+exports.activateSubscription = onCall(async (request) => {
+  const { auth, data } = request;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+
+  const db = admin.firestore();
+  const callerIsAdmin = await isCallerSuperAdmin(auth, db);
+  if (!callerIsAdmin) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only Super Admins can activate subscriptions."
+    );
+  }
+
+  const {
+    storeId,
+    planType = "Standard",
+    durationDays = 30,
+    billingCycle = "monthly",
+    price = 0.0,
+    selectedAddons = [],
+    requestId = null,
+  } = data || {};
+
+  if (!storeId) {
+    throw new HttpsError("invalid-argument", "'storeId' is required.");
+  }
+
+  const storeRef = db.collection("stores").doc(storeId);
+  const storeSnap = await storeRef.get();
+  if (!storeSnap.exists) {
+    throw new HttpsError("not-found", `Store '${storeId}' not found.`);
+  }
+
+  const storeData = storeSnap.data();
+  const now = new Date();
+  const expiryDate = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+  const expiryTimestamp = admin.firestore.Timestamp.fromDate(expiryDate);
+  const currentVersion = (storeData.entitlementVersion || 0) + 1;
+
+  // Merge purchased addons
+  const existingPurchased = new Set(storeData.purchasedAddons || []);
+  for (const a of selectedAddons) existingPurchased.add(a);
+  const updatedPurchased = Array.from(existingPurchased);
+
+  const existingAddons = new Set(storeData.addons || []);
+  for (const a of selectedAddons) existingAddons.add(a);
+  const updatedAddons = Array.from(existingAddons);
+
+  const limits = DEFAULT_PLAN_LIMITS[planType] || DEFAULT_PLAN_LIMITS.Basic;
+  const features = DEFAULT_PLAN_FEATURES[planType] || DEFAULT_PLAN_FEATURES.Basic;
+
+  const tamperHash = computeEntitlementHash({
+    storeId,
+    plan: planType,
+    status: "ACTIVE",
+    version: currentVersion,
+    addons: updatedAddons,
+    purchasedAddons: updatedPurchased,
+    limits,
+    features,
+    endDate: expiryTimestamp,
+    serverTimestamp: admin.firestore.Timestamp.fromDate(now),
+  });
+
+  const canonicalEntitlement = {
+    storeId,
+    plan: planType,
+    status: "ACTIVE",
+    startDate: admin.firestore.FieldValue.serverTimestamp(),
+    endDate: expiryTimestamp,
+    gracePeriodDays: 7,
+    addons: updatedAddons,
+    purchasedAddons: updatedPurchased,
+    limits,
+    features,
+    version: currentVersion,
+    tamperHash,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    serverTimestamp: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  const batch = db.batch();
+
+  // 1. Update Store Root Document
+  batch.update(storeRef, {
+    subscriptionPlan: planType,
+    subscriptionStatus: "ACTIVE",
+    subscriptionExpiry: expiryTimestamp,
+    lastUpgradeDate: admin.firestore.FieldValue.serverTimestamp(),
+    purchasedAddons: updatedPurchased,
+    addons: updatedAddons,
+    entitlementVersion: currentVersion,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  // 2. Canonical Server-Controlled Entitlement Document
+  const entRef = storeRef.collection("entitlements").doc("current");
+  batch.set(entRef, canonicalEntitlement, { merge: true });
+
+  // 3. Append to Subscription History
+  const historyRef = storeRef.collection("subscription_history").doc();
+  batch.set(historyRef, {
+    planName: planType,
+    billingCycle,
+    durationDays,
+    startDate: admin.firestore.FieldValue.serverTimestamp(),
+    endDate: expiryTimestamp,
+    price,
+    status: "ACTIVE",
+    storeId,
+    selectedAddons: updatedAddons,
+    approvedBy: auth.uid,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  // 4. Update Request if linked
+  if (requestId) {
+    const reqRef = db.collection("subscription_requests").doc(requestId);
+    batch.update(reqRef, {
+      status: "APPROVED",
+      storeId,
+      approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+      approvedBy: auth.uid,
+    });
+  }
+
+  await batch.commit();
+
+  return {
+    success: true,
+    storeId,
+    plan: planType,
+    status: "ACTIVE",
+    expiry: expiryDate.toISOString(),
+    entitlementVersion: currentVersion,
+  };
+});
+
+/**
+ * Server-authoritative plan changes (upgrade, downgrade, suspend, cancel).
+ * Callable strictly by Super Admins.
+ */
+exports.changeSubscriptionPlan = onCall(async (request) => {
+  const { auth, data } = request;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+
+  const db = admin.firestore();
+  const callerIsAdmin = await isCallerSuperAdmin(auth, db);
+  if (!callerIsAdmin) {
+    throw new HttpsError("permission-denied", "Super Admin access required.");
+  }
+
+  const {
+    storeId,
+    newPlan,
+    status = "ACTIVE",
+    durationDays = 30,
+    gracePeriodDays = 7,
+    reason = "Admin plan adjustment",
+  } = data || {};
+
+  if (!storeId || !newPlan) {
+    throw new HttpsError(
+      "invalid-argument",
+      "'storeId' and 'newPlan' are required."
+    );
+  }
+
+  const storeRef = db.collection("stores").doc(storeId);
+  const storeSnap = await storeRef.get();
+  if (!storeSnap.exists) {
+    throw new HttpsError("not-found", `Store '${storeId}' not found.`);
+  }
+
+  const storeData = storeSnap.data();
+  const currentVersion = (storeData.entitlementVersion || 0) + 1;
+  const now = new Date();
+  const expiryDate = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+  const expiryTimestamp = admin.firestore.Timestamp.fromDate(expiryDate);
+
+  const limits = DEFAULT_PLAN_LIMITS[newPlan] || DEFAULT_PLAN_LIMITS.Basic;
+  const features = DEFAULT_PLAN_FEATURES[newPlan] || DEFAULT_PLAN_FEATURES.Basic;
+  const purchasedAddons = storeData.purchasedAddons || [];
+  const addons = storeData.addons || [];
+
+  const tamperHash = computeEntitlementHash({
+    storeId,
+    plan: newPlan,
+    status,
+    version: currentVersion,
+    addons,
+    purchasedAddons,
+    limits,
+    features,
+    endDate: expiryTimestamp,
+    serverTimestamp: admin.firestore.Timestamp.fromDate(now),
+  });
+
+  const batch = db.batch();
+
+  batch.update(storeRef, {
+    subscriptionPlan: newPlan,
+    subscriptionStatus: status,
+    subscriptionExpiry: expiryTimestamp,
+    entitlementVersion: currentVersion,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const entRef = storeRef.collection("entitlements").doc("current");
+  batch.set(
+    entRef,
+    {
+      storeId,
+      plan: newPlan,
+      status,
+      endDate: expiryTimestamp,
+      gracePeriodDays,
+      addons,
+      purchasedAddons,
+      limits,
+      features,
+      version: currentVersion,
+      tamperHash,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      serverTimestamp: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  const histRef = storeRef.collection("subscription_history").doc();
+  batch.set(histRef, {
+    oldPlan: storeData.subscriptionPlan,
+    newPlan,
+    status,
+    reason,
+    changedBy: auth.uid,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  await batch.commit();
+
+  return { success: true, storeId, plan: newPlan, status };
+});
+
+/**
+ * Toggles an addon for a store.
+ * Rejects if addon was not purchased (or included in plan).
+ */
+exports.purchaseOrToggleAddon = onCall(async (request) => {
+  const { auth, data } = request;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+
+  const { storeId, addonKey, enable = true, isPurchase = false } = data || {};
+  if (!storeId || !addonKey) {
+    throw new HttpsError(
+      "invalid-argument",
+      "'storeId' and 'addonKey' are required."
+    );
+  }
+
+  const db = admin.firestore();
+  const callerIsAdmin = await isCallerSuperAdmin(auth, db);
+
+  // Check store membership if not super admin
+  if (!callerIsAdmin) {
+    const memberDoc = await db
+      .collection("stores")
+      .doc(storeId)
+      .collection("members")
+      .doc(auth.uid)
+      .get();
+    if (
+      !memberDoc.exists ||
+      (memberDoc.data().role !== "Owner" &&
+        memberDoc.data().role !== "Store Owner" &&
+        memberDoc.data().role !== "Manager")
+    ) {
+      throw new HttpsError(
+        "permission-denied",
+        "Only Store Owners or Managers can configure addons."
+      );
+    }
+  }
+
+  const storeRef = db.collection("stores").doc(storeId);
+  const storeSnap = await storeRef.get();
+  if (!storeSnap.exists) {
+    throw new HttpsError("not-found", "Store not found.");
+  }
+
+  const storeData = storeSnap.data();
+  const purchased = new Set(storeData.purchasedAddons || []);
+  const active = new Set(storeData.addons || []);
+
+  if (isPurchase) {
+    // Only Super Admin can authorize purchase directly via this endpoint
+    if (!callerIsAdmin) {
+      throw new HttpsError(
+        "permission-denied",
+        "Addon purchase requires administrative approval or payment processing."
+      );
+    }
+    purchased.add(addonKey);
+    active.add(addonKey);
+  } else {
+    // Toggling: must already be purchased or included in enterprise
+    const isEnterprise =
+      (storeData.subscriptionPlan || "").toLowerCase() === "enterprise";
+    if (!purchased.has(addonKey) && !isEnterprise && !callerIsAdmin) {
+      throw new HttpsError(
+        "failed-precondition",
+        `Addon '${addonKey}' has not been purchased for this store.`
+      );
+    }
+
+    if (enable) {
+      active.add(addonKey);
+    } else {
+      active.delete(addonKey);
+    }
+  }
+
+  await storeRef.update({
+    addons: Array.from(active),
+    purchasedAddons: Array.from(purchased),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  return {
+    success: true,
+    storeId,
+    addonKey,
+    enabled: active.has(addonKey),
+    purchased: purchased.has(addonKey),
+  };
+});
+
+/**
+ * Server-authoritative quota enforcement check.
+ * Validates store metrics against current subscription quotas.
+ */
+exports.enforceServerQuotas = onCall(async (request) => {
+  const { auth, data } = request;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+
+  const { storeId, action } = data || {};
+  if (!storeId) {
+    throw new HttpsError("invalid-argument", "'storeId' is required.");
+  }
+
+  const db = admin.firestore();
+  const storeDoc = await db.collection("stores").doc(storeId).get();
+  if (!storeDoc.exists) {
+    throw new HttpsError("not-found", "Store not found.");
+  }
+
+  const storeData = storeDoc.data();
+  const plan = storeData.subscriptionPlan || "Basic";
+  const limits = DEFAULT_PLAN_LIMITS[plan] || DEFAULT_PLAN_LIMITS.Basic;
+
+  const violations = [];
+
+  // 1. Order Quota Evaluation
+  if (action === "create_order" && limits.orders !== -1) {
+    const ordersSnap = await db
+      .collection("orders")
+      .where("storeId", "==", storeId)
+      .count()
+      .get();
+    const orderCount = ordersSnap.data().count;
+    if (orderCount >= limits.orders) {
+      violations.push(
+        `Total orders (${orderCount}) exceeds plan limit (${limits.orders}).`
+      );
+    }
+  }
+
+  // 2. Inventory Quota Evaluation
+  if (action === "add_inventory" && limits.inventory !== -1) {
+    const invSnap = await db
+      .collection("inventory")
+      .where("storeId", "==", storeId)
+      .count()
+      .get();
+    const invCount = invSnap.data().count;
+    if (invCount >= limits.inventory) {
+      violations.push(
+        `Catalog items (${invCount}) exceeds plan limit (${limits.inventory}).`
+      );
+    }
+  }
+
+  // 3. Customer Quota Evaluation
+  if (action === "add_customer" && limits.customers !== -1) {
+    const custSnap = await db
+      .collection("customers")
+      .where("storeId", "==", storeId)
+      .count()
+      .get();
+    const custCount = custSnap.data().count;
+    if (custCount >= limits.customers) {
+      violations.push(
+        `Customers (${custCount}) exceeds plan limit (${limits.customers}).`
+      );
+    }
+  }
+
+  if (violations.length > 0) {
+    throw new HttpsError(
+      "resource-exhausted",
+      violations.join(" ")
+    );
+  }
+
+  return {
+    allowed: true,
+    storeId,
+    plan,
+    limits,
+  };
+});
+

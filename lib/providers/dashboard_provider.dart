@@ -1999,14 +1999,42 @@ class DashboardProvider with ChangeNotifier {
       tx.update(_db.collection('subscription_requests').doc(request.id),
           {'status': 'APPROVED', 'approvedAt': FieldValue.serverTimestamp()});
 
+      final int currentVersion =
+          ((storeSnap.data()?['entitlementVersion'] as num?)?.toInt() ?? 0) + 1;
+
       // 2. Update Store
       tx.update(storeRef, {
         'subscriptionPlan': request.planType,
+        'subscriptionStatus': 'ACTIVE',
         'subscriptionExpiry': Timestamp.fromDate(expiry),
         'lastUpgradeDate': FieldValue.serverTimestamp(),
         'purchasedAddons': currentPurchased,
         'addons': currentActive,
+        'entitlementVersion': currentVersion,
       });
+
+      // 2b. Canonical Server-Controlled Entitlement Document
+      final tier = PlanTier.fromString(request.planType);
+      final limits = EntitlementService.defaultPlanLimits[tier] ??
+          EntitlementService.defaultPlanLimits[PlanTier.basic]!;
+      final features = EntitlementService.defaultPlanFeatures[tier] ??
+          EntitlementService.defaultPlanFeatures[PlanTier.basic]!;
+      final canonicalEntitlement = StoreEntitlement.create(
+        storeId: storeId,
+        plan: tier,
+        status: PlanStatus.active,
+        startDate: now,
+        endDate: expiry,
+        gracePeriodDays: 7,
+        addons: currentActive.toSet(),
+        purchasedAddons: currentPurchased.toSet(),
+        limits: limits,
+        features: features,
+        version: currentVersion,
+        serverTimestamp: now,
+      );
+      final entRef = storeRef.collection('entitlements').doc('current');
+      tx.set(entRef, canonicalEntitlement.toMap());
 
       // 3. Update User Role if franchise addon purchased
       if (userRefToUpdate != null) {

@@ -105,11 +105,13 @@ class StoreEntitlement {
   final DateTime? endDate;
   final int gracePeriodDays;
   final Set<String> addons;
+  final Set<String> purchasedAddons;
   final Map<String, int> limits;
   final Set<String> features;
   final int version;
   final String tamperHash;
   final DateTime updatedAt;
+  final DateTime? serverTimestamp;
 
   const StoreEntitlement({
     required this.storeId,
@@ -119,15 +121,53 @@ class StoreEntitlement {
     this.endDate,
     this.gracePeriodDays = 7,
     required this.addons,
+    this.purchasedAddons = const {},
     required this.limits,
     required this.features,
     required this.version,
     required this.tamperHash,
     required this.updatedAt,
+    this.serverTimestamp,
   });
 
   /// Computes a tamper-evident cryptographic hash of the entitlement data.
   static String computeHash({
+    required String storeId,
+    required String plan,
+    required String status,
+    required int version,
+    required List<String> addons,
+    List<String> purchasedAddons = const [],
+    required Map<String, int> limits,
+    required List<String> features,
+    DateTime? endDate,
+    DateTime? serverTimestamp,
+  }) {
+    final sortedAddons = List<String>.from(addons)..sort();
+    final sortedPurchased = List<String>.from(purchasedAddons)..sort();
+    final sortedFeatures = List<String>.from(features)..sort();
+    final sortedLimitsKeys = limits.keys.toList()..sort();
+    final limitsStr = sortedLimitsKeys.map((k) => '$k:${limits[k]}').join(',');
+
+    final payload = [
+      storeId,
+      plan,
+      status,
+      version.toString(),
+      sortedAddons.join(','),
+      sortedPurchased.join(','),
+      limitsStr,
+      sortedFeatures.join(','),
+      endDate?.millisecondsSinceEpoch.toString() ?? 'none',
+      serverTimestamp?.millisecondsSinceEpoch.toString() ?? 'none',
+      'BIZPOS_ENTITLEMENT_SALT_V1',
+    ].join('|');
+
+    return sha256.convert(utf8.encode(payload)).toString();
+  }
+
+  /// Legacy compute hash for backward compatibility.
+  static String computeLegacyHash({
     required String storeId,
     required String plan,
     required String status,
@@ -165,11 +205,32 @@ class StoreEntitlement {
       status: status.value,
       version: version,
       addons: addons.toList(),
+      purchasedAddons: purchasedAddons.toList(),
+      limits: limits,
+      features: features.toList(),
+      endDate: endDate,
+      serverTimestamp: serverTimestamp,
+    );
+    if (tamperHash == expected) return true;
+
+    // Fallback to check legacy hash
+    final legacyExpected = computeLegacyHash(
+      storeId: storeId,
+      plan: plan.value,
+      status: status.value,
+      version: version,
+      addons: addons.toList(),
       limits: limits,
       features: features.toList(),
       endDate: endDate,
     );
-    return tamperHash == expected;
+    return tamperHash == legacyExpected;
+  }
+
+  /// Checks if an addon is permitted based on purchases or plan tier.
+  bool isAddonAllowed(String addonKey) {
+    if (plan == PlanTier.enterprise) return true;
+    return purchasedAddons.contains(addonKey) || features.contains(addonKey);
   }
 
   /// Whether the entitlement permits standard daily POS operations.
@@ -213,21 +274,29 @@ class StoreEntitlement {
     DateTime? endDate,
     int gracePeriodDays = 7,
     Set<String> addons = const {},
+    Set<String> purchasedAddons = const {},
     required Map<String, int> limits,
     required Set<String> features,
     int version = 1,
     DateTime? updatedAt,
+    DateTime? serverTimestamp,
   }) {
     final updated = updatedAt ?? DateTime.now();
+    final effectivePurchased = purchasedAddons.isNotEmpty
+        ? purchasedAddons
+        : (plan == PlanTier.enterprise ? addons : purchasedAddons);
+
     final hash = computeHash(
       storeId: storeId,
       plan: plan.value,
       status: status.value,
       version: version,
       addons: addons.toList(),
+      purchasedAddons: effectivePurchased.toList(),
       limits: limits,
       features: features.toList(),
       endDate: endDate,
+      serverTimestamp: serverTimestamp,
     );
 
     return StoreEntitlement(
@@ -238,11 +307,13 @@ class StoreEntitlement {
       endDate: endDate,
       gracePeriodDays: gracePeriodDays,
       addons: addons,
+      purchasedAddons: effectivePurchased,
       limits: limits,
       features: features,
       version: version,
       tamperHash: hash,
       updatedAt: updated,
+      serverTimestamp: serverTimestamp,
     );
   }
 
@@ -255,11 +326,13 @@ class StoreEntitlement {
       'endDate': endDate?.toIso8601String(),
       'gracePeriodDays': gracePeriodDays,
       'addons': addons.toList(),
+      'purchasedAddons': purchasedAddons.toList(),
       'limits': limits,
       'features': features.toList(),
       'version': version,
       'tamperHash': tamperHash,
       'updatedAt': updatedAt.toIso8601String(),
+      'serverTimestamp': serverTimestamp?.toIso8601String(),
     };
   }
 
@@ -278,6 +351,10 @@ class StoreEntitlement {
       addons:
           (map['addons'] as List<dynamic>?)?.map((e) => e.toString()).toSet() ??
               {},
+      purchasedAddons: (map['purchasedAddons'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toSet() ??
+          {},
       limits: (map['limits'] as Map<dynamic, dynamic>?)?.map(
             (k, v) => MapEntry(k.toString(), (v as num).toInt()),
           ) ??
@@ -291,6 +368,9 @@ class StoreEntitlement {
       updatedAt: map['updatedAt'] != null
           ? DateTime.tryParse(map['updatedAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
+      serverTimestamp: map['serverTimestamp'] != null
+          ? DateTime.tryParse(map['serverTimestamp'].toString())
+          : null,
     );
   }
 
@@ -302,11 +382,13 @@ class StoreEntitlement {
     DateTime? endDate,
     int? gracePeriodDays,
     Set<String>? addons,
+    Set<String>? purchasedAddons,
     Map<String, int>? limits,
     Set<String>? features,
     int? version,
     String? tamperHash,
     DateTime? updatedAt,
+    DateTime? serverTimestamp,
   }) {
     return StoreEntitlement(
       storeId: storeId ?? this.storeId,
@@ -316,11 +398,13 @@ class StoreEntitlement {
       endDate: endDate ?? this.endDate,
       gracePeriodDays: gracePeriodDays ?? this.gracePeriodDays,
       addons: addons ?? this.addons,
+      purchasedAddons: purchasedAddons ?? this.purchasedAddons,
       limits: limits ?? this.limits,
       features: features ?? this.features,
       version: version ?? this.version,
       tamperHash: tamperHash ?? this.tamperHash,
       updatedAt: updatedAt ?? this.updatedAt,
+      serverTimestamp: serverTimestamp ?? this.serverTimestamp,
     );
   }
 }

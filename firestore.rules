@@ -69,6 +69,27 @@ service cloud.firestore {
       return isStoreMember(storeId);
     }
 
+    function isStoreActive(storeId) {
+      let storePath = /databases/$(database)/documents/stores/$(storeId);
+      return isSuperAdmin() || (
+        exists(storePath) &&
+        (!('subscriptionStatus' in get(storePath).data) || 
+         (get(storePath).data.subscriptionStatus != 'SUSPENDED' && get(storePath).data.subscriptionStatus != 'CANCELLED'))
+      );
+    }
+
+    function storeHasFeature(storeId, feature) {
+      let storePath = /databases/$(database)/documents/stores/$(storeId);
+      return isSuperAdmin() || (
+        exists(storePath) && (
+          ('subscriptionPlan' in get(storePath).data && 
+           get(storePath).data.subscriptionPlan in ['Standard', 'Professional', 'Enterprise', 'standard', 'professional', 'enterprise']) ||
+          ('addons' in get(storePath).data && feature in get(storePath).data.addons) ||
+          ('purchasedAddons' in get(storePath).data && feature in get(storePath).data.purchasedAddons)
+        )
+      );
+    }
+
     // --- Collection Rules ---
 
     // 1. Users Collection (USER_PRIVATE)
@@ -122,13 +143,21 @@ service cloud.firestore {
         (!('subscriptionPlan' in request.resource.data) || request.resource.data.subscriptionPlan == resource.data.subscriptionPlan) &&
         (!('subscriptionStatus' in request.resource.data) || request.resource.data.subscriptionStatus == resource.data.subscriptionStatus) &&
         (!('subscriptionExpiry' in request.resource.data) || request.resource.data.subscriptionExpiry == resource.data.subscriptionExpiry) &&
-        (!('addons' in request.resource.data) || request.resource.data.addons == resource.data.addons) &&
         (!('purchasedAddons' in request.resource.data) || request.resource.data.purchasedAddons == resource.data.purchasedAddons) &&
+        (!('addons' in request.resource.data) || 
+         request.resource.data.addons == resource.data.addons ||
+         ('purchasedAddons' in resource.data && request.resource.data.addons.hasOnly(resource.data.purchasedAddons))) &&
         (!('entitlements' in request.resource.data) || request.resource.data.entitlements == resource.data.entitlements) &&
         (!('entitlementVersion' in request.resource.data) || request.resource.data.entitlementVersion == resource.data.entitlementVersion)
       );
       allow delete: if isSuperAdmin();
       
+      // Server-Authoritative Canonical Entitlements
+      match /entitlements/{docId} {
+        allow read: if isSuperAdmin() || isStoreMember(storeId);
+        allow write: if isSuperAdmin();
+      }
+
       // Server-Controlled Store Membership Model
       match /members/{memberUid} {
         allow get, list: if isSuperAdmin() || isStoreMember(storeId);
@@ -306,7 +335,11 @@ service cloud.firestore {
     // 9. Root Collections with storeId filtering (STORE_PRIVATE)
     match /orders/{id} {
       allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
-      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow create: if isSuperAdmin() || (
+        request.resource.data.storeId != null && 
+        isStoreMember(request.resource.data.storeId) &&
+        isStoreActive(request.resource.data.storeId)
+      );
       allow update: if isSuperAdmin() || (
         resource.data.storeId != null && 
         isStoreMember(resource.data.storeId) && 
@@ -326,7 +359,11 @@ service cloud.firestore {
 
     match /inventory/{id} {
       allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
-      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow create: if isSuperAdmin() || (
+        request.resource.data.storeId != null && 
+        isStoreMember(request.resource.data.storeId) &&
+        isStoreActive(request.resource.data.storeId)
+      );
       allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
                                            request.resource.data.storeId == resource.data.storeId);
       allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
@@ -334,7 +371,11 @@ service cloud.firestore {
 
     match /customers/{id} {
       allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
-      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
+      allow create: if isSuperAdmin() || (
+        request.resource.data.storeId != null && 
+        isStoreMember(request.resource.data.storeId) &&
+        isStoreActive(request.resource.data.storeId)
+      );
       allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
                                            request.resource.data.storeId == resource.data.storeId);
       allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
@@ -397,7 +438,12 @@ service cloud.firestore {
 
     match /floors/{id} {
       allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
-      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreOwnerOrManager(request.resource.data.storeId));
+      allow create: if isSuperAdmin() || (
+        request.resource.data.storeId != null && 
+        isStoreOwnerOrManager(request.resource.data.storeId) &&
+        isStoreActive(request.resource.data.storeId) &&
+        storeHasFeature(request.resource.data.storeId, 'floors')
+      );
       allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId) && 
                                            request.resource.data.storeId == resource.data.storeId);
       allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
@@ -405,7 +451,12 @@ service cloud.firestore {
 
     match /tables/{id} {
       allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
-      allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreOwnerOrManager(request.resource.data.storeId));
+      allow create: if isSuperAdmin() || (
+        request.resource.data.storeId != null && 
+        isStoreOwnerOrManager(request.resource.data.storeId) &&
+        isStoreActive(request.resource.data.storeId) &&
+        storeHasFeature(request.resource.data.storeId, 'tables')
+      );
       allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId) && 
                                            request.resource.data.storeId == resource.data.storeId);
       allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));

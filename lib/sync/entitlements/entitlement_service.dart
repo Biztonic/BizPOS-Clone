@@ -231,9 +231,11 @@ class EntitlementService {
             endDate: entitlement.endDate,
             gracePeriodDays: entitlement.gracePeriodDays,
             addons: entitlement.addons,
+            purchasedAddons: entitlement.purchasedAddons,
             limits: entitlement.limits,
             features: entitlement.features,
             version: entitlement.version,
+            serverTimestamp: entitlement.serverTimestamp,
           );
 
     _memoryCache[entitlement.storeId] = verified;
@@ -258,17 +260,30 @@ class EntitlementService {
     final planStat = PlanStatus.fromString(status);
     final current = getEntitlement(storeId);
 
+    // Defensive Anti-Tamper check:
+    // If incoming local plan is higher than current verified plan, do NOT elevate without server verification
+    final effectiveTier =
+        (current.plan.index >= tier.index || current.version == 1)
+            ? tier
+            : current.plan;
+
+    // Filter incoming addons: cannot enable addons that are not allowed
+    final effectiveAddons =
+        addons.where((a) => current.isAddonAllowed(a)).toSet();
+
     final entitlement = StoreEntitlement.create(
       storeId: storeId,
-      plan: tier,
+      plan: effectiveTier,
       status: planStat,
       startDate: startDate ?? current.startDate ?? DateTime.now(),
       endDate: endDate ?? current.endDate,
       gracePeriodDays: current.gracePeriodDays,
-      addons: addons.toSet(),
-      limits: defaultPlanLimits[tier] ?? defaultPlanLimits[PlanTier.basic]!,
-      features:
-          defaultPlanFeatures[tier] ?? defaultPlanFeatures[PlanTier.basic]!,
+      addons: effectiveAddons,
+      purchasedAddons: current.purchasedAddons,
+      limits:
+          defaultPlanLimits[effectiveTier] ?? defaultPlanLimits[PlanTier.basic]!,
+      features: defaultPlanFeatures[effectiveTier] ??
+          defaultPlanFeatures[PlanTier.basic]!,
       version: current.version + 1,
     );
 
@@ -520,6 +535,87 @@ class EntitlementService {
       ));
       throw PlanLimitExceededException(
           "Monthly Order Limit Reached ($monthlyCount/$monthlyLimit). Upgrade to Standard Plan.");
+    }
+  }
+
+  /// Verifies inventory quota against plan limits.
+  /// Throws [PlanLimitExceededException] if inventory limit is reached.
+  Future<void> checkInventoryQuota(String storeId, {int? currentCount}) async {
+    final entitlement = getEntitlement(storeId);
+    if (entitlement.isSuspended) {
+      throw PlanLimitExceededException("Store account suspended");
+    }
+    if (entitlement.isExpired) {
+      throw PlanLimitExceededException("Subscription expired");
+    }
+    final limit = entitlement.limits['inventory'] ?? -1;
+    if (limit == -1) return;
+
+    final count =
+        currentCount ?? await _repo.getInventoryCount(storeId);
+    if (count >= limit) {
+      EventBus.instance.fire(PlanLimitReachedEvent(
+        storeId: storeId,
+        limitType: 'INVENTORY_LIMIT',
+        currentCount: count,
+        maxAllowed: limit,
+      ));
+      throw PlanLimitExceededException(
+          "Catalog limit reached ($count/$limit items). Upgrade your plan to add more products.");
+    }
+  }
+
+  /// Verifies customer quota against plan limits.
+  /// Throws [PlanLimitExceededException] if customer limit is reached.
+  Future<void> checkCustomerQuota(String storeId, {int? currentCount}) async {
+    final entitlement = getEntitlement(storeId);
+    if (entitlement.isSuspended) {
+      throw PlanLimitExceededException("Store account suspended");
+    }
+    if (entitlement.isExpired) {
+      throw PlanLimitExceededException("Subscription expired");
+    }
+    final limit = entitlement.limits['customers'] ?? -1;
+    if (limit == -1) return;
+
+    final count =
+        currentCount ?? await _repo.getCustomerCount(storeId);
+    if (count >= limit) {
+      EventBus.instance.fire(PlanLimitReachedEvent(
+        storeId: storeId,
+        limitType: 'CUSTOMER_LIMIT',
+        currentCount: count,
+        maxAllowed: limit,
+      ));
+      throw PlanLimitExceededException(
+          "Customer quota reached ($count/$limit customers). Upgrade your plan to expand CRM capacity.");
+    }
+  }
+
+  /// Verifies employee quota against plan limits.
+  /// Throws [PlanLimitExceededException] if employee limit is reached.
+  Future<void> checkEmployeeQuota(String storeId, {int? currentCount}) async {
+    final entitlement = getEntitlement(storeId);
+    if (entitlement.isSuspended) {
+      throw PlanLimitExceededException("Store account suspended");
+    }
+    if (entitlement.isExpired) {
+      throw PlanLimitExceededException("Subscription expired");
+    }
+    final limit = entitlement.limits['employees'] ?? -1;
+    if (limit == -1) return;
+
+    final count =
+        currentCount ?? await _repo.getEmployeeCount(storeId);
+    if (count >= limit) {
+      EventBus.instance.fire(PlanLimitReachedEvent(
+        storeId: storeId,
+        limitType: 'EMPLOYEE_LIMIT',
+        currentCount: count,
+        maxAllowed: limit,
+      ));
+      throw PlanLimitExceededException(
+          "Employee quota reached ($count/$limit staff accounts). Upgrade your plan to add more staff.");
     }
   }
 

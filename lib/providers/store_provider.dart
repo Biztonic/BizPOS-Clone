@@ -897,34 +897,41 @@ class StoreProvider with ChangeNotifier {
   }
 
   Future<void> updateStoreAddons(String storeId, List<String> newAddons) async {
-    // 1. Update Local State (Optimistic)
     final index = _stores.indexWhere((s) => s.id == storeId);
+    final store = index != -1 ? _stores[index] : _activeStore;
+    if (store == null) return;
+
+    // Validate that newAddons are either purchased or allowed in plan
+    final isEnterprise = store.subscriptionPlan.toLowerCase() == 'enterprise';
+    final purchased = store.purchasedAddons.toSet();
+    final allowedAddons =
+        newAddons.where((a) => isEnterprise || purchased.contains(a)).toList();
+
+    // 1. Update Local State (Optimistic)
     if (index != -1) {
-      _stores[index] = _stores[index].copyWith(addons: newAddons);
+      _stores[index] = _stores[index].copyWith(addons: allowedAddons);
     }
     if (_activeStoreId == storeId && _activeStore != null) {
-      _activeStore = _activeStore!.copyWith(addons: newAddons);
+      _activeStore = _activeStore!.copyWith(addons: allowedAddons);
     }
     notifyListeners();
 
     // 2. Persist to Hive & sync EntitlementService
-    final store = index != -1 ? _stores[index] : _activeStore;
-    if (store != null) {
-      await EntitlementService.instance.syncFromStore(
-        storeId: storeId,
-        planName: store.subscriptionPlan,
-        status: store.status,
-        addons: newAddons,
-        endDate: store.subscriptionExpiry,
-      );
-      if (Hive.isBoxOpen('cache_stores')) {
-        Hive.box('cache_stores').put(storeId, store.toMap());
-      }
+    await EntitlementService.instance.syncFromStore(
+      storeId: storeId,
+      planName: store.subscriptionPlan,
+      status: store.status,
+      addons: allowedAddons,
+      endDate: store.subscriptionExpiry,
+    );
+    if (Hive.isBoxOpen('cache_stores')) {
+      Hive.box('cache_stores')
+          .put(storeId, store.copyWith(addons: allowedAddons).toMap());
     }
 
     // 3. Update Firestore
     await _db.collection('stores').doc(storeId).update({
-      'addons': newAddons,
+      'addons': allowedAddons,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
