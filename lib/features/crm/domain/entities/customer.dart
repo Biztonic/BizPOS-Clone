@@ -188,13 +188,13 @@ class Customer {
 
   factory Customer.fromSql(Map<String, dynamic> row) {
     return Customer(
-      id: row['id'],
-      storeId: row['storeId'],
-      name: row['name'],
-      email: row['email'],
-      mobile: row['mobile'],
-      phone: row['phone'],
-      whatsapp: row['whatsapp'],
+      id: row['id'] as String,
+      storeId: (row['storeId'] ?? '') as String,
+      name: (row['name'] ?? '') as String,
+      email: (row['email'] ?? '') as String,
+      mobile: row['mobile'] as String?,
+      phone: row['phone'] as String?,
+      whatsapp: row['whatsapp'] as String?,
       taxNumber: row['taxNumber'],
       billingAddress: row['billingAddress'],
       shippingAddress: row['shippingAddress'],

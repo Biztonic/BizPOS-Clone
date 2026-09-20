@@ -130,6 +130,9 @@ class PullEngine {
           break; // All pages fetched
         }
 
+        final Map<String, dynamic> pageHiveBatch = {};
+        final List<Map<String, dynamic>> pageInboxBatch = [];
+
         for (var doc in pageSnapshot.docs) {
           try {
             final data = doc.data() as Map<String, dynamic>;
@@ -199,8 +202,14 @@ class PullEngine {
               if (box != null) {
                 await box.delete(doc.id);
               }
-              await _inboxStore.recordProcessed(collection, doc.id,
-                  version: version, operationId: operationId, storeId: storeId);
+              pageInboxBatch.add({
+                'collection': collection,
+                'docId': doc.id,
+                'version': version,
+                'operationId': operationId,
+                'storeId': storeId,
+                'processedAt': DateTime.now().millisecondsSinceEpoch,
+              });
               continue;
             }
 
@@ -210,7 +219,7 @@ class PullEngine {
 
             // 1. Hive Persistence (Cache)
             if (box != null) {
-              await box.put(doc.id, sanitizedData);
+              pageHiveBatch[doc.id] = sanitizedData;
             }
 
             // 2. SQLite Persistence
@@ -219,14 +228,30 @@ class PullEngine {
               await adapter.reconcileAfterPull(sanitizedData, doc.id, repo);
             }
 
-            await _inboxStore.recordProcessed(collection, doc.id,
-                version: version, operationId: operationId, storeId: storeId);
+            pageInboxBatch.add({
+              'collection': collection,
+              'docId': doc.id,
+              'version': version,
+              'operationId': operationId,
+              'storeId': storeId,
+              'processedAt': DateTime.now().millisecondsSinceEpoch,
+            });
 
             pulledCount++;
           } catch (e) {
             debugPrint(
                 '📥 [PullEngine] Error processing $collection/${doc.id}: $e');
           }
+        }
+
+        // Batched Hive persistence per page
+        if (box != null && pageHiveBatch.isNotEmpty) {
+          await box.putAll(pageHiveBatch);
+        }
+
+        // Batched Inbox deduplication persistence per page
+        if (pageInboxBatch.isNotEmpty) {
+          await _inboxStore.recordProcessedBatch(pageInboxBatch);
         }
 
         lastVisibleDoc = pageSnapshot.docs.last;

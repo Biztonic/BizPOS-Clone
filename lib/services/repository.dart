@@ -89,8 +89,21 @@ class Repository {
           String storeId, String customerId) =>
       _orders.getOrdersByCustomer(storeId, customerId);
   Future<List<OrderModel>> getPaginatedOrders(String? storeId,
-          {int limit = 20, DateTime? lastDate}) =>
-      _orders.getPaginatedOrders(storeId, limit: limit, lastDate: lastDate);
+          {int limit = 20,
+          DateTime? lastDate,
+          String? lastId,
+          DateTime? start,
+          DateTime? end,
+          String? status,
+          String? paymentMethod}) =>
+      _orders.getPaginatedOrders(storeId,
+          limit: limit,
+          lastDate: lastDate,
+          lastId: lastId,
+          start: start,
+          end: end,
+          status: status,
+          paymentMethod: paymentMethod);
   Future<List<OrderModel>> getUnsyncedOrders(String? storeId) =>
       _orders.getUnsyncedOrders(storeId);
   Future<Map<String, dynamic>> getSalesStats(String storeId,
@@ -131,6 +144,13 @@ class Repository {
   Future<List<InventoryItem>> getInventory(String? storeId,
           {String? category}) =>
       _inventory.getInventory(storeId, category: category);
+  Future<List<InventoryItem>> getPaginatedInventory(String? storeId,
+          {int limit = 50, String? lastId, String? category}) =>
+      _inventory.getPaginatedInventory(storeId,
+          limit: limit, lastId: lastId, category: category);
+  Future<List<InventoryItem>> searchInventory(String? storeId, String query,
+          {int limit = 50}) =>
+      _inventory.searchInventory(storeId, query, limit: limit);
   Future<InventoryItem?> getInventoryItem(String id, {String? storeId}) =>
       _inventory.getInventoryItem(id, storeId: storeId);
   Future<List<InventoryItem>> getAllInventoryDebug() =>
@@ -141,8 +161,15 @@ class Repository {
       _customers.insertCustomer(customer);
   Future<void> batchInsertCustomers(List<Customer> customers) =>
       _customers.batchInsertCustomers(customers);
-  Future<List<Customer>> getCustomers(String? storeId) =>
-      _customers.getCustomers(storeId);
+  Future<List<Customer>> getCustomers(String? storeId, {int limit = 100}) =>
+      _customers.getCustomers(storeId, limit: limit);
+  Future<List<Customer>> getPaginatedCustomers(String? storeId,
+          {int limit = 50, String? lastId}) =>
+      _customers.getPaginatedCustomers(storeId,
+          limit: limit, lastId: lastId);
+  Future<List<Customer>> searchCustomers(String? storeId, String query,
+          {int limit = 50}) =>
+      _customers.searchCustomers(storeId, query, limit: limit);
   Future<Customer?> getCustomer(String id) => _customers.getCustomer(id);
 
   // --- REPORTING DELEGATIONS ---
@@ -208,6 +235,12 @@ class Repository {
   Future<void> deleteEmployee(String id) => _sync.deleteEmployee(id);
   Future<void> markAsPushed(String table, String id) =>
       _sync.markAsPushed(table, id);
+  Future<void> markBatchAsPushed(List<dynamic> operations) =>
+      _sync.markBatchAsPushed(operations);
+  Future<void> markOutboxBatchInFlight(List<String> operationIds) =>
+      _sync.markOutboxBatchInFlight(operationIds);
+  Future<void> markOutboxBatchPushed(List<String> operationIds) =>
+      _sync.markOutboxBatchPushed(operationIds);
   Future<void> markAsConfirmed(String table, String id) =>
       _sync.markAsConfirmed(table, id);
   Future<void> markAsSynced(String table, String id) =>

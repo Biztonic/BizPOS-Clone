@@ -222,22 +222,23 @@ class OutboundManager {
         operation: () => batch.commit(),
       );
 
-      // Post-commit: mark operations PUSHED and update local entities
+      // Post-commit: batch mark operations PUSHED and update local entities
       final repo = getRepository();
-      for (var op in validOps) {
-        await outboxStore.markPushed(op.operationId, auditMetadata: {
+      await outboxStore.markBatchPushed(
+        validOps.map((o) => o.operationId).toList(),
+        auditMetadata: {
           'batchCommitted': true,
           'committedAt': DateTime.now().toIso8601String(),
-        });
+        },
+      );
 
-        // Update local entity sync status
-        if (!kIsWeb) {
-          try {
-            await repo.markAsPushed(op.collection, op.entityId);
-          } catch (_) {}
-        }
-        await _markHiveAsPushed(op.collection, op.entityId, storeId);
+      // Update local entity sync status
+      if (!kIsWeb) {
+        try {
+          await repo.markBatchAsPushed(validOps);
+        } catch (_) {}
       }
+      await _markBatchHiveAsPushed(validOps, storeId);
 
       debugPrint(
           '📤 [OutboundManager] Batch committed ${validOps.length} operations successfully');
@@ -305,6 +306,39 @@ class OutboundManager {
           isFatal: isFatal);
       await logEvent('Commit failed for ${op.collection}/${op.entityId}: $e',
           isError: true);
+    }
+  }
+
+  /// Helper to update sync status in Hive cache in batch.
+  Future<void> _markBatchHiveAsPushed(
+      List<OutboxOperation> ops, String storeId) async {
+    final Map<String, List<String>> byBox = {};
+    for (var op in ops) {
+      final boxName =
+          SyncCollectionRegistry.getBoxName(op.collection, storeId: storeId);
+      if (boxName != null) {
+        byBox.putIfAbsent(boxName, () => []).add(op.entityId);
+      }
+    }
+
+    final nowIso = DateTime.now().toIso8601String();
+    for (var entry in byBox.entries) {
+      try {
+        final box = await Hive.openBox(entry.key);
+        final Map<String, dynamic> updates = {};
+        for (var docId in entry.value) {
+          final data = box.get(docId);
+          if (data is Map) {
+            final updated = Map<String, dynamic>.from(data);
+            updated['syncStatus'] = 'PUSHED';
+            updated['syncedAt'] = nowIso;
+            updates[docId] = updated;
+          }
+        }
+        if (updates.isNotEmpty) {
+          await box.putAll(updates);
+        }
+      } catch (_) {}
     }
   }
 

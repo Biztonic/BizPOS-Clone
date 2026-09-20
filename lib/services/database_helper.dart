@@ -37,7 +37,7 @@ class DatabaseHelper {
     return _database!;
   }
 
-  static const int _version = 26;
+  static const int _version = 27;
   static int get version => _version;
   static String? _testDbName;
   @visibleForTesting
@@ -89,6 +89,21 @@ class DatabaseHelper {
     // which causes execute() to throw "Queries can be performed using..." exception on some Android versions.
     try {
       await db.rawQuery('PRAGMA journal_mode = WAL');
+    } catch (e) {/* Error ignored */}
+
+    // Tune synchronous mode for WAL (NORMAL is safe against application crashes and maximizes write throughput)
+    try {
+      await db.execute('PRAGMA synchronous = NORMAL');
+    } catch (e) {/* Error ignored */}
+
+    // Increase page cache size to ~8MB (negative number means KiB)
+    try {
+      await db.execute('PRAGMA cache_size = -8000');
+    } catch (e) {/* Error ignored */}
+
+    // Keep temp tables and indices in memory
+    try {
+      await db.execute('PRAGMA temp_store = MEMORY');
     } catch (e) {/* Error ignored */}
 
     // Increase busy timeout
@@ -966,6 +981,51 @@ class DatabaseHelper {
         }
       } catch (e) {/* Error ignored */}
     }
+
+    // Migration V27: Enterprise POS Scale & Performance Optimization (Covering & Composite Indexes)
+    if (oldVersion < 27) {
+      try {
+        // 1. Keyset pagination on orders (storeId, isDeleted, date DESC, id DESC)
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_orders_store_date_id ON orders(storeId, isDeleted, date DESC, id DESC)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_orders_store_status ON orders(storeId, status, isDeleted)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_orders_store_sync ON orders(storeId, syncStatus)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(storeId, customerPhone, isDeleted)');
+
+        // 2. High-speed inventory lookup & barcode scanning
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_inventory_store_cat ON inventory(storeId, isDeleted, category)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_inventory_store_sku ON inventory(storeId, sku)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_inventory_store_name ON inventory(storeId, name)');
+
+        // 3. Customer lookup by phone/mobile/name
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_customers_store_phone ON customers(storeId, isDeleted, phone)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_customers_store_mobile ON customers(storeId, isDeleted, mobile)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_customers_store_name ON customers(storeId, isDeleted, name)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_customers_store_id ON customers(storeId, isDeleted, id ASC)');
+
+        // 4. Inventory movements & refund validation speedup
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_movements_store_item_created ON inventory_movements(storeId, itemId, createdAt DESC)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_movements_refund_check ON inventory_movements(storeId, orderId, itemId, type, isDeleted)');
+
+        // 5. Outbox & Business Events composite dispatch indexes
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_outbox_store_state_retry ON outbox_operations(storeId, state, nextRetryAt)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_events_store_created ON business_events(storeId, createdAt DESC)');
+      } catch (e) {/* Error ignored */}
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -1483,6 +1543,38 @@ class DatabaseHelper {
         'CREATE INDEX IF NOT EXISTS idx_journal_status ON transaction_journal(status)');
     await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_journal_store ON transaction_journal(storeId)');
+
+    // High-performance composite indexes for enterprise POS scale
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_orders_store_date_id ON orders(storeId, isDeleted, date DESC, id DESC)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_orders_store_status ON orders(storeId, status, isDeleted)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_orders_store_sync ON orders(storeId, syncStatus)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(storeId, customerPhone, isDeleted)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_inventory_store_cat ON inventory(storeId, isDeleted, category)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_inventory_store_sku ON inventory(storeId, sku)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_inventory_store_name ON inventory(storeId, name)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_customers_store_phone ON customers(storeId, isDeleted, phone)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_customers_store_mobile ON customers(storeId, isDeleted, mobile)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_customers_store_name ON customers(storeId, isDeleted, name)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_customers_store_id ON customers(storeId, isDeleted, id ASC)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_movements_store_item_created ON inventory_movements(storeId, itemId, createdAt DESC)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_movements_refund_check ON inventory_movements(storeId, orderId, itemId, type, isDeleted)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_outbox_store_state_retry ON outbox_operations(storeId, state, nextRetryAt)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_events_store_created ON business_events(storeId, createdAt DESC)');
   }
 
   // --- Helper Methods ---

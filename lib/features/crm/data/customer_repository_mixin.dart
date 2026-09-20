@@ -35,14 +35,82 @@ mixin CustomerRepositoryMixin {
     await batch.commit(noResult: true);
   }
 
-  Future<List<Customer>> getCustomers(String? storeId) async {
+  Future<List<Customer>> getCustomers(String? storeId, {int limit = 100}) async {
     final db = await dbHelper.database;
     String sql = 'SELECT * FROM customers WHERE deletedAt IS NULL';
     List<dynamic> args = [];
-    if (storeId != null) {
+    if (storeId != null && storeId.isNotEmpty) {
       sql += ' AND storeId = ?';
       args.add(storeId);
     }
+    sql += ' ORDER BY name ASC LIMIT ?';
+    args.add(limit);
+    final rows = await db.rawQuery(sql, args);
+    return rows.map((r) => Customer.fromSql(r)).toList();
+  }
+
+  /// Keyset paginated customer retrieval
+  Future<List<Customer>> getPaginatedCustomers(
+    String? storeId, {
+    int limit = 50,
+    String? lastId,
+  }) async {
+    final db = await dbHelper.database;
+    String sql = 'SELECT * FROM customers WHERE isDeleted = 0 AND deletedAt IS NULL';
+    List<dynamic> args = [];
+    if (storeId != null && storeId.isNotEmpty) {
+      sql += ' AND storeId = ?';
+      args.add(storeId);
+    }
+    if (lastId != null && lastId.isNotEmpty) {
+      sql += ' AND id > ?';
+      args.add(lastId);
+    }
+    sql += ' ORDER BY id ASC LIMIT ?';
+    args.add(limit);
+    final rows = await db.rawQuery(sql, args);
+    return rows.map((r) => Customer.fromSql(r)).toList();
+  }
+
+  /// Indexed search by exact phone, exact mobile, or prefix/partial name
+  Future<List<Customer>> searchCustomers(
+    String? storeId,
+    String query, {
+    int limit = 50,
+  }) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return [];
+
+    final db = await dbHelper.database;
+
+    // Fast indexed path: Exact phone/mobile lookup using idx_customers_store_phone or idx_customers_store_mobile
+    final isNumericQuery = RegExp(r'^[0-9+\-]+$').hasMatch(cleanQuery);
+    if (isNumericQuery && storeId != null && storeId.isNotEmpty) {
+      var phoneRows = await db.rawQuery(
+        'SELECT * FROM customers WHERE storeId = ? AND isDeleted = 0 AND phone = ? AND deletedAt IS NULL LIMIT ?',
+        [storeId, cleanQuery, limit],
+      );
+      if (phoneRows.isEmpty) {
+        phoneRows = await db.rawQuery(
+          'SELECT * FROM customers WHERE storeId = ? AND isDeleted = 0 AND mobile = ? AND deletedAt IS NULL LIMIT ?',
+          [storeId, cleanQuery, limit],
+        );
+      }
+      if (phoneRows.isNotEmpty) {
+        return phoneRows.map((r) => Customer.fromSql(r)).toList();
+      }
+    }
+
+    String sql = 'SELECT * FROM customers WHERE isDeleted = 0 AND deletedAt IS NULL';
+    List<dynamic> args = [];
+    if (storeId != null && storeId.isNotEmpty) {
+      sql += ' AND storeId = ?';
+      args.add(storeId);
+    }
+    sql += ' AND (phone = ? OR mobile = ? OR name LIKE ?)';
+    args.addAll([cleanQuery, cleanQuery, '%$cleanQuery%']);
+    sql += ' ORDER BY name ASC LIMIT ?';
+    args.add(limit);
     final rows = await db.rawQuery(sql, args);
     return rows.map((r) => Customer.fromSql(r)).toList();
   }

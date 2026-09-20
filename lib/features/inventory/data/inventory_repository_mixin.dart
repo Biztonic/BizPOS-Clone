@@ -50,9 +50,12 @@ mixin InventoryRepositoryMixin {
   Future<void> updateInventoryCache(
       String itemId, int quantity, String storeId) async {
     final db = await dbHelper.database;
+    final safeQty = quantity < 0 ? 0 : quantity;
     await db.insert('cache_inventory_quantities',
-        {'itemId': itemId, 'quantity': quantity, 'storeId': storeId},
+        {'itemId': itemId, 'quantity': safeQty, 'storeId': storeId},
         conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.rawUpdate(
+        'UPDATE inventory SET quantity = ? WHERE id = ?', [safeQty, itemId]);
   }
 
   Future<void> insertMovement(InventoryMovement movement,
@@ -107,12 +110,11 @@ mixin InventoryRepositoryMixin {
       {String? category}) async {
     final db = await dbHelper.database;
 
-    // Using rawQuery
     String sql = 'SELECT * FROM inventory WHERE deletedAt IS NULL';
     List<dynamic> args = [];
 
-    if (storeId != null) {
-      sql += ' AND storeId = ?';
+    if (storeId != null && storeId.isNotEmpty) {
+      sql += ' AND (storeId = ? OR storeId IS NULL OR storeId = \'\')';
       args.add(storeId);
     }
 
@@ -121,18 +123,83 @@ mixin InventoryRepositoryMixin {
       args.add(category);
     }
 
+    sql += ' ORDER BY name ASC';
+
     final rows = await db.rawQuery(sql, args);
-    final items = rows.map((r) => InventoryItem.fromSql(r)).toList();
+    return rows.map((r) => InventoryItem.fromSql(r)).toList();
+  }
 
-    // Compute quantities from movements (event sourcing)
-    final quantities = await movementRepo.getAllQuantities(storeId);
+  /// Keyset paginated inventory retrieval
+  Future<List<InventoryItem>> getPaginatedInventory(
+    String? storeId, {
+    int limit = 50,
+    String? lastId,
+    String? category,
+  }) async {
+    final db = await dbHelper.database;
+    String sql = 'SELECT * FROM inventory WHERE deletedAt IS NULL';
+    List<dynamic> args = [];
 
-    // Update items with computed quantities
-    for (int i = 0; i < items.length; i++) {
-      items[i] = items[i].copyWith(quantity: quantities[items[i].id] ?? 0);
+    if (storeId != null && storeId.isNotEmpty) {
+      sql += ' AND (storeId = ? OR storeId IS NULL OR storeId = \'\')';
+      args.add(storeId);
     }
 
-    return items;
+    if (category != null && category != 'All') {
+      sql += ' AND category = ?';
+      args.add(category);
+    }
+
+    if (lastId != null && lastId.isNotEmpty) {
+      sql += ' AND id > ?';
+      args.add(lastId);
+    }
+
+    sql += ' ORDER BY id ASC LIMIT ?';
+    args.add(limit);
+
+    final rows = await db.rawQuery(sql, args);
+    return rows.map((r) => InventoryItem.fromSql(r)).toList();
+  }
+
+  /// Indexed search by SKU exact/prefix, item name, or category
+  Future<List<InventoryItem>> searchInventory(
+    String? storeId,
+    String query, {
+    int limit = 50,
+  }) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return [];
+
+    final db = await dbHelper.database;
+
+    // Fast indexed path: Check exact SKU / barcode match first using idx_inventory_store_sku
+    if (!cleanQuery.contains(' ') && storeId != null && storeId.isNotEmpty) {
+      final skuRows = await db.rawQuery(
+        'SELECT * FROM inventory WHERE storeId = ? AND sku = ? AND deletedAt IS NULL LIMIT ?',
+        [storeId, cleanQuery, limit],
+      );
+      if (skuRows.isNotEmpty) {
+        return skuRows.map((r) => InventoryItem.fromSql(r)).toList();
+      }
+    }
+
+    String sql = 'SELECT * FROM inventory WHERE deletedAt IS NULL';
+    List<dynamic> args = [];
+
+    if (storeId != null && storeId.isNotEmpty) {
+      sql += ' AND (storeId = ? OR storeId IS NULL OR storeId = \'\')';
+      args.add(storeId);
+    }
+
+    sql += ' AND (sku = ? OR name LIKE ? OR category LIKE ?)';
+    args.addAll([cleanQuery, '%$cleanQuery%', '%$cleanQuery%']);
+
+    sql += ' ORDER BY name ASC LIMIT ?';
+    args.add(limit);
+
+    final rows = await db.rawQuery(sql, args);
+    return rows.map((r) => InventoryItem.fromSql(r)).toList();
   }
 
   Future<InventoryItem?> getInventoryItem(String id, {String? storeId}) async {
@@ -140,10 +207,7 @@ mixin InventoryRepositoryMixin {
     final rows = await db.query('inventory', where: 'id = ?', whereArgs: [id]);
     if (rows.isEmpty) return null;
 
-    final item = InventoryItem.fromSql(rows.first);
-    // Add movement-based quantity (Pass storeId to filter if desired)
-    final quantity = await movementRepo.getItemQuantity(id, storeId: storeId);
-    return item.copyWith(quantity: quantity);
+    return InventoryItem.fromSql(rows.first);
   }
 
   // DEBUG: Get ALL items (no filter)

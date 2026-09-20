@@ -115,28 +115,12 @@ mixin OrderRepositoryMixin {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
-      // 4. Update Token Counter
-      final counterResults = await txn.query(
-        'monthly_order_counter',
-        where: 'storeId = ? AND yearMonth = ?',
-        whereArgs: [storeId, yearMonth],
-      );
-
-      if (counterResults.isEmpty) {
-        await txn.insert('monthly_order_counter', {
-          'storeId': storeId,
-          'yearMonth': yearMonth,
-          'count': 1,
-        });
-      } else {
-        int currentCount = counterResults.first['count'] as int;
-        await txn.update(
-          'monthly_order_counter',
-          {'count': currentCount + 1},
-          where: 'storeId = ? AND yearMonth = ?',
-          whereArgs: [storeId, yearMonth],
-        );
-      }
+      // 4. Update Token Counter (Atomic Upsert)
+      await txn.rawInsert('''
+        INSERT INTO monthly_order_counter (storeId, yearMonth, count)
+        VALUES (?, ?, 1)
+        ON CONFLICT(storeId, yearMonth) DO UPDATE SET count = count + 1
+      ''', [storeId, yearMonth]);
 
       // 5. Insert Inventory Movements (Centralized logic updates cache)
       for (var movement in movements) {
@@ -303,27 +287,61 @@ mixin OrderRepositoryMixin {
     }
   }
 
-  // --- PAGINATED ORDERS (SCALABLE READS) ---
+  // --- PAGINATED ORDERS (SCALABLE KEYSET READS) ---
   Future<List<OrderModel>> getPaginatedOrders(String? storeId,
-      {int limit = 20, DateTime? lastDate}) async {
+      {int limit = 20,
+      DateTime? lastDate,
+      String? lastId,
+      DateTime? start,
+      DateTime? end,
+      String? status,
+      String? paymentMethod}) async {
     try {
       final db = await dbHelper.database;
       String sql =
-          "SELECT * FROM orders WHERE (deletedAt IS NULL OR status = 'Cancelled')";
+          "SELECT * FROM orders WHERE isDeleted = 0 AND (deletedAt IS NULL OR status = 'Cancelled')";
       List<dynamic> args = [];
 
-      if (storeId != null) {
+      if (storeId != null && storeId.isNotEmpty) {
         sql += ' AND storeId = ?';
         args.add(storeId);
       }
 
-      // O(1) Keyset Pagination
-      if (lastDate != null) {
+      if (status != null && status.isNotEmpty && status != 'All' && status != 'All Statuses') {
+        sql += ' AND status = ?';
+        args.add(status);
+      }
+
+      if (paymentMethod != null &&
+          paymentMethod.isNotEmpty &&
+          paymentMethod != 'All' &&
+          paymentMethod != 'All Methods') {
+        sql += ' AND paymentMethod = ?';
+        args.add(paymentMethod);
+      }
+
+      if (start != null) {
+        sql += ' AND date >= ?';
+        args.add(start.toIso8601String());
+      }
+
+      if (end != null) {
+        sql += ' AND date <= ?';
+        args.add(end.add(const Duration(days: 1)).toIso8601String());
+      }
+
+      // True O(1) Keyset Pagination with deterministic tie-breaker
+      if (lastDate != null && lastId != null) {
+        sql += ' AND (date < ? OR (date = ? AND id < ?))';
+        args.add(lastDate.toIso8601String());
+        args.add(lastDate.toIso8601String());
+        args.add(lastId);
+      } else if (lastDate != null) {
         sql += ' AND date < ?';
         args.add(lastDate.toIso8601String());
       }
 
-      sql += ' ORDER BY date DESC LIMIT ?';
+      sql += ' ORDER BY date DESC, id DESC LIMIT ?';
       args.add(limit);
 
       final orderRows = await db.rawQuery(sql, args);
@@ -369,18 +387,10 @@ mixin OrderRepositoryMixin {
         sql += ' AND storeId = ?';
         args.add(storeId);
       }
-      final rows = await db.rawQuery(sql, args);
+      sql += ' ORDER BY date DESC';
 
-      List<OrderModel> orders = [];
-      for (var row in rows) {
-        String orderId = row['id'] as String;
-        final itemRows = await db
-            .rawQuery('SELECT * FROM order_items WHERE orderId = ?', [orderId]);
-        List<OrderItem> items =
-            itemRows.map((r) => OrderItem.fromSql(r)).toList();
-        orders.add(OrderModel.fromSql(row, items));
-      }
-      return orders;
+      final rows = await db.rawQuery(sql, args);
+      return rows.map((r) => OrderModel.fromSql(r, [])).toList();
     } catch (e) {
       return [];
     }
@@ -394,7 +404,7 @@ mixin OrderRepositoryMixin {
       String? paymentMethod}) async {
     final db = await dbHelper.database;
 
-    String filter = ' WHERE o.storeId = ? AND o.deletedAt IS NULL';
+    String filter = ' WHERE o.storeId = ? AND o.deletedAt IS NULL AND (o.isDeleted = 0 OR o.isDeleted IS NULL)';
     List<dynamic> args = [storeId];
 
     if (start != null) {
@@ -421,8 +431,16 @@ mixin OrderRepositoryMixin {
       SELECT 
         COUNT(CASE WHEN status = 'Refunded' THEN NULL ELSE 1 END) as count, 
         SUM(CASE WHEN status = 'Refunded' THEN 0 ELSE total END) as totalSales,
-        SUM(CASE WHEN paymentMethod IN ('Card', 'UPI') THEN (CASE WHEN status = 'Refunded' THEN 0 ELSE total END) ELSE 0 END) as cardSales,
-        SUM(CASE WHEN paymentMethod = 'Cash' THEN (CASE WHEN status = 'Refunded' THEN 0 ELSE total END) ELSE 0 END) as cashSales
+        SUM(CASE WHEN paymentMethod = 'Card' THEN (CASE WHEN status = 'Refunded' THEN 0 ELSE total END) ELSE 0 END) as cardSales,
+        SUM(CASE WHEN paymentMethod = 'Cash' THEN (CASE WHEN status = 'Refunded' THEN 0 ELSE total END) ELSE 0 END) as cashSales,
+        SUM(CASE WHEN paymentMethod = 'UPI' THEN (CASE WHEN status = 'Refunded' THEN 0 ELSE total END) ELSE 0 END) as upiSales,
+        SUM(CASE WHEN paymentMethod NOT IN ('Card', 'Cash', 'UPI') THEN (CASE WHEN status = 'Refunded' THEN 0 ELSE total END) ELSE 0 END) as otherSales,
+        SUM(CASE WHEN status = 'Completed' THEN total ELSE 0 END) as completedSales,
+        SUM(CASE WHEN status = 'Refunded' THEN total ELSE 0 END) as refundedSales,
+        SUM(CASE WHEN status = 'Cancelled' THEN total ELSE 0 END) as cancelledSales,
+        COUNT(CASE WHEN status = 'Completed' THEN 1 ELSE NULL END) as completedCount,
+        COUNT(CASE WHEN status = 'Refunded' THEN 1 ELSE NULL END) as refundedCount,
+        COUNT(CASE WHEN status = 'Cancelled' THEN 1 ELSE NULL END) as cancelledCount
       FROM orders o
       $filter
     ''', args);
@@ -461,6 +479,15 @@ mixin OrderRepositoryMixin {
     int count = (orderStats.first['count'] as num? ?? 0).toInt();
     double card = (orderStats.first['cardSales'] as num? ?? 0).toDouble();
     double cash = (orderStats.first['cashSales'] as num? ?? 0).toDouble();
+    double upi = (orderStats.first['upiSales'] as num? ?? 0).toDouble();
+    double other = (orderStats.first['otherSales'] as num? ?? 0).toDouble();
+    double completedSales = (orderStats.first['completedSales'] as num? ?? 0).toDouble();
+    double refundedSales = (orderStats.first['refundedSales'] as num? ?? 0).toDouble();
+    double cancelledSales = (orderStats.first['cancelledSales'] as num? ?? 0).toDouble();
+    int completedCount = (orderStats.first['completedCount'] as num? ?? 0).toInt();
+    int refundedCount = (orderStats.first['refundedCount'] as num? ?? 0).toInt();
+    int cancelledCount = (orderStats.first['cancelledCount'] as num? ?? 0).toInt();
+
     double cogs = (itemStats.first['totalCogs'] as num? ?? 0).toDouble();
     double avg = count > 0 ? total / count : 0.0;
 
@@ -492,6 +519,28 @@ mixin OrderRepositoryMixin {
       'avgOrderValue': avg,
       'cardSales': card,
       'cashSales': cash,
+      'upiSales': upi,
+      'otherSales': other,
+      'completedSales': completedSales,
+      'refundedSales': refundedSales,
+      'cancelledSales': cancelledSales,
+      'paymentBreakdown': {
+        'Cash': cash,
+        'Card': card,
+        'UPI': upi,
+        'Other': other,
+      },
+      'statusBreakdown': {
+        'Completed': completedSales,
+        'Refunded': refundedSales,
+        'Cancelled': cancelledSales,
+        'completedSales': completedSales,
+        'refundedSales': refundedSales,
+        'cancelledSales': cancelledSales,
+        'completedCount': completedCount,
+        'refundedCount': refundedCount,
+        'cancelledCount': cancelledCount,
+      },
       'totalCogs': cogs,
       'grossProfit': total - cogs,
       'categoryStats': categoryStats,

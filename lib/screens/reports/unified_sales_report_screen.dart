@@ -32,6 +32,9 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
   double _totalSales = 0;
   int _totalCount = 0;
   double _avgOrder = 0;
+  Map<String, double> _paymentBreakdown = {};
+  Map<String, double> _statusBreakdown = {};
+  List<dynamic> _recentOrders = [];
 
   @override
   void initState() {
@@ -51,26 +54,58 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
     final dashboardProvider =
         Provider.of<DashboardProvider>(context, listen: false);
 
+    final storeId = dashboardProvider.activeStoreId;
     final stats = await orderProvider.fetchStats(
-      dashboardProvider.activeStoreId,
+      storeId,
       start: _dateRange?.start,
       end: _dateRange?.end,
       status: _selectedStatus,
       paymentMethod: _selectedPaymentMethod, // NEW
     );
 
+    final recent = await orderProvider.fetchRecentOrders(
+      storeId,
+      limit: 50,
+      start: _dateRange?.start,
+      end: _dateRange?.end,
+      status: _selectedStatus,
+      paymentMethod: _selectedPaymentMethod,
+    );
+
     if (mounted) {
+      final pb = (stats['paymentBreakdown'] as Map?)?.cast<String, double>() ?? {
+        'Cash': (stats['cashSales'] as num?)?.toDouble() ?? 0.0,
+        'Card': (stats['cardSales'] as num?)?.toDouble() ?? 0.0,
+        'UPI': (stats['upiSales'] as num?)?.toDouble() ?? 0.0,
+      };
+      final sb = (stats['statusBreakdown'] as Map?)?.cast<String, double>() ?? {};
+
       setState(() {
-        _totalSales = stats['totalSales'] ?? 0.0;
-        _totalCount = stats['orderCount'] ?? 0;
-        _avgOrder = stats['avgOrderValue'] ?? 0.0;
+        _totalSales = (stats['totalSales'] as num?)?.toDouble() ?? 0.0;
+        _totalCount = (stats['orderCount'] as num?)?.toInt() ?? 0;
+        _avgOrder = (stats['avgOrderValue'] as num?)?.toDouble() ?? 0.0;
+        _paymentBreakdown = pb;
+        _statusBreakdown = sb;
+        _recentOrders = recent;
       });
     }
   }
 
-  Future<void> _exportExcel(List<dynamic> filteredOrders, double totalSales,
-      int totalCount, double avgOrder) async {
+  Future<void> _exportExcel(double totalSales, int totalCount, double avgOrder) async {
     try {
+      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+      final dashboardProvider =
+          Provider.of<DashboardProvider>(context, listen: false);
+
+      final exportOrders = await orderProvider.fetchRecentOrders(
+        dashboardProvider.activeStoreId,
+        limit: 5000,
+        start: _dateRange?.start,
+        end: _dateRange?.end,
+        status: _selectedStatus,
+        paymentMethod: _selectedPaymentMethod,
+      );
+
       final headers = [
         'Order ID',
         'Date',
@@ -78,7 +113,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
         'Payment Method',
         'Status'
       ];
-      final rows = filteredOrders
+      final rows = exportOrders
           .map((o) => [
                 o.id,
                 DateFormat('yyyy-MM-dd HH:mm').format(o.date),
@@ -95,6 +130,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
       rows.add(['Total Orders', totalCount, '', '', '']);
       rows.add(['Avg Order', avgOrder, '', '', '']);
 
+      if (!mounted) return;
       await ExportUtils.exportToExcel(
         fileName: 'Sales_Report',
         headers: headers,
@@ -115,58 +151,16 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final orderProvider = Provider.of<OrderProvider>(context);
-    final allOrders = orderProvider.orders;
+    // Chart stats directly from SQL aggregations
+    final cashSales = _paymentBreakdown['Cash'] ?? 0.0;
+    final cardSales = _paymentBreakdown['Card'] ?? 0.0;
+    final upiSales = _paymentBreakdown['UPI'] ?? 0.0;
 
-    // 1. Apply Filters
-    final filteredOrders = allOrders.where((order) {
-      if (_dateRange != null) {
-        if (order.date.isBefore(_dateRange!.start) ||
-            order.date.isAfter(_dateRange!.end.add(const Duration(days: 1)))) {
-          return false;
-        }
-      }
-      if (_selectedPaymentMethod != null &&
-          order.paymentMethod != _selectedPaymentMethod) {
-        return false;
-      }
-      if (_selectedStatus != null && order.status != _selectedStatus) {
-        return false;
-      }
-      return true;
-    }).toList();
+    final completedSales = _statusBreakdown['Completed'] ?? 0.0;
+    final refundedSales = _statusBreakdown['Refunded'] ?? 0.0;
+    final cancelledSales = _statusBreakdown['Cancelled'] ?? 0.0;
 
-    // 2. Calculate Chart-Specific Stats (Derived from filtered list)
-    double cashSales = 0;
-    double cardSales = 0;
-    double upiSales = 0;
-
-    double completedSales = 0;
-    double refundedSales = 0;
-    double cancelledSales = 0;
-
-    for (var o in filteredOrders) {
-      // All orders regardless of status contribute to the status chart
-      if (o.status == 'Completed') {
-        completedSales += o.total;
-      } else if (o.status == 'Refunded') {
-        refundedSales += o.total;
-      } else if (o.status == 'Cancelled') {
-        cancelledSales += o.total;
-      }
-
-      // --- ROBUST REVENUE MATH ---
-      if (o.status != 'Cancelled' && o.status != 'VOID') {
-        double amt = (o.status == 'Refunded') ? 0.0 : o.total;
-        if (o.paymentMethod == 'Cash') {
-          cashSales += amt;
-        } else if (o.paymentMethod == 'Card') {
-          cardSales += amt;
-        } else if (o.paymentMethod == 'UPI') {
-          upiSales += amt;
-        }
-      }
-    }
+    final filteredOrders = _recentOrders;
 
     // Stats remain as fetched from DB/Provider
     double avgOrder = _avgOrder;
@@ -195,7 +189,7 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                     icon: const Icon(Icons.file_download),
                     tooltip: "Export to Excel",
                     onPressed: () => _exportExcel(
-                        filteredOrders, totalSales, totalCount, avgOrder),
+                        totalSales, totalCount, avgOrder),
                   ),
                   IconButton(
                     icon: Icon(_showFilters

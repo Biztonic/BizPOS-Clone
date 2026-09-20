@@ -84,6 +84,26 @@ class InboxStore {
     }
   }
 
+  /// Records a batch of inbound documents as processed.
+  Future<void> recordProcessedBatch(List<Map<String, dynamic>> records) async {
+    final box = _box ?? (Hive.isBoxOpen(boxName) ? Hive.box(boxName) : null);
+    if (box == null || !box.isOpen || records.isEmpty) return;
+
+    final Map<String, dynamic> batch = {};
+    for (var r in records) {
+      final collection = r['collection'] as String;
+      final docId = r['docId'] as String;
+      final opId = r['operationId'] as String?;
+      final key = _makeKey(collection, docId);
+      batch[key] = r;
+      if (opId != null && opId.isNotEmpty) {
+        final opKey = _makeKey(collection, docId, operationId: opId);
+        batch[opKey] = r;
+      }
+    }
+    await box.putAll(batch);
+  }
+
   /// Prunes old inbox records older than `maxAge`.
   Future<int> cleanup({Duration maxAge = const Duration(days: 14)}) async {
     final box = _box ?? (Hive.isBoxOpen(boxName) ? Hive.box(boxName) : null);

@@ -155,21 +155,60 @@ class OutboxStore {
 
   /// Marks a batch of operations as IN_FLIGHT.
   Future<void> markInFlight(List<String> operationIds) async {
+    if (operationIds.isEmpty) return;
     final box = getQueueBox();
+    final Map<String, dynamic> hiveBatch = {};
     for (var id in operationIds) {
       if (box != null && box.isOpen) {
         final val = box.get(id);
         if (val is Map) {
           final op = OutboxOperation.fromMap(val, id)
               .copyWith(state: OutboxState.inFlight);
-          await box.put(id, op.toMap());
-          if (!kIsWeb) {
-            try {
-              await getRepository().updateOutboxOperation(op);
-            } catch (_) {}
-          }
+          hiveBatch[id] = op.toMap();
         }
       }
+    }
+    if (box != null && box.isOpen && hiveBatch.isNotEmpty) {
+      await box.putAll(hiveBatch);
+    }
+    if (!kIsWeb) {
+      try {
+        await getRepository().markOutboxBatchInFlight(operationIds);
+      } catch (_) {}
+    }
+  }
+
+  /// Marks a batch of operations as PUSHED.
+  Future<void> markBatchPushed(List<String> operationIds,
+      {Map<String, dynamic>? auditMetadata}) async {
+    if (operationIds.isEmpty) return;
+    final box = getQueueBox();
+    final Map<String, dynamic> hiveBatch = {};
+    final nowIso = DateTime.now().toIso8601String();
+    for (var id in operationIds) {
+      if (box != null && box.isOpen) {
+        final val = box.get(id);
+        if (val is Map) {
+          final currentOp = OutboxOperation.fromMap(val, id);
+          final op = currentOp.copyWith(
+            state: OutboxState.pushed,
+            auditMetadata: {
+              ...?currentOp.auditMetadata,
+              ...?auditMetadata,
+              'pushedAt': nowIso,
+            },
+          );
+          hiveBatch[id] = op.toMap();
+        }
+      }
+    }
+    if (box != null && box.isOpen && hiveBatch.isNotEmpty) {
+      await box.putAll(hiveBatch);
+    }
+    if (!kIsWeb) {
+      try {
+        await getRepository().markOutboxBatchPushed(operationIds);
+      } catch (_) {}
     }
   }
 

@@ -229,6 +229,58 @@ mixin SyncRepositoryMixin {
         whereArgs: [id]);
   }
 
+  /// Batch mark operations in outbox as IN_FLIGHT
+  Future<void> markOutboxBatchInFlight(List<String> operationIds) async {
+    if (operationIds.isEmpty) return;
+    final db = await dbHelper.database;
+    final placeholders = List.filled(operationIds.length, '?').join(',');
+    final nowIso = DateTime.now().toIso8601String();
+    await db.rawUpdate(
+      'UPDATE outbox_operations SET state = ?, updatedAt = ? WHERE operationId IN ($placeholders)',
+      ['IN_FLIGHT', nowIso, ...operationIds],
+    );
+  }
+
+  /// Batch mark operations in outbox as PUSHED
+  Future<void> markOutboxBatchPushed(List<String> operationIds) async {
+    if (operationIds.isEmpty) return;
+    final db = await dbHelper.database;
+    final placeholders = List.filled(operationIds.length, '?').join(',');
+    final nowIso = DateTime.now().toIso8601String();
+    await db.rawUpdate(
+      'UPDATE outbox_operations SET state = ?, updatedAt = ? WHERE operationId IN ($placeholders)',
+      ['PUSHED', nowIso, ...operationIds],
+    );
+  }
+
+  /// Batch mark entity tables as PUSHED grouped by collection
+  Future<void> markBatchAsPushed(List<dynamic> operations) async {
+    if (operations.isEmpty) return;
+    final db = await dbHelper.database;
+    final Map<String, List<String>> byTable = {};
+    for (var op in operations) {
+      final col = (op.collection ?? '').toString();
+      final id = (op.entityId ?? '').toString();
+      if (col.isNotEmpty && id.isNotEmpty) {
+        byTable.putIfAbsent(col, () => []).add(id);
+      }
+    }
+
+    final nowIso = DateTime.now().toIso8601String();
+    for (var entry in byTable.entries) {
+      final table = entry.key;
+      final ids = entry.value;
+      final idCol = table == 'store_settings' ? 'storeId' : 'id';
+      final placeholders = List.filled(ids.length, '?').join(',');
+      try {
+        await db.rawUpdate(
+          'UPDATE $table SET syncStatus = ?, updatedAt = ? WHERE $idCol IN ($placeholders)',
+          ['PUSHED', nowIso, ...ids],
+        );
+      } catch (_) {}
+    }
+  }
+
   /// Marks an item as CONFIRMED (verified to exist in cloud via pull query)
   Future<void> markAsConfirmed(String table, String id) async {
     final db = await dbHelper.database;

@@ -32,6 +32,7 @@ class OrderProvider with ChangeNotifier {
   bool _hasMore = true;
   bool _isUnrestricted = false; // NEW
   DateTime? _lastOrderDate;
+  String? _lastOrderId;
   final int _ordersPerPage = 20;
 
   // Getters
@@ -90,6 +91,7 @@ class OrderProvider with ChangeNotifier {
     _orders.clear();
     _hasMore = true;
     _lastOrderDate = null;
+    _lastOrderId = null;
     notifyListeners();
   }
 
@@ -101,6 +103,7 @@ class OrderProvider with ChangeNotifier {
     if (refresh) {
       _hasMore = true;
       _lastOrderDate = null;
+      _lastOrderId = null;
       // Do not clear _orders immediately to prevent flash
     }
 
@@ -153,8 +156,11 @@ class OrderProvider with ChangeNotifier {
       } else {
         // MOBILE/DESKTOP: Use Repository
         final DateTime? fetchAfterDate = refresh ? null : _lastOrderDate;
+        final String? fetchAfterId = refresh ? null : _lastOrderId;
         final newOrders = await _repository.getPaginatedOrders(storeId,
-            limit: _ordersPerPage, lastDate: fetchAfterDate);
+            limit: _ordersPerPage,
+            lastDate: fetchAfterDate,
+            lastId: fetchAfterId);
 
         if (refresh) {
           _orders.clear(); // Clear only when new data arrives
@@ -205,6 +211,7 @@ class OrderProvider with ChangeNotifier {
         } else {
           _orders.addAll(newOrders);
           _lastOrderDate = newOrders.last.date;
+          _lastOrderId = newOrders.last.id;
 
           if (newOrders.length < _ordersPerPage) {
             _hasMore = false;
@@ -215,6 +222,28 @@ class OrderProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// High-efficiency paginated recent orders fetch (bypassing full in-memory list)
+  Future<List<OrderModel>> fetchRecentOrders(
+    String? storeId, {
+    int limit = 50,
+    DateTime? start,
+    DateTime? end,
+    String? status,
+    String? paymentMethod,
+  }) async {
+    if (kIsWeb) {
+      return _orders.take(limit).toList();
+    }
+    return await _repository.getPaginatedOrders(
+      storeId,
+      limit: limit,
+      start: start,
+      end: end,
+      status: status,
+      paymentMethod: paymentMethod,
+    );
   }
 
   // --- ACTIONS ---
