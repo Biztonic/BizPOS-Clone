@@ -8,6 +8,10 @@ import 'package:biztonic_pos/features/inventory/domain/entities/inventory_moveme
 import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
+import 'package:biztonic_pos/core/diagnostics/diagnostics_models.dart';
+import 'package:biztonic_pos/core/diagnostics/diagnostics_service.dart';
+import 'package:biztonic_pos/core/audit/audit_models.dart';
+import 'package:biztonic_pos/core/audit/audit_service.dart';
 
 /// Single item discrepancy record detected during reconciliation.
 class InventoryDiscrepancy {
@@ -84,24 +88,53 @@ class InventoryMovementRepository {
     NegativeStockPolicy? negativeStockPolicy,
     bool checkItemStore = true,
   }) async {
-    if (txn != null) {
-      return await _insertMovementWithTxn(
-        txn,
-        movement,
-        negativeStockPolicy: negativeStockPolicy,
-        checkItemStore: checkItemStore,
-      );
-    } else {
-      final db = await _dbHelper.database;
-      return await db.transaction((newTxn) async {
-        return await _insertMovementWithTxn(
-          newTxn,
-          movement,
-          negativeStockPolicy: negativeStockPolicy,
-          checkItemStore: checkItemStore,
-        );
-      });
-    }
+    return await DiagnosticsService().trace<bool>(
+      subsystem: DiagnosticSubsystem.inventory,
+      operationId: 'inv_mov_${movement.operationId}',
+      storeId: movement.storeId,
+      entityId: movement.itemId,
+      actionName: 'Inventory Movement (${movement.type})',
+      metadata: {
+        'delta': movement.delta,
+        'type': movement.type,
+        'reason': movement.reason,
+      },
+      operation: () async {
+        bool result;
+        if (txn != null) {
+          result = await _insertMovementWithTxn(
+            txn,
+            movement,
+            negativeStockPolicy: negativeStockPolicy,
+            checkItemStore: checkItemStore,
+          );
+        } else {
+          final db = await _dbHelper.database;
+          result = await db.transaction((newTxn) async {
+            return await _insertMovementWithTxn(
+              newTxn,
+              movement,
+              negativeStockPolicy: negativeStockPolicy,
+              checkItemStore: checkItemStore,
+            );
+          });
+        }
+
+        if (result && movement.type == MovementType.adjustment) {
+          await AuditService().recordAction(
+            storeId: movement.storeId,
+            action: AuditActionType.stockAdjustment,
+            actorId: 'staff',
+            entityId: movement.itemId,
+            entityType: 'INVENTORY_ITEM',
+            reason: movement.reason ?? 'Stock adjustment',
+            newState: {'delta': movement.delta, 'unitCost': movement.unitCost},
+          );
+        }
+
+        return result;
+      },
+    );
   }
 
   Future<bool> _insertMovementWithTxn(

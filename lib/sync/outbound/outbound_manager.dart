@@ -8,6 +8,9 @@ import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/sync/outbox/outbox_operation.dart';
 import 'package:biztonic_pos/sync/outbox/outbox_store.dart';
+import 'package:uuid/uuid.dart';
+import 'package:biztonic_pos/core/diagnostics/diagnostics_models.dart';
+import 'package:biztonic_pos/core/diagnostics/diagnostics_service.dart';
 import '../registry/sync_collection_registry.dart';
 
 /// Manages the outbound sync queue — pushing local changes to Firestore
@@ -161,6 +164,21 @@ class OutboundManager {
             '🚫 [OutboundManager] Cross-store violation: op store ${op.storeId} != active $storeId');
         await outboxStore.markDeadLetter(
             op.operationId, 'Cross-store tenant violation');
+        try {
+          await DiagnosticsService().recordEvent(DiagnosticEvent(
+            id: const Uuid().v4(),
+            operationId: 'sync_dead_letter_tenant',
+            subsystem: DiagnosticSubsystem.sync,
+            storeId: storeId,
+            entityId: op.entityId,
+            deviceId: op.deviceId,
+            timestamp: DateTime.now(),
+            result: DiagnosticResult.failure,
+            durationMs: 0,
+            errorCategory: DiagnosticErrorCategory.permissionError,
+            message: 'Cross-store tenant violation: operation ${op.operationId} store ${op.storeId} != active $storeId',
+          ));
+        } catch (_) {}
         continue;
       }
 
@@ -195,7 +213,14 @@ class OutboundManager {
     if (validOps.isEmpty) return;
 
     try {
-      await batch.commit();
+      await DiagnosticsService().trace<void>(
+        subsystem: DiagnosticSubsystem.firebase,
+        operationId: 'firebase_batch_commit',
+        storeId: storeId,
+        actionName: 'Firebase Firestore Batch Commit (${validOps.length} ops)',
+        metadata: {'count': validOps.length},
+        operation: () => batch.commit(),
+      );
 
       // Post-commit: mark operations PUSHED and update local entities
       final repo = getRepository();

@@ -17,6 +17,8 @@ import 'dart:math';
 
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
+import 'package:biztonic_pos/core/diagnostics/diagnostics_models.dart';
+import 'package:biztonic_pos/core/diagnostics/diagnostics_service.dart';
 import 'package:biztonic_pos/kernel/idempotency/idempotency_service.dart';
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/services/token_service.dart';
@@ -91,6 +93,23 @@ class CheckoutOrchestrator {
   String _generateId(String prefix) => '$prefix-${const Uuid().v4()}';
 
   Future<CheckoutResult> execute(CheckoutParams params) async {
+    return await DiagnosticsService().trace<CheckoutResult>(
+      subsystem: DiagnosticSubsystem.checkout,
+      operationId: 'checkout_${params.order.id.isNotEmpty ? params.order.id : params.idempotencyKey}',
+      storeId: params.activeStoreId,
+      deviceId: params.deviceId,
+      entityId: params.order.id,
+      actionName: 'Order Checkout',
+      metadata: {
+        'itemCount': params.order.items.length,
+        'taxRate': params.taxRate,
+        'hasDiscount': params.order.discount > 0,
+      },
+      operation: () => _executeInternal(params),
+    );
+  }
+
+  Future<CheckoutResult> _executeInternal(CheckoutParams params) async {
     // ─── Step 1: Domain Validation ──────────────────────────
     final validation = OrderPolicy.canCreate(params.order);
     if (!validation.isValid) {

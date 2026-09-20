@@ -3,6 +3,8 @@ import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/models/role_model.dart';
 import 'package:biztonic_pos/models/franchise.dart';
 import 'package:biztonic_pos/core/theme/theme_provider.dart';
+import 'package:biztonic_pos/core/audit/audit_models.dart';
+import 'package:biztonic_pos/core/audit/audit_service.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -2583,10 +2585,25 @@ class DashboardProvider with ChangeNotifier {
         localCacheBox: 'cache_employees');
 
     final index = _employees.indexWhere((e) => e.uid == uid);
+    String oldRole = 'unknown';
     if (index != -1) {
+      oldRole = _employees[index].role;
       _employees[index] = _employees[index].copyWith(role: role);
     }
     notifyListeners();
+
+    try {
+      await AuditService().recordAction(
+        storeId: _activeStoreId ?? '',
+        action: AuditActionType.permissionChange,
+        actorId: 'admin',
+        entityId: uid,
+        entityType: 'EMPLOYEE',
+        reason: 'Role changed from $oldRole to $role',
+        previousState: {'role': oldRole},
+        newState: {'role': role},
+      );
+    } catch (_) {}
   }
 
   List<UserProfile> get employees => _employees;
@@ -2707,7 +2724,30 @@ class DashboardProvider with ChangeNotifier {
   List<Map<String, dynamic>> get auditLogs => _auditLogData;
 
   Future<void> fetchAuditLogs() async {
-    // Placeholder for actual fetch logic
+    try {
+      final records =
+          AuditService().getRecentAuditRecords(storeId: _activeStoreId);
+      _auditLogData.clear();
+      for (final r in records) {
+        _auditLogData.add({
+          'id': r.id,
+          'storeId': r.storeId,
+          'entityType': r.entityType,
+          'entityId': r.entityId,
+          'eventType': r.action.code,
+          'actorId': r.actorId,
+          'actorRole': r.actorRole,
+          'reason': r.reason,
+          'previousState': r.previousState,
+          'newState': r.newState,
+          'createdAt': r.timestamp,
+          'amount': (r.newState?['amount'] as num?)?.toDouble() ?? 0.0,
+        });
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[DashboardProvider] fetchAuditLogs error: $e');
+    }
   }
 
   Rect? get activeTargetRect => null;

@@ -5,6 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:biztonic_pos/services/firestore_helper.dart';
 import '../services/offline_service.dart';
 import '../core/auth/auth_session_types.dart';
+import '../core/diagnostics/diagnostics_models.dart';
+import '../core/diagnostics/diagnostics_service.dart';
 import '../features/auth/data/auth_repository.dart';
 
 /// A virtual user for offline sessions to prevent null checks in UI
@@ -155,6 +157,17 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> signInWithEmail(String email, String password) async {
+    return await DiagnosticsService().trace<void>(
+      subsystem: DiagnosticSubsystem.auth,
+      operationId: 'auth_sign_in_email',
+      entityId: DiagnosticSanitizer.maskEmail(email),
+      actionName: 'Sign In With Email',
+      customErrorClassifier: (_) => DiagnosticErrorCategory.authError,
+      operation: () => _signInWithEmailInternal(email, password),
+    );
+  }
+
+  Future<void> _signInWithEmailInternal(String email, String password) async {
     try {
       _isLoading = true;
       notifyListeners();

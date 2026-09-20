@@ -9,6 +9,10 @@ import 'package:biztonic_pos/services/firestore_helper.dart';
 import 'package:biztonic_pos/sync/entitlements/entitlement_model.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
+import 'package:biztonic_pos/core/diagnostics/diagnostics_models.dart';
+import 'package:biztonic_pos/core/diagnostics/diagnostics_service.dart';
+import 'package:biztonic_pos/core/audit/audit_models.dart';
+import 'package:biztonic_pos/core/audit/audit_service.dart';
 
 /// Authoritative single source of truth for subscription plans,
 /// feature flags, quotas, addons, and offline lifecycle enforcement.
@@ -462,6 +466,17 @@ class EntitlementService {
   /// Verifies daily and monthly order quota from local counters.
   /// Throws [PlanLimitExceededException] if limits are breached.
   Future<void> checkOrderLimit(String storeId) async {
+    return await DiagnosticsService().trace<void>(
+      subsystem: DiagnosticSubsystem.subscription,
+      operationId: 'subscription_quota_check',
+      storeId: storeId,
+      actionName: 'Subscription Quota Check',
+      customErrorClassifier: (_) => DiagnosticErrorCategory.permissionError,
+      operation: () => _checkOrderLimitInternal(storeId),
+    );
+  }
+
+  Future<void> _checkOrderLimitInternal(String storeId) async {
     final entitlement = getEntitlement(storeId);
 
     if (entitlement.isSuspended) {
@@ -568,6 +583,26 @@ class EntitlementService {
       debugPrint(
           '⚠️ [EntitlementService] Cloud subscription audit skipped (offline): $e');
     }
+
+    // 3. Record in AuditService for diagnostics and audit trail
+    try {
+      await AuditService().recordAction(
+        storeId: storeId,
+        action: AuditActionType.subscriptionChange,
+        actorId: changedBy,
+        actorRole: 'admin',
+        entityId: storeId,
+        entityType: 'SUBSCRIPTION',
+        reason: reason ?? 'Plan changed from ${oldPlan.value} to ${newPlan.value}',
+        previousState: {'plan': oldPlan.value, 'status': oldStatus.value},
+        newState: {
+          'plan': newPlan.value,
+          'status': newStatus.value,
+          'addedAddons': addedAddons,
+          'removedAddons': removedAddons,
+        },
+      );
+    } catch (_) {}
   }
 
   // ─────────────────────────────────────────────────────────────

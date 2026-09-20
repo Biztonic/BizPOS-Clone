@@ -12,6 +12,9 @@ import '../models/order_model.dart';
 import '../utils/pin_utils.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
+import '../core/diagnostics/diagnostics_models.dart';
+import '../core/diagnostics/diagnostics_service.dart';
 
 enum ConnectionQuality { offline, localNetwork, internet, backendAvailable }
 
@@ -233,6 +236,17 @@ class OfflineService {
   /// Verify offline credentials using salted SHA-256 hashes from Hive cache.
   /// Requirement 6: Offline POS functionality must continue for the last authorized local user only.
   Future<bool> verifyOfflinePassword(String email, String password) async {
+    return await DiagnosticsService().trace<bool>(
+      subsystem: DiagnosticSubsystem.auth,
+      operationId: 'auth_verify_offline_pwd',
+      entityId: DiagnosticSanitizer.maskEmail(email),
+      actionName: 'Verify Offline Password',
+      customErrorClassifier: (_) => DiagnosticErrorCategory.authError,
+      operation: () => _verifyOfflinePasswordInternal(email, password),
+    );
+  }
+
+  Future<bool> _verifyOfflinePasswordInternal(String email, String password) async {
     final emailKey = email.toLowerCase().trim();
 
     if (isOfflineLockedOut(emailKey)) {
@@ -339,6 +353,21 @@ class OfflineService {
       await box.put('locked_until_$emailKey', lockedUntil.toIso8601String());
       debugPrint(
           '🔒 OfflineService: Threshold reached. Account $email locked out until $lockedUntil');
+
+      try {
+        await DiagnosticsService().recordEvent(DiagnosticEvent(
+          id: const Uuid().v4(),
+          operationId: 'auth_lockout',
+          subsystem: DiagnosticSubsystem.auth,
+          entityId: DiagnosticSanitizer.maskEmail(email),
+          deviceId: 'local',
+          timestamp: DateTime.now(),
+          result: DiagnosticResult.failure,
+          durationMs: 0,
+          errorCategory: DiagnosticErrorCategory.authError,
+          message: 'Account locked out after $_maxFailedAttempts failed login attempts',
+        ));
+      } catch (_) {}
     }
   }
 
@@ -391,13 +420,32 @@ class OfflineService {
     final count = (box.get(key, defaultValue: 0) as int) + 1;
     await box.put(key, count);
 
-    if (count >= _maxFailedPinAttempts) {
+    final isLocked = count >= _maxFailedPinAttempts;
+    if (isLocked) {
       final lockedUntil = DateTime.now().add(_pinLockoutDuration);
       await box.put(
           'pin_locked_until_${storeId}_$empId', lockedUntil.toIso8601String());
       debugPrint(
           '🔒 OfflineService: Employee PIN locked for store $storeId emp $empId until $lockedUntil');
     }
+
+    try {
+      await DiagnosticsService().recordEvent(DiagnosticEvent(
+        id: const Uuid().v4(),
+        operationId: 'auth_pin_attempt',
+        subsystem: DiagnosticSubsystem.auth,
+        storeId: storeId,
+        entityId: empId,
+        deviceId: 'local',
+        timestamp: DateTime.now(),
+        result: isLocked ? DiagnosticResult.failure : DiagnosticResult.warning,
+        durationMs: 0,
+        errorCategory: DiagnosticErrorCategory.authError,
+        message: isLocked
+            ? 'Employee PIN locked out: $_maxFailedPinAttempts consecutive failures'
+            : 'Failed employee PIN attempt ($count/$_maxFailedPinAttempts)',
+      ));
+    } catch (_) {}
   }
 
   Future<void> resetPinAttempts(String storeId, String empId) async {

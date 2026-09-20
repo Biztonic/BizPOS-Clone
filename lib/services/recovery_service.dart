@@ -5,6 +5,8 @@ import 'database_helper.dart';
 import 'inventory_movement_repository.dart';
 import '../features/inventory/domain/entities/inventory_movement.dart';
 import '../features/inventory/domain/policies/inventory_policy.dart';
+import '../core/diagnostics/diagnostics_models.dart';
+import '../core/diagnostics/diagnostics_service.dart';
 
 Map<String, dynamic> _decodeJson(String json) =>
     jsonDecode(json) as Map<String, dynamic>;
@@ -150,6 +152,17 @@ class RecoveryService {
 
   /// Scans all PENDING journal records and returns structured reconciliation reports.
   Future<List<TransactionReconciliationReport>> scanAndRecoverReports({
+    bool autoReconcilePartials = true,
+  }) async {
+    return await DiagnosticsService().trace<List<TransactionReconciliationReport>>(
+      subsystem: DiagnosticSubsystem.recovery,
+      operationId: 'recovery_scan_journal_${DateTime.now().millisecondsSinceEpoch}',
+      actionName: 'Scan & Reconcile Transaction Journal',
+      operation: () => _scanAndRecoverReportsInternal(autoReconcilePartials: autoReconcilePartials),
+    );
+  }
+
+  Future<List<TransactionReconciliationReport>> _scanAndRecoverReportsInternal({
     bool autoReconcilePartials = true,
   }) async {
     final db = await _dbHelper.database;

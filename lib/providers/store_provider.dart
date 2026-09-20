@@ -18,6 +18,8 @@ import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:biztonic_pos/services/database_helper.dart';
 import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
 import 'package:biztonic_pos/sync/entitlements/entitlement_model.dart';
+import 'package:biztonic_pos/core/audit/audit_models.dart';
+import 'package:biztonic_pos/core/audit/audit_service.dart';
 import 'dart:convert';
 import 'dart:io' as io;
 import 'package:file_picker/file_picker.dart';
@@ -824,6 +826,18 @@ class StoreProvider with ChangeNotifier {
     }
 
     notifyListeners();
+
+    try {
+      await AuditService().recordAction(
+        storeId: _activeStoreId!,
+        action: AuditActionType.storeConfigChange,
+        actorId: 'admin',
+        entityId: _activeStoreId!,
+        entityType: 'STORE_SETTINGS',
+        reason: 'Store configuration updated: ${updatedStore.name}',
+        newState: {'name': updatedStore.name, 'phone': updatedStore.phone},
+      );
+    } catch (_) {}
   }
 
   Future<void> updateStoreStatus(String id, String status) async {
@@ -869,6 +883,17 @@ class StoreProvider with ChangeNotifier {
         action: 'update',
         localCacheBox: 'cache_settings',
         refreshCounts: false);
+
+    try {
+      await AuditService().recordAction(
+        storeId: _activeStoreId!,
+        action: AuditActionType.storeConfigChange,
+        actorId: 'admin',
+        entityId: _activeStoreId!,
+        entityType: 'STORE_SETTINGS_CONFIG',
+        reason: 'Store settings configuration updated',
+      );
+    } catch (_) {}
   }
 
   Future<void> updateStoreAddons(String storeId, List<String> newAddons) async {

@@ -28,6 +28,8 @@ import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
 import 'package:biztonic_pos/sync/registry/sync_collection_registry.dart';
 import 'package:biztonic_pos/sync/network/sync_network_manager.dart';
 import 'package:biztonic_pos/sync/outbox/outbox_operation.dart';
+import 'package:biztonic_pos/core/diagnostics/diagnostics_models.dart';
+import 'package:biztonic_pos/core/diagnostics/diagnostics_service.dart';
 import 'package:biztonic_pos/sync/outbox/outbox_store.dart';
 import 'package:biztonic_pos/sync/conflict/conflict_record.dart';
 
@@ -78,6 +80,7 @@ class SyncService with ChangeNotifier {
 
   // --- STATE ---
   bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
 
   String _syncStatus = "Idle";
   String get syncStatus => _syncStatus;
@@ -555,21 +558,39 @@ class SyncService with ChangeNotifier {
       {bool forceManual = false, bool forceFull = false}) async {
     if (!_isInitialized) return;
 
-    // Auto-login if we have internet but no cloud session yet
-    if (_isOnline &&
-        !_hasCloudAccess &&
-        OfflineService().getOfflineLoginState()) {
-      await _checkAndPerformAutoCloudLogin();
-    }
+    await DiagnosticsService().trace<void>(
+      subsystem: DiagnosticSubsystem.sync,
+      operationId: 'sync_process_${DateTime.now().millisecondsSinceEpoch}',
+      storeId: _activeStoreId,
+      deviceId: _deviceId,
+      actionName: 'Process Sync',
+      metadata: {'forceManual': forceManual, 'forceFull': forceFull},
+      operation: () async {
+        // Auto-login if we have internet but no cloud session yet
+        if (_isOnline &&
+            !_hasCloudAccess &&
+            OfflineService().getOfflineLoginState()) {
+          await _checkAndPerformAutoCloudLogin();
+        }
 
-    await _orchestrator.processSync(
-        forceManual: forceManual, forceFull: forceFull);
+        await _orchestrator.processSync(
+            forceManual: forceManual, forceFull: forceFull);
+      },
+    );
   }
 
   Future<int> pullCollection(String collection,
       {bool forceFull = false}) async {
     if (!_isInitialized) return 0;
-    return _pullEngine.pullCollection(collection, forceFull: forceFull);
+    return await DiagnosticsService().trace<int>(
+      subsystem: DiagnosticSubsystem.sync,
+      operationId: 'sync_pull_$collection',
+      storeId: _activeStoreId,
+      entityId: collection,
+      actionName: 'Pull Collection: $collection',
+      metadata: {'forceFull': forceFull},
+      operation: () => _pullEngine.pullCollection(collection, forceFull: forceFull),
+    );
   }
 
   Future<void> forceSyncDown() async {
@@ -704,18 +725,22 @@ class SyncService with ChangeNotifier {
   OutboxStore get outboxStore => _outboundManager.outboxStore;
 
   Map<String, int> getOutboxStats() =>
-      _outboundManager.getQueueStats(storeId: activeStoreId);
+      _isInitialized ? _outboundManager.getQueueStats(storeId: activeStoreId) : {};
 
   List<OutboxOperation> getDeadLetterOperations() =>
-      _outboundManager.outboxStore
-          .getDeadLetterOperations(storeId: activeStoreId);
+      _isInitialized
+          ? _outboundManager.outboxStore
+              .getDeadLetterOperations(storeId: activeStoreId)
+          : [];
 
   Future<void> retryOperation(String operationId) async {
+    if (!_isInitialized) return;
     await _outboundManager.outboxStore.retryOperation(operationId);
     notifyListeners();
   }
 
   Future<int> retryAllDeadLetter() async {
+    if (!_isInitialized) return 0;
     final count = await _outboundManager.resetRetries(storeId: activeStoreId);
     notifyListeners();
     return count;

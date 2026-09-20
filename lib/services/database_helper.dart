@@ -5,6 +5,8 @@ import 'package:path/path.dart';
 import 'db_path.dart'; // Conditional Import
 // Conditional Import for Shim
 import 'db_shim.dart' if (dart.library.html) 'db_shim_web.dart';
+import '../core/diagnostics/diagnostics_models.dart';
+import '../core/diagnostics/diagnostics_service.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -36,6 +38,7 @@ class DatabaseHelper {
   }
 
   static const int _version = 26;
+  static int get version => _version;
   static String? _testDbName;
   @visibleForTesting
   static void setDbName(String name) => _testDbName = name;
@@ -96,6 +99,19 @@ class DatabaseHelper {
 
   // MIGRATION HANDLER
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    await DiagnosticsService().trace<void>(
+      subsystem: DiagnosticSubsystem.migration,
+      operationId: 'db_migration_${oldVersion}_to_$newVersion',
+      actionName: 'SQLite Schema Migration v$oldVersion -> v$newVersion',
+      metadata: {'oldVersion': oldVersion, 'newVersion': newVersion},
+      customErrorClassifier: (_) => DiagnosticErrorCategory.migrationError,
+      operation: () async {
+        await _executeUpgradeSteps(db, oldVersion, newVersion);
+      },
+    );
+  }
+
+  Future<void> _executeUpgradeSteps(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       try {
         await db

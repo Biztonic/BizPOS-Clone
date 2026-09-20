@@ -15,6 +15,8 @@ import 'package:biztonic_pos/features/billing/domain/use_cases/checkout_order.da
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
+import 'package:biztonic_pos/core/audit/audit_models.dart';
+import 'package:biztonic_pos/core/audit/audit_service.dart';
 import 'package:intl/intl.dart';
 
 class OrderProvider with ChangeNotifier {
@@ -331,6 +333,33 @@ class OrderProvider with ChangeNotifier {
         eventType: newStatus.toUpperCase(),
         amount: order.total,
       );
+
+      final statusUpper = newStatus.toUpperCase();
+      if (statusUpper == 'REFUNDED') {
+        await AuditService().recordAction(
+          storeId: order.storeId,
+          action: AuditActionType.refund,
+          actorId: _syncService.userId ?? 'user',
+          actorRole: _syncService.userRole ?? 'staff',
+          entityId: orderId,
+          entityType: 'ORDER',
+          reason: 'Order Refunded',
+          previousState: {'status': order.status},
+          newState: {'status': newStatus, 'amount': order.total},
+        );
+      } else if (statusUpper == 'VOID' || statusUpper == 'CANCELLED') {
+        await AuditService().recordAction(
+          storeId: order.storeId,
+          action: AuditActionType.voidOrder,
+          actorId: _syncService.userId ?? 'user',
+          actorRole: _syncService.userRole ?? 'staff',
+          entityId: orderId,
+          entityType: 'ORDER',
+          reason: 'Order Voided/Cancelled',
+          previousState: {'status': order.status},
+          newState: {'status': newStatus, 'amount': order.total},
+        );
+      }
     }
   }
 

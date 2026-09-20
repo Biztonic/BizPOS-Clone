@@ -38,6 +38,7 @@ import '../screens/auth/station_lock_screen.dart';
 import '../screens/admin/subscription_approval_screen.dart';
 import '../screens/admin/subscriptions_overview_screen.dart';
 import '../screens/admin/hardware_master_screen.dart';
+import '../screens/admin/production_diagnostics_screen.dart';
 import '../screens/language_screen.dart';
 import '../screens/settings/biz_store_screen.dart';
 import '../screens/settings/addon_detail_screen.dart';
@@ -324,6 +325,11 @@ class AppRouter {
               path: '/admin/hardware',
               builder: (context, state) => const FeatureGuard(
                   featureKey: 'admin', child: HardwareMasterScreen()),
+            ),
+            GoRoute(
+              path: '/admin/diagnostics',
+              builder: (context, state) => const FeatureGuard(
+                  featureKey: 'admin', child: ProductionDiagnosticsScreen()),
             ),
             GoRoute(
               path: '/languages',

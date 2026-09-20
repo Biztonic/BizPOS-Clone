@@ -11,11 +11,20 @@ import '../announcement/listeners/printer_listener.dart';
 import '../announcement/listeners/sync_listener.dart';
 import '../announcement/listeners/qr_listener.dart';
 
+import '../core/diagnostics/diagnostics_service.dart';
+import '../core/audit/audit_service.dart';
+
 class ServiceBootstrap {
   static Future<void> init() async {
     debugPrint('⏳ Starting Service Parallel Init...');
 
     await Future.wait([
+      DiagnosticsService()
+          .init()
+          .then((_) => debugPrint('🩺 Diagnostics Service Init Done')),
+      AuditService()
+          .init()
+          .then((_) => debugPrint('📜 Audit Service Init Done')),
       if (!kIsWeb)
         PrinterManagerService()
             .init()

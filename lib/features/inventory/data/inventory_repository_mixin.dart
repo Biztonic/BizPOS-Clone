@@ -4,6 +4,8 @@ import 'package:biztonic_pos/models/inventory_item.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
+import 'package:biztonic_pos/core/audit/audit_models.dart';
+import 'package:biztonic_pos/core/audit/audit_service.dart';
 
 mixin InventoryRepositoryMixin {
   Future<Database> get database;
@@ -15,6 +17,23 @@ mixin InventoryRepositoryMixin {
   Future<void> insertInventory(InventoryItem item) async {
     final db = await dbHelper.database;
     try {
+      final prevRows = await db.query('inventory', columns: ['price', 'name'], where: 'id = ?', whereArgs: [item.id]);
+      if (prevRows.isNotEmpty) {
+        final oldPrice = (prevRows.first['price'] as num?)?.toDouble();
+        if (oldPrice != null && oldPrice != item.price) {
+          await AuditService().recordAction(
+            storeId: item.storeId,
+            action: AuditActionType.priceChange,
+            actorId: 'admin',
+            entityId: item.id,
+            entityType: 'INVENTORY_ITEM',
+            reason: 'Item price changed from $oldPrice to ${item.price}',
+            previousState: {'price': oldPrice, 'name': item.name},
+            newState: {'price': item.price, 'name': item.name},
+          );
+        }
+      }
+
       await db.insert('inventory', item.toSqlMap(),
           conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {

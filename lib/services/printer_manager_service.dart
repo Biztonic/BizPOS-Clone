@@ -12,6 +12,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
+import '../core/diagnostics/diagnostics_models.dart';
+import '../core/diagnostics/diagnostics_service.dart';
 
 enum PrinterPurpose {
   receipt, // Main checkout receipt
@@ -156,6 +158,17 @@ class PrinterManagerService {
   }
 
   Future<void> connect(PrinterDevice device, PrinterPurpose purpose) async {
+    await DiagnosticsService().trace<void>(
+      subsystem: DiagnosticSubsystem.printing,
+      operationId: 'print_connect_${purpose.name}',
+      entityId: device.address ?? device.name,
+      actionName: 'Connect Printer (${device.name} for ${purpose.name})',
+      customErrorClassifier: (_) => DiagnosticErrorCategory.printError,
+      operation: () => _connectInternal(device, purpose),
+    );
+  }
+
+  Future<void> _connectInternal(PrinterDevice device, PrinterPurpose purpose) async {
     bool success = false;
     switch (device.type) {
       case PrinterConnectionType.bluetooth:
@@ -215,6 +228,25 @@ class PrinterManagerService {
     required PrinterPurpose purpose,
     List<int>? escPosBytes,
     List<int>? pdfBytes, // Uint8List
+  }) async {
+    return await DiagnosticsService().trace<bool>(
+      subsystem: DiagnosticSubsystem.printing,
+      operationId: 'print_doc_${purpose.name}',
+      actionName: 'Print Document (${purpose.name})',
+      customErrorClassifier: (_) => DiagnosticErrorCategory.printError,
+      metadata: {'bytes': escPosBytes?.length ?? pdfBytes?.length ?? 0},
+      operation: () => _printDocumentInternal(
+        purpose: purpose,
+        escPosBytes: escPosBytes,
+        pdfBytes: pdfBytes,
+      ),
+    );
+  }
+
+  Future<bool> _printDocumentInternal({
+    required PrinterPurpose purpose,
+    List<int>? escPosBytes,
+    List<int>? pdfBytes,
   }) async {
     final device = _assignments[purpose];
     if (device == null) return false;
