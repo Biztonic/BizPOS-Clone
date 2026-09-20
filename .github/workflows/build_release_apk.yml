@@ -1,27 +1,49 @@
-name: Build Production APKs
+name: Build Production Release Artifacts
 
 on:
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Deployment Environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - 'production'
+          - 'staging'
+      build_number:
+        description: 'Build number override (defaults to github.run_number)'
+        required: false
+        type: string
   push:
-    branches: [ "main" ] # Also build on push to main
+    tags:
+      - 'v*'
 
 jobs:
-  build:
-    name: Build Release APKs
+  build_release:
+    name: Build Signed Production Artifacts
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: production
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - uses: actions/setup-java@v4
+      - name: Set up Java 17 (Pinned)
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter 3.29.0 (Pinned)
+        uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.29.0'
           channel: 'stable'
+          cache: true
 
       - name: Accept Android SDK Licenses
         run: yes | flutter doctor --android-licenses || true
@@ -29,24 +51,162 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Create Release Keystore
+      # ========================================================================
+      # Secure Keystore Provisioning (Zero Ephemeral Debug Keystores)
+      # ========================================================================
+      - name: Verify & Inject Production Signing Credentials
+        env:
+          KEYSTORE_BASE64: ${{ secrets.PROD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.PROD_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.PROD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.PROD_KEY_PASSWORD }}
         run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "❌ CRITICAL SECURITY VIOLATION: Production signing credentials are missing."
+            echo "Required GitHub secrets:"
+            echo "  - PROD_KEYSTORE_BASE64"
+            echo "  - PROD_KEYSTORE_PASSWORD"
+            echo "  - PROD_KEY_ALIAS"
+            echo "  - PROD_KEY_PASSWORD"
+            echo "Per security mandate: Ephemeral debug/test keystores are forbidden for production releases."
+            exit 1
+          fi
+
           mkdir -p android/app
-          keytool -genkey -v -keystore android/app/release.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
-          echo "storeFile=release.keystore" > android/key.properties
-          echo "keyAlias=androiddebugkey" >> android/key.properties
-          echo "storePassword=android" >> android/key.properties
-          echo "keyPassword=android" >> android/key.properties
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          
+          cat <<EOF > android/key.properties
+          storeFile=release.keystore
+          keyAlias=$KEY_ALIAS
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          EOF
 
-      - name: Build APK (Universal Release)
-        run: flutter build apk --release
+          # Verify git status to guarantee credentials are NOT tracked
+          if git status --porcelain | grep -E "(release\.keystore|key\.properties)"; then
+            echo "❌ CRITICAL SECURITY ERROR: Signing files are tracked by git!"
+            exit 1
+          fi
+          echo "✅ Production signing credentials securely injected."
 
-      - name: Build APK (Split per ABI)
-        run: flutter build apk --release --split-per-abi
+      # ========================================================================
+      # Generate Release Metadata
+      # ========================================================================
+      - name: Generate Release Metadata
+        id: metadata
+        run: |
+          RAW_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d '+' -f 1 | tr -d '[:space:]')
+          DEFAULT_BUILD=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d '+' -f 2 | tr -d '[:space:]')
+          INPUT_BUILD="${{ github.event.inputs.build_number }}"
+          BUILD_NUM="${INPUT_BUILD:-${DEFAULT_BUILD:-${{ github.run_number }}}}"
+          GIT_SHA="${{ github.sha }}"
+          BUILD_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          ENV_NAME="${{ github.event.inputs.environment || 'production' }}"
 
-      - name: Upload APKs
+          echo "version=$RAW_VERSION" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUM" >> $GITHUB_OUTPUT
+          echo "git_sha=$GIT_SHA" >> $GITHUB_OUTPUT
+          echo "timestamp=$BUILD_TS" >> $GITHUB_OUTPUT
+          echo "environment=$ENV_NAME" >> $GITHUB_OUTPUT
+
+          mkdir -p build/release_metadata
+          cat <<EOF > build/release_metadata/release_metadata.json
+          {
+            "version": "$RAW_VERSION",
+            "buildNumber": "$BUILD_NUM",
+            "gitSha": "$GIT_SHA",
+            "buildTimestamp": "$BUILD_TS",
+            "environment": "$ENV_NAME",
+            "repository": "${{ github.repository }}",
+            "ref": "${{ github.ref }}"
+          }
+          EOF
+
+          echo "### 📦 Release Metadata" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | $RAW_VERSION |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build Number** | $BUILD_NUM |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Git SHA** | \`$GIT_SHA\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build Timestamp** | $BUILD_TS |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Environment** | $ENV_NAME |" >> $GITHUB_STEP_SUMMARY
+
+      # ========================================================================
+      # Compile Production Artifacts
+      # ========================================================================
+      - name: Build Universal Release APK
+        run: |
+          flutter build apk --release \
+            --build-name=${{ steps.metadata.outputs.version }} \
+            --build-number=${{ steps.metadata.outputs.build_number }}
+
+      - name: Build Split-per-ABI Release APKs
+        run: |
+          flutter build apk --release --split-per-abi \
+            --build-name=${{ steps.metadata.outputs.version }} \
+            --build-number=${{ steps.metadata.outputs.build_number }}
+
+      - name: Build Production App Bundle (AAB)
+        run: |
+          flutter build appbundle --release \
+            --build-name=${{ steps.metadata.outputs.version }} \
+            --build-number=${{ steps.metadata.outputs.build_number }}
+
+      # ========================================================================
+      # Secure Keystore Cleanup (Immediate Purge)
+      # ========================================================================
+      - name: Purge Signing Files from Runner Disk
+        if: always()
+        run: |
+          rm -f android/app/release.keystore android/key.properties
+          echo "✅ Keystore and key.properties successfully wiped from runner."
+
+      # ========================================================================
+      # Artifact Validation & SHA-256 Fingerprint Generation
+      # ========================================================================
+      - name: Validate Artifacts & Compute Fingerprints
+        run: |
+          # 1. Existence and minimum size validation (> 10MB)
+          test -s build/app/outputs/flutter-apk/app-release.apk || { echo "Universal APK missing"; exit 1; }
+          test -s build/app/outputs/bundle/release/app-release.aab || { echo "AAB missing"; exit 1; }
+
+          APK_SIZE=$(stat -c%s "build/app/outputs/flutter-apk/app-release.apk" 2>/dev/null || stat -f%z "build/app/outputs/flutter-apk/app-release.apk")
+          if [ "$APK_SIZE" -lt 10485760 ]; then
+            echo "❌ Suspiciously small universal APK size: $APK_SIZE bytes"
+            exit 1
+          fi
+
+          # 2. Compute SHA-256 checksums
+          mkdir -p build/release_checksums
+          sha256sum build/app/outputs/flutter-apk/*.apk build/app/outputs/bundle/release/*.aab > build/release_checksums/checksums.sha256
+
+          echo "### 🛡️ Production Artifact Fingerprints (SHA-256)" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          cat build/release_checksums/checksums.sha256 >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # ========================================================================
+      # Upload Release Artifacts
+      # ========================================================================
+      - name: Upload Production APKs
         uses: actions/upload-artifact@v4
         with:
-          name: production-apks
+          name: production-apks-v${{ steps.metadata.outputs.version }}+${{ steps.metadata.outputs.build_number }}
           path: build/app/outputs/flutter-apk/*.apk
-          retention-days: 7
+          retention-days: 30
+
+      - name: Upload Production App Bundle (AAB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-bundle-v${{ steps.metadata.outputs.version }}+${{ steps.metadata.outputs.build_number }}
+          path: build/app/outputs/bundle/release/*.aab
+          retention-days: 30
+
+      - name: Upload Release Metadata & Fingerprints
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-fingerprints-v${{ steps.metadata.outputs.version }}+${{ steps.metadata.outputs.build_number }}
+          path: |
+            build/release_metadata/release_metadata.json
+            build/release_checksums/checksums.sha256
+          retention-days: 90

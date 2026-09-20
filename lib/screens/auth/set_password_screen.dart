@@ -4,7 +4,7 @@ import 'package:biztonic_pos/l10n/app_localizations.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import '../../core/design/tokens/app_colors.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
@@ -40,6 +40,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
       final uid = credential.user!.uid;
 
       // 2. Complete password setup and provision user account via AuthProvider
+      if (!mounted) return;
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.completePasswordSetup(
         email: widget.email,

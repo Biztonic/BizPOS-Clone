@@ -6,42 +6,172 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
+# Concurrency to cancel superseded in-flight PR runs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  # ============================================================================
+  # 1. PR Validation (Fast Quality Gates)
+  # ============================================================================
+  pr_validation:
+    name: PR Fast Validation
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java 17 (Pinned)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter 3.29.0 (Pinned)
+        uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.29.0'
-          channel: 'stable' 
+          channel: 'stable'
+          cache: true
 
-      - name: Install Dependencies
+      - name: Set up Node.js 20 (Pinned)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Flutter Dependencies
         run: flutter pub get
 
-      - name: Verify Formatting
+      - name: Install Cloud Functions Dependencies
+        run: npm --prefix functions ci
+
+      - name: Enforce Code Formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
-      - name: Analyze
+      - name: Enforce Static Analysis (Zero Errors, Zero Warnings)
         run: flutter analyze --no-fatal-infos
 
-      - name: Run Tests
-        run: flutter test test/announcement_test.dart test/model_test.dart test/order_logic_demo_test.dart test/sqflite_migration_test.dart test/domain/ test/multi_tenant_security_test.dart test/idempotency_cross_platform_test.dart test/offline_auth_security_test.dart
+      - name: Run Unit Tests
+        run: flutter test test/unit/
 
-      - name: Build APK (Debug)
+      - name: Run Widget Tests
+        run: flutter test test/widget/ test/widget_test.dart
+
+      - name: Dependency Security Audit
+        run: npm --prefix functions audit --audit-level=high
+
+      - name: Verify Web Build
+        run: flutter build web --release
+
+      - name: Verify Android Debug Build
         run: flutter build apk --debug
-      
-      # Optional: Upload APK artifact
-      - name: Upload APK
+
+      - name: Validate Generated Artifacts
+        run: |
+          test -s build/web/index.html || { echo "Web index.html is missing or empty"; exit 1; }
+          test -s build/app/outputs/flutter-apk/app-debug.apk || { echo "Debug APK is missing or empty"; exit 1; }
+          echo "✅ Fast PR validation passed: all critical quality gates satisfied."
+
+  # ============================================================================
+  # 2. Main Branch Validation (Full Test Pyramid & Security Matrix)
+  # ============================================================================
+  main_validation:
+    name: Main Full Quality Matrix
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Pinned)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter 3.29.0 (Pinned)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Set up Node.js 20 (Pinned)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: Install Cloud Functions Dependencies
+        run: npm --prefix functions ci
+
+      - name: Enforce Code Formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Enforce Static Analysis
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run Unit Tests (Layer 1)
+        run: flutter test test/unit/
+
+      - name: Run Widget Tests
+        run: flutter test test/widget/ test/widget_test.dart
+
+      - name: Run Application Tests (Layer 2)
+        run: flutter test test/application/
+
+      - name: Run Repository & Persistence Tests (Layer 3)
+        run: flutter test test/repository/
+
+      - name: Run Integration & E2E Tests (Layers 5 & 6)
+        run: flutter test test/integration/ test/e2e/ test/order_logic_demo_test.dart test/stress_test_simulation.dart
+
+      - name: Install Firebase CLI (Pinned)
+        run: npm install -g firebase-tools@13.31.0
+
+      - name: Run Firebase Emulator Security Tests (Layer 4)
+        run: firebase emulators:exec --only firestore "npm --prefix functions test"
+
+      - name: Dependency Security Audit
+        run: npm --prefix functions audit --audit-level=high
+
+      - name: Build Web Release
+        run: flutter build web --release
+
+      - name: Build Android Debug APK
+        run: flutter build apk --debug
+
+      - name: Validate Artifacts & Compute Fingerprints
+        run: |
+          test -s build/web/index.html || { echo "Web index.html is missing or empty"; exit 1; }
+          test -s build/app/outputs/flutter-apk/app-debug.apk || { echo "Debug APK is missing or empty"; exit 1; }
+          
+          mkdir -p build/fingerprints
+          sha256sum build/app/outputs/flutter-apk/app-debug.apk > build/fingerprints/checksums.sha256
+          
+          echo "### Build Artifact Fingerprints" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          cat build/fingerprints/checksums.sha256 >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: app-debug-${{ github.sha }}
           path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+
+      - name: Upload Artifact Fingerprints
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-build-fingerprints-${{ github.sha }}
+          path: build/fingerprints/checksums.sha256
+          retention-days: 14

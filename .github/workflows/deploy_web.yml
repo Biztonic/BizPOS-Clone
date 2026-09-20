@@ -2,37 +2,130 @@ name: Deploy Web to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment Environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - 'production'
+          - 'staging'
 
 permissions:
   contents: write
 
 jobs:
-  build-and-deploy:
+  # ============================================================================
+  # Stage 1: Validate & Build (Strict Pre-Deployment Quality Gates)
+  # ============================================================================
+  validate_and_build:
+    name: Pre-Deploy Quality Gate & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v4
-      
-      - uses: subosito/flutter-action@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter 3.29.0 (Pinned)
+        uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.29.0'
           channel: 'stable'
-          
+          cache: true
+
       - name: Install Dependencies
         run: flutter pub get
-        
-      - name: Build Web
+
+      # Critical Quality Checks (Zero Tolerance for Broken Builds)
+      - name: Verify Formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Static Analysis
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run Unit & Widget Smoke Tests
+        run: flutter test test/unit/ test/widget/ test/widget_test.dart
+
+      # Generate Web Release Metadata
+      - name: Generate Web Release Metadata
+        run: |
+          RAW_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d '+' -f 1 | tr -d '[:space:]')
+          BUILD_NUM=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d '+' -f 2 | tr -d '[:space:]')
+          GIT_SHA="${{ github.sha }}"
+          BUILD_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          ENV_NAME="${{ github.event.inputs.environment || 'production' }}"
+
+          mkdir -p build/web_metadata
+          cat <<EOF > build/web_metadata/version.json
+          {
+            "version": "$RAW_VERSION",
+            "buildNumber": "$BUILD_NUM",
+            "gitSha": "$GIT_SHA",
+            "buildTimestamp": "$BUILD_TS",
+            "environment": "$ENV_NAME",
+            "deployedAt": "$BUILD_TS"
+          }
+          EOF
+
+      # Compile Web Release
+      - name: Build Web Application
         run: flutter build web --release --base-href "/$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')/"
 
-      - name: Setup SPA Routing & Disable Jekyll
+      - name: Embed Release Metadata & Configure SPA Routing
         run: |
+          cp build/web_metadata/version.json build/web/version.json
           touch build/web/.nojekyll
           cp build/web/index.html build/web/404.html
 
-      - name: Deploy to GitHub Pages Branch
+      # Health & Integrity Verification
+      - name: Verify Web Bundle Integrity
+        run: |
+          test -s build/web/index.html || { echo "❌ Critical Error: build/web/index.html missing or empty"; exit 1; }
+          test -s build/web/version.json || { echo "❌ Critical Error: build/web/version.json missing"; exit 1; }
+          
+          # Check for application bundle
+          if [ ! -s build/web/main.dart.js ] && [ ! -s build/web/flutter_bootstrap.js ]; then
+            echo "❌ Critical Error: Neither main.dart.js nor flutter_bootstrap.js found in web output";
+            exit 1;
+          fi
+
+          echo "✅ Web build artifact integrity verified."
+
+      - name: Upload Verified Web Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-web-build-${{ github.sha }}
+          path: build/web
+          retention-days: 7
+
+  # ============================================================================
+  # Stage 2: Atomic, Rollback-Safe Deployment
+  # ============================================================================
+  deploy:
+    name: Atomic Web Deployment
+    needs: validate_and_build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Download Verified Web Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: verified-web-build-${{ github.sha }}
+          path: ./build/web
+
+      - name: Deploy to GitHub Pages (History Preserved for 1-Click Rollback)
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
-          force_orphan: true
+          # Rollback-safe strategy: preserve git history on gh-pages branch
+          force_orphan: false
+          commit_message: "deploy: web release ${{ github.sha }} [skip ci]"

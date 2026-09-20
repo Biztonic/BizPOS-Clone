@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../core/design/tokens/app_colors.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
@@ -16,6 +17,8 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+
+  Timer? _navTimer;
 
   @override
   void initState() {
@@ -36,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     // Navigate after animation + delay
-    Future.delayed(const Duration(seconds: 3), () {
+    _navTimer = Timer(const Duration(seconds: 3), () {
       _checkAuthAndNavigate();
     });
   }
@@ -55,6 +58,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    _navTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

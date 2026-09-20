@@ -24,6 +24,7 @@ enum PrinterPurpose {
 }
 
 class PrinterManagerService {
+  static bool isTesting = false;
   static final PrinterManagerService _instance =
       PrinterManagerService._internal();
 
@@ -67,9 +68,16 @@ class PrinterManagerService {
 
     // START BACKGROUND RECONNECT TIMER (Android 14+ Power Management Mitigation)
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      _checkAndReconnect();
-    });
+    if (!isTesting) {
+      _reconnectTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+        _checkAndReconnect();
+      });
+    }
+  }
+
+  void cancelReconnectTimer() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
   }
 
   Future<void> _checkAndReconnect() async {

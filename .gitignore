@@ -80,10 +80,16 @@ node_modules/
 # Crashlytics
 firebase_crashlytics.json
 
-# Secrets
+# Secrets & Signing Credentials
 *.jks
+**/*.jks
+*.keystore
+**/*.keystore
 key.properties
+**/key.properties
 google-services.json
+**/google-services.json
+firebase_credentials.json
 
 # APKs
 *.apk

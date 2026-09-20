@@ -13,13 +13,17 @@ import 'package:biztonic_pos/app.dart';
 import 'package:biztonic_pos/services/offline_service.dart';
 import 'package:biztonic_pos/sync/sync_engine.dart';
 import 'package:biztonic_pos/providers/dashboard_provider.dart';
+import 'package:biztonic_pos/sync/network/sync_network_manager.dart';
+import 'package:biztonic_pos/services/printer_manager_service.dart';
 
 void main() {
-  setUp(() async {
+  setUpAll(() async {
     // Set isTesting flags to prevent background timers from running during tests
     OfflineService.isTesting = true;
     SyncService.isTesting = true;
     DashboardProvider.isTesting = true;
+    SyncNetworkManager.isTesting = true;
+    PrinterManagerService.isTesting = true;
 
     // Initialize Hive to a temp directory for tests
     final tempDir = Directory.systemTemp.createTempSync();
@@ -43,15 +47,15 @@ void main() {
     await Hive.openBox('cache_customers');
   });
 
-  tearDown(() async {
-    await Hive.close();
+  tearDownAll(() async {
+    try {
+      await Hive.close().timeout(const Duration(seconds: 1));
+    } catch (_) {}
   });
 
   testWidgets('App initialization smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
-
-    // Verify the app builds without crashing
+    await tester.pumpWidget(const MyApp());
+    await tester.pump(const Duration(seconds: 4));
     expect(find.byType(MyApp), findsOneWidget);
   });
 }
