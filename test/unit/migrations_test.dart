@@ -21,7 +21,7 @@ void main() {
   });
 
   group('Unit Tests: Deterministic Schema Migrations & Invariants', () {
-    test('1. Fresh installation initializes database directly at schema v26',
+    test('1. Fresh installation initializes database directly at latest schema version',
         () async {
       final dbPath = p.join(tempDir.path, 'fresh_v26_unit.db');
       DatabaseHelper.setDbName(dbPath);
@@ -29,7 +29,7 @@ void main() {
 
       final versionResult = await db.rawQuery('PRAGMA user_version');
       final version = versionResult.first['user_version'] as int;
-      expect(version, 26);
+      expect(version, DatabaseHelper.version);
 
       // Verify all expected tables are present
       final tables = await db.rawQuery(
@@ -96,7 +96,7 @@ void main() {
     });
 
     test(
-        '3. Historical migration from v1 to v26 preserves data and applies columns',
+        '3. Historical migration from v1 to latest schema version preserves data and applies columns',
         () async {
       final dbPath = p.join(tempDir.path, 'migration_v1_v26_unit.db');
 
@@ -124,12 +124,12 @@ void main() {
       );
       await db.close();
 
-      // Upgrade to v26 using DatabaseHelper
+      // Upgrade to latest version using DatabaseHelper
       DatabaseHelper.setDbName(dbPath);
       db = await DatabaseHelper().database;
 
       final versionResult = await db.rawQuery('PRAGMA user_version');
-      expect(versionResult.first['user_version'], 26);
+      expect(versionResult.first['user_version'], DatabaseHelper.version);
 
       // Verify v1 order still exists with all its data
       final orders =

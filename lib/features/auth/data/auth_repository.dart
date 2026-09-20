@@ -239,6 +239,21 @@ class AuthRepository {
     }
   }
 
+  /// Merge-safe profile write — uses set(merge: true) so it works even when
+  /// the user document doesn't exist yet (e.g. first store creation).
+  Future<void> upsertUserProfile(String uid, Map<String, dynamic> data) async {
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .set(data, SetOptions(merge: true));
+
+    // Refresh cache
+    final doc = await _firestore.collection('users').doc(uid).get();
+    if (doc.exists) {
+      await _offlineService.cacheUserProfile(doc.data()!, uid: uid);
+    }
+  }
+
   Future<Map<String, dynamic>?> fetchUserProfile(String uid) async {
     // Try online first
     try {

@@ -11,7 +11,8 @@ import 'package:biztonic_pos/services/sync_service.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
-import 'package:biztonic_pos/features/billing/domain/use_cases/checkout_order.dart';
+import 'package:biztonic_pos/features/billing/application/checkout_orchestrator.dart';
+import 'package:biztonic_pos/features/billing/data/repositories/billing_repository_impl.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
@@ -262,31 +263,28 @@ class OrderProvider with ChangeNotifier {
       await _syncService.checkOrderLimit(activeStore.id);
     }
 
-    // --- DELEGATE TO USE CASE FOR LOCAL PERSISTENCE AND EVENTS ---
-    final useCase = CheckoutOrderUseCase(_repository);
-
-    // We execute this concurrently or sequentially? We want optimistic UI!
-    // We don't have the final ID until the UseCase generates it...
-    // Let's await the UseCase first. (It should be very fast because it only does Hive + SQLite).
+    // --- DELEGATE TO AUTHORITATIVE CHECKOUT ORCHESTRATOR ---
+    final orchestrator = CheckoutOrchestrator(
+      billingRepository: BillingRepositoryImpl(repository: _repository),
+    );
 
     final idempotencyKey = const Uuid().v7();
 
-    final result = await useCase.execute(CheckoutOrderParams(
-      order: order,
-      activeStore: activeStore,
+    final result = await orchestrator.execute(CheckoutParams(
+      order: order.toEntity(),
+      activeStoreId: activeStore.id,
       deviceId: _syncService.deviceId ?? 'unknown',
       idempotencyKey: idempotencyKey,
+      trackInventory: activeStore.trackInventory ?? false,
     ));
 
-    if (result != null) {
-      // --- OPTIMISTIC UI: UPDATE LOCAL STATE IMMEDIATELY ---
-      _orders.insert(0, result.orderWithMeta);
+    if (result.isSuccess && result.order != null) {
+      final placedModel = OrderModel.fromEntity(result.order!);
+      _orders.insert(0, placedModel);
       notifyListeners();
-
-      // Update sync counts UI (the actual queuing is now handled by SyncEngine listening to OrderCreatedEvent)
       await _syncService.refreshLocalCounts(notify: true);
     } else {
-      throw Exception("Failed to process order checkout locally");
+      throw Exception(result.error ?? "Failed to process order checkout locally");
     }
   }
 
@@ -601,26 +599,7 @@ class OrderProvider with ChangeNotifier {
   }
 
   // --- STATS ---
-  // Simple in-memory stats helper, or delegate to Repo for complex queries
-  Map<String, dynamic> getSalesStats() {
-    double totalSales = 0;
-    int count = 0;
-    for (var o in _orders) {
-      if (o.status != 'Cancelled' && o.status != 'VOID') {
-        if (o.status == 'Refunded') {
-          totalSales += 0;
-        } else {
-          totalSales += o.total;
-          count++; // Only count non-refunded/active orders
-        }
-      }
-    }
-    return {
-      'totalSales': totalSales,
-      'orderCount': count,
-      'avgOrderValue': count > 0 ? totalSales / count : 0.0
-    };
-  }
+  // Authoritative reporting queries via Repository (SQLite aggregation)
 
   Future<Map<String, dynamic>> fetchStats(String? storeId,
       {DateTime? start,

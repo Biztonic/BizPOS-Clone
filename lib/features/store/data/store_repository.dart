@@ -126,6 +126,16 @@ class StoreRepository with StoreRepositoryMixin {
     );
   }
 
+  Future<String> createStore(Store store) async {
+    final docRef = store.id.isNotEmpty
+        ? _db.collection('stores').doc(store.id)
+        : _db.collection('stores').doc();
+    final storeMap = store.toMap();
+    storeMap['id'] = docRef.id;
+    await docRef.set(storeMap);
+    return docRef.id;
+  }
+
   Future<void> deleteStore(String id) async {
     await _db.collection('stores').doc(id).delete();
   }

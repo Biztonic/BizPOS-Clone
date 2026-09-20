@@ -150,6 +150,44 @@ class OrderItem {
       sgst: sgst ?? this.sgst,
     );
   }
+
+  OrderItemEntity toEntity() {
+    return OrderItemEntity(
+      itemId: item.id,
+      itemName: item.name,
+      price: priceSnapshot ?? item.price,
+      cost: costSnapshot ?? item.cost ?? 0.0,
+      quantity: quantity,
+      note: note,
+      category: category ?? item.category,
+      seatIndex: seatIndex,
+      cgst: cgst ?? 0.0,
+      sgst: sgst ?? 0.0,
+    );
+  }
+
+  factory OrderItem.fromEntity(OrderItemEntity entity) {
+    return OrderItem(
+      item: InventoryItem(
+        id: entity.itemId,
+        name: entity.itemName,
+        category: entity.category ?? 'Uncategorized',
+        price: entity.price,
+        cost: entity.cost,
+        quantity: 0,
+        status: 'Active',
+        trackStock: false,
+      ),
+      quantity: entity.quantity,
+      note: entity.note,
+      seatIndex: entity.seatIndex,
+      priceSnapshot: entity.price,
+      costSnapshot: entity.cost,
+      category: entity.category,
+      cgst: entity.cgst,
+      sgst: entity.sgst,
+    );
+  }
 }
 
 class OrderModel {
@@ -537,6 +575,40 @@ class OrderModel {
       subtotal: subtotal,
       cgst: cgst,
       sgst: sgst,
+    );
+  }
+
+  OrderEntity toEntity() {
+    return OrderEntity(
+      id: id,
+      storeId: storeId,
+      items: items.map((e) => e.toEntity()).toList(),
+      total: total,
+      subtotal: subtotal,
+      discount: discount,
+      cgst: cgst,
+      sgst: sgst,
+      taxRateSnapshot: taxRateSnapshot,
+      discountSnapshot: discountSnapshot,
+      date: date,
+      status: OrderStatus.fromString(status),
+      type: OrderType.fromString(type),
+      paymentMethod: PaymentMethod.fromString(paymentMethod),
+      customerId: customer?.id ?? customerRefId,
+      customerName: customer?.name ?? customerName,
+      customerPhone: customer?.phone ?? customerPhone,
+      tableId: tableId,
+      tableName: tableName,
+      seatNumbers: seatNumbers,
+      synced: synced,
+      syncStatus: syncStatus ?? 'PENDING',
+      deviceId: deviceId,
+      businessDayId: businessDayId,
+      version: version,
+      updatedAt: updatedAt,
+      voidedAt: voidedAt,
+      voidedBy: voidedBy,
+      voidReason: voidReason,
     );
   }
 }

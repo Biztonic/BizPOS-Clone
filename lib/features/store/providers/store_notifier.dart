@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:biztonic_pos/core/dependency_injection/providers.dart';
 import 'package:biztonic_pos/features/auth/providers/auth_notifier.dart';
+import 'package:biztonic_pos/features/auth/data/auth_repository.dart';
 import 'package:biztonic_pos/features/store/data/store_repository.dart';
 import 'package:biztonic_pos/features/subscriptions/data/subscription_repository.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
@@ -52,12 +53,9 @@ class StoreNotifier extends _$StoreNotifier {
       if (storeId != null) {
         final user = FirebaseAuth.instance.currentUser;
 
-        // Aggressive Profile Sync (legacy logic)
+        // Profile Sync via AuthRepository
         if (user != null) {
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .set({'storeId': storeId}, SetOptions(merge: true));
+          await AuthRepository().updateUserProfile(user.uid, {'storeId': storeId});
         }
 
         // Try Cache First
@@ -187,9 +185,8 @@ class StoreNotifier extends _$StoreNotifier {
         expiry = DateTime.now().add(Duration(days: duration));
       }
 
-      final docRef = FirebaseFirestore.instance.collection('stores').doc();
       final newStore = Store(
-        id: docRef.id,
+        id: '',
         name: name,
         owner: user?.uid ?? name,
         ownerEmail: email,
@@ -206,39 +203,33 @@ class StoreNotifier extends _$StoreNotifier {
         kds: KdsSettings(),
       );
 
-      await docRef.set(newStore.toMap());
+      final newStoreId = await _storeRepo.createStore(newStore);
 
       if (foundRequestId != null) {
         await _subRepo.approveSubscriptionRequest(
-            foundRequestId, docRef.id, name);
+            foundRequestId, newStoreId, name);
         await _subRepo.addSubscriptionHistory(
-            docRef.id, subscriptionPlan, expiry);
+            newStoreId, subscriptionPlan, expiry);
       }
 
-      // Link to User
+      // Link to User via AuthRepository (upsert — doc may not exist yet)
       if (user != null) {
         if (user.email == ownerEmail) {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .set({
-            'storeId': docRef.id,
-            'storeIds': FieldValue.arrayUnion([docRef.id]),
+          await AuthRepository().upsertUserProfile(user.uid, {
+            'storeId': newStoreId,
+            'storeIds': FieldValue.arrayUnion([newStoreId]),
             'role': 'Store Owner'
-          }, SetOptions(merge: true));
+          });
         } else {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .set({
-            'accessibleStoreIds': FieldValue.arrayUnion([docRef.id]),
-          }, SetOptions(merge: true));
+          await AuthRepository().upsertUserProfile(user.uid, {
+            'accessibleStoreIds': FieldValue.arrayUnion([newStoreId]),
+          });
         }
       }
 
       await fetchStores();
-      await setActiveStoreId(docRef.id);
-      return docRef.id;
+      await setActiveStoreId(newStoreId);
+      return newStoreId;
     } finally {
       state = state.copyWith(isLoading: false);
     }
