@@ -11,32 +11,56 @@ class IdempotencyService {
 
   final _uuid = const Uuid();
 
+  /// In-memory re-entrancy guard to block concurrent callers in the same process
+  /// before they even attempt SQLite transactions.
+  final Set<String> _inFlightKeys = {};
+
   /// Generates a time-sortable UUID v7 key.
   String generateKey() {
     return _uuid.v7();
   }
 
-  /// Checks if an idempotency key has already been processed.
-  /// If not, it reserves the key atomically.
+  /// Checks if a key is currently in-flight in this process.
+  bool isKeyInFlight(String key) => _inFlightKeys.contains(key);
+
+  /// Releases an in-flight key (e.g. after transaction completes or rolls back).
+  void releaseInFlight(String key) {
+    _inFlightKeys.remove(key);
+  }
+
+  /// Checks if an idempotency key has already been processed or is currently in flight.
+  /// If not, it reserves the key atomically in SQLite and marks it in-flight.
   /// Returns `true` if the key is NEW and safe to process.
-  /// Returns `false` if the key has ALREADY BEEN PROCESSED (duplicate).
+  /// Returns `false` if the key has ALREADY BEEN PROCESSED or is IN-FLIGHT (duplicate).
   Future<bool> checkAndReserveKey({
     required String key,
     required String entityType,
     required String entityId,
     required String deviceId,
   }) async {
-    if (kIsWeb) {
-      return _checkAndReserveKeyWeb(
-        key: key,
-        entityType: entityType,
-        entityId: entityId,
-        deviceId: deviceId,
-      );
+    // 1. In-process re-entrancy check
+    if (_inFlightKeys.contains(key)) {
+      debugPrint('🛡️ IdempotencyService: Blocked in-process re-entrancy for key: $key');
+      return false;
     }
-    final db = await DatabaseHelper().database;
+    _inFlightKeys.add(key);
 
     try {
+      if (kIsWeb) {
+        final success = await _checkAndReserveKeyWeb(
+          key: key,
+          entityType: entityType,
+          entityId: entityId,
+          deviceId: deviceId,
+        );
+        if (!success) {
+          _inFlightKeys.remove(key);
+        }
+        return success;
+      }
+
+      final db = await DatabaseHelper().database;
+
       await db.insert(
         'idempotency_keys',
         {
@@ -50,11 +74,50 @@ class IdempotencyService {
       );
       return true; // Key was successfully inserted (new)
     } on DatabaseException catch (e) {
+      _inFlightKeys.remove(key);
       if (e.isUniqueConstraintError()) {
         return false; // Key already exists (duplicate)
       }
       rethrow;
+    } catch (e) {
+      _inFlightKeys.remove(key);
+      rethrow;
     }
+  }
+
+  /// Look up the entityId associated with a previously reserved key.
+  Future<String?> getReservedEntityId(String key) async {
+    if (kIsWeb) {
+      const boxName = 'idempotency_keys';
+      Box box;
+      if (!Hive.isBoxOpen(boxName)) {
+        box = await Hive.openBox(boxName);
+      } else {
+        box = Hive.box(boxName);
+      }
+      final data = box.get(key);
+      if (data is Map) {
+        return data['entityId'] as String?;
+      }
+      return null;
+    }
+
+    try {
+      final db = await DatabaseHelper().database;
+      final rows = await db.query(
+        'idempotency_keys',
+        columns: ['entityId'],
+        where: 'key = ?',
+        whereArgs: [key],
+        limit: 1,
+      );
+      if (rows.isNotEmpty) {
+        return rows.first['entityId'] as String?;
+      }
+    } catch (e) {
+      debugPrint('IdempotencyService: Error looking up reserved entityId: $e');
+    }
+    return null;
   }
 
   /// Optional: Use in a broader SQLite transaction.

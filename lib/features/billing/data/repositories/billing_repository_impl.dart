@@ -56,6 +56,39 @@ class BillingRepositoryImpl implements BillingRepository {
   }
 
   @override
+  Future<BillingResult<void>> voidOrder(String orderId,
+      {String? voidedBy, String? reason}) async {
+    try {
+      await _legacyRepo.voidOrder(orderId, voidedBy: voidedBy, reason: reason);
+      return BillingResult.success(null);
+    } catch (e) {
+      return BillingResult.failure('Failed to void order: $e');
+    }
+  }
+
+  @override
+  Future<BillingResult<void>> refundOrder(
+    String orderId, {
+    required String refundedBy,
+    required String reason,
+    required double refundAmount,
+    String? deviceId,
+  }) async {
+    try {
+      await _legacyRepo.refundOrder(
+        orderId,
+        refundedBy: refundedBy,
+        reason: reason,
+        refundAmount: refundAmount,
+        deviceId: deviceId,
+      );
+      return BillingResult.success(null);
+    } catch (e) {
+      return BillingResult.failure('Failed to refund order: $e');
+    }
+  }
+
+  @override
   Future<BillingResult<List<OrderEntity>>> getOrders(String? storeId) async {
     try {
       final legacyOrders = await _legacyRepo.getOrders(storeId);

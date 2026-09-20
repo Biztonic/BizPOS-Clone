@@ -12,6 +12,7 @@ import 'package:biztonic_pos/services/offline_service.dart';
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/models/order_model.dart';
+import 'package:biztonic_pos/features/billing/domain/entities/order_entity.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
 
@@ -938,16 +939,23 @@ class SyncService with ChangeNotifier {
         final storeId = event.storeId;
 
         // 1. Queue order for cloud sync
+        OrderModel? model;
         if (order is OrderModel) {
-          final orderData = order.toHiveMap();
+          model = order;
+        } else if (order is OrderEntity) {
+          model = OrderModel.fromEntity(order);
+        }
+
+        if (model != null) {
+          final orderData = model.toHiveMap();
           orderData['storeId'] = storeId;
           await queueOperation(
             collection: 'orders',
-            docId: order.id,
+            docId: model.id,
             action: 'create',
             payload: Map<String, dynamic>.from(orderData),
           );
-          debugPrint('📤 SyncBridge: Queued order ${order.id} for cloud sync');
+          debugPrint('📤 SyncBridge: Queued order ${model.id} for cloud sync');
         }
 
         // 2. Queue business event for cloud sync

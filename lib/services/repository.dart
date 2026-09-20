@@ -69,6 +69,7 @@ class Repository {
     required BusinessEvent event,
     required String storeId,
     required String yearMonth,
+    List<OutboxOperation>? outboxOperations,
     NegativeStockPolicy? negativeStockPolicy,
   }) =>
       _orders.performAtomicCheckout(
@@ -77,6 +78,7 @@ class Repository {
           event: event,
           storeId: storeId,
           yearMonth: yearMonth,
+          outboxOperations: outboxOperations,
           negativeStockPolicy: negativeStockPolicy);
   Future<void> replayTransaction(String txId, String operationsJson) =>
       _orders.replayTransaction(txId, operationsJson);
@@ -229,6 +231,16 @@ class Repository {
   // --- SYNC DELEGATIONS ---
   Future<void> voidOrder(String id, {String? voidedBy, String? reason}) =>
       _sync.voidOrder(id, voidedBy: voidedBy, reason: reason);
+  Future<void> refundOrder(String id,
+          {required String refundedBy,
+          required String reason,
+          required double refundAmount,
+          String? deviceId}) =>
+      _sync.refundOrder(id,
+          refundedBy: refundedBy,
+          reason: reason,
+          refundAmount: refundAmount,
+          deviceId: deviceId);
   Future<void> deleteInventory(String id) => _sync.deleteInventory(id);
   Future<void> deleteCustomer(String id) => _sync.deleteCustomer(id);
   Future<void> deleteOrder(String id) => _sync.deleteOrder(id);

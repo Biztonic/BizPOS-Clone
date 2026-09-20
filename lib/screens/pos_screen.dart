@@ -990,9 +990,8 @@ class _POSScreenState extends State<POSScreen> {
         if (activeStore?.isTaxEnabled == true) {
           final taxRate = (activeStore?.taxRate ?? 0) / 100;
           final halfRate = taxRate / 2;
-          final totalGst = itemSubtotal * taxRate;
-          itemCgst = totalGst * halfRate;
-          itemSgst = totalGst * halfRate;
+          itemCgst = itemSubtotal * halfRate;
+          itemSgst = itemSubtotal * halfRate;
         }
 
         totalCgst += itemCgst;
@@ -1011,7 +1010,8 @@ class _POSScreenState extends State<POSScreen> {
       }
 
       final total = subtotal + totalCgst + totalSgst;
-      final orderId = billingProvider.generateOrderId(); // New method helper
+      // Bind durable operation ID from billingProvider to guarantee exactly-once checkout across retries
+      final orderId = billingProvider.activeCheckoutId;
 
       final orderEntity = OrderEntity(
         id: orderId,

@@ -6,6 +6,7 @@ import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
 import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
 import 'package:biztonic_pos/services/recovery_service.dart';
+import 'package:biztonic_pos/sync/outbox/outbox_operation.dart';
 import 'dart:convert';
 
 mixin OrderRepositoryMixin {
@@ -70,15 +71,32 @@ mixin OrderRepositoryMixin {
     required BusinessEvent event,
     required String storeId,
     required String yearMonth,
+    List<OutboxOperation>? outboxOperations,
     NegativeStockPolicy? negativeStockPolicy,
   }) async {
     final db = await dbHelper.database;
     final txId = 'TX-${DateTime.now().millisecondsSinceEpoch}-${order.id}';
+
+    // Build default outbox operation for order if not supplied
+    final effectiveOutboxOps = outboxOperations ?? [
+      OutboxOperation(
+        operationId: 'op_order_${order.id}',
+        storeId: storeId,
+        userId: 'system',
+        deviceId: order.deviceId ?? 'device-pos',
+        collection: 'orders',
+        entityId: order.id,
+        operation: 'CREATE',
+        payload: order.toSqlMap(),
+      )
+    ];
+
     final payload = jsonEncode({
       'order': order.toSqlMap(),
       'orderItems': order.items.map((e) => e.toSqlMap(order.id)).toList(),
       'event': event.toMap(),
       'movements': movements.map((e) => e.toSqlMap()).toList(),
+      'outboxOperations': effectiveOutboxOps.map((e) => e.toSqlRow()).toList(),
       'yearMonth': yearMonth,
     });
 
@@ -128,7 +146,16 @@ mixin OrderRepositoryMixin {
             txn: txn, negativeStockPolicy: negativeStockPolicy);
       }
 
-      // 6. Mark Journal Complete
+      // 6. Insert Outbox Operations Atomically (Guarantees sync queue durability)
+      for (var op in effectiveOutboxOps) {
+        await txn.insert(
+          'outbox_operations',
+          op.toSqlRow(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+
+      // 7. Mark Journal Complete
       await txn.update(
         'transaction_journal',
         {

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:biztonic_pos/services/firestore_helper.dart';
@@ -277,8 +276,11 @@ class OrderProvider with ChangeNotifier {
         billingRepository: BillingRepositoryImpl(repository: _repository),
       );
 
-      final key = idempotencyKey ??
-          (order.id.isNotEmpty ? 'order_${order.id}' : const Uuid().v7());
+      final key = (idempotencyKey != null && idempotencyKey.isNotEmpty)
+          ? idempotencyKey
+          : (order.id.isNotEmpty
+              ? 'order_${order.id}'
+              : 'order_intent_${order.storeId}_${order.date.millisecondsSinceEpoch}');
 
       final result = await orchestrator.execute(CheckoutParams(
         order: order.toEntity(),
@@ -290,7 +292,10 @@ class OrderProvider with ChangeNotifier {
 
       if (result.isSuccess && result.order != null) {
         final placedModel = OrderModel.fromEntity(result.order!);
-        _orders.insert(0, placedModel);
+        final alreadyExists = _orders.any((o) => o.id == placedModel.id);
+        if (!alreadyExists) {
+          _orders.insert(0, placedModel);
+        }
         notifyListeners();
         await _syncService.refreshLocalCounts(notify: true);
       } else {
@@ -461,23 +466,37 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
-  Future<void> refundOrder(String orderId) async {
+  Future<void> refundOrder(
+    String orderId, {
+    String? refundedBy,
+    String? reason,
+    double? refundAmount,
+  }) async {
     try {
       final index = _orders.indexWhere((o) => o.id == orderId);
-      if (index == -1) {
-        // Try checking repo? For now fail friendly.
-        final repoOrder = await _repository.getOrder(orderId);
-        if (repoOrder == null) throw Exception("Order not found");
+      final currentOrder =
+          index != -1 ? _orders[index] : (await _repository.getOrder(orderId));
+
+      if (currentOrder == null) {
+        throw Exception("Order $orderId not found");
+      }
+      if (currentOrder.status == 'Refunded') return;
+      if (currentOrder.status == 'Cancelled' || currentOrder.status == 'VOID') {
+        throw Exception("Cannot refund cancelled or voided order");
       }
 
-      final currentOrder =
-          index != -1 ? _orders[index] : (await _repository.getOrder(orderId))!;
+      final now = DateTime.now();
+      final effectiveRefundedBy = refundedBy ?? 'staff';
+      final effectiveReason = reason ?? 'Order Refund';
+      final effectiveRefundAmount = refundAmount ?? currentOrder.total;
 
-      if (currentOrder.status == 'Refunded') return;
-      if (currentOrder.status == 'Cancelled')
-        throw Exception("Cannot refund cancelled order");
-
-      final updatedOrder = currentOrder.copyWith(status: 'Refunded');
+      final updatedOrder = currentOrder.copyWith(
+        status: 'Refunded',
+        voidedAt: now,
+        voidedBy: effectiveRefundedBy,
+        voidReason: 'Refund ($effectiveRefundAmount): $effectiveReason',
+        deviceId: _syncService.deviceId,
+      );
 
       // OPTIMISTIC UI UPDATE
       if (index != -1) {
@@ -493,12 +512,22 @@ class OrderProvider with ChangeNotifier {
           localCacheBox: 'cache_orders',
           refreshCounts: true);
 
+      if (!kIsWeb) {
+        await _repository.refundOrder(
+          orderId,
+          refundedBy: effectiveRefundedBy,
+          reason: effectiveReason,
+          refundAmount: effectiveRefundAmount,
+          deviceId: _syncService.deviceId,
+        );
+      }
+
       await _recordEvent(
         storeId: currentOrder.storeId,
         entityType: 'ORDER',
         entityId: orderId,
         eventType: 'REFUND',
-        amount: currentOrder.total,
+        amount: effectiveRefundAmount,
       );
 
       // --- INVENTORY REVERSAL ---
@@ -514,10 +543,10 @@ class OrderProvider with ChangeNotifier {
           delta: item.quantity, // Positive delta
           orderId: orderId,
           unitCost: item.costSnapshot ?? item.item.cost,
-          reason: 'Order Refund',
+          reason: effectiveReason,
           deviceId: _syncService.deviceId ?? 'unknown',
           operationId: 'refund_${orderId}_${item.item.id}',
-          createdAt: DateTime.now(),
+          createdAt: now,
           syncStatus: 'PENDING',
         );
 
@@ -554,7 +583,7 @@ class OrderProvider with ChangeNotifier {
       EventBus.instance.fire(OrderRefundedEvent(
         orderId: orderId,
         storeId: currentOrder.storeId,
-        refundAmount: currentOrder.total,
+        refundAmount: effectiveRefundAmount,
         items: currentOrder.items,
       ));
 
@@ -576,7 +605,14 @@ class OrderProvider with ChangeNotifier {
         throw Exception("Cannot void refunded order");
       }
 
-      final updatedOrder = currentOrder.copyWith(status: 'VOID');
+      final now = DateTime.now();
+      final updatedOrder = currentOrder.copyWith(
+        status: 'VOID',
+        voidedAt: now,
+        voidedBy: voidedBy,
+        voidReason: reason,
+        deviceId: _syncService.deviceId,
+      );
 
       if (index != -1) {
         _orders[index] = updatedOrder;

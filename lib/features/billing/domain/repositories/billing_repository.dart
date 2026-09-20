@@ -57,6 +57,19 @@ abstract class BillingRepository {
   /// Retrieve a single order by ID.
   Future<BillingResult<OrderEntity>> getOrder(String orderId);
 
+  /// VOID an order with audit trail.
+  Future<BillingResult<void>> voidOrder(String orderId,
+      {String? voidedBy, String? reason});
+
+  /// Refund an order with audit trail and immutable financial history.
+  Future<BillingResult<void>> refundOrder(
+    String orderId, {
+    required String refundedBy,
+    required String reason,
+    required double refundAmount,
+    String? deviceId,
+  });
+
   /// Retrieve all orders for a store, sorted by date descending.
   Future<BillingResult<List<OrderEntity>>> getOrders(String? storeId);
 

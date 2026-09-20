@@ -547,7 +547,20 @@ class RecoveryService {
         }
       }
 
-      // Step E: Mark Journal Completed
+      // Step E: Reconcile Outbox Operations
+      final outboxList = (payload['outboxOperations'] as List<dynamic>?) ?? [];
+      for (var opMap in outboxList) {
+        if (opMap is Map<String, dynamic>) {
+          await txn.insert(
+            'outbox_operations',
+            opMap,
+            conflictAlgorithm: ConflictAlgorithm.ignore,
+          );
+          actions.add('Reconciled outbox operation for cloud push');
+        }
+      }
+
+      // Step F: Mark Journal Completed
       await txn.update(
         'transaction_journal',
         {

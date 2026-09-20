@@ -6,108 +6,73 @@ mixin ReportingRepositoryMixin {
   Future<Database> get database;
   DatabaseHelper get dbHelper;
 
-  // --- COUNTS ---
+  // --- COUNTS (Strict Local Tenant Isolation) ---
   Future<int> getOrderCount(String? storeId) async {
+    if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    String sql =
-        "SELECT COUNT(*) FROM orders WHERE (deletedAt IS NULL AND status NOT IN ('Cancelled', 'VOID', 'Refunded'))";
-    List<dynamic> args = [];
-    if (storeId != null) {
-      sql += ' AND storeId = ?';
-      args.add(storeId);
-    }
-    final int count = Sqflite.firstIntValue(await db.rawQuery(sql, args)) ?? 0;
+    const sql =
+        "SELECT COUNT(*) FROM orders WHERE storeId = ? AND (deletedAt IS NULL AND status NOT IN ('Cancelled', 'VOID', 'Refunded'))";
+    final int count = Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
     return count;
   }
 
-  // New for Subscription Limits
+  // Authoritative Subscription Limits Count
   Future<int> getOrderCountSince(String? storeId, DateTime since) async {
+    if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    String sql =
-        "SELECT COUNT(*) FROM orders WHERE date >= ? AND (deletedAt IS NULL AND status NOT IN ('Cancelled', 'VOID', 'Refunded'))";
-    List<dynamic> args = [since.toIso8601String()];
-    if (storeId != null && storeId.isNotEmpty) {
-      sql += ' AND storeId = ?';
-      args.add(storeId);
-    }
+    const sql =
+        "SELECT COUNT(*) FROM orders WHERE storeId = ? AND date >= ? AND (deletedAt IS NULL AND status NOT IN ('Cancelled', 'VOID', 'Refunded'))";
+    final args = [storeId, since.toIso8601String()];
     return Sqflite.firstIntValue(await db.rawQuery(sql, args)) ?? 0;
   }
 
   Future<int> getInventoryCount(String? storeId) async {
+    if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    String sql = 'SELECT COUNT(*) FROM inventory WHERE deletedAt IS NULL';
-    List<dynamic> args = [];
-    if (storeId != null) {
-      sql += ' AND storeId = ?';
-      args.add(storeId);
-    }
-    return Sqflite.firstIntValue(await db.rawQuery(sql, args)) ?? 0;
+    const sql = 'SELECT COUNT(*) FROM inventory WHERE storeId = ? AND deletedAt IS NULL';
+    return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getCustomerCount(String? storeId) async {
+    if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    String sql = 'SELECT COUNT(*) FROM customers WHERE deletedAt IS NULL';
-    List<dynamic> args = [];
-    if (storeId != null) {
-      sql += ' AND storeId = ?';
-      args.add(storeId);
-    }
-    return Sqflite.firstIntValue(await db.rawQuery(sql, args)) ?? 0;
+    const sql = 'SELECT COUNT(*) FROM customers WHERE storeId = ? AND deletedAt IS NULL';
+    return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getEmployeeCount(String? storeId) async {
+    if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    String sql = 'SELECT COUNT(*) FROM employees WHERE deletedAt IS NULL';
-    List<dynamic> args = [];
-    if (storeId != null) {
-      sql += ' AND storeId = ?';
-      args.add(storeId);
-    }
-    return Sqflite.firstIntValue(await db.rawQuery(sql, args)) ?? 0;
+    const sql = 'SELECT COUNT(*) FROM employees WHERE storeId = ? AND deletedAt IS NULL';
+    return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getFloorCount(String? storeId) async {
+    if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    String sql = 'SELECT COUNT(*) FROM floors WHERE deletedAt IS NULL';
-    List<dynamic> args = [];
-    if (storeId != null) {
-      sql += ' AND storeId = ?';
-      args.add(storeId);
-    }
-    return Sqflite.firstIntValue(await db.rawQuery(sql, args)) ?? 0;
+    const sql = 'SELECT COUNT(*) FROM floors WHERE storeId = ? AND deletedAt IS NULL';
+    return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getTableCount(String? storeId) async {
+    if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    String sql = 'SELECT COUNT(*) FROM tables WHERE deletedAt IS NULL';
-    List<dynamic> args = [];
-    if (storeId != null) {
-      sql += ' AND storeId = ?';
-      args.add(storeId);
-    }
-    return Sqflite.firstIntValue(await db.rawQuery(sql, args)) ?? 0;
+    const sql = 'SELECT COUNT(*) FROM tables WHERE storeId = ? AND deletedAt IS NULL';
+    return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getSupplierCount(String? storeId) async {
+    if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    String sql = 'SELECT COUNT(*) FROM suppliers WHERE deletedAt IS NULL';
-    List<dynamic> args = [];
-    if (storeId != null) {
-      sql += ' AND storeId = ?';
-      args.add(storeId);
-    }
-    return Sqflite.firstIntValue(await db.rawQuery(sql, args)) ?? 0;
+    const sql = 'SELECT COUNT(*) FROM suppliers WHERE storeId = ? AND deletedAt IS NULL';
+    return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getNoteCount(String? storeId) async {
+    if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    String sql = 'SELECT COUNT(*) FROM notes WHERE deletedAt IS NULL';
-    List<dynamic> args = [];
-    if (storeId != null) {
-      sql += ' AND storeId = ?';
-      args.add(storeId);
-    }
-    return Sqflite.firstIntValue(await db.rawQuery(sql, args)) ?? 0;
+    const sql = 'SELECT COUNT(*) FROM notes WHERE storeId = ? AND deletedAt IS NULL';
+    return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   // --- BUSINESS LEDGER ---
@@ -119,16 +84,10 @@ mixin ReportingRepositoryMixin {
   }
 
   Future<List<BusinessEvent>> getUnsyncedEvents(String? storeId) async {
+    if (storeId == null || storeId.isEmpty) return [];
     final db = await dbHelper.database;
-    String sql = 'SELECT * FROM business_events WHERE synced = 0';
-    List<dynamic> args = [];
-
-    if (storeId != null) {
-      sql += ' AND storeId = ?';
-      args.add(storeId);
-    }
-
-    final rows = await db.rawQuery(sql, args);
+    const sql = 'SELECT * FROM business_events WHERE storeId = ? AND synced = 0';
+    final rows = await db.rawQuery(sql, [storeId]);
     return rows.map((r) => BusinessEvent.fromMap(r)).toList();
   }
 
@@ -141,6 +100,7 @@ mixin ReportingRepositoryMixin {
 
   Future<List<BusinessEvent>> getBusinessEvents(String storeId,
       {int limit = 50}) async {
+    if (storeId.isEmpty) return [];
     final db = await dbHelper.database;
     final rows = await db.query(
       'business_events',

@@ -42,6 +42,9 @@ class BillingProvider with ChangeNotifier {
   // Cart State (Maps InventoryEntity ID to Quantity)
   final Map<String, int> _cart = {};
 
+  // Active operation ID tied to the current cart/checkout intent
+  String? _activeCheckoutId;
+
   // ─── Getters ───────────────────────────────────────────────
   List<OrderEntity> get orders => List.unmodifiable(_orders);
   BillingStatus get status => _status;
@@ -50,6 +53,9 @@ class BillingProvider with ChangeNotifier {
   bool get hasMore => _hasMore;
   bool get isLoading => _status == BillingStatus.loading;
   Map<String, int> get cart => Map.unmodifiable(_cart);
+
+  /// Durable operation ID for exactly-once checkout across retries/rebuilds
+  String get activeCheckoutId => _activeCheckoutId ??= generateOrderId();
 
   // ─── Cart Management ───────────────────────────────────────
 
@@ -73,6 +79,7 @@ class BillingProvider with ChangeNotifier {
 
   void clearCart() {
     _cart.clear();
+    _activeCheckoutId = null;
     notifyListeners();
     AnnouncementService().playRemoveQtySound();
   }
@@ -107,7 +114,7 @@ class BillingProvider with ChangeNotifier {
     required OrderEntity order,
     required String activeStoreId,
     required String deviceId,
-    required String idempotencyKey,
+    String? idempotencyKey,
     double taxRate = 0.0,
     bool trackInventory = false,
     bool checkLimits = true,
@@ -116,6 +123,10 @@ class BillingProvider with ChangeNotifier {
       return CheckoutResult.failure("Checkout operation already in progress");
     }
     _setStatus(BillingStatus.loading);
+
+    final effectiveKey = (idempotencyKey != null && idempotencyKey.isNotEmpty)
+        ? idempotencyKey
+        : activeCheckoutId;
 
     try {
       // 1. Subscription limit check (delegates to EntitlementService & SyncService)
@@ -134,15 +145,19 @@ class BillingProvider with ChangeNotifier {
         order: order,
         activeStoreId: activeStoreId,
         deviceId: deviceId,
-        idempotencyKey: idempotencyKey,
+        idempotencyKey: effectiveKey,
         taxRate: taxRate,
         trackInventory: trackInventory,
       ));
 
       if (result.isSuccess && result.order != null) {
-        // Optimistic UI: prepend the new order
-        _orders.insert(0, result.order!);
+        // Optimistic UI: only add if not already in list to avoid duplicates
+        final alreadyInList = _orders.any((o) => o.id == result.order!.id);
+        if (!alreadyInList) {
+          _orders.insert(0, result.order!);
+        }
         _setStatus(BillingStatus.success);
+        _activeCheckoutId = null; // Reset operation ID for next checkout
 
         // Refresh sync counts
         await _syncService.refreshLocalCounts(notify: true);
@@ -155,6 +170,64 @@ class BillingProvider with ChangeNotifier {
       _setStatus(BillingStatus.error, e.toString());
       return CheckoutResult.failure(e.toString());
     }
+  }
+
+  /// Explicit VOID workflow preserving financial immutability with audit trail.
+  Future<bool> voidOrder({
+    required String orderId,
+    String? voidedBy,
+    String? reason,
+  }) async {
+    final result = await _repository.voidOrder(
+      orderId,
+      voidedBy: voidedBy,
+      reason: reason,
+    );
+    if (result.isSuccess) {
+      final idx = _orders.indexWhere((o) => o.id == orderId);
+      if (idx != -1) {
+        _orders[idx] = _orders[idx].copyWith(
+          status: OrderStatus.voided,
+          voidedAt: DateTime.now(),
+          voidedBy: voidedBy,
+          voidReason: reason,
+        );
+        notifyListeners();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /// Explicit Refund workflow preserving financial immutability with audit trail.
+  Future<bool> refundOrder({
+    required String orderId,
+    required double refundAmount,
+    required String reason,
+    required String actor,
+    required String deviceId,
+  }) async {
+    final result = await _repository.refundOrder(
+      orderId,
+      refundedBy: actor,
+      reason: reason,
+      refundAmount: refundAmount,
+      deviceId: deviceId,
+    );
+    if (result.isSuccess) {
+      final idx = _orders.indexWhere((o) => o.id == orderId);
+      if (idx != -1) {
+        _orders[idx] = _orders[idx].copyWith(
+          status: OrderStatus.refunded,
+          voidedAt: DateTime.now(),
+          voidedBy: actor,
+          voidReason: 'Refund: $reason',
+        );
+        notifyListeners();
+      }
+      return true;
+    }
+    return false;
   }
 
   // ─── Fetch Orders ──────────────────────────────────────────

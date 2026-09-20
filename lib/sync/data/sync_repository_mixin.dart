@@ -30,6 +30,35 @@ mixin SyncRepositoryMixin {
     ]);
   }
 
+  /// Refunds an order and preserves immutable financial history with audit trail.
+  Future<void> refundOrder(
+    String id, {
+    required String refundedBy,
+    required String reason,
+    required double refundAmount,
+    String? deviceId,
+  }) async {
+    final db = await dbHelper.database;
+    final now = DateTime.now().toIso8601String();
+    await db.rawUpdate('''
+      UPDATE orders 
+      SET status = 'Refunded', 
+          syncStatus = 'PENDING', 
+          updatedAt = ?, 
+          voidedAt = ?, 
+          voidedBy = ?, 
+          voidReason = ?,
+          version = version + 1
+      WHERE id = ? AND status != 'Refunded' AND status != 'VOID'
+    ''', [
+      now,
+      now,
+      refundedBy,
+      'Refund ($refundAmount): $reason',
+      id
+    ]);
+  }
+
   Future<void> deleteInventory(String id, {String? deletedBy}) async {
     final db = await dbHelper.database;
     await db.rawUpdate('''

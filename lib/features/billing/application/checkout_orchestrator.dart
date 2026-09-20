@@ -23,6 +23,7 @@ import 'package:biztonic_pos/kernel/idempotency/idempotency_service.dart';
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/services/token_service.dart';
 import 'package:biztonic_pos/models/order_model.dart';
+import 'package:biztonic_pos/sync/outbox/outbox_operation.dart';
 
 import '../domain/entities/order_entity.dart';
 import '../domain/repositories/billing_repository.dart';
@@ -126,74 +127,87 @@ class CheckoutOrchestrator {
 
     if (!isNewRequest) {
       debugPrint(
-        '🛡️ Idempotency guard: Duplicate checkout blocked '
+        '🛡️ Idempotency guard: Duplicate checkout intercepted '
         '(Key: ${params.idempotencyKey})',
       );
+      // Attempt to return existing order if already completed
+      final reservedId =
+          await IdempotencyService().getReservedEntityId(params.idempotencyKey);
+      final targetId = (reservedId != null && reservedId != 'NEW_ORDER')
+          ? reservedId
+          : (params.order.id.isNotEmpty ? params.order.id : null);
+      if (targetId != null) {
+        final existing = await _billingRepository.getOrder(targetId);
+        if (existing.isSuccess && existing.data != null) {
+          return CheckoutResult.success(existing.data!);
+        }
+      }
       return CheckoutResult.blocked('Duplicate checkout attempt blocked.');
     }
 
-    // ─── Step 3: Tax Calculation (Pure Domain) ──────────────
-    final taxResult = _calculateTax.execute(CalculateTaxParams(
-      items: params.order.items,
-      taxRate: params.taxRate,
-      discountAmount: params.order.discount,
-    ));
-
-    // ─── Step 4: Enrich Order with Metadata ─────────────────
-    final now = DateTime.now();
-    final orderId =
-        params.order.id.isNotEmpty ? params.order.id : _generateId('ORD');
-    final businessDayId =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${params.activeStoreId}';
-
-    final enrichedOrder = params.order.copyWith(
-      id: orderId,
-      storeId: params.activeStoreId,
-      subtotal: taxResult.subtotal,
-      cgst: taxResult.cgst,
-      sgst: taxResult.sgst,
-      taxRateSnapshot: params.taxRate,
-      discountSnapshot: params.order.discount,
-      deviceId: params.deviceId,
-      businessDayId: businessDayId,
-      syncStatus: 'PENDING',
-      date: now,
-    );
-
-    // Generate Inventory Movements if tracking is enabled
-    final List<InventoryMovement> movements = [];
-    if (params.trackInventory) {
-      for (var item in enrichedOrder.items) {
-        movements.add(InventoryMovement(
-          id: _generateId('INV_MOV'),
-          itemId: item.itemId, // Fix: Changed item.id to item.itemId
-          storeId: params.activeStoreId,
-          type: MovementType.sale,
-          delta: -(item.quantity),
-          orderId: orderId,
-          unitCost: item.cost,
-          reason: 'Sale',
-          deviceId: params.deviceId,
-          operationId: 'sale_${orderId}_${item.itemId}',
-          createdAt: now,
-        ));
-      }
-    }
-
-    // Generate Business Ledger Event
-    final businessEvent = BusinessEvent(
-      id: _generateId('BIZ'),
-      storeId: params.activeStoreId,
-      entityType: 'ORDER',
-      entityId: orderId,
-      eventType: 'CREATE',
-      amount: enrichedOrder.total,
-      quantity: enrichedOrder.items.fold(0, (sum, item) => sum + item.quantity),
-      createdAt: now,
-      deviceId: params.deviceId,
-    );
-
     try {
+      // ─── Step 3: Tax Calculation (Pure Domain Authority) ────
+      final taxResult = _calculateTax.execute(CalculateTaxParams(
+        items: params.order.items,
+        taxRate: params.taxRate,
+        discountAmount: params.order.discount,
+      ));
+
+      // ─── Step 4: Enrich Order with Metadata ─────────────────
+      final now = DateTime.now();
+      final orderId =
+          params.order.id.isNotEmpty ? params.order.id : _generateId('ORD');
+      final businessDayId =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${params.activeStoreId}';
+
+      final enrichedOrder = params.order.copyWith(
+        id: orderId,
+        storeId: params.activeStoreId,
+        total: taxResult.total,
+        subtotal: taxResult.subtotal,
+        cgst: taxResult.cgst,
+        sgst: taxResult.sgst,
+        taxRateSnapshot: params.taxRate,
+        discountSnapshot: taxResult.discount,
+        deviceId: params.deviceId,
+        businessDayId: businessDayId,
+        syncStatus: 'PENDING',
+        date: now,
+      );
+
+      // Generate Inventory Movements if tracking is enabled
+      final List<InventoryMovement> movements = [];
+      if (params.trackInventory) {
+        for (var item in enrichedOrder.items) {
+          movements.add(InventoryMovement(
+            id: _generateId('INV_MOV'),
+            itemId: item.itemId,
+            storeId: params.activeStoreId,
+            type: MovementType.sale,
+            delta: -(item.quantity),
+            orderId: orderId,
+            unitCost: item.cost,
+            reason: 'Sale',
+            deviceId: params.deviceId,
+            operationId: 'sale_${orderId}_${item.itemId}',
+            createdAt: now,
+          ));
+        }
+      }
+
+      // Generate Business Ledger Event
+      final businessEvent = BusinessEvent(
+        id: _generateId('BIZ'),
+        storeId: params.activeStoreId,
+        entityType: 'ORDER',
+        entityId: orderId,
+        eventType: 'CREATE',
+        amount: enrichedOrder.total,
+        quantity: enrichedOrder.items.fold(0, (sum, item) => sum + item.quantity),
+        createdAt: now,
+        deviceId: params.deviceId,
+      );
+
       // ─── Step 5: Persist to Hive Cache ──────────────────────
       await _persistToCache(enrichedOrder);
 
@@ -216,12 +230,24 @@ class CheckoutOrchestrator {
       if (!kIsWeb) {
         // NATIVE: Use atomic SQLite transaction
         final legacyOrder = OrderModel.fromEntity(enrichedOrder);
+        final outboxOp = OutboxOperation(
+          operationId: 'op_order_$orderId',
+          storeId: params.activeStoreId,
+          userId: 'system',
+          deviceId: params.deviceId,
+          collection: 'orders',
+          entityId: orderId,
+          operation: 'CREATE',
+          payload: legacyOrder.toSqlMap(),
+        );
+
         await _repository.performAtomicCheckout(
           order: legacyOrder,
           movements: movements,
           event: businessEvent,
           storeId: params.activeStoreId,
           yearMonth: '${now.year}-${now.month.toString().padLeft(2, '0')}',
+          outboxOperations: [outboxOp],
         );
       } else {
         // WEB: Standard Repository Write
@@ -246,6 +272,8 @@ class CheckoutOrchestrator {
     } catch (e) {
       debugPrint('❌ Checkout failed: $e');
       return CheckoutResult.failure('Checkout failed: $e');
+    } finally {
+      IdempotencyService().releaseInFlight(params.idempotencyKey);
     }
   }
 
