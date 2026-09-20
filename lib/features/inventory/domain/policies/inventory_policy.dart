@@ -5,7 +5,6 @@
 library;
 
 import '../entities/inventory_entity.dart';
-import '../entities/inventory_movement.dart';
 
 /// Explicit policy governing negative stock behavior per store.
 enum NegativeStockPolicy {

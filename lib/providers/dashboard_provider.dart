@@ -3767,17 +3767,16 @@ class DashboardProvider with ChangeNotifier {
       // Threshold: January 1, 2025 (1735689600000 ms)
       const int thresholdMs = 1735689600000;
 
-      if (nowMs < thresholdMs) {
-        // System clock reset to default/epoch time (e.g. 1970/2020) due to offline boot.
-        _isClockTampered = false;
-        debugPrint(
-            'ℹ️ DashboardProvider: Clock reset detected (before 2025). Bypassing tamper check.');
-      } else if (lastKnownMs != null && nowMs < lastKnownMs) {
-        // Clock is in realistic range but went backward relative to last known time.
-        // This indicates a manual rollback to bypass subscription.
+      if (lastKnownMs != null && nowMs < lastKnownMs) {
+        // Clock went backward relative to last known time. Rollback detected.
         _isClockTampered = true;
         debugPrint(
             '⚠️ DashboardProvider: Clock Tampering Detected! now=$nowMs, lastKnown=$lastKnownMs');
+      } else if (lastKnownMs != null && nowMs < thresholdMs) {
+        // Clock set prior to minimum operational epoch (before 2025).
+        _isClockTampered = true;
+        debugPrint(
+            '⚠️ DashboardProvider: Clock set before 2025! now=$nowMs, lastKnown=$lastKnownMs');
       } else {
         _isClockTampered = false;
         box.put('last_known_time', nowMs);
@@ -3797,13 +3796,14 @@ class DashboardProvider with ChangeNotifier {
 
       const int thresholdMs = 1735689600000;
 
-      if (nowMs < thresholdMs) {
-        _isClockTampered = false;
-      } else if (lastKnownMs != null && nowMs < lastKnownMs) {
+      if (lastKnownMs != null && nowMs < lastKnownMs) {
         _isClockTampered = true;
         notifyListeners();
         debugPrint(
             '⚠️ DashboardProvider: Clock Tampering Detected in background! now=$nowMs, lastKnown=$lastKnownMs');
+      } else if (lastKnownMs != null && nowMs < thresholdMs) {
+        _isClockTampered = true;
+        notifyListeners();
       } else {
         box.put('last_known_time', nowMs);
       }
@@ -3821,14 +3821,14 @@ class DashboardProvider with ChangeNotifier {
 
       const int thresholdMs = 1735689600000;
 
-      if (nowMs < thresholdMs || lastKnownMs == null || nowMs >= lastKnownMs) {
+      if ((lastKnownMs == null || nowMs >= lastKnownMs) && nowMs >= thresholdMs) {
         _isClockTampered = false;
-        if (nowMs >= thresholdMs) {
-          box.put('last_known_time', nowMs);
-        }
+        box.put('last_known_time', nowMs);
         notifyListeners();
         debugPrint('✅ DashboardProvider: Clock restored successfully!');
       } else {
+        _isClockTampered = true;
+        notifyListeners();
         debugPrint('⚠️ DashboardProvider: Clock is still tampered.');
       }
     } catch (e) {

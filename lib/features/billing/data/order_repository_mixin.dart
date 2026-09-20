@@ -174,18 +174,15 @@ mixin OrderRepositoryMixin {
   }
 
   Future<List<OrderModel>> getOrders(String? storeId) async {
+    if (storeId == null || storeId.isEmpty) return [];
     // RETRY LOGIC FOR LOCKS
     int retries = 3;
     while (retries > 0) {
       try {
         final db = await dbHelper.database;
         // 1. Fetch ALL Orders (Include VOID for audit)
-        String sql = 'SELECT * FROM orders WHERE 1=1';
-        List<dynamic> args = [];
-        if (storeId != null) {
-          sql += ' AND storeId = ?';
-          args.add(storeId);
-        }
+        String sql = 'SELECT * FROM orders WHERE storeId = ?';
+        List<dynamic> args = [storeId];
         sql += ' ORDER BY date DESC';
 
         final orderRows = await db.rawQuery(sql, args);
@@ -193,13 +190,9 @@ mixin OrderRepositoryMixin {
         if (orderRows.isEmpty) return [];
 
         // 2. Fetch ALL Items for these orders (Optimization: Single Query)
-        String itemSql = 'SELECT * FROM order_items';
-        List<dynamic> itemArgs = [];
-        if (storeId != null) {
-          itemSql +=
-              ' WHERE orderId IN (SELECT id FROM orders WHERE storeId = ?)';
-          itemArgs.add(storeId);
-        }
+        String itemSql =
+            'SELECT * FROM order_items WHERE orderId IN (SELECT id FROM orders WHERE storeId = ?)';
+        List<dynamic> itemArgs = [storeId];
 
         final itemRows = await db.rawQuery(itemSql, itemArgs);
 
@@ -296,16 +289,12 @@ mixin OrderRepositoryMixin {
       DateTime? end,
       String? status,
       String? paymentMethod}) async {
+    if (storeId == null || storeId.isEmpty) return [];
     try {
       final db = await dbHelper.database;
       String sql =
-          "SELECT * FROM orders WHERE isDeleted = 0 AND (deletedAt IS NULL OR status = 'Cancelled')";
-      List<dynamic> args = [];
-
-      if (storeId != null && storeId.isNotEmpty) {
-        sql += ' AND storeId = ?';
-        args.add(storeId);
-      }
+          "SELECT * FROM orders WHERE isDeleted = 0 AND storeId = ? AND (deletedAt IS NULL OR status = 'Cancelled')";
+      List<dynamic> args = [storeId];
 
       if (status != null && status.isNotEmpty && status != 'All' && status != 'All Statuses') {
         sql += ' AND status = ?';
@@ -378,18 +367,12 @@ mixin OrderRepositoryMixin {
   }
 
   Future<List<OrderModel>> getUnsyncedOrders(String? storeId) async {
+    if (storeId == null || storeId.isEmpty) return [];
     try {
       final db = await dbHelper.database;
       String sql =
-          "SELECT * FROM orders WHERE synced = 0 AND (deletedAt IS NULL OR status = 'Cancelled')";
-      List<dynamic> args = [];
-      if (storeId != null) {
-        sql += ' AND storeId = ?';
-        args.add(storeId);
-      }
-      sql += ' ORDER BY date DESC';
-
-      final rows = await db.rawQuery(sql, args);
+          "SELECT * FROM orders WHERE synced = 0 AND storeId = ? AND (deletedAt IS NULL OR status = 'Cancelled') ORDER BY date DESC";
+      final rows = await db.rawQuery(sql, [storeId]);
       return rows.map((r) => OrderModel.fromSql(r, [])).toList();
     } catch (e) {
       return [];

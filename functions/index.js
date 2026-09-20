@@ -3,6 +3,25 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
+async function isCallerSuperAdmin(auth, db) {
+  if (!auth) return false;
+  // 1. Custom token claims
+  if (auth.token && (auth.token.role === "super_admin" || auth.token.isSuperAdmin === true)) {
+    return true;
+  }
+  // 2. Server-controlled platform_admins collection
+  const adminDoc = await db.collection("platform_admins").doc(auth.uid).get();
+  if (adminDoc.exists && adminDoc.data().status === "ACTIVE") {
+    return true;
+  }
+  // 3. Backward compatible check against users doc
+  const callerDoc = await db.collection("users").doc(auth.uid).get();
+  if (callerDoc.exists && (callerDoc.data().role === "Super Admin" || callerDoc.data().role === "super_admin")) {
+    return true;
+  }
+  return false;
+}
+
 /**
  * Deletes a user from both Firebase Auth and Firestore.
  * This can only be called by a Super Admin.
@@ -20,9 +39,10 @@ exports.deleteUserAuth = onCall(async (request) => {
 
   // 2. Security Check: Must be Super Admin
   const callerUid = auth.uid;
-  const callerDoc = await admin.firestore().collection("users").doc(callerUid).get();
+  const db = admin.firestore();
+  const callerIsAdmin = await isCallerSuperAdmin(auth, db);
   
-  if (!callerDoc.exists || callerDoc.data().role !== "Super Admin") {
+  if (!callerIsAdmin) {
     throw new HttpsError(
       "permission-denied",
       "Only Super Admins can delete other users."
@@ -287,15 +307,9 @@ exports.migrateMemberships = onCall(async (request) => {
   const db = admin.firestore();
 
   // Validate caller is Super Admin
-  const callerDoc = await db.collection("users").doc(auth.uid).get();
-  const callerIsAdmin = callerDoc.exists && 
-    (callerDoc.data().role === "Super Admin" || callerDoc.data().role === "super_admin");
-  const callerEmailMatch = auth.token && auth.token.email && (
-    auth.token.email.toLowerCase() === "pthorat600@gmail.com" ||
-    auth.token.email.toLowerCase() === "biztonicautomation@gmail.com"
-  );
+  const callerIsAdmin = await isCallerSuperAdmin(auth, db);
 
-  if (!callerIsAdmin && !callerEmailMatch) {
+  if (!callerIsAdmin) {
     throw new HttpsError("permission-denied", "Super Admin access required.");
   }
 

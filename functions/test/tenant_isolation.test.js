@@ -67,6 +67,13 @@ beforeEach(async () => {
       role: "Staff",
       status: "ACTIVE",
     });
+    // Manager in Store A
+    await db.collection("stores").doc("storeA").collection("members").doc("managerA").set({
+      uid: "managerA",
+      storeId: "storeA",
+      role: "Manager",
+      status: "ACTIVE",
+    });
     // Removed member in Store A
     await db.collection("stores").doc("storeA").collection("members").doc("removedUser").set({
       uid: "removedUser",
@@ -96,6 +103,27 @@ beforeEach(async () => {
     await db.collection("orders").doc("orderB1").set({
       storeId: "storeB",
       total: 200,
+    });
+    // Finalized Order in Store A
+    await db.collection("orders").doc("finalizedOrderA").set({
+      storeId: "storeA",
+      total: 100,
+      subtotal: 90,
+      status: "Completed",
+      items: [{ id: "item1", qty: 1 }],
+    });
+
+    // Inventory Movements
+    await db.collection("inventory_movements").doc("mvt1").set({
+      storeId: "storeA",
+      itemId: "item1",
+      delta: 1,
+    });
+
+    // Activity Logs
+    await db.collection("activity_logs").doc("log1").set({
+      storeId: "storeA",
+      action: "LOGIN",
     });
 
     // Users
@@ -211,3 +239,79 @@ test("14. Malicious payload: Normal user attempts to modify global settings/admi
   const configDoc = userAContext.firestore().collection("settings").doc("admin_config");
   await assertFails(configDoc.update({ maintenanceMode: true }));
 });
+
+test("15. Unauthenticated user reads /users/{uid} -> DENY", async () => {
+  const unauthContext = testEnv.unauthenticatedContext();
+  const userRef = unauthContext.firestore().collection("users").doc("userA");
+  await assertFails(userRef.get());
+});
+
+test("16. Non-super-admin user writes to central_catalog -> DENY; Super Admin writes -> ALLOW", async () => {
+  const userAContext = testEnv.authenticatedContext("userA");
+  const catalogRef = userAContext.firestore().collection("central_catalog").doc("item1");
+  await assertFails(catalogRef.set({ name: "Hacked Item", price: 10 }));
+
+  const adminContext = testEnv.authenticatedContext("superAdminUid", {
+    role: "super_admin",
+    isSuperAdmin: true,
+  });
+  const adminCatalogRef = adminContext.firestore().collection("central_catalog").doc("item1");
+  await assertSucceeds(adminCatalogRef.set({ name: "Official Item", price: 10 }));
+});
+
+test("17. Public leads: Valid lead payload -> ALLOW; Malformed lead payload -> DENY", async () => {
+  const unauthContext = testEnv.unauthenticatedContext();
+  const leadsCol = unauthContext.firestore().collection("leads");
+
+  // Valid lead
+  await assertSucceeds(leadsCol.doc("lead1").set({
+    name: "John Doe",
+    phone: "1234567890",
+    email: "john@example.com",
+    storeName: "John's Bakery",
+    source: "landing_page",
+  }));
+
+  // Malformed lead: missing required 'phone'
+  await assertFails(leadsCol.doc("lead2").set({
+    name: "John Doe",
+    email: "john@example.com",
+  }));
+
+  // Malformed lead: unauthorized extra keys
+  await assertFails(leadsCol.doc("lead3").set({
+    name: "John Doe",
+    phone: "1234567890",
+    isAdmin: true,
+  }));
+});
+
+test("18. Store member updates finalized order total or items -> DENY", async () => {
+  const userAContext = testEnv.authenticatedContext("userA");
+  const orderRef = userAContext.firestore().collection("orders").doc("finalizedOrderA");
+  // Attempting to change total of completed order
+  await assertFails(orderRef.update({ total: 10 }));
+  // Attempting to change items of completed order
+  await assertFails(orderRef.update({ items: [] }));
+});
+
+test("19. Direct update to inventory_movements -> DENY (Append-only ledger)", async () => {
+  const userAContext = testEnv.authenticatedContext("userA");
+  const mvtRef = userAContext.firestore().collection("inventory_movements").doc("mvt1");
+  await assertFails(mvtRef.update({ delta: 999 }));
+});
+
+test("20. Direct update or delete to activity_logs -> DENY (Append-only audit trail)", async () => {
+  const userAContext = testEnv.authenticatedContext("userA");
+  const logRef = userAContext.firestore().collection("activity_logs").doc("log1");
+  await assertFails(logRef.update({ action: "TAMPERED" }));
+  await assertFails(logRef.delete());
+});
+
+test("21. Manager attempts to promote member to Owner -> DENY", async () => {
+  const managerContext = testEnv.authenticatedContext("managerA");
+  const memberRef = managerContext.firestore().collection("stores").doc("storeA").collection("members").doc("userA");
+  await assertFails(memberRef.update({ role: "Owner" }));
+  await assertFails(memberRef.update({ role: "Store Owner" }));
+});
+

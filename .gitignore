@@ -90,6 +90,8 @@ key.properties
 google-services.json
 **/google-services.json
 firebase_credentials.json
+auth_users.json
+mcp_config_snippet.json
 
 # APKs
 *.apk

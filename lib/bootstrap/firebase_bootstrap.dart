@@ -1,9 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
 import '../../firebase_options.dart';
 import '../../core/design/tokens/app_colors.dart';
@@ -17,8 +18,28 @@ class FirebaseBootstrap {
     );
     debugPrint('✅ Firebase Initialized');
 
+    await _setupAppCheck();
     _setupCrashlytics();
     _setupFirestore();
+  }
+
+  static Future<void> _setupAppCheck() async {
+    try {
+      // ignore: deprecated_member_use
+      await FirebaseAppCheck.instance.activate(
+        // ignore: deprecated_member_use
+        webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
+        // ignore: deprecated_member_use
+        androidProvider:
+            kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
+        // ignore: deprecated_member_use
+        appleProvider:
+            kReleaseMode ? AppleProvider.deviceCheck : AppleProvider.debug,
+      );
+      debugPrint('🛡️ Firebase App Check Activated');
+    } catch (e) {
+      debugPrint('⚠️ Firebase App Check bypassed or unsupported: $e');
+    }
   }
 
   static void _setupCrashlytics() {

@@ -30,6 +30,7 @@ class OrderProvider with ChangeNotifier {
   // State
   final List<OrderModel> _orders = [];
   bool _isLoading = false;
+  bool _isPlacingOrder = false;
   bool _hasMore = true;
   bool _isUnrestricted = false; // NEW
   DateTime? _lastOrderDate;
@@ -39,6 +40,7 @@ class OrderProvider with ChangeNotifier {
   // Getters
   List<OrderModel> get orders => _orders;
   bool get isLoading => _isLoading;
+  bool get isPlacingOrder => _isPlacingOrder;
   bool get hasMore => _hasMore;
   bool get isUnrestricted => _isUnrestricted; // NEW
   SyncService get syncService => _syncService;
@@ -249,42 +251,55 @@ class OrderProvider with ChangeNotifier {
 
   // --- ACTIONS ---
 
-  Future<void> placeOrder(OrderModel order, Store? activeStore) async {
+  Future<void> placeOrder(OrderModel order, Store? activeStore,
+      {String? idempotencyKey}) async {
     if (activeStore == null) throw Exception("No active store selected");
-
-    // 1. Enforce Subscription Limits (Authoritative check via EntitlementService)
-    if (!_isUnrestricted) {
-      if (!EntitlementService.instance
-          .canPerformAction('create_order', storeId: activeStore.id)) {
-        final reason = EntitlementService.instance
-            .getBlockReason('create_order', storeId: activeStore.id);
-        throw PlanLimitExceededException(reason);
-      }
-      await _syncService.checkOrderLimit(activeStore.id);
+    if (_isPlacingOrder) {
+      throw Exception("Order placement already in progress");
     }
+    _isPlacingOrder = true;
+    notifyListeners();
 
-    // --- DELEGATE TO AUTHORITATIVE CHECKOUT ORCHESTRATOR ---
-    final orchestrator = CheckoutOrchestrator(
-      billingRepository: BillingRepositoryImpl(repository: _repository),
-    );
+    try {
+      // 1. Enforce Subscription Limits (Authoritative check via EntitlementService)
+      if (!_isUnrestricted) {
+        if (!EntitlementService.instance
+            .canPerformAction('create_order', storeId: activeStore.id)) {
+          final reason = EntitlementService.instance
+              .getBlockReason('create_order', storeId: activeStore.id);
+          throw PlanLimitExceededException(reason);
+        }
+        await _syncService.checkOrderLimit(activeStore.id);
+      }
 
-    final idempotencyKey = const Uuid().v7();
+      // --- DELEGATE TO AUTHORITATIVE CHECKOUT ORCHESTRATOR ---
+      final orchestrator = CheckoutOrchestrator(
+        billingRepository: BillingRepositoryImpl(repository: _repository),
+      );
 
-    final result = await orchestrator.execute(CheckoutParams(
-      order: order.toEntity(),
-      activeStoreId: activeStore.id,
-      deviceId: _syncService.deviceId ?? 'unknown',
-      idempotencyKey: idempotencyKey,
-      trackInventory: activeStore.trackInventory ?? false,
-    ));
+      final key = idempotencyKey ??
+          (order.id.isNotEmpty ? 'order_${order.id}' : const Uuid().v7());
 
-    if (result.isSuccess && result.order != null) {
-      final placedModel = OrderModel.fromEntity(result.order!);
-      _orders.insert(0, placedModel);
+      final result = await orchestrator.execute(CheckoutParams(
+        order: order.toEntity(),
+        activeStoreId: activeStore.id,
+        deviceId: _syncService.deviceId ?? 'unknown',
+        idempotencyKey: key,
+        trackInventory: activeStore.trackInventory,
+      ));
+
+      if (result.isSuccess && result.order != null) {
+        final placedModel = OrderModel.fromEntity(result.order!);
+        _orders.insert(0, placedModel);
+        notifyListeners();
+        await _syncService.refreshLocalCounts(notify: true);
+      } else {
+        throw Exception(
+            result.error ?? "Failed to process order checkout locally");
+      }
+    } finally {
+      _isPlacingOrder = false;
       notifyListeners();
-      await _syncService.refreshLocalCounts(notify: true);
-    } else {
-      throw Exception(result.error ?? "Failed to process order checkout locally");
     }
   }
 

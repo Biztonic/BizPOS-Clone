@@ -10,7 +10,6 @@ import 'package:biztonic_pos/services/database_helper.dart';
 import 'package:biztonic_pos/services/repository.dart';
 import 'package:biztonic_pos/models/order_model.dart';
 import 'package:biztonic_pos/models/inventory_item.dart';
-import 'package:biztonic_pos/models/customer.dart';
 import 'package:biztonic_pos/models/inventory_movement.dart';
 import 'package:biztonic_pos/models/business_ledger.dart';
 import 'package:biztonic_pos/sync/outbox/outbox_operation.dart';

@@ -26,9 +26,9 @@ mixin ReportingRepositoryMixin {
     String sql =
         "SELECT COUNT(*) FROM orders WHERE date >= ? AND (deletedAt IS NULL AND status NOT IN ('Cancelled', 'VOID', 'Refunded'))";
     List<dynamic> args = [since.toIso8601String()];
-    if (storeId != null) {
+    if (storeId != null && storeId.isNotEmpty) {
       sql += ' AND storeId = ?';
-      args.insert(0, storeId); // Add storeId at the beginning of args
+      args.add(storeId);
     }
     return Sqflite.firstIntValue(await db.rawQuery(sql, args)) ?? 0;
   }

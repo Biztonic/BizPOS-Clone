@@ -9,17 +9,11 @@ service cloud.firestore {
         (!('firebase' in request.auth.token) || request.auth.token.firebase.sign_in_provider != 'anonymous');
     }
 
+    // Server-Controlled Platform Admin Authorization
     function isSuperAdmin() {
       return request.auth != null && (
         ('role' in request.auth.token && request.auth.token.role == 'super_admin') ||
         ('isSuperAdmin' in request.auth.token && request.auth.token.isSuperAdmin == true) ||
-        (
-          'email' in request.auth.token && 
-          request.auth.token.email_verified == true && (
-            request.auth.token.email.lower() == 'pthorat600@gmail.com'.lower() ||
-            request.auth.token.email.lower() == 'biztonicautomation@gmail.com'.lower()
-          )
-        ) ||
         (
           exists(/databases/$(database)/documents/platform_admins/$(request.auth.uid)) &&
           get(/databases/$(database)/documents/platform_admins/$(request.auth.uid)).data.status == 'ACTIVE'
@@ -79,9 +73,8 @@ service cloud.firestore {
 
     // 1. Users Collection (USER_PRIVATE)
     match /users/{uid} {
-      // Allow unauthenticated read ONLY if the document is explicitly marked for initial password setup
-      allow get: if (isAuthenticated() && (request.auth.uid == uid || isSuperAdmin())) || 
-                    (resource.data.needsInitialPassword == true || resource.data.needsInitialPassword == 'true');
+      // Must be authenticated and either own profile or Super Admin
+      allow get: if isAuthenticated() && (request.auth.uid == uid || isSuperAdmin());
       allow list: if isSuperAdmin();
       
       allow create: if isAuthenticated() && (
@@ -101,7 +94,8 @@ service cloud.firestore {
         (!('storeId' in request.resource.data) || ('storeId' in resource.data && request.resource.data.storeId == resource.data.storeId)) &&
         (!('storeIds' in request.resource.data) || ('storeIds' in resource.data && request.resource.data.storeIds == resource.data.storeIds)) &&
         (!('accessibleStoreIds' in request.resource.data) || ('accessibleStoreIds' in resource.data && request.resource.data.accessibleStoreIds == resource.data.accessibleStoreIds)) &&
-        (!('franchiseId' in request.resource.data) || ('franchiseId' in resource.data && request.resource.data.franchiseId == resource.data.franchiseId))
+        (!('franchiseId' in request.resource.data) || ('franchiseId' in resource.data && request.resource.data.franchiseId == resource.data.franchiseId)) &&
+        (!('isSuperAdmin' in request.resource.data) || ('isSuperAdmin' in resource.data && request.resource.data.isSuperAdmin == resource.data.isSuperAdmin))
       );
 
       allow delete: if isSuperAdmin();
@@ -122,6 +116,8 @@ service cloud.firestore {
                     ));
       allow update: if isSuperAdmin() || (
         isStoreOwnerOrManager(storeId) &&
+        // Store ID must be immutable
+        (!('id' in request.resource.data) || request.resource.data.id == storeId) &&
         // Anti-Bypass: Non-super-admins CANNOT alter subscription, plan, or entitlement fields
         (!('subscriptionPlan' in request.resource.data) || request.resource.data.subscriptionPlan == resource.data.subscriptionPlan) &&
         (!('subscriptionStatus' in request.resource.data) || request.resource.data.subscriptionStatus == resource.data.subscriptionStatus) &&
@@ -146,10 +142,20 @@ service cloud.firestore {
               request.resource.data.role != 'Super Admin' &&
               request.resource.data.role != 'super_admin'
             ) ||
-            // Active Owner/Manager adding team member (cannot grant Super Admin or self-add)
+            // Active Owner adding team member
+            (
+              isStoreOwner(storeId) &&
+              request.auth.uid != memberUid &&
+              request.resource.data.role != 'Super Admin' &&
+              request.resource.data.role != 'super_admin'
+            ) ||
+            // Active Manager adding non-owner team member (cannot assign Owner or Super Admin)
             (
               isStoreOwnerOrManager(storeId) &&
+              !isStoreOwner(storeId) &&
               request.auth.uid != memberUid &&
+              request.resource.data.role != 'Owner' &&
+              request.resource.data.role != 'Store Owner' &&
               request.resource.data.role != 'Super Admin' &&
               request.resource.data.role != 'super_admin'
             )
@@ -157,10 +163,25 @@ service cloud.firestore {
         );
 
         allow update: if isSuperAdmin() || (
-          isStoreOwnerOrManager(storeId) &&
-          request.auth.uid != memberUid && // Cannot self-promote or un-suspend self
-          request.resource.data.role != 'Super Admin' &&
-          request.resource.data.role != 'super_admin'
+          // Store Owner updating member (cannot self-modify or promote to Super Admin)
+          (
+            isStoreOwner(storeId) &&
+            request.auth.uid != memberUid &&
+            request.resource.data.role != 'Super Admin' &&
+            request.resource.data.role != 'super_admin'
+          ) ||
+          // Manager updating member (cannot self-modify, cannot touch Owner role, cannot promote to Owner or Super Admin)
+          (
+            isStoreOwnerOrManager(storeId) &&
+            !isStoreOwner(storeId) &&
+            request.auth.uid != memberUid &&
+            resource.data.role != 'Owner' &&
+            resource.data.role != 'Store Owner' &&
+            request.resource.data.role != 'Owner' &&
+            request.resource.data.role != 'Store Owner' &&
+            request.resource.data.role != 'Super Admin' &&
+            request.resource.data.role != 'super_admin'
+          )
         );
 
         allow delete: if isSuperAdmin() || (
@@ -169,9 +190,47 @@ service cloud.firestore {
         );
       }
 
-      // Sub-collections in stores/{storeId}
-      match /{allSubcollections=**} {
-        allow read, write: if isSuperAdmin() || isStoreMember(storeId);
+      // Explicit Subcollections replacing broad wildcard
+      match /counters/{id} {
+        allow read: if isSuperAdmin() || isStoreMember(storeId);
+        allow write: if isSuperAdmin() || isStoreOwnerOrManager(storeId);
+      }
+
+      match /tables/{id} {
+        allow read: if isSuperAdmin() || isStoreMember(storeId);
+        allow write: if isSuperAdmin() || isStoreOwnerOrManager(storeId);
+      }
+
+      match /floors/{id} {
+        allow read: if isSuperAdmin() || isStoreMember(storeId);
+        allow write: if isSuperAdmin() || isStoreOwnerOrManager(storeId);
+      }
+
+      match /employees/{id} {
+        allow read: if isSuperAdmin() || isStoreMember(storeId);
+        allow write: if isSuperAdmin() || isStoreOwnerOrManager(storeId);
+      }
+
+      match /settings/{id} {
+        allow read: if isSuperAdmin() || isStoreMember(storeId);
+        allow write: if isSuperAdmin() || isStoreOwnerOrManager(storeId);
+      }
+
+      match /devices/{id} {
+        allow read: if isSuperAdmin() || isStoreMember(storeId);
+        allow write: if isSuperAdmin() || isStoreOwnerOrManager(storeId);
+      }
+
+      match /shifts/{id} {
+        allow read: if isSuperAdmin() || isStoreMember(storeId);
+        allow create, update: if isSuperAdmin() || isStoreMember(storeId);
+        allow delete: if isSuperAdmin() || isStoreOwner(storeId);
+      }
+
+      match /attendance/{id} {
+        allow read: if isSuperAdmin() || isStoreMember(storeId);
+        allow create, update: if isSuperAdmin() || isStoreMember(storeId);
+        allow delete: if isSuperAdmin() || isStoreOwner(storeId);
       }
     }
 
@@ -241,16 +300,27 @@ service cloud.firestore {
     // 8. Central Catalog (PLATFORM_ADMIN)
     match /central_catalog/{itemId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isSuperAdmin();
+      allow create, update, delete: if isSuperAdmin();
     }
 
     // 9. Root Collections with storeId filtering (STORE_PRIVATE)
     match /orders/{id} {
       allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
       allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
-      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
-                                           request.resource.data.storeId == resource.data.storeId);
+      allow update: if isSuperAdmin() || (
+        resource.data.storeId != null && 
+        isStoreMember(resource.data.storeId) && 
+        request.resource.data.storeId == resource.data.storeId &&
+        // Financial integrity: finalized orders cannot have financial totals or items tampered with
+        (
+          !(resource.data.status in ['Completed', 'PAID', 'VOID', 'Refunded']) ||
+          (
+            request.resource.data.total == resource.data.total &&
+            (!('subtotal' in request.resource.data) || request.resource.data.subtotal == resource.data.subtotal) &&
+            (!('items' in request.resource.data) || request.resource.data.items == resource.data.items)
+          )
+        )
+      );
       allow delete: if isSuperAdmin();
     }
 
@@ -273,25 +343,24 @@ service cloud.firestore {
     match /inventory_movements/{id} {
       allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
       allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
-      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
-                                           request.resource.data.storeId == resource.data.storeId);
+      // Append-only ledger
+      allow update: if false;
       allow delete: if isSuperAdmin();
     }
 
     match /business_events/{id} {
       allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
       allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
-      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
-                                           request.resource.data.storeId == resource.data.storeId);
+      // Append-only ledger
+      allow update: if false;
       allow delete: if isSuperAdmin();
     }
 
     match /activity_logs/{id} {
       allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
       allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
-      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
-                                           request.resource.data.storeId == resource.data.storeId);
-      allow delete: if isSuperAdmin();
+      // Append-only audit log
+      allow update, delete: if false;
     }
 
     match /counters/{id} {
@@ -348,9 +417,18 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
-    // 11. Leads Collection (PUBLIC)
+    // 11. Leads Collection (PUBLIC WITH STRICT VALIDATION)
     match /leads/{leadId} {
-      allow create: if true;
+      allow create: if (
+        request.resource.data.keys().hasOnly(['name', 'phone', 'email', 'createdAt', 'storeName', 'source', 'notes']) &&
+        'name' in request.resource.data && request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&
+        'phone' in request.resource.data && request.resource.data.phone is string &&
+        request.resource.data.phone.size() >= 7 && request.resource.data.phone.size() <= 25 &&
+        (!('email' in request.resource.data) || (request.resource.data.email is string && request.resource.data.email.size() <= 150)) &&
+        (!('storeName' in request.resource.data) || (request.resource.data.storeName is string && request.resource.data.storeName.size() <= 150)) &&
+        (!('source' in request.resource.data) || (request.resource.data.source is string && request.resource.data.source.size() <= 50))
+      );
       allow read, update, delete: if isSuperAdmin();
     }
 

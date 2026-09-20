@@ -61,6 +61,20 @@ jobs:
       - name: Run Widget Tests
         run: flutter test test/widget/ test/widget_test.dart
 
+      - name: Scan for Tracked Secrets and Sensitive Files
+        run: |
+          echo "Scanning for accidental secret commits..."
+          FORBIDDEN="auth_users.json mcp_config_snippet.json \.env$ firebase_credentials\.json"
+          if git ls-files | grep -E "$FORBIDDEN"; then
+            echo "❌ ERROR: Found tracked secret files in repository!"
+            exit 1
+          fi
+          if git grep -n -E "(ghp_[a-zA-Z0-9]{36}|sk-user-[a-zA-Z0-9]+|-----BEGIN PRIVATE KEY-----)" -- ':!*.lock' ':!.github/workflows/*' ':!test/*'; then
+            echo "❌ ERROR: Found potential secrets or tokens committed to source code!"
+            exit 1
+          fi
+          echo "✅ Secret scan passed cleanly."
+
       - name: Dependency Security Audit
         run: npm --prefix functions audit --audit-level=high
 
@@ -139,6 +153,20 @@ jobs:
 
       - name: Run Firebase Emulator Security Tests (Layer 4)
         run: firebase emulators:exec --only firestore "npm --prefix functions test"
+
+      - name: Scan for Tracked Secrets and Sensitive Files
+        run: |
+          echo "Scanning for accidental secret commits..."
+          FORBIDDEN="auth_users.json mcp_config_snippet.json \.env$ firebase_credentials\.json"
+          if git ls-files | grep -E "$FORBIDDEN"; then
+            echo "❌ ERROR: Found tracked secret files in repository!"
+            exit 1
+          fi
+          if git grep -n -E "(ghp_[a-zA-Z0-9]{36}|sk-user-[a-zA-Z0-9]+|-----BEGIN PRIVATE KEY-----)" -- ':!*.lock' ':!.github/workflows/*' ':!test/*'; then
+            echo "❌ ERROR: Found potential secrets or tokens committed to source code!"
+            exit 1
+          fi
+          echo "✅ Secret scan passed cleanly."
 
       - name: Dependency Security Audit
         run: npm --prefix functions audit --audit-level=high

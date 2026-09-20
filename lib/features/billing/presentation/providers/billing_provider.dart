@@ -112,6 +112,9 @@ class BillingProvider with ChangeNotifier {
     bool trackInventory = false,
     bool checkLimits = true,
   }) async {
+    if (_status == BillingStatus.loading) {
+      return CheckoutResult.failure("Checkout operation already in progress");
+    }
     _setStatus(BillingStatus.loading);
 
     try {
