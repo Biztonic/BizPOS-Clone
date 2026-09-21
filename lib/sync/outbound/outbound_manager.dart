@@ -176,7 +176,8 @@ class OutboundManager {
             result: DiagnosticResult.failure,
             durationMs: 0,
             errorCategory: DiagnosticErrorCategory.permissionError,
-            message: 'Cross-store tenant violation: operation ${op.operationId} store ${op.storeId} != active $storeId',
+            message:
+                'Cross-store tenant violation: operation ${op.operationId} store ${op.storeId} != active $storeId',
           ));
         } catch (_) {}
         continue;

@@ -17,7 +17,8 @@ mixin InventoryRepositoryMixin {
   Future<void> insertInventory(InventoryItem item) async {
     final db = await dbHelper.database;
     try {
-      final prevRows = await db.query('inventory', columns: ['price', 'name'], where: 'id = ?', whereArgs: [item.id]);
+      final prevRows = await db.query('inventory',
+          columns: ['price', 'name'], where: 'id = ?', whereArgs: [item.id]);
       if (prevRows.isNotEmpty) {
         final oldPrice = (prevRows.first['price'] as num?)?.toDouble();
         if (oldPrice != null && oldPrice != item.price) {

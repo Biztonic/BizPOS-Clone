@@ -12,7 +12,8 @@ mixin ReportingRepositoryMixin {
     final db = await dbHelper.database;
     const sql =
         "SELECT COUNT(*) FROM orders WHERE storeId = ? AND (deletedAt IS NULL AND status NOT IN ('Cancelled', 'VOID', 'Refunded'))";
-    final int count = Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
+    final int count =
+        Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
     return count;
   }
 
@@ -29,49 +30,56 @@ mixin ReportingRepositoryMixin {
   Future<int> getInventoryCount(String? storeId) async {
     if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    const sql = 'SELECT COUNT(*) FROM inventory WHERE storeId = ? AND deletedAt IS NULL';
+    const sql =
+        'SELECT COUNT(*) FROM inventory WHERE storeId = ? AND deletedAt IS NULL';
     return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getCustomerCount(String? storeId) async {
     if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    const sql = 'SELECT COUNT(*) FROM customers WHERE storeId = ? AND deletedAt IS NULL';
+    const sql =
+        'SELECT COUNT(*) FROM customers WHERE storeId = ? AND deletedAt IS NULL';
     return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getEmployeeCount(String? storeId) async {
     if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    const sql = 'SELECT COUNT(*) FROM employees WHERE storeId = ? AND deletedAt IS NULL';
+    const sql =
+        'SELECT COUNT(*) FROM employees WHERE storeId = ? AND deletedAt IS NULL';
     return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getFloorCount(String? storeId) async {
     if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    const sql = 'SELECT COUNT(*) FROM floors WHERE storeId = ? AND deletedAt IS NULL';
+    const sql =
+        'SELECT COUNT(*) FROM floors WHERE storeId = ? AND deletedAt IS NULL';
     return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getTableCount(String? storeId) async {
     if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    const sql = 'SELECT COUNT(*) FROM tables WHERE storeId = ? AND deletedAt IS NULL';
+    const sql =
+        'SELECT COUNT(*) FROM tables WHERE storeId = ? AND deletedAt IS NULL';
     return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getSupplierCount(String? storeId) async {
     if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    const sql = 'SELECT COUNT(*) FROM suppliers WHERE storeId = ? AND deletedAt IS NULL';
+    const sql =
+        'SELECT COUNT(*) FROM suppliers WHERE storeId = ? AND deletedAt IS NULL';
     return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
   Future<int> getNoteCount(String? storeId) async {
     if (storeId == null || storeId.isEmpty) return 0;
     final db = await dbHelper.database;
-    const sql = 'SELECT COUNT(*) FROM notes WHERE storeId = ? AND deletedAt IS NULL';
+    const sql =
+        'SELECT COUNT(*) FROM notes WHERE storeId = ? AND deletedAt IS NULL';
     return Sqflite.firstIntValue(await db.rawQuery(sql, [storeId])) ?? 0;
   }
 
@@ -86,7 +94,8 @@ mixin ReportingRepositoryMixin {
   Future<List<BusinessEvent>> getUnsyncedEvents(String? storeId) async {
     if (storeId == null || storeId.isEmpty) return [];
     final db = await dbHelper.database;
-    const sql = 'SELECT * FROM business_events WHERE storeId = ? AND synced = 0';
+    const sql =
+        'SELECT * FROM business_events WHERE storeId = ? AND synced = 0';
     final rows = await db.rawQuery(sql, [storeId]);
     return rows.map((r) => BusinessEvent.fromMap(r)).toList();
   }

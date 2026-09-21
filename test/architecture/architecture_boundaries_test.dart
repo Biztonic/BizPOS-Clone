@@ -17,9 +17,9 @@ void main() {
     // ─── 1. Domain entities must not import infrastructure ───
 
     test('OrderEntity must not import infrastructure packages', () {
-      final file = File('lib/features/billing/domain/entities/order_entity.dart');
-      expect(file.existsSync(), isTrue,
-          reason: 'OrderEntity file must exist');
+      final file =
+          File('lib/features/billing/domain/entities/order_entity.dart');
+      expect(file.existsSync(), isTrue, reason: 'OrderEntity file must exist');
       final content = file.readAsStringSync();
 
       for (final forbidden in _forbiddenDomainImports) {
@@ -29,7 +29,8 @@ void main() {
     });
 
     test('OrderPolicy must not import infrastructure packages', () {
-      final file = File('lib/features/billing/domain/policies/order_policy.dart');
+      final file =
+          File('lib/features/billing/domain/policies/order_policy.dart');
       if (!file.existsSync()) return; // Skip if not yet created
       final content = file.readAsStringSync();
 
@@ -40,7 +41,8 @@ void main() {
     });
 
     test('InventoryItem entity must not import infrastructure packages', () {
-      final file = File('lib/features/inventory/domain/entities/inventory_item.dart');
+      final file =
+          File('lib/features/inventory/domain/entities/inventory_item.dart');
       expect(file.existsSync(), isTrue);
       final content = file.readAsStringSync();
 
@@ -54,7 +56,8 @@ void main() {
     // ─── 2. Dead duplicate files have been removed ───
 
     test('Obsolete CheckoutOrderUseCase is removed', () {
-      final file = File('lib/features/billing/domain/use_cases/checkout_order.dart');
+      final file =
+          File('lib/features/billing/domain/use_cases/checkout_order.dart');
       expect(file.existsSync(), isFalse,
           reason: 'checkout_order.dart should be deleted — '
               'CheckoutOrchestrator is the authoritative checkout path');
@@ -68,7 +71,8 @@ void main() {
     });
 
     test('Obsolete CheckSubscriptionUseCase is removed', () {
-      final file = File('lib/features/store/domain/use_cases/check_subscription.dart');
+      final file =
+          File('lib/features/store/domain/use_cases/check_subscription.dart');
       expect(file.existsSync(), isFalse,
           reason: 'check_subscription.dart should be deleted — '
               'EntitlementService is the authoritative subscription check');
@@ -91,11 +95,13 @@ void main() {
       expect(content.contains('CheckoutOrchestrator'), isTrue,
           reason: 'OrderProvider must delegate to CheckoutOrchestrator');
       expect(content.contains('CheckoutOrderUseCase'), isFalse,
-          reason: 'OrderProvider must NOT reference the deleted CheckoutOrderUseCase');
+          reason:
+              'OrderProvider must NOT reference the deleted CheckoutOrderUseCase');
     });
 
     test('CheckoutOrchestrator is the single entry point for checkout', () {
-      final file = File('lib/features/billing/application/checkout_orchestrator.dart');
+      final file =
+          File('lib/features/billing/application/checkout_orchestrator.dart');
       expect(file.existsSync(), isTrue);
       final content = file.readAsStringSync();
 
@@ -108,7 +114,8 @@ void main() {
 
     // ─── 4. No direct Firestore writes in StoreNotifier ───
 
-    test('StoreNotifier must not contain direct Firestore collection writes', () {
+    test('StoreNotifier must not contain direct Firestore collection writes',
+        () {
       final file = File('lib/features/store/providers/store_notifier.dart');
       expect(file.existsSync(), isTrue);
       final content = file.readAsStringSync();
@@ -135,7 +142,8 @@ void main() {
 
     // ─── 5. AuthRepository has both update and upsert ───
 
-    test('AuthRepository provides both updateUserProfile and upsertUserProfile', () {
+    test('AuthRepository provides both updateUserProfile and upsertUserProfile',
+        () {
       final file = File('lib/features/auth/data/auth_repository.dart');
       expect(file.existsSync(), isTrue);
       final content = file.readAsStringSync();
@@ -157,10 +165,11 @@ void main() {
 
       // The synchronous O(N) getSalesStats was removed — the SQL-based
       // aggregation in Repository/OrderRepositoryMixin is authoritative.
-      final syncStatsPattern = RegExp(
-          r'Map<String,\s*dynamic>\s+getSalesStats\s*\(');
+      final syncStatsPattern =
+          RegExp(r'Map<String,\s*dynamic>\s+getSalesStats\s*\(');
       expect(syncStatsPattern.hasMatch(content), isFalse,
-          reason: 'OrderProvider should not have the dead synchronous getSalesStats');
+          reason:
+              'OrderProvider should not have the dead synchronous getSalesStats');
     });
 
     // ─── 7. Store creation uses repository ───

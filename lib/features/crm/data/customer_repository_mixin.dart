@@ -35,7 +35,8 @@ mixin CustomerRepositoryMixin {
     await batch.commit(noResult: true);
   }
 
-  Future<List<Customer>> getCustomers(String? storeId, {int limit = 100}) async {
+  Future<List<Customer>> getCustomers(String? storeId,
+      {int limit = 100}) async {
     final db = await dbHelper.database;
     String sql = 'SELECT * FROM customers WHERE deletedAt IS NULL';
     List<dynamic> args = [];
@@ -56,7 +57,8 @@ mixin CustomerRepositoryMixin {
     String? lastId,
   }) async {
     final db = await dbHelper.database;
-    String sql = 'SELECT * FROM customers WHERE isDeleted = 0 AND deletedAt IS NULL';
+    String sql =
+        'SELECT * FROM customers WHERE isDeleted = 0 AND deletedAt IS NULL';
     List<dynamic> args = [];
     if (storeId != null && storeId.isNotEmpty) {
       sql += ' AND storeId = ?';
@@ -101,7 +103,8 @@ mixin CustomerRepositoryMixin {
       }
     }
 
-    String sql = 'SELECT * FROM customers WHERE isDeleted = 0 AND deletedAt IS NULL';
+    String sql =
+        'SELECT * FROM customers WHERE isDeleted = 0 AND deletedAt IS NULL';
     List<dynamic> args = [];
     if (storeId != null && storeId.isNotEmpty) {
       sql += ' AND storeId = ?';

@@ -203,7 +203,8 @@ class PullEngine {
                 final tombstone = Map<String, dynamic>.from(data);
                 tombstone['id'] = doc.id;
                 tombstone['isDeleted'] = true;
-                tombstone['deletedAt'] = tombstone['deletedAt'] ?? DateTime.now().toIso8601String();
+                tombstone['deletedAt'] =
+                    tombstone['deletedAt'] ?? DateTime.now().toIso8601String();
                 tombstone['syncStatus'] = 'CONFIRMED';
                 await box.put(doc.id, _deepSanitize(tombstone));
               }
@@ -330,7 +331,8 @@ class PullEngine {
           if (val is Map) {
             final syncStatus = val['syncStatus']?.toString();
             final isDeleted = val['isDeleted'] == true || val['isDeleted'] == 1;
-            if (!isDeleted && (syncStatus == 'CONFIRMED' || syncStatus == 'PUSHED')) {
+            if (!isDeleted &&
+                (syncStatus == 'CONFIRMED' || syncStatus == 'PUSHED')) {
               keysToDelete.add(key);
             }
           }

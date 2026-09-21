@@ -29,7 +29,8 @@ void main() {
   });
 
   group('DiagnosticsService', () {
-    test('trace executes action and records successful event with duration', () async {
+    test('trace executes action and records successful event with duration',
+        () async {
       final service = DiagnosticsService();
       service.configure(deviceId: 'dev_test_1', appVersion: '2.0.0');
 
@@ -62,7 +63,9 @@ void main() {
       expect(ev.errorCategory, isNull);
     });
 
-    test('trace captures exception and auto-categorizes error across subsystems', () async {
+    test(
+        'trace captures exception and auto-categorizes error across subsystems',
+        () async {
       final service = DiagnosticsService();
 
       // Test database error mapping
@@ -71,7 +74,8 @@ void main() {
           operationId: 'op_db_err',
           subsystem: DiagnosticSubsystem.inventory,
           actionName: 'Test DB Lock',
-          operation: () async => throw Exception('sqlite3 error: database is locked'),
+          operation: () async =>
+              throw Exception('sqlite3 error: database is locked'),
         ),
         throwsA(isA<Exception>()),
       );
@@ -80,22 +84,51 @@ void main() {
       expect(lastError, isNotNull);
       expect(lastError!.operationId, equals('op_db_err'));
       expect(lastError.result, equals(DiagnosticResult.failure));
-      expect(lastError.errorCategory, equals(DiagnosticErrorCategory.databaseError));
+      expect(lastError.errorCategory,
+          equals(DiagnosticErrorCategory.databaseError));
     });
 
     test('error categorization correctly maps all mandated categories', () {
       final service = DiagnosticsService();
 
-      expect(service.mapExceptionToCategory(Exception('invalid credentials on login')), equals(DiagnosticErrorCategory.authError));
-      expect(service.mapExceptionToCategory(Exception('unauthorized access denied')), equals(DiagnosticErrorCategory.permissionError));
-      expect(service.mapExceptionToCategory(Exception('validation failed: quantity cannot be zero')), equals(DiagnosticErrorCategory.validationError));
-      expect(service.mapExceptionToCategory(Exception('socket exception: connection timeout')), equals(DiagnosticErrorCategory.networkError));
-      expect(service.mapExceptionToCategory(Exception('sqflite database locked')), equals(DiagnosticErrorCategory.databaseError));
-      expect(service.mapExceptionToCategory(Exception('replication transport closed'), DiagnosticSubsystem.sync), equals(DiagnosticErrorCategory.syncError));
-      expect(service.mapExceptionToCategory(Exception('state conflict detected')), equals(DiagnosticErrorCategory.conflictError));
-      expect(service.mapExceptionToCategory(Exception('printer paper out / ESC POS error')), equals(DiagnosticErrorCategory.printError));
-      expect(service.mapExceptionToCategory(Exception('database migration schema v26 failed')), equals(DiagnosticErrorCategory.migrationError));
-      expect(service.mapExceptionToCategory(Exception('unhandled runtime crash')), equals(DiagnosticErrorCategory.internalError));
+      expect(
+          service.mapExceptionToCategory(
+              Exception('invalid credentials on login')),
+          equals(DiagnosticErrorCategory.authError));
+      expect(
+          service
+              .mapExceptionToCategory(Exception('unauthorized access denied')),
+          equals(DiagnosticErrorCategory.permissionError));
+      expect(
+          service.mapExceptionToCategory(
+              Exception('validation failed: quantity cannot be zero')),
+          equals(DiagnosticErrorCategory.validationError));
+      expect(
+          service.mapExceptionToCategory(
+              Exception('socket exception: connection timeout')),
+          equals(DiagnosticErrorCategory.networkError));
+      expect(
+          service.mapExceptionToCategory(Exception('sqflite database locked')),
+          equals(DiagnosticErrorCategory.databaseError));
+      expect(
+          service.mapExceptionToCategory(
+              Exception('replication transport closed'),
+              DiagnosticSubsystem.sync),
+          equals(DiagnosticErrorCategory.syncError));
+      expect(
+          service.mapExceptionToCategory(Exception('state conflict detected')),
+          equals(DiagnosticErrorCategory.conflictError));
+      expect(
+          service.mapExceptionToCategory(
+              Exception('printer paper out / ESC POS error')),
+          equals(DiagnosticErrorCategory.printError));
+      expect(
+          service.mapExceptionToCategory(
+              Exception('database migration schema v26 failed')),
+          equals(DiagnosticErrorCategory.migrationError));
+      expect(
+          service.mapExceptionToCategory(Exception('unhandled runtime crash')),
+          equals(DiagnosticErrorCategory.internalError));
     });
 
     test('ring buffer maintains maximum in-memory event bound', () async {
@@ -120,7 +153,8 @@ void main() {
       expect(events.last.operationId, equals('op_50'));
     });
 
-    test('getDiagnosticsSummary aggregates telemetry metrics correctly', () async {
+    test('getDiagnosticsSummary aggregates telemetry metrics correctly',
+        () async {
       final service = DiagnosticsService();
 
       await service.recordEvent(DiagnosticEvent(
@@ -152,7 +186,8 @@ void main() {
       expect(summary['lastError']?['operationId'], equals('op_2'));
     });
 
-    test('exportDiagnosticsBundle returns sanitized, complete bundle', () async {
+    test('exportDiagnosticsBundle returns sanitized, complete bundle',
+        () async {
       final service = DiagnosticsService();
 
       await service.recordEvent(DiagnosticEvent(

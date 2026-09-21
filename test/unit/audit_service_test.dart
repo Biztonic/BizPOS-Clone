@@ -132,7 +132,8 @@ void main() {
         reason: 'Database schema sanity verification',
       );
 
-      final records = service.getRecentAuditRecords(storeId: 'store_audit_1', limit: 100);
+      final records =
+          service.getRecentAuditRecords(storeId: 'store_audit_1', limit: 100);
       expect(records.length, equals(8));
 
       // Filter by action type: refunds only
@@ -155,7 +156,8 @@ void main() {
       expect(priceChanges.first.newState!['price'], equals(45.0));
     });
 
-    test('sanitizes sensitive data within previousState and newState', () async {
+    test('sanitizes sensitive data within previousState and newState',
+        () async {
       final service = AuditService();
 
       await service.recordAction(

@@ -45,7 +45,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify Screen Header
-      expect(find.text('Production Diagnostics & Observability'), findsOneWidget);
+      expect(
+          find.text('Production Diagnostics & Observability'), findsOneWidget);
       expect(find.text('Export Bundle'), findsOneWidget);
 
       // Verify 4 Telemetry Overview Cards
@@ -62,7 +63,8 @@ void main() {
       expect(find.text('No diagnostic events recorded yet'), findsOneWidget);
     });
 
-    testWidgets('displays diagnostic events and switches to audit trail tab', (tester) async {
+    testWidgets('displays diagnostic events and switches to audit trail tab',
+        (tester) async {
       await tester.binding.setSurfaceSize(const Size(1280, 900));
 
       await DiagnosticsService().recordEvent(DiagnosticEvent(

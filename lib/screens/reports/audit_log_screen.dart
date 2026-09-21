@@ -152,13 +152,16 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                                       ),
                                     ),
                                     Builder(builder: (context) {
-                                      final idStr = (log['entityId'] ?? '---').toString();
-                                      final displayId = idStr.length > 8 ? '${idStr.substring(0, 8)}...' : idStr;
+                                      final idStr =
+                                          (log['entityId'] ?? '---').toString();
+                                      final displayId = idStr.length > 8
+                                          ? '${idStr.substring(0, 8)}...'
+                                          : idStr;
                                       return Text(
                                         "$timeStr • ID: $displayId",
                                         style: TextStyle(
-                                            color:
-                                                AppColors.textSecondary(context),
+                                            color: AppColors.textSecondary(
+                                                context),
                                             fontSize: 13),
                                       );
                                     }),

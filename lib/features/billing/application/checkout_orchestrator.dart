@@ -13,7 +13,6 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
-import 'dart:math';
 
 import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
@@ -96,7 +95,8 @@ class CheckoutOrchestrator {
   Future<CheckoutResult> execute(CheckoutParams params) async {
     return await DiagnosticsService().trace<CheckoutResult>(
       subsystem: DiagnosticSubsystem.checkout,
-      operationId: 'checkout_${params.order.id.isNotEmpty ? params.order.id : params.idempotencyKey}',
+      operationId:
+          'checkout_${params.order.id.isNotEmpty ? params.order.id : params.idempotencyKey}',
       storeId: params.activeStoreId,
       deviceId: params.deviceId,
       entityId: params.order.id,
@@ -203,7 +203,8 @@ class CheckoutOrchestrator {
         entityId: orderId,
         eventType: 'CREATE',
         amount: enrichedOrder.total,
-        quantity: enrichedOrder.items.fold(0, (sum, item) => sum + item.quantity),
+        quantity:
+            enrichedOrder.items.fold(0, (sum, item) => sum + item.quantity),
         createdAt: now,
         deviceId: params.deviceId,
       );

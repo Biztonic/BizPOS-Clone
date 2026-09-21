@@ -50,13 +50,7 @@ mixin SyncRepositoryMixin {
           voidReason = ?,
           version = version + 1
       WHERE id = ? AND status != 'Refunded' AND status != 'VOID'
-    ''', [
-      now,
-      now,
-      refundedBy,
-      'Refund ($refundAmount): $reason',
-      id
-    ]);
+    ''', [now, now, refundedBy, 'Refund ($refundAmount): $reason', id]);
   }
 
   Future<void> deleteInventory(String id, {String? deletedBy}) async {

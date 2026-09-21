@@ -21,7 +21,8 @@ void main() {
   });
 
   group('Unit Tests: Deterministic Schema Migrations & Invariants', () {
-    test('1. Fresh installation initializes database directly at latest schema version',
+    test(
+        '1. Fresh installation initializes database directly at latest schema version',
         () async {
       final dbPath = p.join(tempDir.path, 'fresh_v26_unit.db');
       DatabaseHelper.setDbName(dbPath);

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:async';
-import 'dart:math';
 
 import 'package:biztonic_pos/providers/store_provider.dart';
 import 'package:biztonic_pos/services/sync_service.dart';

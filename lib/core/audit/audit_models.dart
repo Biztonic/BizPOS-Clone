@@ -38,7 +38,8 @@ extension AuditActionTypeX on AuditActionType {
   static AuditActionType fromString(String val) {
     final normalized = val.toUpperCase().replaceAll('_', '');
     for (final action in AuditActionType.values) {
-      if (action.code.replaceAll('_', '') == normalized || action.name.toUpperCase() == normalized) {
+      if (action.code.replaceAll('_', '') == normalized ||
+          action.name.toUpperCase() == normalized) {
         return action;
       }
     }
@@ -74,8 +75,11 @@ class AuditRecord {
     this.reason,
     required this.timestamp,
     required this.deviceId,
-  })  : previousState = previousState != null ? DiagnosticSanitizer.sanitizeMap(previousState) : null,
-        newState = newState != null ? DiagnosticSanitizer.sanitizeMap(newState) : null;
+  })  : previousState = previousState != null
+            ? DiagnosticSanitizer.sanitizeMap(previousState)
+            : null,
+        newState =
+            newState != null ? DiagnosticSanitizer.sanitizeMap(newState) : null;
 
   Map<String, dynamic> toMap() {
     return {
@@ -88,7 +92,8 @@ class AuditRecord {
       'entityType': entityType,
       'previousState': previousState,
       'newState': newState,
-      'reason': reason != null ? DiagnosticSanitizer.sanitizeString(reason!) : null,
+      'reason':
+          reason != null ? DiagnosticSanitizer.sanitizeString(reason!) : null,
       'timestamp': timestamp.toIso8601String(),
       'deviceId': deviceId,
     };
@@ -98,15 +103,21 @@ class AuditRecord {
     return AuditRecord(
       id: map['id']?.toString() ?? '',
       storeId: map['storeId']?.toString() ?? '',
-      action: AuditActionTypeX.fromString(map['action']?.toString() ?? 'ADMIN_OPERATION'),
+      action: AuditActionTypeX.fromString(
+          map['action']?.toString() ?? 'ADMIN_OPERATION'),
       actorId: map['actorId']?.toString() ?? 'system',
       actorRole: map['actorRole']?.toString() ?? 'unknown',
       entityId: map['entityId']?.toString() ?? '',
       entityType: map['entityType']?.toString() ?? '',
-      previousState: map['previousState'] is Map ? Map<String, dynamic>.from(map['previousState'] as Map) : null,
-      newState: map['newState'] is Map ? Map<String, dynamic>.from(map['newState'] as Map) : null,
+      previousState: map['previousState'] is Map
+          ? Map<String, dynamic>.from(map['previousState'] as Map)
+          : null,
+      newState: map['newState'] is Map
+          ? Map<String, dynamic>.from(map['newState'] as Map)
+          : null,
       reason: map['reason']?.toString(),
-      timestamp: DateTime.tryParse(map['timestamp']?.toString() ?? '') ?? DateTime.now(),
+      timestamp: DateTime.tryParse(map['timestamp']?.toString() ?? '') ??
+          DateTime.now(),
       deviceId: map['deviceId']?.toString() ?? 'unknown',
     );
   }

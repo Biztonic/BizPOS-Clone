@@ -22,10 +22,12 @@ class ProductionDiagnosticsScreen extends StatefulWidget {
   const ProductionDiagnosticsScreen({super.key});
 
   @override
-  State<ProductionDiagnosticsScreen> createState() => _ProductionDiagnosticsScreenState();
+  State<ProductionDiagnosticsScreen> createState() =>
+      _ProductionDiagnosticsScreenState();
 }
 
-class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScreen>
+class _ProductionDiagnosticsScreenState
+    extends State<ProductionDiagnosticsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final DiagnosticsService _diagnosticsService = DiagnosticsService();
@@ -68,7 +70,8 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('✅ Sanitized diagnostic bundle copied to clipboard (Scrubbed of credentials & PII)'),
+        content: Text(
+            '✅ Sanitized diagnostic bundle copied to clipboard (Scrubbed of credentials & PII)'),
         backgroundColor: Colors.teal,
         duration: Duration(seconds: 4),
       ),
@@ -193,203 +196,225 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
     // Queue Health Status
     final isCritical = deadLetterCount > 0;
     final isDegraded = failedCount > 0 && !isCritical;
-    final healthStatus = isCritical ? 'CRITICAL' : (isDegraded ? 'DEGRADED' : 'HEALTHY');
-    final healthColor = isCritical ? AppColors.error : (isDegraded ? AppColors.warning : AppColors.success);
+    final healthStatus =
+        isCritical ? 'CRITICAL' : (isDegraded ? 'DEGRADED' : 'HEALTHY');
+    final healthColor = isCritical
+        ? AppColors.error
+        : (isDegraded ? AppColors.warning : AppColors.success);
 
     // Connectivity
     final isOnline = _offlineService.isOnline;
-    final connectionQuality = _offlineService.connectionQuality.name.toUpperCase();
+    final connectionQuality =
+        _offlineService.connectionQuality.name.toUpperCase();
 
     final lastError = _diagnosticsService.getLastError();
 
     return Scaffold(
       backgroundColor: AppColors.background(context),
-        appBar: AppBar(
-          backgroundColor: AppColors.surface(context),
-          title: const Text('Production Diagnostics & Observability',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/dashboard'),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Refresh Diagnostics',
-              onPressed: () => setState(() {}),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_sweep_outlined),
-              tooltip: 'Clear In-Memory Logs',
-              onPressed: () async {
-                await _diagnosticsService.clearLogs();
-                setState(() {});
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.md),
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.download, size: 16),
-                label: const Text('Export Bundle'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: _exportDiagnosticsBundle,
-              ),
-            ),
-          ],
-          bottom: TabBar(
-            controller: _tabController,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary(context),
-            indicatorColor: AppColors.primary,
-            tabs: const [
-              Tab(icon: Icon(Icons.troubleshoot), text: 'System Diagnostics'),
-              Tab(icon: Icon(Icons.history_edu), text: 'Audit Trail'),
-            ],
-          ),
+      appBar: AppBar(
+        backgroundColor: AppColors.surface(context),
+        title: const Text('Production Diagnostics & Observability',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/dashboard'),
         ),
-        body: Column(
-          children: [
-            // Top Status Overview Banner
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              color: AppColors.surface(context),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      // Telemetry Box 1: Version & Database
-                      Expanded(
-                        child: _buildTelemetryCard(
-                          context,
-                          title: 'App & DB Version',
-                          value: 'v1.0.4+12',
-                          subtitle: 'SQLite Schema v${DatabaseHelper.version}',
-                          icon: Icons.code,
-                          color: Colors.blueAccent,
-                        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh Diagnostics',
+            onPressed: () => setState(() {}),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_outlined),
+            tooltip: 'Clear In-Memory Logs',
+            onPressed: () async {
+              await _diagnosticsService.clearLogs();
+              setState(() {});
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.md),
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.download, size: 16),
+              label: const Text('Export Bundle'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: _exportDiagnosticsBundle,
+            ),
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary(context),
+          indicatorColor: AppColors.primary,
+          tabs: const [
+            Tab(icon: Icon(Icons.troubleshoot), text: 'System Diagnostics'),
+            Tab(icon: Icon(Icons.history_edu), text: 'Audit Trail'),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          // Top Status Overview Banner
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            color: AppColors.surface(context),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    // Telemetry Box 1: Version & Database
+                    Expanded(
+                      child: _buildTelemetryCard(
+                        context,
+                        title: 'App & DB Version',
+                        value: 'v1.0.4+12',
+                        subtitle: 'SQLite Schema v${DatabaseHelper.version}',
+                        icon: Icons.code,
+                        color: Colors.blueAccent,
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      // Telemetry Box 2: Device & Store
-                      Expanded(
-                        child: _buildTelemetryCard(
-                          context,
-                          title: 'Device & Store',
-                          value: activeStoreId.length > 14
-                              ? '${activeStoreId.substring(0, 14)}...'
-                              : activeStoreId,
-                          subtitle: 'Device: ${deviceId.length > 12 ? deviceId.substring(0, 12) : deviceId}',
-                          icon: Icons.storefront,
-                          color: Colors.indigoAccent,
-                        ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    // Telemetry Box 2: Device & Store
+                    Expanded(
+                      child: _buildTelemetryCard(
+                        context,
+                        title: 'Device & Store',
+                        value: activeStoreId.length > 14
+                            ? '${activeStoreId.substring(0, 14)}...'
+                            : activeStoreId,
+                        subtitle:
+                            'Device: ${deviceId.length > 12 ? deviceId.substring(0, 12) : deviceId}',
+                        icon: Icons.storefront,
+                        color: Colors.indigoAccent,
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      // Telemetry Box 3: Connectivity
-                      Expanded(
-                        child: _buildTelemetryCard(
-                          context,
-                          title: 'Cloud Connectivity',
-                          value: isOnline ? 'ONLINE' : 'OFFLINE',
-                          subtitle: 'Route: $connectionQuality',
-                          icon: isOnline ? Icons.cloud_done : Icons.cloud_off,
-                          color: isOnline ? AppColors.success : AppColors.error,
-                        ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    // Telemetry Box 3: Connectivity
+                    Expanded(
+                      child: _buildTelemetryCard(
+                        context,
+                        title: 'Cloud Connectivity',
+                        value: isOnline ? 'ONLINE' : 'OFFLINE',
+                        subtitle: 'Route: $connectionQuality',
+                        icon: isOnline ? Icons.cloud_done : Icons.cloud_off,
+                        color: isOnline ? AppColors.success : AppColors.error,
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      // Telemetry Box 4: Queue Health
-                      Expanded(
-                        child: _buildTelemetryCard(
-                          context,
-                          title: 'Queue Health',
-                          value: healthStatus,
-                          subtitle: 'P: $pendingCount | F: $failedCount | DL: $deadLetterCount',
-                          icon: isCritical ? Icons.error_outline : Icons.check_circle_outline,
-                          color: healthColor,
-                          actionWidget: deadLetterCount > 0
-                              ? TextButton(
-                                  onPressed: _isRetryingDeadLetters ? null : _retryDeadLetters,
-                                  style: TextButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    minimumSize: const Size(50, 20),
-                                  ),
-                                  child: const Text('Retry All',
-                                      style: TextStyle(fontSize: 11, color: Colors.orange)),
-                                )
-                              : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Last Error Banner (if present)
-                  if (lastError != null) ...[
-                    const SizedBox(height: AppSpacing.sm),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.1),
-                        borderRadius: AppRadius.borderSm,
-                        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
-                          const SizedBox(width: AppSpacing.sm),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.error,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              lastError.errorCategory?.code ?? 'INTERNAL_ERROR',
-                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            '[${lastError.subsystem.nameUpper}]',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Text(
-                              lastError.message,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 12),
-                            ),
-                          ),
-                          Text(
-                            DateFormat('hh:mm:ss a').format(lastError.timestamp),
-                            style: TextStyle(color: AppColors.textSecondary(context), fontSize: 11),
-                          ),
-                        ],
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    // Telemetry Box 4: Queue Health
+                    Expanded(
+                      child: _buildTelemetryCard(
+                        context,
+                        title: 'Queue Health',
+                        value: healthStatus,
+                        subtitle:
+                            'P: $pendingCount | F: $failedCount | DL: $deadLetterCount',
+                        icon: isCritical
+                            ? Icons.error_outline
+                            : Icons.check_circle_outline,
+                        color: healthColor,
+                        actionWidget: deadLetterCount > 0
+                            ? TextButton(
+                                onPressed: _isRetryingDeadLetters
+                                    ? null
+                                    : _retryDeadLetters,
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(50, 20),
+                                ),
+                                child: const Text('Retry All',
+                                    style: TextStyle(
+                                        fontSize: 11, color: Colors.orange)),
+                              )
+                            : null,
                       ),
                     ),
                   ],
+                ),
+                // Last Error Banner (if present)
+                if (lastError != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: AppRadius.borderSm,
+                      border: Border.all(
+                          color: AppColors.error.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded,
+                            color: AppColors.error, size: 20),
+                        const SizedBox(width: AppSpacing.sm),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            lastError.errorCategory?.code ?? 'INTERNAL_ERROR',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          '[${lastError.subsystem.nameUpper}]',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            lastError.message,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: isDark ? Colors.white70 : Colors.black87,
+                                fontSize: 12),
+                          ),
+                        ),
+                        Text(
+                          DateFormat('hh:mm:ss a').format(lastError.timestamp),
+                          style: TextStyle(
+                              color: AppColors.textSecondary(context),
+                              fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-              ),
+              ],
             ),
-            const Divider(height: 1),
+          ),
+          const Divider(height: 1),
 
-            // Tab Views
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildDiagnosticsTab(context),
-                  _buildAuditTrailTab(context),
-                ],
-              ),
+          // Tab Views
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildDiagnosticsTab(context),
+                _buildAuditTrailTab(context),
+              ],
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTelemetryCard(
@@ -428,20 +453,25 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(title, style: TextStyle(color: AppColors.textSecondary(context), fontSize: 11)),
+                    Text(title,
+                        style: TextStyle(
+                            color: AppColors.textSecondary(context),
+                            fontSize: 11)),
                     if (actionWidget != null) actionWidget,
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(color: AppColors.textSecondary(context), fontSize: 10),
+                  style: TextStyle(
+                      color: AppColors.textSecondary(context), fontSize: 10),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -459,18 +489,22 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
       children: [
         // Subsystem & Result Filter Bar
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.xs),
           color: AppColors.surface(context),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                const Text('Subsystems:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                const Text('Subsystems:',
+                    style:
+                        TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(width: AppSpacing.sm),
                 ChoiceChip(
                   label: const Text('ALL'),
                   selected: _selectedSubsystem == null,
-                  onSelected: (val) => setState(() => _selectedSubsystem = null),
+                  onSelected: (val) =>
+                      setState(() => _selectedSubsystem = null),
                 ),
                 ...DiagnosticSubsystem.values.map((sub) {
                   return Padding(
@@ -478,12 +512,15 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                     child: ChoiceChip(
                       label: Text(sub.nameUpper),
                       selected: _selectedSubsystem == sub,
-                      onSelected: (val) => setState(() => _selectedSubsystem = val ? sub : null),
+                      onSelected: (val) =>
+                          setState(() => _selectedSubsystem = val ? sub : null),
                     ),
                   );
                 }),
                 const SizedBox(width: AppSpacing.md),
-                const Text('Result:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                const Text('Result:',
+                    style:
+                        TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(width: AppSpacing.sm),
                 ChoiceChip(
                   label: const Text('ALL'),
@@ -495,8 +532,8 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                   child: ChoiceChip(
                     label: const Text('FAILURE'),
                     selected: _selectedResult == DiagnosticResult.failure,
-                    onSelected: (val) =>
-                        setState(() => _selectedResult = val ? DiagnosticResult.failure : null),
+                    onSelected: (val) => setState(() => _selectedResult =
+                        val ? DiagnosticResult.failure : null),
                   ),
                 ),
                 Padding(
@@ -504,8 +541,8 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                   child: ChoiceChip(
                     label: const Text('SUCCESS'),
                     selected: _selectedResult == DiagnosticResult.success,
-                    onSelected: (val) =>
-                        setState(() => _selectedResult = val ? DiagnosticResult.success : null),
+                    onSelected: (val) => setState(() => _selectedResult =
+                        val ? DiagnosticResult.success : null),
                   ),
                 ),
               ],
@@ -530,10 +567,12 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.monitor_heart_outlined, size: 48, color: AppColors.textSecondary(context)),
+                      Icon(Icons.monitor_heart_outlined,
+                          size: 48, color: AppColors.textSecondary(context)),
                       const SizedBox(height: AppSpacing.sm),
                       Text('No diagnostic events recorded yet',
-                          style: TextStyle(color: AppColors.textSecondary(context))),
+                          style: TextStyle(
+                              color: AppColors.textSecondary(context))),
                     ],
                   ),
                 );
@@ -542,7 +581,8 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
               return ListView.separated(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 itemCount: events.length,
-                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: AppSpacing.xs),
                 itemBuilder: (context, index) {
                   final event = events[index];
                   return _buildDiagnosticEventTile(context, event);
@@ -555,11 +595,16 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
     );
   }
 
-  Widget _buildDiagnosticEventTile(BuildContext context, DiagnosticEvent event) {
+  Widget _buildDiagnosticEventTile(
+      BuildContext context, DiagnosticEvent event) {
     final isSuccess = event.result == DiagnosticResult.success;
     final isWarning = event.result == DiagnosticResult.warning;
-    final color = isSuccess ? AppColors.success : (isWarning ? AppColors.warning : AppColors.error);
-    final icon = isSuccess ? Icons.check_circle_outline : (isWarning ? Icons.warning_amber : Icons.highlight_off);
+    final color = isSuccess
+        ? AppColors.success
+        : (isWarning ? AppColors.warning : AppColors.error);
+    final icon = isSuccess
+        ? Icons.check_circle_outline
+        : (isWarning ? Icons.warning_amber : Icons.highlight_off);
 
     return Card(
       elevation: 0,
@@ -580,7 +625,8 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
               ),
               child: Text(
                 event.subsystem.nameUpper,
-                style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: color, fontSize: 10, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -593,7 +639,10 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                 ),
                 child: Text(
                   event.errorCategory!.code,
-                  style: const TextStyle(color: AppColors.error, fontSize: 10, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      color: AppColors.error,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -601,13 +650,15 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
             Expanded(
               child: Text(
                 event.operationId,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             Text(
               '${event.durationMs}ms',
-              style: TextStyle(color: AppColors.textSecondary(context), fontSize: 11),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 11),
             ),
           ],
         ),
@@ -619,14 +670,16 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
               Expanded(
                 child: Text(
                   event.message,
-                  style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12),
+                  style: TextStyle(
+                      color: AppColors.textSecondary(context), fontSize: 12),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               Text(
                 DateFormat('hh:mm:ss a').format(event.timestamp),
-                style: TextStyle(color: AppColors.textSecondary(context), fontSize: 10),
+                style: TextStyle(
+                    color: AppColors.textSecondary(context), fontSize: 10),
               ),
             ],
           ),
@@ -637,17 +690,24 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SelectableText('Operation ID: ${event.operationId}', style: const TextStyle(fontSize: 11)),
+                SelectableText('Operation ID: ${event.operationId}',
+                    style: const TextStyle(fontSize: 11)),
                 if (event.storeId != null)
-                  SelectableText('Store ID: ${event.storeId}', style: const TextStyle(fontSize: 11)),
+                  SelectableText('Store ID: ${event.storeId}',
+                      style: const TextStyle(fontSize: 11)),
                 if (event.userId != null)
-                  SelectableText('User ID: ${event.userId}', style: const TextStyle(fontSize: 11)),
-                SelectableText('Device ID: ${event.deviceId}', style: const TextStyle(fontSize: 11)),
+                  SelectableText('User ID: ${event.userId}',
+                      style: const TextStyle(fontSize: 11)),
+                SelectableText('Device ID: ${event.deviceId}',
+                    style: const TextStyle(fontSize: 11)),
                 if (event.entityId != null)
-                  SelectableText('Entity ID: ${event.entityId}', style: const TextStyle(fontSize: 11)),
+                  SelectableText('Entity ID: ${event.entityId}',
+                      style: const TextStyle(fontSize: 11)),
                 if (event.metadata.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xs),
-                  const Text('Metadata (Sanitized):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                  const Text('Metadata (Sanitized):',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.xs),
@@ -656,14 +716,20 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                       borderRadius: AppRadius.borderSm,
                     ),
                     child: SelectableText(
-                      const JsonEncoder.withIndent('  ').convert(event.metadata),
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
+                      const JsonEncoder.withIndent('  ')
+                          .convert(event.metadata),
+                      style: const TextStyle(
+                          fontFamily: 'monospace', fontSize: 10),
                     ),
                   ),
                 ],
                 if (event.stackTrace != null) ...[
                   const SizedBox(height: AppSpacing.xs),
-                  const Text('Stack Trace (Sanitized):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.error)),
+                  const Text('Stack Trace (Sanitized):',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          color: AppColors.error)),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.xs),
@@ -673,7 +739,10 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                     ),
                     child: SelectableText(
                       event.stackTrace!,
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 9, color: Colors.redAccent),
+                      style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 9,
+                          color: Colors.redAccent),
                     ),
                   ),
                 ],
@@ -691,18 +760,22 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
       children: [
         // Action Filter Bar
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.xs),
           color: AppColors.surface(context),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                const Text('Audit Actions:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                const Text('Audit Actions:',
+                    style:
+                        TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(width: AppSpacing.sm),
                 ChoiceChip(
                   label: const Text('ALL'),
                   selected: _selectedAuditAction == null,
-                  onSelected: (val) => setState(() => _selectedAuditAction = null),
+                  onSelected: (val) =>
+                      setState(() => _selectedAuditAction = null),
                 ),
                 ...AuditActionType.values.map((act) {
                   return Padding(
@@ -710,7 +783,8 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                     child: ChoiceChip(
                       label: Text(act.code),
                       selected: _selectedAuditAction == act,
-                      onSelected: (val) => setState(() => _selectedAuditAction = val ? act : null),
+                      onSelected: (val) => setState(
+                          () => _selectedAuditAction = val ? act : null),
                     ),
                   );
                 }),
@@ -735,10 +809,12 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.history_toggle_off, size: 48, color: AppColors.textSecondary(context)),
+                      Icon(Icons.history_toggle_off,
+                          size: 48, color: AppColors.textSecondary(context)),
                       const SizedBox(height: AppSpacing.sm),
                       Text('No business audit records logged',
-                          style: TextStyle(color: AppColors.textSecondary(context))),
+                          style: TextStyle(
+                              color: AppColors.textSecondary(context))),
                     ],
                   ),
                 );
@@ -747,7 +823,8 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
               return ListView.separated(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 itemCount: records.length,
-                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: AppSpacing.xs),
                 itemBuilder: (context, index) {
                   final record = records[index];
                   return _buildAuditRecordTile(context, record);
@@ -825,20 +902,23 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
               ),
               child: Text(
                 record.action.code,
-                style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: color, fontSize: 10, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
                 '${record.entityType} (${record.entityId.length > 12 ? record.entityId.substring(0, 12) : record.entityId})',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             Text(
               'Actor: ${record.actorId} [${record.actorRole}]',
-              style: TextStyle(color: AppColors.textSecondary(context), fontSize: 11),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 11),
             ),
           ],
         ),
@@ -850,14 +930,16 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
               Expanded(
                 child: Text(
                   record.reason ?? 'No reason provided',
-                  style: TextStyle(color: AppColors.textSecondary(context), fontSize: 12),
+                  style: TextStyle(
+                      color: AppColors.textSecondary(context), fontSize: 12),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               Text(
                 DateFormat('MMM dd, hh:mm a').format(record.timestamp),
-                style: TextStyle(color: AppColors.textSecondary(context), fontSize: 10),
+                style: TextStyle(
+                    color: AppColors.textSecondary(context), fontSize: 10),
               ),
             ],
           ),
@@ -868,12 +950,17 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SelectableText('Record ID: ${record.id}', style: const TextStyle(fontSize: 11)),
-                SelectableText('Store ID: ${record.storeId}', style: const TextStyle(fontSize: 11)),
-                SelectableText('Device ID: ${record.deviceId}', style: const TextStyle(fontSize: 11)),
+                SelectableText('Record ID: ${record.id}',
+                    style: const TextStyle(fontSize: 11)),
+                SelectableText('Store ID: ${record.storeId}',
+                    style: const TextStyle(fontSize: 11)),
+                SelectableText('Device ID: ${record.deviceId}',
+                    style: const TextStyle(fontSize: 11)),
                 if (record.previousState != null) ...[
                   const SizedBox(height: AppSpacing.xs),
-                  const Text('Previous State (Sanitized):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                  const Text('Previous State (Sanitized):',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.xs),
@@ -882,14 +969,18 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                       borderRadius: AppRadius.borderSm,
                     ),
                     child: SelectableText(
-                      const JsonEncoder.withIndent('  ').convert(record.previousState),
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
+                      const JsonEncoder.withIndent('  ')
+                          .convert(record.previousState),
+                      style: const TextStyle(
+                          fontFamily: 'monospace', fontSize: 10),
                     ),
                   ),
                 ],
                 if (record.newState != null) ...[
                   const SizedBox(height: AppSpacing.xs),
-                  const Text('New State (Sanitized):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                  const Text('New State (Sanitized):',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.xs),
@@ -898,8 +989,10 @@ class _ProductionDiagnosticsScreenState extends State<ProductionDiagnosticsScree
                       borderRadius: AppRadius.borderSm,
                     ),
                     child: SelectableText(
-                      const JsonEncoder.withIndent('  ').convert(record.newState),
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
+                      const JsonEncoder.withIndent('  ')
+                          .convert(record.newState),
+                      style: const TextStyle(
+                          fontFamily: 'monospace', fontSize: 10),
                     ),
                   ),
                 ],

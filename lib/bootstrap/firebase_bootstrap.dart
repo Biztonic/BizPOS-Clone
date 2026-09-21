@@ -30,8 +30,9 @@ class FirebaseBootstrap {
         // ignore: deprecated_member_use
         webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
         // ignore: deprecated_member_use
-        androidProvider:
-            kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
+        androidProvider: kReleaseMode
+            ? AndroidProvider.playIntegrity
+            : AndroidProvider.debug,
         // ignore: deprecated_member_use
         appleProvider:
             kReleaseMode ? AppleProvider.deviceCheck : AppleProvider.debug,

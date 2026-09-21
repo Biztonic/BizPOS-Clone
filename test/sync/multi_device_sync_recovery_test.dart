@@ -57,7 +57,8 @@ void main() {
       repo = Repository();
       movementRepo = InventoryMovementRepository();
       db = await DatabaseHelper().database;
-      recoveryService = RecoveryService(dbHelper: DatabaseHelper(), movementRepo: movementRepo);
+      recoveryService = RecoveryService(
+          dbHelper: DatabaseHelper(), movementRepo: movementRepo);
 
       outboxStore = OutboxStore(
         getQueueBox: () => Hive.box(OutboxStore.primaryQueueBox),
@@ -99,7 +100,9 @@ void main() {
     // ─────────────────────────────────────────────────────────────
     // 1. DURABLE SYNC STATE MACHINE
     // ─────────────────────────────────────────────────────────────
-    test('1. Durable state machine transitions: PENDING -> IN_FLIGHT -> CONFIRMED -> FAILED -> CONFLICTED -> DEAD_LETTER', () async {
+    test(
+        '1. Durable state machine transitions: PENDING -> IN_FLIGHT -> CONFIRMED -> FAILED -> CONFLICTED -> DEAD_LETTER',
+        () async {
       final op1 = OutboxOperation(
         operationId: 'op_state_01',
         storeId: storeAlpha,
@@ -179,7 +182,9 @@ void main() {
         state: OutboxState.pending,
       );
       await outboxStore.enqueue(op3);
-      await outboxStore.markFailed('op_state_03', 'permission-denied: not authorized', isFatal: true);
+      await outboxStore.markFailed(
+          'op_state_03', 'permission-denied: not authorized',
+          isFatal: true);
 
       stats = outboxStore.getOutboxStats(storeId: storeAlpha);
       expect(stats['deadLetter'], equals(1));
@@ -201,7 +206,8 @@ void main() {
         state: OutboxState.pending,
       );
       await outboxStore.enqueue(op4);
-      await outboxStore.markConflicted('op_state_04', 'Remote customer record has higher version');
+      await outboxStore.markConflicted(
+          'op_state_04', 'Remote customer record has higher version');
 
       stats = outboxStore.getOutboxStats(storeId: storeAlpha);
       expect(stats['conflicted'], equals(1));
@@ -213,7 +219,9 @@ void main() {
     // ─────────────────────────────────────────────────────────────
     // 2. IDEMPOTENT SYNCHRONIZATION
     // ─────────────────────────────────────────────────────────────
-    test('2. Idempotent synchronization: duplicate outbox operations and inbound movements', () async {
+    test(
+        '2. Idempotent synchronization: duplicate outbox operations and inbound movements',
+        () async {
       // Outbox Deduplication: Enqueueing the exact same operationId multiple times must not duplicate queue
       final op = OutboxOperation(
         operationId: 'op_idempotent_01',
@@ -281,19 +289,23 @@ void main() {
 
       // First insert (10 - 3 = 7)
       await movementRepo.insertMovement(movement);
-      var derivedQty = await movementRepo.getAggregatedQuantity('PROD_IDEM', storeId: storeAlpha);
+      var derivedQty = await movementRepo.getAggregatedQuantity('PROD_IDEM',
+          storeId: storeAlpha);
       expect(derivedQty, equals(7));
 
       // Duplicate receipt of same movementId must replace/ignore and NOT double-deduct
       await movementRepo.insertMovement(movement);
-      derivedQty = await movementRepo.getAggregatedQuantity('PROD_IDEM', storeId: storeAlpha);
+      derivedQty = await movementRepo.getAggregatedQuantity('PROD_IDEM',
+          storeId: storeAlpha);
       expect(derivedQty, equals(7));
     });
 
     // ─────────────────────────────────────────────────────────────
     // 3. TOMBSTONES & ANTI-RESURRECTION
     // ─────────────────────────────────────────────────────────────
-    test('3. Tombstones: Deleted records must not resurrect during later synchronization', () async {
+    test(
+        '3. Tombstones: Deleted records must not resurrect during later synchronization',
+        () async {
       final now = DateTime.now();
       final deletedTime = now.subtract(const Duration(minutes: 5));
 
@@ -317,7 +329,8 @@ void main() {
         'name': 'Old Seasonal Dish (Stale Cloud Update)',
         'price': 15.0,
         'isDeleted': false,
-        'updatedAt': now.subtract(const Duration(minutes: 10)).toIso8601String(),
+        'updatedAt':
+            now.subtract(const Duration(minutes: 10)).toIso8601String(),
         'version': 2,
       };
 
@@ -362,7 +375,9 @@ void main() {
     // ─────────────────────────────────────────────────────────────
     // 4. FULL-PULL SAFETY & FINANCIAL RECORDS IMMUNITY
     // ─────────────────────────────────────────────────────────────
-    test('4. Full-pull safety: Never delete local records when cloud returns 0 or partial results', () async {
+    test(
+        '4. Full-pull safety: Never delete local records when cloud returns 0 or partial results',
+        () async {
       // Seed local customers
       for (int i = 1; i <= 10; i++) {
         await db.insert('customers', {
@@ -378,9 +393,16 @@ void main() {
       // 1. Partial cloud pull safety: cloud returns only 1 id (10% of local count)
       // deleteOrphans should only delete unlisted records if explicitly called, but pull engine rejects partial sweeps
       // Let's verify financial records (orders) are NEVER in reconcilableCollections
-      expect(SyncCollectionRegistry.reconcilableCollections.contains('orders'), isFalse);
-      expect(SyncCollectionRegistry.reconcilableCollections.contains('inventory_movements'), isFalse);
-      expect(SyncCollectionRegistry.reconcilableCollections.contains('business_events'), isFalse);
+      expect(SyncCollectionRegistry.reconcilableCollections.contains('orders'),
+          isFalse);
+      expect(
+          SyncCollectionRegistry.reconcilableCollections
+              .contains('inventory_movements'),
+          isFalse);
+      expect(
+          SyncCollectionRegistry.reconcilableCollections
+              .contains('business_events'),
+          isFalse);
 
       // Seed order
       await db.insert('orders', {
@@ -403,7 +425,9 @@ void main() {
     // ─────────────────────────────────────────────────────────────
     // 5. INVENTORY INTEGRITY & MOVEMENT LEDGER (ALL TYPES)
     // ─────────────────────────────────────────────────────────────
-    test('5. Inventory quantity derives strictly from movement ledger without zero-clamping', () async {
+    test(
+        '5. Inventory quantity derives strictly from movement ledger without zero-clamping',
+        () async {
       const itemId = 'PROD_INTEGRITY_01';
 
       await db.insert('inventory', {
@@ -504,7 +528,8 @@ void main() {
       ));
 
       // Expected calculation: 100 - 20 - 5 - 10 + 2 + 3 = 70
-      final netQty = await movementRepo.getAggregatedQuantity(itemId, storeId: storeAlpha);
+      final netQty =
+          await movementRepo.getAggregatedQuantity(itemId, storeId: storeAlpha);
       expect(netQty, equals(70));
 
       // Verify projection rebuild
@@ -516,7 +541,9 @@ void main() {
     // ─────────────────────────────────────────────────────────────
     // 6. CONCURRENT OFFLINE SALES (NEGATIVE STOCK POLICY)
     // ─────────────────────────────────────────────────────────────
-    test('6. Concurrent offline sales: allows negative stock without zero-clamping and converges correctly', () async {
+    test(
+        '6. Concurrent offline sales: allows negative stock without zero-clamping and converges correctly',
+        () async {
       const itemId = 'PROD_CONCURRENT_01';
 
       await db.insert('inventory', {
@@ -581,7 +608,8 @@ void main() {
 
       // Calculation: 5 - 4 - 3 = -2
       // Must NOT be zero-clamped to 0!
-      final finalStock = await movementRepo.getAggregatedQuantity(itemId, storeId: storeAlpha);
+      final finalStock =
+          await movementRepo.getAggregatedQuantity(itemId, storeId: storeAlpha);
       expect(finalStock, equals(-2));
 
       await repo.rebuildInventoryProjection(storeAlpha);
@@ -592,7 +620,8 @@ void main() {
     // ─────────────────────────────────────────────────────────────
     // 7. CROSS-STORE TENANT SAFETY
     // ─────────────────────────────────────────────────────────────
-    test('7. Cross-store safety: operations strictly segregated by storeId', () async {
+    test('7. Cross-store safety: operations strictly segregated by storeId',
+        () async {
       const itemStoreA = 'ITEM_STORE_A';
       const itemStoreB = 'ITEM_STORE_B';
 
@@ -670,21 +699,26 @@ void main() {
         syncStatus: 'CONFIRMED',
       ));
 
-      final alphaQty = await movementRepo.getAggregatedQuantity(itemStoreA, storeId: storeAlpha);
-      final betaQty = await movementRepo.getAggregatedQuantity(itemStoreB, storeId: storeBeta);
+      final alphaQty = await movementRepo.getAggregatedQuantity(itemStoreA,
+          storeId: storeAlpha);
+      final betaQty = await movementRepo.getAggregatedQuantity(itemStoreB,
+          storeId: storeBeta);
 
       expect(alphaQty, equals(5));
       expect(betaQty, equals(12));
 
       // Querying Store Alpha for Beta item must return 0
-      final crossQty = await movementRepo.getAggregatedQuantity(itemStoreB, storeId: storeAlpha);
+      final crossQty = await movementRepo.getAggregatedQuantity(itemStoreB,
+          storeId: storeAlpha);
       expect(crossQty, equals(0));
     });
 
     // ─────────────────────────────────────────────────────────────
     // 8. RECOVERY SIMULATION (CRASH & IN-FLIGHT RECOVERY)
     // ─────────────────────────────────────────────────────────────
-    test('8. Crash recovery: reconciles partially applied transactions and recovers stuck IN_FLIGHT operations', () async {
+    test(
+        '8. Crash recovery: reconciles partially applied transactions and recovers stuck IN_FLIGHT operations',
+        () async {
       // 1. Stuck IN_FLIGHT outbox operation from previous process crash
       final stuckOp = OutboxOperation(
         operationId: 'op_stuck_in_flight',
@@ -716,11 +750,13 @@ void main() {
       expect(stats['pending'], equals(1));
 
       // 2. Dead-letter recovery: manual retry resets dead letters
-      await outboxStore.markDeadLetter('op_stuck_in_flight', 'Temporary cloud downtime');
+      await outboxStore.markDeadLetter(
+          'op_stuck_in_flight', 'Temporary cloud downtime');
       stats = outboxStore.getOutboxStats(storeId: storeAlpha);
       expect(stats['deadLetter'], equals(1));
 
-      final retriedCount = await outboxStore.retryAllDeadLetter(storeId: storeAlpha);
+      final retriedCount =
+          await outboxStore.retryAllDeadLetter(storeId: storeAlpha);
       expect(retriedCount, equals(1));
       stats = outboxStore.getOutboxStats(storeId: storeAlpha);
       expect(stats['deadLetter'], equals(0));
@@ -732,7 +768,8 @@ void main() {
         'id': 'tx_crash_01',
         'storeId': storeAlpha,
         'status': 'PENDING',
-        'operations': '{"order":{"id":"ORD_CRASH_01","storeId":"$storeAlpha","total":50.0,"status":"COMPLETED"},"items":[],"movements":[],"event":{}}',
+        'operations':
+            '{"order":{"id":"ORD_CRASH_01","storeId":"$storeAlpha","total":50.0,"status":"COMPLETED"},"items":[],"movements":[],"event":{}}',
         'createdAt': DateTime.now().toIso8601String(),
       });
 
@@ -745,14 +782,17 @@ void main() {
     // ─────────────────────────────────────────────────────────────
     // 9. PRODUCTION DIAGNOSTICS & SECRET REDACTION
     // ─────────────────────────────────────────────────────────────
-    test('9. Diagnostics: exposes 8 required fields and deeply redacts secrets, pins, tokens', () {
+    test(
+        '9. Diagnostics: exposes 8 required fields and deeply redacts secrets, pins, tokens',
+        () {
       final rawDiagnostics = {
         'pendingCount': 3,
         'failedCount': 1,
         'conflictCount': 0,
         'deadLetterCount': 0,
         'lastSuccessfulSync': DateTime.now().toIso8601String(),
-        'lastError': 'Authentication failed for pin=1234 and Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        'lastError':
+            'Authentication failed for pin=1234 and Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
         'activeStore': storeAlpha,
         'deviceIdentifier': device1,
         'sensitiveConfig': {

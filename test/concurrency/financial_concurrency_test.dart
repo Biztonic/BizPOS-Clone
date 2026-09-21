@@ -33,14 +33,18 @@ void main() {
 
     setUp(() async {
       tempDir = Directory.systemTemp.createTempSync('bizpos_concurrency_test_');
-      final dbName = 'test_concurrency_${DateTime.now().microsecondsSinceEpoch}.db';
+      final dbName =
+          'test_concurrency_${DateTime.now().microsecondsSinceEpoch}.db';
       dbPath = p.join(tempDir.path, dbName);
       DatabaseHelper.setDbName(dbPath);
 
       Hive.init(tempDir.path);
-      if (Hive.isBoxOpen('cache_orders')) await Hive.box('cache_orders').close();
-      if (Hive.isBoxOpen('cache_inventory')) await Hive.box('cache_inventory').close();
-      if (Hive.isBoxOpen('idempotency_keys')) await Hive.box('idempotency_keys').close();
+      if (Hive.isBoxOpen('cache_orders'))
+        await Hive.box('cache_orders').close();
+      if (Hive.isBoxOpen('cache_inventory'))
+        await Hive.box('cache_inventory').close();
+      if (Hive.isBoxOpen('idempotency_keys'))
+        await Hive.box('idempotency_keys').close();
 
       await Hive.openBox('cache_orders');
       await Hive.openBox('cache_inventory');
@@ -104,7 +108,8 @@ void main() {
       );
     }
 
-    OrderEntity createTestOrder({String? id, int qty = 1, double discount = 0.0}) {
+    OrderEntity createTestOrder(
+        {String? id, int qty = 1, double discount = 0.0}) {
       return OrderEntity(
         id: id ?? '',
         storeId: testStoreId,
@@ -119,7 +124,9 @@ void main() {
       );
     }
 
-    test('1. Exactly-Once Checkout: 10 simultaneous parallel checkouts with the same key create ONE order', () async {
+    test(
+        '1. Exactly-Once Checkout: 10 simultaneous parallel checkouts with the same key create ONE order',
+        () async {
       const stableKey = 'IDEMP_KEY_SIMULTANEOUS_10';
       const orderId = 'ORD_SIMULTANEOUS_01';
       final baseOrder = createTestOrder(id: orderId, qty: 2);
@@ -145,15 +152,18 @@ void main() {
       final db = await DatabaseHelper().database;
 
       // Database assertion 1: exactly ONE order in orders table
-      final orders = await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
-      expect(orders.length, 1, reason: 'Expected exactly 1 order row in SQLite');
+      final orders =
+          await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
+      expect(orders.length, 1,
+          reason: 'Expected exactly 1 order row in SQLite');
       expect(orders.first['subtotal'], 500.0);
       expect(orders.first['cgst'], 12.5);
       expect(orders.first['sgst'], 12.5);
       expect(orders.first['total'], 525.0);
 
       // Database assertion 2: exactly items for 1 order
-      final items = await db.query('order_items', where: 'orderId = ?', whereArgs: [orderId]);
+      final items = await db
+          .query('order_items', where: 'orderId = ?', whereArgs: [orderId]);
       expect(items.length, 1);
       expect(items.first['quantity'], 2);
 
@@ -161,16 +171,22 @@ void main() {
       final now = DateTime.now();
       final yearMonth = '${now.year}-${now.month.toString().padLeft(2, '0')}';
       final counters = await db.query('monthly_order_counter',
-          where: 'storeId = ? AND yearMonth = ?', whereArgs: [testStoreId, yearMonth]);
+          where: 'storeId = ? AND yearMonth = ?',
+          whereArgs: [testStoreId, yearMonth]);
       expect(counters.length, 1);
-      expect(counters.first['count'], 1, reason: 'Counter must be incremented exactly once');
+      expect(counters.first['count'], 1,
+          reason: 'Counter must be incremented exactly once');
 
       // Database assertion 4: outbox operation was inserted atomically
-      final outboxOps = await db.query('outbox_operations', where: 'entityId = ?', whereArgs: [orderId]);
-      expect(outboxOps.length, 1, reason: 'Outbox operation must exist atomically');
+      final outboxOps = await db.query('outbox_operations',
+          where: 'entityId = ?', whereArgs: [orderId]);
+      expect(outboxOps.length, 1,
+          reason: 'Outbox operation must exist atomically');
     });
 
-    test('2. Repeated Identical Operations: subsequent call with same key resolves to existing order', () async {
+    test(
+        '2. Repeated Identical Operations: subsequent call with same key resolves to existing order',
+        () async {
       const key = 'IDEMP_KEY_RETRY_01';
       const orderId = 'ORD_RETRY_01';
       final order = createTestOrder(id: orderId, qty: 1);
@@ -200,12 +216,14 @@ void main() {
       expect(res2.order?.id, orderId);
 
       final db = await DatabaseHelper().database;
-      final count = Sqflite.firstIntValue(
-          await db.rawQuery('SELECT COUNT(*) FROM orders WHERE id = ?', [orderId]));
+      final count = Sqflite.firstIntValue(await db
+          .rawQuery('SELECT COUNT(*) FROM orders WHERE id = ?', [orderId]));
       expect(count, 1);
     });
 
-    test('3. Two Offline Devices Selling Same Inventory: ledger records both movements deterministically', () async {
+    test(
+        '3. Two Offline Devices Selling Same Inventory: ledger records both movements deterministically',
+        () async {
       final now = DateTime.now();
       final db = await DatabaseHelper().database;
 
@@ -240,8 +258,10 @@ void main() {
       );
 
       final mRepo = repository.movementRepo;
-      final res1 = await mRepo.insertMovement(mov1, negativeStockPolicy: NegativeStockPolicy.allowWithWarning);
-      final res2 = await mRepo.insertMovement(mov2, negativeStockPolicy: NegativeStockPolicy.allowWithWarning);
+      final res1 = await mRepo.insertMovement(mov1,
+          negativeStockPolicy: NegativeStockPolicy.allowWithWarning);
+      final res2 = await mRepo.insertMovement(mov2,
+          negativeStockPolicy: NegativeStockPolicy.allowWithWarning);
 
       expect(res1, isTrue);
       expect(res2, isTrue);
@@ -252,12 +272,15 @@ void main() {
       expect(movRows.length, 2);
 
       // Total delta sum = -12. Initial was 20 -> Net stock is 8
-      final sum = Sqflite.firstIntValue(
-          await db.rawQuery('SELECT SUM(delta) FROM inventory_movements WHERE itemId = ?', [testItemId]));
+      final sum = Sqflite.firstIntValue(await db.rawQuery(
+          'SELECT SUM(delta) FROM inventory_movements WHERE itemId = ?',
+          [testItemId]));
       expect(sum, 8);
     });
 
-    test('4. Reconnect After Crash: RecoveryService reconciles pending transaction and outbox operation', () async {
+    test(
+        '4. Reconnect After Crash: RecoveryService reconciles pending transaction and outbox operation',
+        () async {
       final db = await DatabaseHelper().database;
       const txId = 'TX_CRASH_SIMULATION_01';
       const orderId = 'ORD_CRASH_01';
@@ -336,26 +359,34 @@ void main() {
       });
 
       // App restarts and RecoveryService scans
-      final recovery = RecoveryService(dbHelper: DatabaseHelper(), movementRepo: repository.movementRepo);
+      final recovery = RecoveryService(
+          dbHelper: DatabaseHelper(), movementRepo: repository.movementRepo);
       final reports = await recovery.scanAndRecoverReports();
 
       expect(reports.isNotEmpty, isTrue);
       final report = reports.firstWhere((r) => r.txId == txId);
-      expect(report.status, TransactionResolutionStatus.partiallyAppliedRecovered);
+      expect(
+          report.status, TransactionResolutionStatus.partiallyAppliedRecovered);
 
       // Verify order and outbox row are now present
-      final orderRows = await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
+      final orderRows =
+          await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
       expect(orderRows.length, 1);
 
-      final outboxRows = await db.query('outbox_operations', where: 'entityId = ?', whereArgs: [orderId]);
-      expect(outboxRows.length, 1, reason: 'Recovery must reconcile outbox operation');
+      final outboxRows = await db.query('outbox_operations',
+          where: 'entityId = ?', whereArgs: [orderId]);
+      expect(outboxRows.length, 1,
+          reason: 'Recovery must reconcile outbox operation');
 
       // Verify journal is now COMPLETED
-      final journalRows = await db.query('transaction_journal', where: 'id = ?', whereArgs: [txId]);
+      final journalRows = await db
+          .query('transaction_journal', where: 'id = ?', whereArgs: [txId]);
       expect(journalRows.first['status'], 'COMPLETED');
     });
 
-    test('5. Refund After Sync: Finalized order is refunded with immutable totals and restock movement', () async {
+    test(
+        '5. Refund After Sync: Finalized order is refunded with immutable totals and restock movement',
+        () async {
       const orderId = 'ORD_SYNC_REFUND_01';
       final order = createTestOrder(id: orderId, qty: 2);
 
@@ -372,7 +403,8 @@ void main() {
 
       final db = await DatabaseHelper().database;
       // Mark as synced to simulate cloud sync
-      await db.update('orders', {'syncStatus': 'SYNCED', 'synced': 1}, where: 'id = ?', whereArgs: [orderId]);
+      await db.update('orders', {'syncStatus': 'SYNCED', 'synced': 1},
+          where: 'id = ?', whereArgs: [orderId]);
 
       // 2. Perform Refund via repository
       await repository.refundOrder(
@@ -384,7 +416,8 @@ void main() {
       );
 
       // 3. Verify order status and financial immutability
-      final rows = await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
+      final rows =
+          await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
       expect(rows.length, 1);
       final refundedOrder = rows.first;
 
@@ -404,11 +437,14 @@ void main() {
         reason: 'Duplicate refund attempt',
         refundAmount: 525.0,
       );
-      final recheckRows = await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
-      expect(recheckRows.first['voidedBy'], 'manager_alice', reason: 'Repeated refund must not overwrite original actor');
+      final recheckRows =
+          await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
+      expect(recheckRows.first['voidedBy'], 'manager_alice',
+          reason: 'Repeated refund must not overwrite original actor');
     });
 
-    test('6. Duplicate Sync Delivery: OutboxOperation delivery deduplication', () async {
+    test('6. Duplicate Sync Delivery: OutboxOperation delivery deduplication',
+        () async {
       final db = await DatabaseHelper().database;
       final op = OutboxOperation(
         operationId: 'OP_DEDUP_01',
@@ -422,16 +458,23 @@ void main() {
       );
 
       // Insert once
-      await db.insert('outbox_operations', op.toSqlRow(), conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert('outbox_operations', op.toSqlRow(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
       // Insert second time (duplicate sync event)
-      await db.insert('outbox_operations', op.toSqlRow(), conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert('outbox_operations', op.toSqlRow(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
-      final rows = await db.query('outbox_operations', where: 'operationId = ?', whereArgs: ['OP_DEDUP_01']);
-      expect(rows.length, 1, reason: 'Duplicate sync delivery must not duplicate outbox operation');
+      final rows = await db.query('outbox_operations',
+          where: 'operationId = ?', whereArgs: ['OP_DEDUP_01']);
+      expect(rows.length, 1,
+          reason:
+              'Duplicate sync delivery must not duplicate outbox operation');
     });
 
-    test('7. App Restart Halfway Through Checkout: Rolled back transaction leaves no orphaned records', () async {
+    test(
+        '7. App Restart Halfway Through Checkout: Rolled back transaction leaves no orphaned records',
+        () async {
       final db = await DatabaseHelper().database;
       const txId = 'TX_ROLLED_BACK_01';
       const orderId = 'ORD_ORPHAN_TEST_01';
@@ -454,26 +497,33 @@ void main() {
       });
 
       // Recovery without auto-reconcile detects clean rollback
-      final recovery = RecoveryService(dbHelper: DatabaseHelper(), movementRepo: repository.movementRepo);
-      final report = await recovery.reconcileTransaction(txId, autoReconcile: false);
+      final recovery = RecoveryService(
+          dbHelper: DatabaseHelper(), movementRepo: repository.movementRepo);
+      final report =
+          await recovery.reconcileTransaction(txId, autoReconcile: false);
 
       expect(report.status, TransactionResolutionStatus.rolledBack);
 
-      final journal = await db.query('transaction_journal', where: 'id = ?', whereArgs: [txId]);
+      final journal = await db
+          .query('transaction_journal', where: 'id = ?', whereArgs: [txId]);
       expect(journal.first['status'], 'ROLLED_BACK');
 
-      final orderRows = await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
+      final orderRows =
+          await db.query('orders', where: 'id = ?', whereArgs: [orderId]);
       expect(orderRows.isEmpty, isTrue);
     });
 
-    test('8. Local SQLite Tenant Isolation: Queries with null or empty storeId return 0 results', () async {
+    test(
+        '8. Local SQLite Tenant Isolation: Queries with null or empty storeId return 0 results',
+        () async {
       final reporting = ReportingRepository(dbHelper: DatabaseHelper());
 
       // Store A has records seeded
       final countNull = await reporting.getOrderCount(null);
       final countEmpty = await reporting.getOrderCount('');
       expect(countNull, 0, reason: 'null storeId must strictly return 0 count');
-      expect(countEmpty, 0, reason: 'empty storeId must strictly return 0 count');
+      expect(countEmpty, 0,
+          reason: 'empty storeId must strictly return 0 count');
 
       final invNull = await reporting.getInventoryCount(null);
       final invEmpty = await reporting.getInventoryCount('');

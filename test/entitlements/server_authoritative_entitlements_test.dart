@@ -14,7 +14,8 @@ void main() {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
-  group('Server-Authoritative Entitlements, Quotas & Anti-Tampering Test Suite', () {
+  group('Server-Authoritative Entitlements, Quotas & Anti-Tampering Test Suite',
+      () {
     final testDbName =
         'test_auth_entitlement_${DateTime.now().millisecondsSinceEpoch}.db';
     late Directory tempDir;
@@ -145,7 +146,8 @@ void main() {
       );
     });
 
-    test('3. Addon entitlement cannot be forged locally without server purchase',
+    test(
+        '3. Addon entitlement cannot be forged locally without server purchase',
         () async {
       const addonStoreId = 'STORE_ADDON_TAMPER';
       final legitimate = StoreEntitlement.create(
@@ -163,15 +165,19 @@ void main() {
       expect(service.hasAddon('customer_management', storeId: addonStoreId),
           isTrue);
       // Unpurchased addon is rejected
-      expect(service.hasAddon('kds_management', storeId: addonStoreId),
-          isFalse);
+      expect(
+          service.hasAddon('kds_management', storeId: addonStoreId), isFalse);
 
       // Attack: Attempt to sync unpurchased addons from local store object
       await service.syncFromStore(
         storeId: addonStoreId,
         planName: 'Basic',
         status: 'ACTIVE',
-        addons: ['customer_management', 'kds_management', 'franchise_management'],
+        addons: [
+          'customer_management',
+          'kds_management',
+          'franchise_management'
+        ],
       );
 
       final afterSync = service.getEntitlement(addonStoreId);

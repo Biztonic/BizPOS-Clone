@@ -23,7 +23,8 @@ class AuditService {
   static const int maxRecordsInStorage = 2000;
 
   final List<AuditRecord> _inMemoryRecords = [];
-  final StreamController<AuditRecord> _streamController = StreamController<AuditRecord>.broadcast();
+  final StreamController<AuditRecord> _streamController =
+      StreamController<AuditRecord>.broadcast();
 
   Stream<AuditRecord> get onAuditRecord => _streamController.stream;
   List<AuditRecord> get cachedRecords => List.unmodifiable(_inMemoryRecords);
@@ -57,12 +58,15 @@ class AuditService {
       _inMemoryRecords.clear();
       if (_box != null) {
         final values = _box!.values.toList();
-        final start = values.length > maxRecordsInMemory ? values.length - maxRecordsInMemory : 0;
+        final start = values.length > maxRecordsInMemory
+            ? values.length - maxRecordsInMemory
+            : 0;
         for (var i = start; i < values.length; i++) {
           final raw = values[i];
           if (raw is Map) {
             try {
-              _inMemoryRecords.add(AuditRecord.fromMap(Map<String, dynamic>.from(raw)));
+              _inMemoryRecords
+                  .add(AuditRecord.fromMap(Map<String, dynamic>.from(raw)));
             } catch (_) {}
           }
         }
@@ -131,7 +135,8 @@ class AuditService {
         timestamp: record.timestamp,
         result: DiagnosticResult.success,
         durationMs: 0,
-        message: 'AUDIT: ${record.action.code} on ${record.entityType} (${record.entityId}) by ${record.actorId} [${record.actorRole}]',
+        message:
+            'AUDIT: ${record.action.code} on ${record.entityType} (${record.entityId}) by ${record.actorId} [${record.actorRole}]',
         metadata: {
           'reason': record.reason,
           'previousState': record.previousState,

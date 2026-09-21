@@ -168,7 +168,8 @@ class PrinterManagerService {
     );
   }
 
-  Future<void> _connectInternal(PrinterDevice device, PrinterPurpose purpose) async {
+  Future<void> _connectInternal(
+      PrinterDevice device, PrinterPurpose purpose) async {
     bool success = false;
     switch (device.type) {
       case PrinterConnectionType.bluetooth:

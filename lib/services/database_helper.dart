@@ -126,7 +126,8 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> _executeUpgradeSteps(Database db, int oldVersion, int newVersion) async {
+  Future<void> _executeUpgradeSteps(
+      Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       try {
         await db

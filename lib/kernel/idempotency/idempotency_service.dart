@@ -40,7 +40,8 @@ class IdempotencyService {
   }) async {
     // 1. In-process re-entrancy check
     if (_inFlightKeys.contains(key)) {
-      debugPrint('🛡️ IdempotencyService: Blocked in-process re-entrancy for key: $key');
+      debugPrint(
+          '🛡️ IdempotencyService: Blocked in-process re-entrancy for key: $key');
       return false;
     }
     _inFlightKeys.add(key);

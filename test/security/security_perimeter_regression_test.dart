@@ -64,7 +64,8 @@ void main() {
       }
     });
 
-    test('SQLite queries strictly deny cross-tenant access when storeId is empty or null',
+    test(
+        'SQLite queries strictly deny cross-tenant access when storeId is empty or null',
         () async {
       final order1 = OrderModel(
         id: 'ORD_TENANT_A',
@@ -108,7 +109,8 @@ void main() {
       expect(betaOrders.first.id, 'ORD_TENANT_B');
     });
 
-    test('getOrderCountSince correctly binds parameters without positional misalignment',
+    test(
+        'getOrderCountSince correctly binds parameters without positional misalignment',
         () async {
       final now = DateTime.now();
       final pastOrderAlpha = OrderModel(
@@ -149,18 +151,21 @@ void main() {
       final cutoff = now.subtract(const Duration(days: 1));
 
       // store_alpha has only 1 order since cutoff
-      final alphaCount = await repository.getOrderCountSince('store_alpha', cutoff);
+      final alphaCount =
+          await repository.getOrderCountSince('store_alpha', cutoff);
       expect(alphaCount, 1);
 
       // store_beta has only 1 order since cutoff
-      final betaCount = await repository.getOrderCountSince('store_beta', cutoff);
+      final betaCount =
+          await repository.getOrderCountSince('store_beta', cutoff);
       expect(betaCount, 1);
     });
 
     test('BillingProvider.checkout rejects concurrent duplicate execution',
         () async {
       final syncService = SyncService();
-      final provider = BillingProvider(syncService, repository: _FakeBillingRepository());
+      final provider =
+          BillingProvider(syncService, repository: _FakeBillingRepository());
 
       final dummyOrder = OrderEntity(
         id: 'ORD_REENTRANT_TEST',
@@ -241,7 +246,8 @@ void main() {
       }
     });
 
-    test('Clock rollback tamper detection: rollback before 2025 or backwards triggers tamper alarm',
+    test(
+        'Clock rollback tamper detection: rollback before 2025 or backwards triggers tamper alarm',
         () async {
       final settingsBox = await Hive.openBox('settings');
       const thresholdMs = 1735689600000; // Jan 1, 2025

@@ -69,7 +69,8 @@ void main() {
       print('PRAGMA synchronous: ${syncResult.first.values.first}');
       print('PRAGMA cache_size: ${cacheResult.first.values.first}');
       print('PRAGMA temp_store: ${tempResult.first.values.first}');
-      print('Active Specialized Indexes (${indexNames.length}): ${indexNames.join(', ')}');
+      print(
+          'Active Specialized Indexes (${indexNames.length}): ${indexNames.join(', ')}');
       print('----------------------------------------------------');
 
       expect(startupMs, lessThan(1500));
@@ -168,7 +169,8 @@ void main() {
       final avgLatencyMicros =
           latencies.reduce((a, b) => a + b) / latencies.length;
       final avgLatencyMs = avgLatencyMicros / 1000.0;
-      final p95LatencyMs = (latencies..sort())[(latencies.length * 0.95).toInt()] / 1000.0;
+      final p95LatencyMs =
+          (latencies..sort())[(latencies.length * 0.95).toInt()] / 1000.0;
 
       print('----------------------------------------------------');
       print('⚡ [CHECKOUT LATENCY BENCHMARK]');
@@ -177,7 +179,8 @@ void main() {
       print('p95 Checkout Latency: ${p95LatencyMs.toStringAsFixed(2)}ms');
       print('----------------------------------------------------');
 
-      expect(avgLatencyMs, lessThan(50.0)); // Strict SLA: <50ms per atomic checkout
+      expect(avgLatencyMs,
+          lessThan(50.0)); // Strict SLA: <50ms per atomic checkout
     });
 
     test('Benchmark 3: Multi-Device Concurrent Checkout Simulation', () async {
@@ -299,8 +302,11 @@ void main() {
         for (int i = startIndex; i < startIndex + count; i++) {
           final id = 'ORD_${i.toString().padLeft(6, '0')}';
           final date = now.subtract(Duration(minutes: i));
-          final status = (i % 20 == 0) ? 'Cancelled' : ((i % 15 == 0) ? 'Refunded' : 'Completed');
-          final payment = (i % 3 == 0) ? 'Cash' : ((i % 3 == 1) ? 'Card' : 'UPI');
+          final status = (i % 20 == 0)
+              ? 'Cancelled'
+              : ((i % 15 == 0) ? 'Refunded' : 'Completed');
+          final payment =
+              (i % 3 == 0) ? 'Cash' : ((i % 3 == 1) ? 'Card' : 'UPI');
           final total = 50.0 + (i % 500);
 
           batch.insert('orders', {
@@ -336,7 +342,8 @@ void main() {
 
       print('1,000 Orders:');
       print('  - Keyset Page 1 (20 orders): ${p1kTime.toStringAsFixed(2)}ms');
-      print('  - Aggregated Report: ${s1kTime.toStringAsFixed(2)}ms (Sales: ₹${stats1k['totalSales']}, Orders: ${stats1k['orderCount']})');
+      print(
+          '  - Aggregated Report: ${s1kTime.toStringAsFixed(2)}ms (Sales: ₹${stats1k['totalSales']}, Orders: ${stats1k['orderCount']})');
 
       // Step 4B: Scale to 10,000 Orders Stress
       await seedOrders(9000, 1000);
@@ -362,8 +369,10 @@ void main() {
 
       print('10,000 Orders:');
       print('  - Keyset Page 1 (20 orders): ${p10kTime.toStringAsFixed(2)}ms');
-      print('  - Keyset Deep Cursor Page: ${p10kDeepTime.toStringAsFixed(2)}ms');
-      print('  - Aggregated Report: ${s10kTime.toStringAsFixed(2)}ms (Sales: ₹${stats10k['totalSales']}, Orders: ${stats10k['orderCount']})');
+      print(
+          '  - Keyset Deep Cursor Page: ${p10kDeepTime.toStringAsFixed(2)}ms');
+      print(
+          '  - Aggregated Report: ${s10kTime.toStringAsFixed(2)}ms (Sales: ₹${stats10k['totalSales']}, Orders: ${stats10k['orderCount']})');
 
       // Step 4C: Scale to 100,000 Orders Enterprise Scale
       // Insert in chunks of 15,000 to keep SQLite batch happy
@@ -372,7 +381,8 @@ void main() {
       }
 
       sw = Stopwatch()..start();
-      var page100k = await repository.getPaginatedOrders(testStoreId, limit: 20);
+      var page100k =
+          await repository.getPaginatedOrders(testStoreId, limit: 20);
       sw.stop();
       final p100kTime = sw.elapsedMicroseconds / 1000.0;
 
@@ -407,10 +417,14 @@ void main() {
       print('100,000 Orders:');
       print('  - Keyset Page 1 (20 orders): ${p100kTime.toStringAsFixed(2)}ms');
       print('  - Keyset Deep Cursor: ${p100kDeepTime.toStringAsFixed(2)}ms');
-      print('  - Filtered Keyset (Status+Payment+Date): ${p100kFilteredTime.toStringAsFixed(2)}ms');
-      print('  - Aggregated Report on 100k orders: ${s100kTime.toStringAsFixed(2)}ms');
-      print('    -> Completed Sales: ₹${stats100k['statusBreakdown']['Completed']}');
-      print('    -> Refunded Sales: ₹${stats100k['statusBreakdown']['Refunded']}');
+      print(
+          '  - Filtered Keyset (Status+Payment+Date): ${p100kFilteredTime.toStringAsFixed(2)}ms');
+      print(
+          '  - Aggregated Report on 100k orders: ${s100kTime.toStringAsFixed(2)}ms');
+      print(
+          '    -> Completed Sales: ₹${stats100k['statusBreakdown']['Completed']}');
+      print(
+          '    -> Refunded Sales: ₹${stats100k['statusBreakdown']['Refunded']}');
       print('    -> Payment Breakdown: ${stats100k['paymentBreakdown']}');
       print('----------------------------------------------------');
 
@@ -418,10 +432,12 @@ void main() {
       expect(p100kTime, lessThan(200.0));
       expect(p100kDeepTime, lessThan(200.0));
       expect(p100kFilteredTime, lessThan(100.0));
-      expect(s100kTime, lessThan(1500.0)); // 100k full table aggregation in <1.5s!
+      expect(
+          s100kTime, lessThan(1500.0)); // 100k full table aggregation in <1.5s!
     });
 
-    test('Benchmark 5: Large Inventory Catalog (10,000 items) & Instant Search', () async {
+    test('Benchmark 5: Large Inventory Catalog (10,000 items) & Instant Search',
+        () async {
       final db = await dbHelper.database;
       print('----------------------------------------------------');
       print('⚡ [LARGE INVENTORY CATALOG BENCHMARK: 10,000 ITEMS]');
@@ -447,19 +463,22 @@ void main() {
 
       // 1. Keyset pagination on 10,000 items
       var sw = Stopwatch()..start();
-      final page1 = await repository.getPaginatedInventory(testStoreId, limit: 50);
+      final page1 =
+          await repository.getPaginatedInventory(testStoreId, limit: 50);
       sw.stop();
       final page1Time = sw.elapsedMicroseconds / 1000.0;
 
       // 2. Exact SKU lookup using idx_inventory_store_sku
       sw = Stopwatch()..start();
-      final skuResults = await repository.searchInventory(testStoreId, 'SKU-105432');
+      final skuResults =
+          await repository.searchInventory(testStoreId, 'SKU-105432');
       sw.stop();
       final skuSearchTime = sw.elapsedMicroseconds / 1000.0;
 
       // 3. Name prefix search using idx_inventory_store_name
       sw = Stopwatch()..start();
-      final nameResults = await repository.searchInventory(testStoreId, 'Product Item #88');
+      final nameResults =
+          await repository.searchInventory(testStoreId, 'Product Item #88');
       sw.stop();
       final nameSearchTime = sw.elapsedMicroseconds / 1000.0;
 
@@ -471,8 +490,10 @@ void main() {
 
       print('Inventory Catalog (10,000 items):');
       print('  - Keyset Page (50 items): ${page1Time.toStringAsFixed(2)}ms');
-      print('  - Exact SKU Search: ${skuSearchTime.toStringAsFixed(2)}ms (found ${skuResults.length})');
-      print('  - Name Substring Search: ${nameSearchTime.toStringAsFixed(2)}ms (found ${nameResults.length})');
+      print(
+          '  - Exact SKU Search: ${skuSearchTime.toStringAsFixed(2)}ms (found ${skuResults.length})');
+      print(
+          '  - Name Substring Search: ${nameSearchTime.toStringAsFixed(2)}ms (found ${nameResults.length})');
       print('  - Full 10,000 items load: ${fullCatalogTime}ms');
       print('----------------------------------------------------');
 
@@ -482,7 +503,8 @@ void main() {
       expect(fullCatalogTime, lessThan(2000));
     });
 
-    test('Benchmark 6: Large Customer Catalog (50,000 customers) & Search', () async {
+    test('Benchmark 6: Large Customer Catalog (50,000 customers) & Search',
+        () async {
       final db = await dbHelper.database;
       print('----------------------------------------------------');
       print('⚡ [LARGE CUSTOMER CATALOG BENCHMARK: 50,000 CUSTOMERS]');
@@ -511,26 +533,31 @@ void main() {
 
       // 1. Keyset pagination on 50,000 customers
       var sw = Stopwatch()..start();
-      final page1 = await repository.getPaginatedCustomers(testStoreId, limit: 50);
+      final page1 =
+          await repository.getPaginatedCustomers(testStoreId, limit: 50);
       sw.stop();
       final pageTime = sw.elapsedMicroseconds / 1000.0;
 
       // 2. Phone index lookup on 50,000 customers using idx_customers_store_phone
       sw = Stopwatch()..start();
-      final phoneResults = await repository.searchCustomers(testStoreId, '9876523456');
+      final phoneResults =
+          await repository.searchCustomers(testStoreId, '9876523456');
       sw.stop();
       final phoneSearchTime = sw.elapsedMicroseconds / 1000.0;
 
       // 3. Name partial search
       sw = Stopwatch()..start();
-      final nameResults = await repository.searchCustomers(testStoreId, 'Customer 4242');
+      final nameResults =
+          await repository.searchCustomers(testStoreId, 'Customer 4242');
       sw.stop();
       final nameSearchTime = sw.elapsedMicroseconds / 1000.0;
 
       print('Customer Catalog (50,000 customers):');
       print('  - Keyset Page (50 customers): ${pageTime.toStringAsFixed(2)}ms');
-      print('  - Phone Lookup (indexed): ${phoneSearchTime.toStringAsFixed(2)}ms (found ${phoneResults.length})');
-      print('  - Name Partial Search: ${nameSearchTime.toStringAsFixed(2)}ms (found ${nameResults.length})');
+      print(
+          '  - Phone Lookup (indexed): ${phoneSearchTime.toStringAsFixed(2)}ms (found ${phoneResults.length})');
+      print(
+          '  - Name Partial Search: ${nameSearchTime.toStringAsFixed(2)}ms (found ${nameResults.length})');
       print('----------------------------------------------------');
 
       expect(pageTime, lessThan(80.0));
@@ -538,7 +565,8 @@ void main() {
       expect(nameSearchTime, lessThan(120.0));
     });
 
-    test('Benchmark 7: Large Sync Queue & Batched Outbound Processing', () async {
+    test('Benchmark 7: Large Sync Queue & Batched Outbound Processing',
+        () async {
       print('----------------------------------------------------');
       print('⚡ [LARGE SYNC QUEUE BENCHMARK: 1,000 OPERATIONS]');
 
@@ -582,7 +610,8 @@ void main() {
 
       // Batch transition to PUSHED
       final swPushed = Stopwatch()..start();
-      await outboxStore.markBatchPushed(opIds, auditMetadata: {'benchmark': true});
+      await outboxStore
+          .markBatchPushed(opIds, auditMetadata: {'benchmark': true});
       swPushed.stop();
       final pushedTime = swPushed.elapsedMilliseconds;
 
@@ -590,18 +619,22 @@ void main() {
       final queueProcessingRate = (1000.0 / (totalProcessTime / 1000.0));
 
       print('Sync Queue Performance (1,000 operations):');
-      print('  - Enqueue 1,000 ops: ${enqueueTime}ms (${enqueueRate.toStringAsFixed(1)} ops/sec)');
+      print(
+          '  - Enqueue 1,000 ops: ${enqueueTime}ms (${enqueueRate.toStringAsFixed(1)} ops/sec)');
       print('  - Batch Mark IN_FLIGHT: ${inFlightTime}ms');
       print('  - Batch Mark PUSHED: ${pushedTime}ms');
-      print('  - Queue Processing Rate: ${queueProcessingRate.toStringAsFixed(1)} ops/sec');
+      print(
+          '  - Queue Processing Rate: ${queueProcessingRate.toStringAsFixed(1)} ops/sec');
       print('----------------------------------------------------');
 
       expect(inFlightTime, lessThan(250));
       expect(pushedTime, lessThan(250));
-      expect(queueProcessingRate, greaterThan(1500)); // >1500 ops/sec processing rate!
+      expect(queueProcessingRate,
+          greaterThan(1500)); // >1500 ops/sec processing rate!
     });
 
-    test('Benchmark 8: Inbound Deduplication & Batched Inbox Persistence', () async {
+    test('Benchmark 8: Inbound Deduplication & Batched Inbox Persistence',
+        () async {
       print('----------------------------------------------------');
       print('⚡ [INBOUND DEDUPLICATION & INBOX BATCHING: 1,000 RECORDS]');
 
@@ -630,7 +663,8 @@ void main() {
       int dupCount = 0;
       for (int i = 0; i < 1000; i++) {
         if (inboxStore.isAlreadyProcessed(
-            'inventory_movements', 'doc_inbound_$i', operationId: 'op_inbound_$i')) {
+            'inventory_movements', 'doc_inbound_$i',
+            operationId: 'op_inbound_$i')) {
           dupCount++;
         }
       }
@@ -639,7 +673,8 @@ void main() {
 
       print('Inbound Deduplication Performance:');
       print('  - Batch Record 1,000 Inbound Ops: ${batchRecordTime}ms');
-      print('  - Deduplication Check 1,000 Ops: ${checkTime.toStringAsFixed(2)}ms (found $dupCount dups)');
+      print(
+          '  - Deduplication Check 1,000 Ops: ${checkTime.toStringAsFixed(2)}ms (found $dupCount dups)');
       print('----------------------------------------------------');
 
       expect(dupCount, equals(1000));

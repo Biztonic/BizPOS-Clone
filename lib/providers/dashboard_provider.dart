@@ -3721,14 +3721,22 @@ class DashboardProvider with ChangeNotifier {
   }
 
   Future<void> fetchAttendance(String employeeId) async {
-    // Stub implementation to be hooked up to repository/firestore
-    _attendanceRecords = [];
+    try {
+      _attendanceRecords = await _employeeRepository.getAttendance(employeeId);
+    } catch (e) {
+      debugPrint('⚠️ fetchAttendance failed: $e');
+      _attendanceRecords = [];
+    }
     notifyListeners();
   }
 
   Future<void> fetchPayroll(String employeeId) async {
-    // Stub implementation
-    _payrollRecords = [];
+    try {
+      _payrollRecords = await _employeeRepository.getPayroll(employeeId);
+    } catch (e) {
+      debugPrint('⚠️ fetchPayroll failed: $e');
+      _payrollRecords = [];
+    }
     notifyListeners();
   }
 
@@ -3849,7 +3857,8 @@ class DashboardProvider with ChangeNotifier {
 
       const int thresholdMs = 1735689600000;
 
-      if ((lastKnownMs == null || nowMs >= lastKnownMs) && nowMs >= thresholdMs) {
+      if ((lastKnownMs == null || nowMs >= lastKnownMs) &&
+          nowMs >= thresholdMs) {
         _isClockTampered = false;
         box.put('last_known_time', nowMs);
         notifyListeners();

@@ -55,7 +55,8 @@ class StoreNotifier extends _$StoreNotifier {
 
         // Profile Sync via AuthRepository
         if (user != null) {
-          await AuthRepository().updateUserProfile(user.uid, {'storeId': storeId});
+          await AuthRepository()
+              .updateUserProfile(user.uid, {'storeId': storeId});
         }
 
         // Try Cache First

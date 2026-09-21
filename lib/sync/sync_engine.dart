@@ -596,7 +596,8 @@ class SyncService with ChangeNotifier {
       entityId: collection,
       actionName: 'Pull Collection: $collection',
       metadata: {'forceFull': forceFull},
-      operation: () => _pullEngine.pullCollection(collection, forceFull: forceFull),
+      operation: () =>
+          _pullEngine.pullCollection(collection, forceFull: forceFull),
     );
   }
 
@@ -731,14 +732,14 @@ class SyncService with ChangeNotifier {
 
   OutboxStore get outboxStore => _outboundManager.outboxStore;
 
-  Map<String, int> getOutboxStats() =>
-      _isInitialized ? _outboundManager.getQueueStats(storeId: activeStoreId) : {};
+  Map<String, int> getOutboxStats() => _isInitialized
+      ? _outboundManager.getQueueStats(storeId: activeStoreId)
+      : {};
 
-  List<OutboxOperation> getDeadLetterOperations() =>
-      _isInitialized
-          ? _outboundManager.outboxStore
-              .getDeadLetterOperations(storeId: activeStoreId)
-          : [];
+  List<OutboxOperation> getDeadLetterOperations() => _isInitialized
+      ? _outboundManager.outboxStore
+          .getDeadLetterOperations(storeId: activeStoreId)
+      : [];
 
   Future<void> retryOperation(String operationId) async {
     if (!_isInitialized) return;

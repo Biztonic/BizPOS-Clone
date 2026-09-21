@@ -280,8 +280,8 @@ class EntitlementService {
       gracePeriodDays: current.gracePeriodDays,
       addons: effectiveAddons,
       purchasedAddons: current.purchasedAddons,
-      limits:
-          defaultPlanLimits[effectiveTier] ?? defaultPlanLimits[PlanTier.basic]!,
+      limits: defaultPlanLimits[effectiveTier] ??
+          defaultPlanLimits[PlanTier.basic]!,
       features: defaultPlanFeatures[effectiveTier] ??
           defaultPlanFeatures[PlanTier.basic]!,
       version: current.version + 1,
@@ -551,8 +551,7 @@ class EntitlementService {
     final limit = entitlement.limits['inventory'] ?? -1;
     if (limit == -1) return;
 
-    final count =
-        currentCount ?? await _repo.getInventoryCount(storeId);
+    final count = currentCount ?? await _repo.getInventoryCount(storeId);
     if (count >= limit) {
       EventBus.instance.fire(PlanLimitReachedEvent(
         storeId: storeId,
@@ -578,8 +577,7 @@ class EntitlementService {
     final limit = entitlement.limits['customers'] ?? -1;
     if (limit == -1) return;
 
-    final count =
-        currentCount ?? await _repo.getCustomerCount(storeId);
+    final count = currentCount ?? await _repo.getCustomerCount(storeId);
     if (count >= limit) {
       EventBus.instance.fire(PlanLimitReachedEvent(
         storeId: storeId,
@@ -605,8 +603,7 @@ class EntitlementService {
     final limit = entitlement.limits['employees'] ?? -1;
     if (limit == -1) return;
 
-    final count =
-        currentCount ?? await _repo.getEmployeeCount(storeId);
+    final count = currentCount ?? await _repo.getEmployeeCount(storeId);
     if (count >= limit) {
       EventBus.instance.fire(PlanLimitReachedEvent(
         storeId: storeId,
@@ -689,7 +686,8 @@ class EntitlementService {
         actorRole: 'admin',
         entityId: storeId,
         entityType: 'SUBSCRIPTION',
-        reason: reason ?? 'Plan changed from ${oldPlan.value} to ${newPlan.value}',
+        reason:
+            reason ?? 'Plan changed from ${oldPlan.value} to ${newPlan.value}',
         previousState: {'plan': oldPlan.value, 'status': oldStatus.value},
         newState: {
           'plan': newPlan.value,

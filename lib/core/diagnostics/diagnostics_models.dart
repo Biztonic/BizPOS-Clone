@@ -19,7 +19,9 @@ extension DiagnosticSubsystemX on DiagnosticSubsystem {
 
   static DiagnosticSubsystem fromString(String val) {
     return DiagnosticSubsystem.values.firstWhere(
-      (e) => e.name.toLowerCase() == val.toLowerCase() || e.nameUpper == val.toUpperCase(),
+      (e) =>
+          e.name.toLowerCase() == val.toLowerCase() ||
+          e.nameUpper == val.toUpperCase(),
       orElse: () => DiagnosticSubsystem.recovery,
     );
   }
@@ -69,7 +71,8 @@ extension DiagnosticErrorCategoryX on DiagnosticErrorCategory {
     if (val == null || val.isEmpty) return null;
     final normalized = val.toUpperCase().replaceAll('_', '');
     for (final cat in DiagnosticErrorCategory.values) {
-      if (cat.code.replaceAll('_', '') == normalized || cat.name.toUpperCase() == normalized) {
+      if (cat.code.replaceAll('_', '') == normalized ||
+          cat.name.toUpperCase() == normalized) {
         return cat;
       }
     }
@@ -113,9 +116,11 @@ class DiagnosticSanitizer {
     final result = <String, dynamic>{};
 
     for (final entry in input.entries) {
-      final keyLower = entry.key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      final keyLower =
+          entry.key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
       if (entry.value is Map) {
-        result[entry.key] = sanitizeMap(Map<String, dynamic>.from(entry.value as Map));
+        result[entry.key] =
+            sanitizeMap(Map<String, dynamic>.from(entry.value as Map));
       } else if (_isSensitiveKey(keyLower)) {
         result[entry.key] = '[REDACTED]';
       } else if (entry.value is List) {
@@ -168,9 +173,13 @@ class DiagnosticSanitizer {
   static String sanitizeString(String text) {
     var sanitized = text;
     // Scrub Bearer tokens
-    sanitized = sanitized.replaceAll(RegExp(r'Bearer\s+[A-Za-z0-9\-\._~\+\/]+=*', caseSensitive: false), 'Bearer [REDACTED]');
+    sanitized = sanitized.replaceAll(
+        RegExp(r'Bearer\s+[A-Za-z0-9\-\._~\+\/]+=*', caseSensitive: false),
+        'Bearer [REDACTED]');
     // Scrub Firebase refresh tokens or session hashes
-    sanitized = sanitized.replaceAll(RegExp(r'offline_hash_[A-Za-z0-9_\-]+', caseSensitive: false), 'offline_hash_[REDACTED]');
+    sanitized = sanitized.replaceAll(
+        RegExp(r'offline_hash_[A-Za-z0-9_\-]+', caseSensitive: false),
+        'offline_hash_[REDACTED]');
     return sanitized;
   }
 }
@@ -215,7 +224,8 @@ class DiagnosticEvent {
       'operationId': operationId,
       'subsystem': subsystem.nameUpper,
       'storeId': storeId,
-      'userId': userId != null ? DiagnosticSanitizer.sanitizeString(userId!) : null,
+      'userId':
+          userId != null ? DiagnosticSanitizer.sanitizeString(userId!) : null,
       'deviceId': deviceId,
       'entityId': entityId,
       'timestamp': timestamp.toIso8601String(),
@@ -224,7 +234,9 @@ class DiagnosticEvent {
       'errorCategory': errorCategory?.code,
       'message': DiagnosticSanitizer.sanitizeString(message),
       'metadata': metadata,
-      'stackTrace': stackTrace != null ? DiagnosticSanitizer.sanitizeString(stackTrace!) : null,
+      'stackTrace': stackTrace != null
+          ? DiagnosticSanitizer.sanitizeString(stackTrace!)
+          : null,
     };
   }
 
@@ -232,17 +244,22 @@ class DiagnosticEvent {
     return DiagnosticEvent(
       id: map['id']?.toString() ?? '',
       operationId: map['operationId']?.toString() ?? '',
-      subsystem: DiagnosticSubsystemX.fromString(map['subsystem']?.toString() ?? 'recovery'),
+      subsystem: DiagnosticSubsystemX.fromString(
+          map['subsystem']?.toString() ?? 'recovery'),
       storeId: map['storeId']?.toString(),
       userId: map['userId']?.toString(),
       deviceId: map['deviceId']?.toString() ?? 'unknown',
       entityId: map['entityId']?.toString(),
-      timestamp: DateTime.tryParse(map['timestamp']?.toString() ?? '') ?? DateTime.now(),
+      timestamp: DateTime.tryParse(map['timestamp']?.toString() ?? '') ??
+          DateTime.now(),
       result: _parseResult(map['result']?.toString()),
       durationMs: (map['durationMs'] as num?)?.toInt() ?? 0,
-      errorCategory: DiagnosticErrorCategoryX.fromString(map['errorCategory']?.toString()),
+      errorCategory:
+          DiagnosticErrorCategoryX.fromString(map['errorCategory']?.toString()),
       message: map['message']?.toString() ?? '',
-      metadata: map['metadata'] is Map ? Map<String, dynamic>.from(map['metadata'] as Map) : null,
+      metadata: map['metadata'] is Map
+          ? Map<String, dynamic>.from(map['metadata'] as Map)
+          : null,
       stackTrace: map['stackTrace']?.toString(),
     );
   }

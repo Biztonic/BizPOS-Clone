@@ -154,11 +154,14 @@ class RecoveryService {
   Future<List<TransactionReconciliationReport>> scanAndRecoverReports({
     bool autoReconcilePartials = true,
   }) async {
-    return await DiagnosticsService().trace<List<TransactionReconciliationReport>>(
+    return await DiagnosticsService()
+        .trace<List<TransactionReconciliationReport>>(
       subsystem: DiagnosticSubsystem.recovery,
-      operationId: 'recovery_scan_journal_${DateTime.now().millisecondsSinceEpoch}',
+      operationId:
+          'recovery_scan_journal_${DateTime.now().millisecondsSinceEpoch}',
       actionName: 'Scan & Reconcile Transaction Journal',
-      operation: () => _scanAndRecoverReportsInternal(autoReconcilePartials: autoReconcilePartials),
+      operation: () => _scanAndRecoverReportsInternal(
+          autoReconcilePartials: autoReconcilePartials),
     );
   }
 

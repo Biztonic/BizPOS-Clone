@@ -167,8 +167,7 @@ class Repository {
       _customers.getCustomers(storeId, limit: limit);
   Future<List<Customer>> getPaginatedCustomers(String? storeId,
           {int limit = 50, String? lastId}) =>
-      _customers.getPaginatedCustomers(storeId,
-          limit: limit, lastId: lastId);
+      _customers.getPaginatedCustomers(storeId, limit: limit, lastId: lastId);
   Future<List<Customer>> searchCustomers(String? storeId, String query,
           {int limit = 50}) =>
       _customers.searchCustomers(storeId, query, limit: limit);

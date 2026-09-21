@@ -121,7 +121,8 @@ class SyncDiagnostics {
       'deadLetters': deadLetters.map((op) {
         if (op is Map) return sanitizeData(Map<String, dynamic>.from(op));
         try {
-          return sanitizeData(Map<String, dynamic>.from((op as dynamic).toMap()));
+          return sanitizeData(
+              Map<String, dynamic>.from((op as dynamic).toMap()));
         } catch (_) {
           return {'raw': sanitizeMessage(op.toString())};
         }
@@ -133,7 +134,8 @@ class SyncDiagnostics {
   static String sanitizeMessage(String message) {
     var sanitized = message;
     final sensitivePatterns = [
-      RegExp(r'(pin|password|token|secret|credential|api_?key)[=:\s]+([^\s,;]+)',
+      RegExp(
+          r'(pin|password|token|secret|credential|api_?key)[=:\s]+([^\s,;]+)',
           caseSensitive: false),
       RegExp(r'(Bearer)\s+[A-Za-z0-9\-\._~\+\/]+=*', caseSensitive: false),
     ];
@@ -163,8 +165,8 @@ class SyncDiagnostics {
 
     data.forEach((key, value) {
       final keyLower = key.toLowerCase();
-      final isSensitive =
-          sensitiveSubstrings.any((s) => keyLower.contains(s) && keyLower != 'authuid');
+      final isSensitive = sensitiveSubstrings
+          .any((s) => keyLower.contains(s) && keyLower != 'authuid');
 
       if (isSensitive) {
         sanitized[key] = '[REDACTED]';

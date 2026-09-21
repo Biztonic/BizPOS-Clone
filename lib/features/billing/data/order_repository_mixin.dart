@@ -78,18 +78,19 @@ mixin OrderRepositoryMixin {
     final txId = 'TX-${DateTime.now().millisecondsSinceEpoch}-${order.id}';
 
     // Build default outbox operation for order if not supplied
-    final effectiveOutboxOps = outboxOperations ?? [
-      OutboxOperation(
-        operationId: 'op_order_${order.id}',
-        storeId: storeId,
-        userId: 'system',
-        deviceId: order.deviceId ?? 'device-pos',
-        collection: 'orders',
-        entityId: order.id,
-        operation: 'CREATE',
-        payload: order.toSqlMap(),
-      )
-    ];
+    final effectiveOutboxOps = outboxOperations ??
+        [
+          OutboxOperation(
+            operationId: 'op_order_${order.id}',
+            storeId: storeId,
+            userId: 'system',
+            deviceId: order.deviceId ?? 'device-pos',
+            collection: 'orders',
+            entityId: order.id,
+            operation: 'CREATE',
+            payload: order.toSqlMap(),
+          )
+        ];
 
     final payload = jsonEncode({
       'order': order.toSqlMap(),
@@ -323,7 +324,10 @@ mixin OrderRepositoryMixin {
           "SELECT * FROM orders WHERE isDeleted = 0 AND storeId = ? AND (deletedAt IS NULL OR status = 'Cancelled')";
       List<dynamic> args = [storeId];
 
-      if (status != null && status.isNotEmpty && status != 'All' && status != 'All Statuses') {
+      if (status != null &&
+          status.isNotEmpty &&
+          status != 'All' &&
+          status != 'All Statuses') {
         sql += ' AND status = ?';
         args.add(status);
       }
@@ -414,7 +418,8 @@ mixin OrderRepositoryMixin {
       String? paymentMethod}) async {
     final db = await dbHelper.database;
 
-    String filter = ' WHERE o.storeId = ? AND o.deletedAt IS NULL AND (o.isDeleted = 0 OR o.isDeleted IS NULL)';
+    String filter =
+        ' WHERE o.storeId = ? AND o.deletedAt IS NULL AND (o.isDeleted = 0 OR o.isDeleted IS NULL)';
     List<dynamic> args = [storeId];
 
     if (start != null) {
@@ -491,12 +496,18 @@ mixin OrderRepositoryMixin {
     double cash = (orderStats.first['cashSales'] as num? ?? 0).toDouble();
     double upi = (orderStats.first['upiSales'] as num? ?? 0).toDouble();
     double other = (orderStats.first['otherSales'] as num? ?? 0).toDouble();
-    double completedSales = (orderStats.first['completedSales'] as num? ?? 0).toDouble();
-    double refundedSales = (orderStats.first['refundedSales'] as num? ?? 0).toDouble();
-    double cancelledSales = (orderStats.first['cancelledSales'] as num? ?? 0).toDouble();
-    int completedCount = (orderStats.first['completedCount'] as num? ?? 0).toInt();
-    int refundedCount = (orderStats.first['refundedCount'] as num? ?? 0).toInt();
-    int cancelledCount = (orderStats.first['cancelledCount'] as num? ?? 0).toInt();
+    double completedSales =
+        (orderStats.first['completedSales'] as num? ?? 0).toDouble();
+    double refundedSales =
+        (orderStats.first['refundedSales'] as num? ?? 0).toDouble();
+    double cancelledSales =
+        (orderStats.first['cancelledSales'] as num? ?? 0).toDouble();
+    int completedCount =
+        (orderStats.first['completedCount'] as num? ?? 0).toInt();
+    int refundedCount =
+        (orderStats.first['refundedCount'] as num? ?? 0).toInt();
+    int cancelledCount =
+        (orderStats.first['cancelledCount'] as num? ?? 0).toInt();
 
     double cogs = (itemStats.first['totalCogs'] as num? ?? 0).toDouble();
     double avg = count > 0 ? total / count : 0.0;

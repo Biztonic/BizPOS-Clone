@@ -246,7 +246,8 @@ class OfflineService {
     );
   }
 
-  Future<bool> _verifyOfflinePasswordInternal(String email, String password) async {
+  Future<bool> _verifyOfflinePasswordInternal(
+      String email, String password) async {
     final emailKey = email.toLowerCase().trim();
 
     if (isOfflineLockedOut(emailKey)) {
@@ -365,7 +366,8 @@ class OfflineService {
           result: DiagnosticResult.failure,
           durationMs: 0,
           errorCategory: DiagnosticErrorCategory.authError,
-          message: 'Account locked out after $_maxFailedAttempts failed login attempts',
+          message:
+              'Account locked out after $_maxFailedAttempts failed login attempts',
         ));
       } catch (_) {}
     }

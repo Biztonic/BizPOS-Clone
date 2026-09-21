@@ -21,9 +21,11 @@ class DiagnosticsService {
   static const int maxEventsInStorage = 1000;
 
   final List<DiagnosticEvent> _inMemoryEvents = [];
-  final StreamController<DiagnosticEvent> _eventStreamController = StreamController<DiagnosticEvent>.broadcast();
+  final StreamController<DiagnosticEvent> _eventStreamController =
+      StreamController<DiagnosticEvent>.broadcast();
 
-  Stream<DiagnosticEvent> get onDiagnosticEvent => _eventStreamController.stream;
+  Stream<DiagnosticEvent> get onDiagnosticEvent =>
+      _eventStreamController.stream;
 
   Box? _box;
   bool _initialized = false;
@@ -53,12 +55,15 @@ class DiagnosticsService {
       _inMemoryEvents.clear();
       if (_box != null) {
         final values = _box!.values.toList();
-        final start = values.length > maxEventsInMemory ? values.length - maxEventsInMemory : 0;
+        final start = values.length > maxEventsInMemory
+            ? values.length - maxEventsInMemory
+            : 0;
         for (var i = start; i < values.length; i++) {
           final raw = values[i];
           if (raw is Map) {
             try {
-              _inMemoryEvents.add(DiagnosticEvent.fromMap(Map<String, dynamic>.from(raw)));
+              _inMemoryEvents
+                  .add(DiagnosticEvent.fromMap(Map<String, dynamic>.from(raw)));
             } catch (_) {}
           }
         }
@@ -138,7 +143,8 @@ class DiagnosticsService {
       return result;
     } catch (e, stack) {
       sw.stop();
-      final category = customErrorClassifier?.call(e) ?? _classifyError(subsystem, e);
+      final category =
+          customErrorClassifier?.call(e) ?? _classifyError(subsystem, e);
 
       await recordEvent(DiagnosticEvent(
         id: const Uuid().v4(),
@@ -152,7 +158,8 @@ class DiagnosticsService {
         result: DiagnosticResult.failure,
         durationMs: sw.elapsedMilliseconds,
         errorCategory: category,
-        message: '$actionName failed: ${DiagnosticSanitizer.sanitizeString(e.toString())}',
+        message:
+            '$actionName failed: ${DiagnosticSanitizer.sanitizeString(e.toString())}',
         metadata: metadata,
         stackTrace: stack.toString(),
       ));
@@ -162,7 +169,8 @@ class DiagnosticsService {
   }
 
   /// Automatic heuristic error classification.
-  DiagnosticErrorCategory _classifyError(DiagnosticSubsystem subsystem, Object error) {
+  DiagnosticErrorCategory _classifyError(
+      DiagnosticSubsystem subsystem, Object error) {
     final errStr = error.toString().toLowerCase();
 
     if (subsystem == DiagnosticSubsystem.migration ||
@@ -200,7 +208,9 @@ class DiagnosticsService {
         errStr.contains('lockout')) {
       return DiagnosticErrorCategory.authError;
     }
-    if (errStr.contains('conflict') || errStr.contains('divergence') || errStr.contains('version')) {
+    if (errStr.contains('conflict') ||
+        errStr.contains('divergence') ||
+        errStr.contains('version')) {
       return DiagnosticErrorCategory.conflictError;
     }
     if (subsystem == DiagnosticSubsystem.printing ||
@@ -209,7 +219,9 @@ class DiagnosticsService {
         errStr.contains('bluetooth')) {
       return DiagnosticErrorCategory.printError;
     }
-    if (errStr.contains('validation') || errStr.contains('invalid') || errStr.contains('empty')) {
+    if (errStr.contains('validation') ||
+        errStr.contains('invalid') ||
+        errStr.contains('empty')) {
       return DiagnosticErrorCategory.validationError;
     }
     if (subsystem == DiagnosticSubsystem.sync) {
@@ -220,7 +232,8 @@ class DiagnosticsService {
   }
 
   /// Maps an exception or error object to its corresponding DiagnosticErrorCategory.
-  DiagnosticErrorCategory mapExceptionToCategory(Object error, [DiagnosticSubsystem subsystem = DiagnosticSubsystem.recovery]) {
+  DiagnosticErrorCategory mapExceptionToCategory(Object error,
+      [DiagnosticSubsystem subsystem = DiagnosticSubsystem.recovery]) {
     return _classifyError(subsystem, error);
   }
 
@@ -266,7 +279,8 @@ class DiagnosticsService {
 
     int totalFailures = 0;
     for (final e in _inMemoryEvents) {
-      countsBySubsystem[e.subsystem.nameUpper] = (countsBySubsystem[e.subsystem.nameUpper] ?? 0) + 1;
+      countsBySubsystem[e.subsystem.nameUpper] =
+          (countsBySubsystem[e.subsystem.nameUpper] ?? 0) + 1;
       if (e.result == DiagnosticResult.failure) {
         totalFailures++;
       }
@@ -285,7 +299,9 @@ class DiagnosticsService {
         'pending': pendingQueueCount,
         'failed': failedQueueCount,
         'deadLetter': deadLetterCount,
-        'status': deadLetterCount > 0 ? 'CRITICAL' : (failedQueueCount > 0 ? 'DEGRADED' : 'HEALTHY'),
+        'status': deadLetterCount > 0
+            ? 'CRITICAL'
+            : (failedQueueCount > 0 ? 'DEGRADED' : 'HEALTHY'),
       },
       'totalTrackedEvents': _inMemoryEvents.length,
       'totalFailures': totalFailures,
@@ -313,7 +329,8 @@ class DiagnosticsService {
       lastSyncTime: lastSyncTime,
     );
 
-    final recentDiagnostics = _inMemoryEvents.reversed.take(150).map((e) => e.toMap()).toList();
+    final recentDiagnostics =
+        _inMemoryEvents.reversed.take(150).map((e) => e.toMap()).toList();
 
     List<Map<String, dynamic>> recentAudit = [];
     try {
@@ -326,7 +343,8 @@ class DiagnosticsService {
       'systemSummary': summary,
       'diagnosticEvents': recentDiagnostics,
       'auditTrail': recentAudit,
-      'redactionStatement': 'CONFIDENTIAL: Scrubbed of passwords, PINs, tokens, secret keys, and customer PII.',
+      'redactionStatement':
+          'CONFIDENTIAL: Scrubbed of passwords, PINs, tokens, secret keys, and customer PII.',
     };
 
     return const JsonEncoder.withIndent('  ').convert(bundle);

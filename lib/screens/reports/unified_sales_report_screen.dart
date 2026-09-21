@@ -73,12 +73,14 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
     );
 
     if (mounted) {
-      final pb = (stats['paymentBreakdown'] as Map?)?.cast<String, double>() ?? {
-        'Cash': (stats['cashSales'] as num?)?.toDouble() ?? 0.0,
-        'Card': (stats['cardSales'] as num?)?.toDouble() ?? 0.0,
-        'UPI': (stats['upiSales'] as num?)?.toDouble() ?? 0.0,
-      };
-      final sb = (stats['statusBreakdown'] as Map?)?.cast<String, double>() ?? {};
+      final pb = (stats['paymentBreakdown'] as Map?)?.cast<String, double>() ??
+          {
+            'Cash': (stats['cashSales'] as num?)?.toDouble() ?? 0.0,
+            'Card': (stats['cardSales'] as num?)?.toDouble() ?? 0.0,
+            'UPI': (stats['upiSales'] as num?)?.toDouble() ?? 0.0,
+          };
+      final sb =
+          (stats['statusBreakdown'] as Map?)?.cast<String, double>() ?? {};
 
       setState(() {
         _totalSales = (stats['totalSales'] as num?)?.toDouble() ?? 0.0;
@@ -91,7 +93,8 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
     }
   }
 
-  Future<void> _exportExcel(double totalSales, int totalCount, double avgOrder) async {
+  Future<void> _exportExcel(
+      double totalSales, int totalCount, double avgOrder) async {
     try {
       final orderProvider = Provider.of<OrderProvider>(context, listen: false);
       final dashboardProvider =
@@ -188,8 +191,8 @@ class _UnifiedSalesReportScreenState extends State<UnifiedSalesReportScreen> {
                   IconButton(
                     icon: const Icon(Icons.file_download),
                     tooltip: "Export to Excel",
-                    onPressed: () => _exportExcel(
-                        totalSales, totalCount, avgOrder),
+                    onPressed: () =>
+                        _exportExcel(totalSales, totalCount, avgOrder),
                   ),
                   IconButton(
                     icon: Icon(_showFilters

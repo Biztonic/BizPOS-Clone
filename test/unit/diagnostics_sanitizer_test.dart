@@ -83,13 +83,16 @@ void main() {
     });
 
     test('sanitizes bearer and offline hash strings from text', () {
-      const textWithBearer = 'Error calling endpoint: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+      const textWithBearer =
+          'Error calling endpoint: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
       final cleanedBearer = DiagnosticSanitizer.sanitizeString(textWithBearer);
-      expect(cleanedBearer, equals('Error calling endpoint: Bearer [REDACTED]'));
+      expect(
+          cleanedBearer, equals('Error calling endpoint: Bearer [REDACTED]'));
 
       const textWithHash = 'Failed matching offline_hash_987654321abc for user';
       final cleanedHash = DiagnosticSanitizer.sanitizeString(textWithHash);
-      expect(cleanedHash, equals('Failed matching offline_hash_[REDACTED] for user'));
+      expect(cleanedHash,
+          equals('Failed matching offline_hash_[REDACTED] for user'));
     });
   });
 }

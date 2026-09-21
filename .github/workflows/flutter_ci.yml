@@ -145,6 +145,21 @@ jobs:
       - name: Run Repository & Persistence Tests (Layer 3)
         run: flutter test test/repository/
 
+      - name: Run Sync & Recovery Tests
+        run: flutter test test/sync/
+
+      - name: Run Concurrency Tests
+        run: flutter test test/concurrency/
+
+      - name: Run Entitlement & Subscription Tests
+        run: flutter test test/entitlements/ test/entitlement_subscription_hardening_test.dart
+
+      - name: Run Security Tests
+        run: flutter test test/security/
+
+      - name: Run Hardening Regression Tests
+        run: flutter test test/durable_outbox_sync_test.dart test/inventory_movement_ledger_test.dart test/hardened_auth_offline_test.dart test/idempotency_cross_platform_test.dart test/local_persistence_hardening_test.dart test/multi_tenant_security_test.dart test/offline_auth_security_test.dart
+
       - name: Run Integration & E2E Tests (Layers 5 & 6)
         run: flutter test test/integration/ test/e2e/ test/order_logic_demo_test.dart test/stress_test_simulation.dart
 
