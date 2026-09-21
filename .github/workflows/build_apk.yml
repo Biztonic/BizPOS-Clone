@@ -1,0 +1,127 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - 'release'
+          - 'debug'
+      split_per_abi:
+        description: 'Build separate APKs per ABI (arm64, armeabi, x86_64)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build_apk:
+    name: Build Android APK (${{ inputs.build_type || 'release' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Pinned)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter 3.29.0 (Pinned)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Accept Android SDK Licenses
+        run: yes | flutter doctor --android-licenses || true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Configure Signing (Production Keystore or Self-Signed Fallback)
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.PROD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.PROD_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.PROD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.PROD_KEY_PASSWORD }}
+        run: |
+          mkdir -p android/app
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "🔑 Injecting production signing credentials from repository secrets..."
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+            cat <<EOF > android/key.properties
+          storeFile=release.keystore
+          keyAlias=$KEY_ALIAS
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          EOF
+            echo "signed=true" >> $GITHUB_OUTPUT
+            echo "✅ Production keystore configured."
+          else
+            echo "ℹ️ Production secrets not provided. Creating self-signed keystore for release build..."
+            keytool -genkey -v -keystore android/app/release.keystore \
+              -alias bizpos -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android -keypass android \
+              -dname "CN=BizPOS, OU=POS, O=Biztonic, L=Delhi, S=DL, C=IN"
+            cat <<EOF > android/key.properties
+          storeFile=release.keystore
+          keyAlias=bizpos
+          storePassword=android
+          keyPassword=android
+          EOF
+            echo "signed=fallback" >> $GITHUB_OUTPUT
+            echo "✅ Self-signed release keystore generated."
+          fi
+
+      - name: Build Android APK
+        run: |
+          BUILD_TYPE="${{ inputs.build_type || 'release' }}"
+          SPLIT_ABI="${{ inputs.split_per_abi || false }}"
+
+          if [ "$BUILD_TYPE" = "debug" ]; then
+            echo "Building Debug APK..."
+            flutter build apk --debug
+          else
+            if [ "$SPLIT_ABI" = "true" ]; then
+              echo "Building Release APKs (split-per-abi)..."
+              flutter build apk --release --split-per-abi
+            else
+              echo "Building Universal Release APK..."
+              flutter build apk --release
+            fi
+          fi
+
+      - name: Purge Keystore Files
+        if: always()
+        run: |
+          rm -f android/app/release.keystore android/key.properties
+
+      - name: Compute Checksums & Summary
+        run: |
+          mkdir -p build/apk_checksums
+          sha256sum build/app/outputs/flutter-apk/*.apk > build/apk_checksums/checksums.sha256
+          echo "### 📱 Android APK Build Succeeded" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          while read -r hash file; do
+            filename=$(basename "$file")
+            echo "| \`$filename\` | \`$hash\` |" >> $GITHUB_STEP_SUMMARY
+          done < build/apk_checksums/checksums.sha256
+
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bizpos-apk-${{ inputs.build_type || 'release' }}-${{ github.sha }}
+          path: build/app/outputs/flutter-apk/*.apk
+          retention-days: 30
