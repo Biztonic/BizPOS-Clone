@@ -18,39 +18,6 @@ class PermissionsHelper {
   bool isFeatureEnabled(String key) {
     if (profile?.role == 'Super Admin') return true;
 
-    // Authoritative entitlement check
-    if (activeStore != null) {
-      if (!EntitlementService.instance.isFeatureEnabled(
-        key,
-        storeId: activeStore!.id,
-        userRole: profile?.role,
-      )) {
-        return false;
-      }
-    }
-
-    String internalAddonKey = key;
-    if (key == 'crm') internalAddonKey = 'customer_management';
-    if (key == 'employees') internalAddonKey = 'employee_management';
-    if (key == 'inventory') internalAddonKey = 'inventory_management';
-
-    const addonKeys = [
-      'customer_management',
-      'franchise_management',
-      'central_catalog',
-      'employee_management',
-      'supplier_management',
-      'kds_management',
-      'table_reservation',
-      'data_center',
-      'integration_hub',
-      'loyalty_program'
-    ];
-
-    if (addonKeys.contains(internalAddonKey)) {
-      if (!hasAddon(internalAddonKey)) return false;
-    }
-
     final activeRole = profile?.role;
     if (activeRole != 'Store Owner' &&
         activeRole != 'Admin' &&
@@ -68,6 +35,69 @@ class PermissionsHelper {
       }
       return false; // BUG FIX: Do not grant access by default to unmapped roles
     }
+
+    if (activeStore != null) {
+      final entitlement =
+          EntitlementService.instance.getEntitlement(activeStore!.id);
+      if (entitlement.isSuspended || entitlement.isExpired) {
+        return false;
+      }
+    }
+
+    if ([
+      'dashboard',
+      'pos',
+      'inventory',
+      'reports',
+      'sales',
+      'settings',
+      'biz_store'
+    ].contains(key)) {
+      return true;
+    }
+
+    String internalAddonKey = key;
+    if (key == 'crm') internalAddonKey = 'customer_management';
+    if (key == 'employees') internalAddonKey = 'employee_management';
+    if (key == 'kds') internalAddonKey = 'kds_management';
+    if (key == 'tables') internalAddonKey = 'table_reservation';
+    if (key == 'suppliers') internalAddonKey = 'supplier_management';
+    if (key == 'franchise') internalAddonKey = 'franchise_management';
+
+    const addonKeys = [
+      'customer_management',
+      'franchise_management',
+      'central_catalog',
+      'employee_management',
+      'supplier_management',
+      'kds_management',
+      'table_reservation',
+      'data_center',
+      'integration_hub',
+      'loyalty_program'
+    ];
+
+    if (addonKeys.contains(internalAddonKey)) {
+      if (hasAddon(internalAddonKey)) return true;
+      if (activeStore != null &&
+          EntitlementService.instance.isFeatureEnabled(
+            internalAddonKey,
+            storeId: activeStore!.id,
+            userRole: activeRole,
+          )) {
+        return true;
+      }
+      return false;
+    }
+
+    if (activeStore != null) {
+      return EntitlementService.instance.isFeatureEnabled(
+        key,
+        storeId: activeStore!.id,
+        userRole: activeRole,
+      );
+    }
+
     return true;
   }
 

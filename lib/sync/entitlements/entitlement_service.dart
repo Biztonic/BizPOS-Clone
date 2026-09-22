@@ -43,40 +43,92 @@ class EntitlementService {
 
   /// Predefined features per plan tier.
   static const Map<PlanTier, Set<String>> defaultPlanFeatures = {
-    PlanTier.starting: {'billing', 'basic_inventory'},
-    PlanTier.basic: {
+    PlanTier.starting: {
+      'dashboard',
+      'pos',
       'billing',
       'inventory',
-      'customers',
+      'basic_inventory',
+      'reports',
       'basic_reports',
+      'sales',
       'orders',
+      'settings',
+      'biz_store',
+    },
+    PlanTier.basic: {
+      'dashboard',
+      'pos',
+      'billing',
+      'inventory',
+      'basic_inventory',
+      'customers',
+      'customer_management',
+      'crm',
+      'reports',
+      'basic_reports',
+      'sales',
+      'orders',
+      'settings',
+      'biz_store',
     },
     PlanTier.standard: {
+      'dashboard',
+      'pos',
       'billing',
       'inventory',
+      'basic_inventory',
       'customers',
+      'customer_management',
+      'crm',
       'employees',
+      'employee_management',
       'reports',
+      'basic_reports',
+      'sales',
       'tables',
+      'table_reservation',
       'floors',
       'suppliers',
+      'supplier_management',
+      'kds',
+      'kds_management',
       'orders',
       'data_center',
+      'settings',
+      'biz_store',
     },
     PlanTier.professional: {
+      'dashboard',
+      'pos',
       'billing',
       'inventory',
+      'basic_inventory',
       'customers',
+      'customer_management',
+      'crm',
       'employees',
+      'employee_management',
       'reports',
+      'basic_reports',
+      'sales',
       'tables',
+      'table_reservation',
       'floors',
       'suppliers',
+      'supplier_management',
+      'kds',
+      'kds_management',
       'orders',
       'advanced_reports',
       'multi_store',
       'api_access',
       'data_center',
+      'integration_hub',
+      'central_catalog',
+      'loyalty_program',
+      'settings',
+      'biz_store',
     },
     PlanTier.enterprise: {'*'},
   };
@@ -252,24 +304,38 @@ class EntitlementService {
     required String planName,
     required String status,
     required List<String> addons,
+    List<String>? purchasedAddons,
     DateTime? startDate,
     DateTime? endDate,
+    bool fromServer = false,
   }) async {
     if (storeId.isEmpty) return;
     final tier = PlanTier.fromString(planName);
     final planStat = PlanStatus.fromString(status);
     final current = getEntitlement(storeId);
 
+    final bool trustIncoming = fromServer || purchasedAddons != null;
+
     // Defensive Anti-Tamper check:
     // If incoming local plan is higher than current verified plan, do NOT elevate without server verification
-    final effectiveTier =
-        (current.plan.index >= tier.index || current.version == 1)
+    final effectiveTier = trustIncoming
+        ? tier
+        : ((current.plan.index >= tier.index || current.version == 1)
             ? tier
-            : current.plan;
+            : current.plan);
 
-    // Filter incoming addons: cannot enable addons that are not allowed
-    final effectiveAddons =
-        addons.where((a) => current.isAddonAllowed(a)).toSet();
+    final effectivePurchased = trustIncoming
+        ? <String>{
+            ...current.purchasedAddons,
+            ...?purchasedAddons,
+            if (fromServer) ...addons,
+          }
+        : current.purchasedAddons;
+
+    // Filter incoming addons: cannot enable addons that are not allowed unless synced from server/store doc
+    final effectiveAddons = trustIncoming
+        ? <String>{...addons, ...?purchasedAddons}
+        : addons.where((a) => current.isAddonAllowed(a)).toSet();
 
     final entitlement = StoreEntitlement.create(
       storeId: storeId,
@@ -279,7 +345,7 @@ class EntitlementService {
       endDate: endDate ?? current.endDate,
       gracePeriodDays: current.gracePeriodDays,
       addons: effectiveAddons,
-      purchasedAddons: current.purchasedAddons,
+      purchasedAddons: effectivePurchased,
       limits: defaultPlanLimits[effectiveTier] ??
           defaultPlanLimits[PlanTier.basic]!,
       features: defaultPlanFeatures[effectiveTier] ??
@@ -316,6 +382,32 @@ class EntitlementService {
         status == PlanStatus.grace;
   }
 
+  static const Map<String, Set<String>> _featureAliases = {
+    'crm': {'crm', 'customer_management', 'customers'},
+    'customer_management': {'crm', 'customer_management', 'customers'},
+    'customers': {'crm', 'customer_management', 'customers'},
+    'employees': {'employees', 'employee_management'},
+    'employee_management': {'employees', 'employee_management'},
+    'kds': {'kds', 'kds_management'},
+    'kds_management': {'kds', 'kds_management'},
+    'tables': {'tables', 'table_reservation'},
+    'table_reservation': {'tables', 'table_reservation'},
+    'suppliers': {'suppliers', 'supplier_management'},
+    'supplier_management': {'suppliers', 'supplier_management'},
+    'franchise': {'franchise', 'franchise_management'},
+    'franchise_management': {'franchise', 'franchise_management'},
+    'inventory': {'inventory', 'inventory_management', 'basic_inventory'},
+    'inventory_management': {
+      'inventory',
+      'inventory_management',
+      'basic_inventory'
+    },
+    'pos': {'pos', 'billing'},
+    'billing': {'pos', 'billing'},
+    'reports': {'reports', 'basic_reports', 'advanced_reports'},
+    'basic_reports': {'reports', 'basic_reports', 'advanced_reports'},
+  };
+
   /// Authoritative check for whether an addon is enabled.
   bool hasAddon(String addonKey, {required String storeId}) {
     if (storeId.isEmpty) return false;
@@ -323,9 +415,27 @@ class EntitlementService {
     if (!entitlement.isUsable) return false;
 
     // Enterprise tier unlocks all addons
-    if (entitlement.plan == PlanTier.enterprise) return true;
+    if (entitlement.plan == PlanTier.enterprise ||
+        entitlement.features.contains('*')) {
+      return true;
+    }
 
-    return entitlement.addons.contains(addonKey);
+    final aliases = _featureAliases[addonKey] ?? {addonKey};
+    if (aliases.any((k) =>
+        entitlement.addons.contains(k) ||
+        entitlement.purchasedAddons.contains(k))) {
+      return true;
+    }
+
+    // Standard and Professional plans unlock their tier-included addons automatically
+    if (entitlement.plan == PlanTier.standard ||
+        entitlement.plan == PlanTier.professional) {
+      if (aliases.any((k) => entitlement.features.contains(k))) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /// Authoritative check for whether a feature is unlocked.
@@ -340,24 +450,35 @@ class EntitlementService {
     final entitlement = getEntitlement(storeId);
     if (entitlement.isSuspended || entitlement.isExpired) return false;
 
+    // Core navigation features are always unlocked for any usable plan
+    const coreFeatures = {
+      'dashboard',
+      'pos',
+      'billing',
+      'inventory',
+      'basic_inventory',
+      'reports',
+      'basic_reports',
+      'sales',
+      'orders',
+      'settings',
+      'biz_store',
+    };
+    if (coreFeatures.contains(featureKey)) return true;
+
     // Enterprise unlocks all
     if (entitlement.features.contains('*') ||
         entitlement.plan == PlanTier.enterprise) {
       return true;
     }
 
-    if (entitlement.features.contains(featureKey)) return true;
-
-    // Check if feature corresponds directly to an active addon
-    if (entitlement.addons.contains(featureKey)) return true;
-
-    // Feature key aliases
-    if (featureKey == 'crm' &&
-        entitlement.addons.contains('customer_management')) {
-      return true;
-    }
-    if (featureKey == 'kds' && entitlement.addons.contains('kds_management')) {
-      return true;
+    final aliases = _featureAliases[featureKey] ?? {featureKey};
+    for (final k in aliases) {
+      if (entitlement.features.contains(k) ||
+          entitlement.addons.contains(k) ||
+          entitlement.purchasedAddons.contains(k)) {
+        return true;
+      }
     }
 
     return false;

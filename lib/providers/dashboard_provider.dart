@@ -809,13 +809,18 @@ class DashboardProvider with ChangeNotifier {
     final activeSubs = _subscriptionHistory
         .where((h) => h.isActive && h.endDate.isAfter(now))
         .toList();
-    final hasActiveBase =
-        activeSubs.any((h) => !h.isAddonOnly && h.planName == 'Standard');
+    final activeBaseSub = activeSubs
+        .where((h) => !h.isAddonOnly && h.planName.toLowerCase() != 'basic')
+        .toList();
 
-    if (hasActiveBase) {
-      const String plan = 'Standard';
-      final Set<String> activeAddons =
-          Set<String>.from(activeStore!.purchasedAddons);
+    if (activeBaseSub.isNotEmpty) {
+      final String plan = activeBaseSub.first.planName.isNotEmpty
+          ? activeBaseSub.first.planName
+          : 'Standard';
+      final Set<String> activeAddons = {
+        ...activeStore!.addons,
+        ...activeStore!.purchasedAddons,
+      };
       for (var sub in activeSubs) {
         activeAddons.addAll(sub.selectedAddons);
       }
@@ -828,6 +833,7 @@ class DashboardProvider with ChangeNotifier {
         await _db.collection('stores').doc(checkingStoreId).update({
           'subscriptionPlan': plan,
           'addons': addonList,
+          'purchasedAddons': addonList,
         });
         await _updateLocalStoreState(plan, addonList);
       }
@@ -858,15 +864,31 @@ class DashboardProvider with ChangeNotifier {
       }
     }
 
-    if (!_subscriptionHistoryLoaded) return;
+    if (!_subscriptionHistoryLoaded || _subscriptionHistory.isEmpty) return;
+
+    // Do NOT downgrade if the store document itself has an unexpired subscription or Enterprise/Professional plan
+    if (activeStore!.subscriptionExpiry != null &&
+        activeStore!.subscriptionExpiry!.isAfter(now)) {
+      return;
+    }
+    final currentPlanLower = activeStore!.subscriptionPlan.toLowerCase();
+    if (currentPlanLower == 'enterprise' ||
+        currentPlanLower == 'professional') {
+      return;
+    }
+
+    final List<String> permanentAddons = {
+      ...activeStore!.addons,
+      ...activeStore!.purchasedAddons,
+    }.toList();
 
     if (activeStore!.subscriptionPlan != 'Basic' ||
-        activeStore!.addons.length != activeStore!.purchasedAddons.length) {
+        activeStore!.addons.length != permanentAddons.length) {
       if (activeStore?.id != checkingStoreId) return;
-      final List<String> permanentAddons = activeStore!.purchasedAddons;
       await _db.collection('stores').doc(checkingStoreId).update({
         'subscriptionPlan': 'Basic',
         'addons': permanentAddons,
+        'purchasedAddons': permanentAddons,
       });
       await _updateLocalStoreState('Basic', permanentAddons);
     }
@@ -1079,11 +1101,45 @@ class DashboardProvider with ChangeNotifier {
       String? franchiseCode,
       String storeType = 'Restaurant'}) async {
     if (_storeProvider != null) {
-      return await _storeProvider!.addStore(name, owner,
+      final newStoreId = await _storeProvider!.addStore(name, owner,
           address: address,
           phone: phone,
           franchiseCode: franchiseCode,
           storeType: storeType);
+      _stores = _storeProvider!.stores;
+      _activeStoreId = newStoreId;
+      _hasCheckedStores = true;
+      _isInitialized = true;
+      if (_activeRole == 'Unauthorized' || _activeRole.isEmpty) {
+        _activeRole = 'Store Owner';
+      }
+      if (_userProfile != null) {
+        final updatedStoreIds = <String>{
+          ...(_userProfile!.accessibleStoreIds ?? []),
+          newStoreId,
+        }.toList();
+        _userProfile = _userProfile!.copyWith(
+          role: (_userProfile!.role.isEmpty ||
+                  _userProfile!.role == 'Unauthorized')
+              ? 'Store Owner'
+              : _userProfile!.role,
+          storeId: newStoreId,
+          accessibleStoreIds: updatedStoreIds,
+        );
+      } else if (_auth?.currentUser != null) {
+        final u = _auth!.currentUser!;
+        _userProfile = UserProfile(
+          uid: u.uid,
+          email: u.email ?? owner,
+          name: u.displayName ?? (u.email ?? owner).split('@').first,
+          role: 'Store Owner',
+          storeId: newStoreId,
+          accessibleStoreIds: [newStoreId],
+        );
+      }
+      _routerNotifier?.notify();
+      notifyListeners();
+      return newStoreId;
     }
     return '';
   }
@@ -1105,18 +1161,45 @@ class DashboardProvider with ChangeNotifier {
       debugPrint('🔒 hasAddon($key): BLOCKED by globalDisabledAddons');
       return false;
     }
-    if (activeStore == null) {
+    final store = activeStore;
+    if (store == null) {
       debugPrint('🔒 hasAddon($key): BLOCKED - activeStore is null');
       return false;
     }
 
-    final storeId = activeStore!.id;
+    if (_userProfile != null &&
+        activeRole != 'Store Owner' &&
+        activeRole != 'Franchise Owner' &&
+        activeRole != 'Admin' &&
+        activeRole != 'Super Admin' &&
+        _userProfile!.accessibleAddons != null) {
+      if (!_userProfile!.accessibleAddons!.contains(key)) {
+        debugPrint(
+            '🔒 hasAddon($key): BLOCKED by accessibleAddons filter (role: ${_userProfile!.role})');
+        return false;
+      }
+    }
+
+    final storeId = store.id;
     if (EntitlementService.instance.hasAddon(key, storeId: storeId)) {
       return true;
     }
 
+    // Direct check on store's active/purchased addons and plan tier
+    final planTier = PlanTier.fromString(store.subscriptionPlan);
+    if (planTier == PlanTier.enterprise) {
+      return true;
+    }
+    if (store.addons.contains(key) || store.purchasedAddons.contains(key)) {
+      return true;
+    }
+    final tierFeatures = EntitlementService.defaultPlanFeatures[planTier] ?? {};
+    if (tierFeatures.contains(key) || tierFeatures.contains('*')) {
+      return true;
+    }
+
     // Resolve feature status based on store type configurations
-    final type = activeStore!.storeType;
+    final type = store.storeType;
     final config = _storeTypeConfigs[type];
     if (config is Map && config.containsKey(key)) {
       final isEnabled = config[key] == true;
@@ -1140,26 +1223,7 @@ class DashboardProvider with ChangeNotifier {
       if (['table_reservation', 'kds_management'].contains(key)) return false;
     }
 
-    if (activeStore!.subscriptionPlan != 'Standard' &&
-        activeStore!.subscriptionPlan != 'Enterprise') {
-      debugPrint(
-          '🔒 hasAddon($key): BLOCKED - store is on ${activeStore!.subscriptionPlan} plan (not Standard)');
-      return false;
-    }
-    if (_userProfile != null &&
-        _userProfile!.role != 'Store Owner' &&
-        _userProfile!.role != 'Franchise Owner' &&
-        _userProfile!.accessibleAddons != null) {
-      if (!_userProfile!.accessibleAddons!.contains(key)) {
-        debugPrint(
-            '🔒 hasAddon($key): BLOCKED by accessibleAddons filter (role: ${_userProfile!.role})');
-        return false;
-      }
-    }
-    final result = activeStore!.addons.contains(key);
-    debugPrint(
-        '🔑 hasAddon($key): $result | addons=${activeStore!.addons} | purchasedAddons=${activeStore!.purchasedAddons} | plan=${activeStore!.subscriptionPlan}');
-    return result;
+    return false;
   }
 
   Future<void> updateStoreAddons(List<String> newAddons) async {
@@ -1215,11 +1279,50 @@ class DashboardProvider with ChangeNotifier {
   String get dashboardBgSource => _dashboardBgSource;
   String get heroButtonStyle => _heroButtonStyle;
   Color get heroButtonColor => _heroButtonColor;
-  Store? get activeStore => _storeProvider?.activeStore;
-  String? get activeStoreId => _activeStoreId;
-  String get activeRole => _activeRole;
+  Store? get activeStore {
+    if (_storeProvider?.activeStore != null) {
+      return _storeProvider!.activeStore;
+    }
+    if (_activeStoreId != null && _stores.isNotEmpty) {
+      try {
+        return _stores.firstWhere((s) => s.id == _activeStoreId);
+      } catch (_) {}
+    }
+    if (_stores.length == 1 && !isSuperAdmin) {
+      return _stores.first;
+    }
+    return null;
+  }
+
+  String? get activeStoreId => _activeStoreId ?? _storeProvider?.activeStoreId;
+
+  String get activeRole {
+    if (_activeRole != 'Unauthorized' && _activeRole.isNotEmpty) {
+      return _activeRole;
+    }
+    if (_userProfile?.role != null &&
+        _userProfile!.role.isNotEmpty &&
+        _userProfile!.role != 'Unauthorized') {
+      return _userProfile!.role;
+    }
+    final store = activeStore;
+    final currentUser = _auth?.currentUser;
+    if (store != null && currentUser != null) {
+      if (store.owner == currentUser.uid ||
+          store.ownerEmail.toLowerCase().trim() ==
+              currentUser.email?.toLowerCase().trim()) {
+        return 'Store Owner';
+      }
+    }
+    if (currentUser != null && _userProfile == null) {
+      return 'Store Owner';
+    }
+    return _activeRole;
+  }
+
   bool get isSuperAdmin =>
       _activeRole == 'Super Admin' ||
+      _userProfile?.role == 'Super Admin' ||
       _superAdmins.any((a) => a.uid == _userProfile?.uid);
   bool get isLoading => _isLoading;
   bool get isOnline => _isOnline;
@@ -1383,23 +1486,58 @@ class DashboardProvider with ChangeNotifier {
   bool isFeatureEnabled(String key) {
     if (isSuperAdmin) return true;
 
-    final storeId = _activeStoreId ?? activeStore?.id ?? '';
+    final role = activeRole;
+    final store = activeStore;
+    final storeId = _activeStoreId ?? store?.id ?? '';
+
+    // Check if store subscription is suspended or expired
     if (storeId.isNotEmpty) {
-      if (!EntitlementService.instance.isFeatureEnabled(
-        key,
-        storeId: storeId,
-        userRole: activeRole,
-      )) {
+      final entitlement = EntitlementService.instance.getEntitlement(storeId);
+      if (entitlement.isSuspended || entitlement.isExpired) {
         return false;
       }
     }
 
-    // Core features that are permitted if plan is active
-    if (['dashboard', 'pos', 'reports', 'settings'].contains(key)) return true;
+    // Check staff role permissions if not an owner/admin role
+    if (role != 'Store Owner' &&
+        role != 'Admin' &&
+        role != 'Super Admin' &&
+        role != 'Franchise Owner') {
+      if (key == 'admin') return false;
+      final userRole = _userProfile?.role ?? role;
+      if (store != null && store.rolePermissions.containsKey(userRole)) {
+        final perms = store.rolePermissions[userRole]!;
+        if (perms.containsKey(key) && perms[key] != true) {
+          return false;
+        }
+        if (!perms.containsKey(key)) {
+          return false;
+        }
+      } else {
+        return false; // Restrict unmapped roles
+      }
+    }
+
+    // Core features that are always permitted for active/usable stores
+    if ([
+      'dashboard',
+      'pos',
+      'inventory',
+      'reports',
+      'sales',
+      'settings',
+      'biz_store'
+    ].contains(key)) {
+      return true;
+    }
+
     String internalAddonKey = key;
     if (key == 'crm') internalAddonKey = 'customer_management';
     if (key == 'employees') internalAddonKey = 'employee_management';
-    if (key == 'inventory') internalAddonKey = 'inventory_management';
+    if (key == 'kds') internalAddonKey = 'kds_management';
+    if (key == 'tables') internalAddonKey = 'table_reservation';
+    if (key == 'suppliers') internalAddonKey = 'supplier_management';
+    if (key == 'franchise') internalAddonKey = 'franchise_management';
 
     const addonKeys = [
       'customer_management',
@@ -1415,31 +1553,30 @@ class DashboardProvider with ChangeNotifier {
     ];
 
     if (addonKeys.contains(internalAddonKey)) {
-      if (!hasAddon(internalAddonKey)) {
-        debugPrint(
-            '⛔ isFeatureEnabled($key → $internalAddonKey): HIDDEN - addon not purchased');
-        return false;
+      if (hasAddon(internalAddonKey)) {
+        return true;
       }
+      if (storeId.isNotEmpty &&
+          EntitlementService.instance.isFeatureEnabled(
+            internalAddonKey,
+            storeId: storeId,
+            userRole: role,
+          )) {
+        return true;
+      }
+      debugPrint(
+          '⛔ isFeatureEnabled($key → $internalAddonKey): HIDDEN - addon not purchased or included in plan');
+      return false;
     }
 
-    if (activeRole != 'Store Owner' &&
-        activeRole != 'Admin' &&
-        activeRole != 'Super Admin' &&
-        activeRole != 'Franchise Owner') {
-      if (key == 'admin') return false;
-      final store = activeStore;
-      final userRole = _userProfile?.role;
-      if (store != null &&
-          userRole != null &&
-          store.rolePermissions.containsKey(userRole)) {
-        final perms = store.rolePermissions[userRole]!;
-        if (perms.containsKey(key)) {
-          return perms[key] == true;
-        }
-        return false;
-      }
-      return false; // Restrict unmapped roles
+    if (storeId.isNotEmpty) {
+      return EntitlementService.instance.isFeatureEnabled(
+        key,
+        storeId: storeId,
+        userRole: role,
+      );
     }
+
     return true;
   }
 
@@ -3015,11 +3152,18 @@ class DashboardProvider with ChangeNotifier {
       debugPrint('👤 DashboardProvider: Fetching user data for $uid');
       Map<String, dynamic>? userData;
       try {
-        final doc = await _db.collection('users').doc(uid).get();
+        var doc = await _db.collection('users').doc(uid).get();
+        if (!doc.exists || doc.data() == null) {
+          // Handle new-user signup race condition where authStateChanges fires before users/{uid} write completes
+          await Future.delayed(const Duration(milliseconds: 800));
+          doc = await _db.collection('users').doc(uid).get();
+        }
         if (doc.exists && doc.data() != null) {
           userData = doc.data()!;
           _userProfile = UserProfile.fromMap(userData, uid);
-          _activeRole = _userProfile!.role;
+          _activeRole = _userProfile!.role.isNotEmpty
+              ? _userProfile!.role
+              : 'Store Owner';
           debugPrint(
               '👤 DashboardProvider: User Role identified as: $_activeRole');
 
@@ -3053,6 +3197,30 @@ class DashboardProvider with ChangeNotifier {
 
           // Persist to Cache for next launch
           await OfflineService().cacheUserProfile(userData, uid: uid);
+        } else if (_auth?.currentUser != null &&
+            _auth!.currentUser!.uid == uid) {
+          debugPrint(
+              '⚠️ DashboardProvider: User document NOT FOUND in Firestore for $uid. Creating default Store Owner profile.');
+          final currentUser = _auth!.currentUser!;
+          final email = currentUser.email ?? '';
+          final name = currentUser.displayName ??
+              (email.isNotEmpty ? email.split('@').first : 'Store Owner');
+          userData = {
+            'uid': uid,
+            'email': email,
+            'name': name,
+            'role': 'Store Owner',
+            'accessibleStoreIds': <String>[],
+          };
+          _userProfile = UserProfile.fromMap(userData, uid);
+          _activeRole = 'Store Owner';
+          try {
+            await _db.collection('users').doc(uid).set({
+              ...userData,
+              'createdAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+            await OfflineService().cacheUserProfile(userData, uid: uid);
+          } catch (_) {}
         } else {
           debugPrint(
               '⚠️ DashboardProvider: User document NOT FOUND in Firestore for $uid.');
@@ -3131,8 +3299,7 @@ class DashboardProvider with ChangeNotifier {
             }
 
             if (_activeStoreId != null && _storeProvider != null) {
-              // ignore: unawaited_futures
-              _storeProvider!.setActiveStoreId(_activeStoreId);
+              await _storeProvider!.setActiveStoreId(_activeStoreId);
             }
           }
 
@@ -3155,6 +3322,7 @@ class DashboardProvider with ChangeNotifier {
             _activeStoreId = soloStoreId;
             await _storeProvider!.setActiveStoreId(soloStoreId);
           } else if (_activeStoreId != null) {
+            await _storeProvider!.setActiveStoreId(_activeStoreId);
             // Re-trigger cache load for the current active store
             _loadFromCache();
             fetchPendingSubscriptions();
@@ -3311,6 +3479,19 @@ class DashboardProvider with ChangeNotifier {
       final oldStores = _stores;
       _stores = _storeProvider!.stores;
       final newId = _storeProvider!.activeStoreId;
+
+      final currentActiveStore = _storeProvider!.activeStore;
+      if (currentActiveStore != null) {
+        EntitlementService.instance.syncFromStore(
+          storeId: currentActiveStore.id,
+          planName: currentActiveStore.subscriptionPlan,
+          status: currentActiveStore.status,
+          addons: currentActiveStore.addons,
+          purchasedAddons: currentActiveStore.purchasedAddons,
+          endDate: currentActiveStore.subscriptionExpiry,
+          fromServer: true,
+        );
+      }
 
       // AUTO-SELECT SINGLE STORE: If no active store is set but we now have exactly one, auto-select it.
       if (newId == null && _stores.length == 1 && !isSuperAdmin) {

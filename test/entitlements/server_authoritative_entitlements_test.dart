@@ -330,5 +330,76 @@ void main() {
       expect(readyOps.first.entityId, equals('ORD_OFFLINE_01'));
       expect(readyOps.first.payload['offlinePermitted'], isTrue);
     });
+
+    test(
+        '7. Store Owner on Basic and Standard plans receives full canonical sidebar menu entitlements',
+        () async {
+      const basicStoreId = 'STORE_NEW_BASIC_OWNER';
+      await service.syncFromStore(
+        storeId: basicStoreId,
+        planName: 'Basic',
+        status: 'ACTIVE',
+        addons: [],
+        purchasedAddons: [],
+        fromServer: true,
+      );
+
+      for (final coreKey in [
+        'dashboard',
+        'pos',
+        'inventory',
+        'reports',
+        'sales',
+        'settings',
+        'biz_store',
+        'customer_management',
+        'crm',
+      ]) {
+        expect(
+          service.isFeatureEnabled(coreKey,
+              storeId: basicStoreId, userRole: 'Store Owner'),
+          isTrue,
+          reason: 'Basic plan Store Owner must have $coreKey enabled',
+        );
+      }
+
+      const standardStoreId = 'STORE_EXISTING_STANDARD_OWNER';
+      await service.syncFromStore(
+        storeId: standardStoreId,
+        planName: 'Standard',
+        status: 'ACTIVE',
+        addons: ['kds_management', 'table_reservation', 'employee_management'],
+        purchasedAddons: [
+          'kds_management',
+          'table_reservation',
+          'employee_management'
+        ],
+        fromServer: true,
+      );
+
+      expect(service.currentPlan(standardStoreId), equals(PlanTier.standard));
+      for (final stdKey in [
+        'dashboard',
+        'pos',
+        'inventory',
+        'reports',
+        'sales',
+        'settings',
+        'biz_store',
+        'customer_management',
+        'employee_management',
+        'table_reservation',
+        'supplier_management',
+        'kds_management',
+        'data_center',
+      ]) {
+        expect(
+          service.isFeatureEnabled(stdKey,
+              storeId: standardStoreId, userRole: 'Store Owner'),
+          isTrue,
+          reason: 'Standard plan Store Owner must have $stdKey enabled',
+        );
+      }
+    });
   });
 }

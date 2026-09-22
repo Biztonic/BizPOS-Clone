@@ -125,6 +125,10 @@ class AppRouter {
         final storeCount = dashboard.stores.length;
 
         if (storeCount == 1 && !isSuperAdmin) {
+          final soloId = dashboard.stores.first.id;
+          if (soloId.isNotEmpty) {
+            Future.microtask(() => dashboard.setActiveStoreId(soloId));
+          }
           return '/dashboard';
         }
 

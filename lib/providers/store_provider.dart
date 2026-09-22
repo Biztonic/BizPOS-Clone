@@ -134,6 +134,15 @@ class StoreProvider with ChangeNotifier {
           final map = Hive.box('cache_stores').get(storeId);
           if (map != null) {
             _activeStore = Store.fromMap(_deepSanitize(map as Map), storeId);
+            await EntitlementService.instance.syncFromStore(
+              storeId: storeId,
+              planName: _activeStore!.subscriptionPlan,
+              status: _activeStore!.status,
+              addons: _activeStore!.addons,
+              purchasedAddons: _activeStore!.purchasedAddons,
+              endDate: _activeStore!.subscriptionExpiry,
+              fromServer: true,
+            );
             await OfflineService().pinStore(_activeStore!.toMap(), uid: uid);
             pinned = true;
             notifyListeners();
@@ -145,6 +154,15 @@ class StoreProvider with ChangeNotifier {
           final matchingStores = _stores.where((s) => s.id == storeId).toList();
           if (matchingStores.isNotEmpty) {
             _activeStore = matchingStores.first;
+            await EntitlementService.instance.syncFromStore(
+              storeId: storeId,
+              planName: _activeStore!.subscriptionPlan,
+              status: _activeStore!.status,
+              addons: _activeStore!.addons,
+              purchasedAddons: _activeStore!.purchasedAddons,
+              endDate: _activeStore!.subscriptionExpiry,
+              fromServer: true,
+            );
             await OfflineService().pinStore(_activeStore!.toMap(), uid: uid);
             notifyListeners();
           }
@@ -192,6 +210,15 @@ class StoreProvider with ChangeNotifier {
             if (Hive.isBoxOpen('cache_stores')) {
               Hive.box('cache_stores').put(storeId, _activeStore!.toMap());
             }
+            EntitlementService.instance.syncFromStore(
+              storeId: storeId,
+              planName: _activeStore!.subscriptionPlan,
+              status: _activeStore!.status,
+              addons: _activeStore!.addons,
+              purchasedAddons: _activeStore!.purchasedAddons,
+              endDate: _activeStore!.subscriptionExpiry,
+              fromServer: true,
+            );
             OfflineService().pinStore(_activeStore!.toMap(), uid: uid);
             notifyListeners();
           }
@@ -231,7 +258,9 @@ class StoreProvider with ChangeNotifier {
               planName: _activeStore!.subscriptionPlan,
               status: _activeStore!.status,
               addons: _activeStore!.addons,
+              purchasedAddons: _activeStore!.purchasedAddons,
               endDate: _activeStore!.subscriptionExpiry,
+              fromServer: true,
             );
           }
         } catch (e) {
@@ -317,12 +346,14 @@ class StoreProvider with ChangeNotifier {
         debugPrint('⚠️ StoreProvider: UID Query Failed/Timeout: $e');
       }
 
-      // 2. Fetch by Email
-      if (email != null) {
+      // 2. Fetch by Email (case-insensitive support)
+      if (email != null && email.trim().isNotEmpty) {
         try {
+          final emailVariants =
+              {email.trim(), email.toLowerCase().trim()}.toList();
           final q1 = await _db
               .collection('stores')
-              .where('ownerEmail', isEqualTo: email)
+              .where('ownerEmail', whereIn: emailVariants)
               .get();
           for (var doc in q1.docs) {
             uniqueStores[doc.id] = Store.fromMap(doc.data(), doc.id);
@@ -380,6 +411,17 @@ class StoreProvider with ChangeNotifier {
 
       if (uniqueStores.isNotEmpty) {
         _stores = uniqueStores.values.toList();
+        for (final s in _stores) {
+          await EntitlementService.instance.syncFromStore(
+            storeId: s.id,
+            planName: s.subscriptionPlan,
+            status: s.status,
+            addons: s.addons,
+            purchasedAddons: s.purchasedAddons,
+            endDate: s.subscriptionExpiry,
+            fromServer: true,
+          );
+        }
         debugPrint(
             '🏁 StoreProvider: Online fetch successful: ${_stores.length} stores');
 
@@ -741,7 +783,7 @@ class StoreProvider with ChangeNotifier {
 
     if (uid != null) {
       // 1. If Creator is the Owner
-      if (userEmail == ownerEmail) {
+      if (userEmail?.toLowerCase().trim() == email) {
         // Create server-controlled membership doc
         try {
           await _db
@@ -764,6 +806,7 @@ class StoreProvider with ChangeNotifier {
         await _db.collection('users').doc(uid).set({
           'storeId': docRef.id,
           'storeIds': FieldValue.arrayUnion([docRef.id]),
+          'accessibleStoreIds': FieldValue.arrayUnion([docRef.id]),
           'role': 'Store Owner'
         }, SetOptions(merge: true));
       } else {
@@ -790,6 +833,16 @@ class StoreProvider with ChangeNotifier {
         } catch (e) {/* Error ignored */}
       }
     }
+
+    await EntitlementService.instance.syncFromStore(
+      storeId: newStore.id,
+      planName: newStore.subscriptionPlan,
+      status: newStore.status,
+      addons: newStore.addons,
+      purchasedAddons: newStore.purchasedAddons,
+      endDate: newStore.subscriptionExpiry,
+      fromServer: true,
+    );
 
     // Optimistic update to stores list to prevent redirect loops in router
     if (!_stores.any((s) => s.id == newStore.id)) {
@@ -818,6 +871,15 @@ class StoreProvider with ChangeNotifier {
 
     // 2. Update Local State
     _activeStore = updatedStore;
+    await EntitlementService.instance.syncFromStore(
+      storeId: updatedStore.id,
+      planName: updatedStore.subscriptionPlan,
+      status: updatedStore.status,
+      addons: updatedStore.addons,
+      purchasedAddons: updatedStore.purchasedAddons,
+      endDate: updatedStore.subscriptionExpiry,
+      fromServer: true,
+    );
 
     // 3. Update Stores list if present
     final idx = _stores.indexWhere((s) => s.id == updatedStore.id);
@@ -849,7 +911,9 @@ class StoreProvider with ChangeNotifier {
         planName: _activeStore!.subscriptionPlan,
         status: status,
         addons: _activeStore!.addons,
+        purchasedAddons: _activeStore!.purchasedAddons,
         endDate: _activeStore!.subscriptionExpiry,
+        fromServer: true,
       );
       notifyListeners();
     }
@@ -922,7 +986,9 @@ class StoreProvider with ChangeNotifier {
       planName: store.subscriptionPlan,
       status: store.status,
       addons: allowedAddons,
+      purchasedAddons: store.purchasedAddons,
       endDate: store.subscriptionExpiry,
+      fromServer: true,
     );
     if (Hive.isBoxOpen('cache_stores')) {
       Hive.box('cache_stores')

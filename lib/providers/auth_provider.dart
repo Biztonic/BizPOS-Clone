@@ -317,6 +317,14 @@ class AuthProvider with ChangeNotifier {
           userData['pendingFranchiseCode'] = franchiseCode.trim();
         }
 
+        await OfflineService().cacheUserProfile(
+          {
+            ...userData,
+            'createdAt': DateTime.now().toIso8601String(),
+          },
+          uid: credential.user!.uid,
+        );
+
         await getFirestore()
             .collection('users')
             .doc(credential.user!.uid)
@@ -363,13 +371,18 @@ class AuthProvider with ChangeNotifier {
       final user = userCredential.user;
 
       if (user != null) {
+        final existingDoc =
+            await getFirestore().collection('users').doc(user.uid).get();
+        final existingRole = existingDoc.data()?['role']?.toString();
+
         // Ensure profile doc exists for Google Users too
         final profileData = {
           'uid': user.uid,
           'email': user.email,
           'name': user.displayName ?? user.email?.split('@')[0],
           'lastLogin': FieldValue.serverTimestamp(),
-          // Don't overwrite existing roles/storeIds if they exist
+          if (existingRole == null || existingRole.isEmpty)
+            'role': 'Store Owner',
         };
         await getFirestore()
             .collection('users')
