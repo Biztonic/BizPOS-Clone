@@ -877,20 +877,20 @@ class DashboardProvider with ChangeNotifier {
       return;
     }
 
-    final List<String> permanentAddons = {
+    final List<String> permanentPurchased = {
       ...activeStore!.addons,
       ...activeStore!.purchasedAddons,
     }.toList();
 
     if (activeStore!.subscriptionPlan != 'Basic' ||
-        activeStore!.addons.length != permanentAddons.length) {
+        activeStore!.addons.isNotEmpty) {
       if (activeStore?.id != checkingStoreId) return;
       await _db.collection('stores').doc(checkingStoreId).update({
         'subscriptionPlan': 'Basic',
-        'addons': permanentAddons,
-        'purchasedAddons': permanentAddons,
+        'addons': const <String>[],
+        'purchasedAddons': permanentPurchased,
       });
-      await _updateLocalStoreState('Basic', permanentAddons);
+      await _updateLocalStoreState('Basic', const <String>[]);
     }
   }
 
@@ -1157,7 +1157,25 @@ class DashboardProvider with ChangeNotifier {
   }
 
   bool hasAddon(String key) {
-    if (globalDisabledAddons.contains(key)) {
+    if (isSuperAdmin) return true;
+
+    String canonicalKey = key;
+    if (key == 'crm' || key == 'customers') {
+      canonicalKey = 'customer_management';
+    } else if (key == 'employees') {
+      canonicalKey = 'employee_management';
+    } else if (key == 'kds') {
+      canonicalKey = 'kds_management';
+    } else if (key == 'tables') {
+      canonicalKey = 'table_reservation';
+    } else if (key == 'suppliers') {
+      canonicalKey = 'supplier_management';
+    } else if (key == 'franchise') {
+      canonicalKey = 'franchise_management';
+    }
+
+    if (globalDisabledAddons.contains(key) ||
+        globalDisabledAddons.contains(canonicalKey)) {
       debugPrint('🔒 hasAddon($key): BLOCKED by globalDisabledAddons');
       return false;
     }
@@ -1167,60 +1185,36 @@ class DashboardProvider with ChangeNotifier {
       return false;
     }
 
+    // Basic and Starting plans NEVER enable addon modules in the sidebar or routes
+    final planTier = PlanTier.fromString(store.subscriptionPlan);
+    if (planTier == PlanTier.basic || planTier == PlanTier.starting) {
+      return false;
+    }
+
     if (_userProfile != null &&
         activeRole != 'Store Owner' &&
         activeRole != 'Franchise Owner' &&
         activeRole != 'Admin' &&
         activeRole != 'Super Admin' &&
         _userProfile!.accessibleAddons != null) {
-      if (!_userProfile!.accessibleAddons!.contains(key)) {
+      if (!_userProfile!.accessibleAddons!.contains(key) &&
+          !_userProfile!.accessibleAddons!.contains(canonicalKey)) {
         debugPrint(
             '🔒 hasAddon($key): BLOCKED by accessibleAddons filter (role: ${_userProfile!.role})');
         return false;
       }
     }
 
-    final storeId = store.id;
-    if (EntitlementService.instance.hasAddon(key, storeId: storeId)) {
-      return true;
-    }
-
-    // Direct check on store's active/purchased addons and plan tier
-    final planTier = PlanTier.fromString(store.subscriptionPlan);
     if (planTier == PlanTier.enterprise) {
       return true;
     }
-    if (store.addons.contains(key) || store.purchasedAddons.contains(key)) {
+
+    final storeId = store.id;
+    if (store.addons.contains(key) || store.addons.contains(canonicalKey)) {
       return true;
     }
-    final tierFeatures = EntitlementService.defaultPlanFeatures[planTier] ?? {};
-    if (tierFeatures.contains(key) || tierFeatures.contains('*')) {
+    if (EntitlementService.instance.hasAddon(canonicalKey, storeId: storeId)) {
       return true;
-    }
-
-    // Resolve feature status based on store type configurations
-    final type = store.storeType;
-    final config = _storeTypeConfigs[type];
-    if (config is Map && config.containsKey(key)) {
-      final isEnabled = config[key] == true;
-      debugPrint(
-          '🔑 hasAddon($key): RESOLVED by storeType $type config = $isEnabled');
-      return isEnabled;
-    }
-
-    // Default templates if no custom config exists yet
-    if (type == 'Restaurant') {
-      if (['table_reservation', 'kds_management', 'employee_management']
-          .contains(key)) return true;
-      if (['barcode_scanner'].contains(key)) return false;
-    } else if (type == 'Grocery' || type == 'Supermarket') {
-      if ([
-        'barcode_scanner',
-        'customer_management',
-        'supplier_management',
-        'data_center'
-      ].contains(key)) return true;
-      if (['table_reservation', 'kds_management'].contains(key)) return false;
     }
 
     return false;
@@ -1518,21 +1512,27 @@ class DashboardProvider with ChangeNotifier {
       }
     }
 
-    // Core features that are always permitted for active/usable stores
+    // Core features and core sub-sections that are always permitted for active/usable stores
     if ([
-      'dashboard',
-      'pos',
-      'inventory',
-      'reports',
-      'sales',
-      'settings',
-      'biz_store'
-    ].contains(key)) {
+          'dashboard',
+          'pos',
+          'inventory',
+          'reports',
+          'sales',
+          'settings',
+          'biz_store'
+        ].contains(key) ||
+        key.startsWith('settings.') ||
+        key.startsWith('dashboard.') ||
+        key.startsWith('card.') ||
+        key.startsWith('feature.pos.')) {
       return true;
     }
 
     String internalAddonKey = key;
-    if (key == 'crm') internalAddonKey = 'customer_management';
+    if (key == 'crm' || key == 'customers') {
+      internalAddonKey = 'customer_management';
+    }
     if (key == 'employees') internalAddonKey = 'employee_management';
     if (key == 'kds') internalAddonKey = 'kds_management';
     if (key == 'tables') internalAddonKey = 'table_reservation';
@@ -1549,19 +1549,12 @@ class DashboardProvider with ChangeNotifier {
       'table_reservation',
       'data_center',
       'integration_hub',
-      'loyalty_program'
+      'loyalty_program',
+      'barcode_scanner',
     ];
 
     if (addonKeys.contains(internalAddonKey)) {
       if (hasAddon(internalAddonKey)) {
-        return true;
-      }
-      if (storeId.isNotEmpty &&
-          EntitlementService.instance.isFeatureEnabled(
-            internalAddonKey,
-            storeId: storeId,
-            userRole: role,
-          )) {
         return true;
       }
       debugPrint(

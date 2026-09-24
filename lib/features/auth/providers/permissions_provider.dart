@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:hive/hive.dart';
+import 'package:biztonic_pos/sync/entitlements/entitlement_model.dart';
 import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
 import '../../auth/domain/entities/user_profile.dart';
 import '../../store/domain/entities/store.dart';
@@ -45,19 +45,25 @@ class PermissionsHelper {
     }
 
     if ([
-      'dashboard',
-      'pos',
-      'inventory',
-      'reports',
-      'sales',
-      'settings',
-      'biz_store'
-    ].contains(key)) {
+          'dashboard',
+          'pos',
+          'inventory',
+          'reports',
+          'sales',
+          'settings',
+          'biz_store'
+        ].contains(key) ||
+        key.startsWith('settings.') ||
+        key.startsWith('dashboard.') ||
+        key.startsWith('card.') ||
+        key.startsWith('feature.pos.')) {
       return true;
     }
 
     String internalAddonKey = key;
-    if (key == 'crm') internalAddonKey = 'customer_management';
+    if (key == 'crm' || key == 'customers') {
+      internalAddonKey = 'customer_management';
+    }
     if (key == 'employees') internalAddonKey = 'employee_management';
     if (key == 'kds') internalAddonKey = 'kds_management';
     if (key == 'tables') internalAddonKey = 'table_reservation';
@@ -74,20 +80,12 @@ class PermissionsHelper {
       'table_reservation',
       'data_center',
       'integration_hub',
-      'loyalty_program'
+      'loyalty_program',
+      'barcode_scanner',
     ];
 
     if (addonKeys.contains(internalAddonKey)) {
-      if (hasAddon(internalAddonKey)) return true;
-      if (activeStore != null &&
-          EntitlementService.instance.isFeatureEnabled(
-            internalAddonKey,
-            storeId: activeStore!.id,
-            userRole: activeRole,
-          )) {
-        return true;
-      }
-      return false;
+      return hasAddon(internalAddonKey);
     }
 
     if (activeStore != null) {
@@ -102,52 +100,57 @@ class PermissionsHelper {
   }
 
   bool hasAddon(String key) {
+    if (profile?.role == 'Super Admin') return true;
     if (activeStore == null) return false;
+
+    String canonicalKey = key;
+    if (key == 'crm' || key == 'customers') {
+      canonicalKey = 'customer_management';
+    } else if (key == 'employees') {
+      canonicalKey = 'employee_management';
+    } else if (key == 'kds') {
+      canonicalKey = 'kds_management';
+    } else if (key == 'tables') {
+      canonicalKey = 'table_reservation';
+    } else if (key == 'suppliers') {
+      canonicalKey = 'supplier_management';
+    } else if (key == 'franchise') {
+      canonicalKey = 'franchise_management';
+    }
 
     final entitlement =
         EntitlementService.instance.getEntitlement(activeStore!.id);
     if (!entitlement.isUsable) return false;
 
-    // Check authoritative EntitlementService or store addons
-    final hasStoreEntitlement =
-        EntitlementService.instance.hasAddon(key, storeId: activeStore!.id) ||
-            activeStore!.addons.contains(key) ||
-            activeStore!.purchasedAddons.contains(key);
-
-    if (!hasStoreEntitlement) {
-      // Resolve feature status based on store type configurations cached in Hive
-      final type = activeStore!.storeType;
-      final box = Hive.isBoxOpen('store_type_configs')
-          ? Hive.box('store_type_configs')
-          : null;
-      final configs = box?.get('configs') as Map?;
-      final config = configs?[type];
-      if (config is Map && config.containsKey(key)) {
-        if (config[key] != true) return false;
-      } else if (type == 'Restaurant') {
-        // Default templates if no custom config exists yet
-        if (!['table_reservation', 'kds_management', 'employee_management']
-            .contains(key)) return false;
-      } else if (type == 'Grocery' || type == 'Supermarket') {
-        if (![
-          'barcode_scanner',
-          'customer_management',
-          'supplier_management',
-          'data_center'
-        ].contains(key)) return false;
-      } else {
-        return false;
-      }
+    // Basic and Starting plans NEVER enable addon modules
+    final planTier = PlanTier.fromString(activeStore!.subscriptionPlan);
+    if (planTier == PlanTier.basic || planTier == PlanTier.starting) {
+      return false;
     }
 
     if (profile != null &&
         profile!.role != 'Store Owner' &&
         profile!.role != 'Franchise Owner' &&
+        profile!.role != 'Admin' &&
+        profile!.role != 'Super Admin' &&
         profile!.accessibleAddons != null) {
-      if (!profile!.accessibleAddons!.contains(key)) return false;
+      if (!profile!.accessibleAddons!.contains(key) &&
+          !profile!.accessibleAddons!.contains(canonicalKey)) {
+        return false;
+      }
     }
 
-    return true;
+    if (planTier == PlanTier.enterprise) {
+      return true;
+    }
+
+    if (activeStore!.addons.contains(key) ||
+        activeStore!.addons.contains(canonicalKey)) {
+      return true;
+    }
+
+    return EntitlementService.instance
+        .hasAddon(canonicalKey, storeId: activeStore!.id);
   }
 }
 

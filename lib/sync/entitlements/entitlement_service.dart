@@ -42,6 +42,10 @@ class EntitlementService {
   final Map<String, StoreEntitlement> _memoryCache = {};
 
   /// Predefined features per plan tier.
+  /// Note: Modular BizStore addons (table_reservation, data_center, kds_management,
+  /// employee_management, supplier_management, customer_management, integration_hub,
+  /// franchise_management, central_catalog, loyalty_program) are NOT in defaultPlanFeatures
+  /// for Basic/Standard/Professional — they must be explicitly present in store.addons.
   static const Map<PlanTier, Set<String>> defaultPlanFeatures = {
     PlanTier.starting: {
       'dashboard',
@@ -62,9 +66,6 @@ class EntitlementService {
       'billing',
       'inventory',
       'basic_inventory',
-      'customers',
-      'customer_management',
-      'crm',
       'reports',
       'basic_reports',
       'sales',
@@ -78,23 +79,10 @@ class EntitlementService {
       'billing',
       'inventory',
       'basic_inventory',
-      'customers',
-      'customer_management',
-      'crm',
-      'employees',
-      'employee_management',
       'reports',
       'basic_reports',
       'sales',
-      'tables',
-      'table_reservation',
-      'floors',
-      'suppliers',
-      'supplier_management',
-      'kds',
-      'kds_management',
       'orders',
-      'data_center',
       'settings',
       'biz_store',
     },
@@ -104,29 +92,13 @@ class EntitlementService {
       'billing',
       'inventory',
       'basic_inventory',
-      'customers',
-      'customer_management',
-      'crm',
-      'employees',
-      'employee_management',
       'reports',
       'basic_reports',
       'sales',
-      'tables',
-      'table_reservation',
-      'floors',
-      'suppliers',
-      'supplier_management',
-      'kds',
-      'kds_management',
       'orders',
       'advanced_reports',
       'multi_store',
       'api_access',
-      'data_center',
-      'integration_hub',
-      'central_catalog',
-      'loyalty_program',
       'settings',
       'biz_store',
     },
@@ -324,6 +296,9 @@ class EntitlementService {
             ? tier
             : current.plan);
 
+    final isBasicOrStarting =
+        effectiveTier == PlanTier.basic || effectiveTier == PlanTier.starting;
+
     final effectivePurchased = trustIncoming
         ? <String>{
             ...current.purchasedAddons,
@@ -332,10 +307,15 @@ class EntitlementService {
           }
         : current.purchasedAddons;
 
-    // Filter incoming addons: cannot enable addons that are not allowed unless synced from server/store doc
-    final effectiveAddons = trustIncoming
-        ? <String>{...addons, ...?purchasedAddons}
-        : addons.where((a) => current.isAddonAllowed(a)).toSet();
+    // Basic/Starting plans cannot have active addons enabled.
+    // Standard/Professional plans enable addons that are installed on the store.
+    final Set<String> effectiveAddons = isBasicOrStarting
+        ? <String>{}
+        : (trustIncoming
+            ? (addons.isNotEmpty
+                ? addons.toSet()
+                : <String>{...?purchasedAddons})
+            : addons.where((a) => current.isAddonAllowed(a)).toSet());
 
     final entitlement = StoreEntitlement.create(
       storeId: storeId,
@@ -408,11 +388,38 @@ class EntitlementService {
     'basic_reports': {'reports', 'basic_reports', 'advanced_reports'},
   };
 
+  static const Set<String> _allAddonKeys = {
+    'crm',
+    'customer_management',
+    'customers',
+    'employees',
+    'employee_management',
+    'kds',
+    'kds_management',
+    'tables',
+    'table_reservation',
+    'suppliers',
+    'supplier_management',
+    'franchise',
+    'franchise_management',
+    'data_center',
+    'integration_hub',
+    'central_catalog',
+    'loyalty_program',
+    'barcode_scanner',
+  };
+
   /// Authoritative check for whether an addon is enabled.
   bool hasAddon(String addonKey, {required String storeId}) {
     if (storeId.isEmpty) return false;
     final entitlement = getEntitlement(storeId);
     if (!entitlement.isUsable) return false;
+
+    // Basic and Starting plans NEVER unlock addon modules
+    if (entitlement.plan == PlanTier.basic ||
+        entitlement.plan == PlanTier.starting) {
+      return false;
+    }
 
     // Enterprise tier unlocks all addons
     if (entitlement.plan == PlanTier.enterprise ||
@@ -421,18 +428,8 @@ class EntitlementService {
     }
 
     final aliases = _featureAliases[addonKey] ?? {addonKey};
-    if (aliases.any((k) =>
-        entitlement.addons.contains(k) ||
-        entitlement.purchasedAddons.contains(k))) {
+    if (aliases.any((k) => entitlement.addons.contains(k))) {
       return true;
-    }
-
-    // Standard and Professional plans unlock their tier-included addons automatically
-    if (entitlement.plan == PlanTier.standard ||
-        entitlement.plan == PlanTier.professional) {
-      if (aliases.any((k) => entitlement.features.contains(k))) {
-        return true;
-      }
     }
 
     return false;
@@ -450,7 +447,7 @@ class EntitlementService {
     final entitlement = getEntitlement(storeId);
     if (entitlement.isSuspended || entitlement.isExpired) return false;
 
-    // Core navigation features are always unlocked for any usable plan
+    // Core navigation features and core sub-sections are always unlocked for any usable plan
     const coreFeatures = {
       'dashboard',
       'pos',
@@ -464,7 +461,13 @@ class EntitlementService {
       'settings',
       'biz_store',
     };
-    if (coreFeatures.contains(featureKey)) return true;
+    if (coreFeatures.contains(featureKey) ||
+        featureKey.startsWith('settings.') ||
+        featureKey.startsWith('dashboard.') ||
+        featureKey.startsWith('card.') ||
+        featureKey.startsWith('feature.pos.')) {
+      return true;
+    }
 
     // Enterprise unlocks all
     if (entitlement.features.contains('*') ||
@@ -472,11 +475,14 @@ class EntitlementService {
       return true;
     }
 
+    // Modular BizStore addons strictly require hasAddon (Standard+ plan & installed addon)
+    if (_allAddonKeys.contains(featureKey)) {
+      return hasAddon(featureKey, storeId: storeId);
+    }
+
     final aliases = _featureAliases[featureKey] ?? {featureKey};
     for (final k in aliases) {
-      if (entitlement.features.contains(k) ||
-          entitlement.addons.contains(k) ||
-          entitlement.purchasedAddons.contains(k)) {
+      if (entitlement.features.contains(k)) {
         return true;
       }
     }

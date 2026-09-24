@@ -343,7 +343,7 @@ class AppRouter {
             GoRoute(
               path: '/biz-store',
               builder: (context, state) => const FeatureGuard(
-                  featureKey: 'admin', child: BizStoreScreen()),
+                  featureKey: 'biz_store', child: BizStoreScreen()),
             ),
             GoRoute(
               path: '/biz-store/addon-detail',
@@ -382,12 +382,17 @@ class AppRouter {
                 path: '/reports/audit',
                 builder: (context, state) => const AuditLogScreen()),
 
-            // --- Inject Dynamic Module Routes Here ---
-            ...POSCoreRegistry.getGlobalRoutes().entries.map((entry) {
-              return GoRoute(
-                path: entry.key,
-                builder: (context, state) => entry.value(context),
-              );
+            // --- Inject Dynamic Module Routes Here (Strictly Guarded by Module ID) ---
+            ...POSCoreRegistry.modules.expand((module) {
+              return module.registerRoutes().entries.map((entry) {
+                return GoRoute(
+                  path: entry.key,
+                  builder: (context, state) => FeatureGuard(
+                    featureKey: module.moduleId,
+                    child: entry.value(context),
+                  ),
+                );
+              });
             }),
           ],
         ),

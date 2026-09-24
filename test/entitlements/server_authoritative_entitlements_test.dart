@@ -152,10 +152,10 @@ void main() {
       const addonStoreId = 'STORE_ADDON_TAMPER';
       final legitimate = StoreEntitlement.create(
         storeId: addonStoreId,
-        plan: PlanTier.basic,
+        plan: PlanTier.standard,
         status: PlanStatus.active,
-        limits: EntitlementService.defaultPlanLimits[PlanTier.basic]!,
-        features: EntitlementService.defaultPlanFeatures[PlanTier.basic]!,
+        limits: EntitlementService.defaultPlanLimits[PlanTier.standard]!,
+        features: EntitlementService.defaultPlanFeatures[PlanTier.standard]!,
         addons: {'customer_management'},
         purchasedAddons: {'customer_management'}, // Only crm is purchased
       );
@@ -171,11 +171,12 @@ void main() {
       // Attack: Attempt to sync unpurchased addons from local store object
       await service.syncFromStore(
         storeId: addonStoreId,
-        planName: 'Basic',
+        planName: 'Standard',
         status: 'ACTIVE',
         addons: [
           'customer_management',
           'kds_management',
+          'data_center',
           'franchise_management'
         ],
       );
@@ -332,18 +333,19 @@ void main() {
     });
 
     test(
-        '7. Store Owner on Basic and Standard plans receives full canonical sidebar menu entitlements',
+        '7. Store Owner on Basic and Standard plans receives strict plan and installed addon sidebar entitlements',
         () async {
       const basicStoreId = 'STORE_NEW_BASIC_OWNER';
       await service.syncFromStore(
         storeId: basicStoreId,
         planName: 'Basic',
         status: 'ACTIVE',
-        addons: [],
-        purchasedAddons: [],
+        addons: ['table_reservation', 'data_center'],
+        purchasedAddons: ['table_reservation'],
         fromServer: true,
       );
 
+      // Core menus MUST be enabled on Basic plan
       for (final coreKey in [
         'dashboard',
         'pos',
@@ -352,14 +354,42 @@ void main() {
         'sales',
         'settings',
         'biz_store',
-        'customer_management',
-        'crm',
       ]) {
         expect(
           service.isFeatureEnabled(coreKey,
               storeId: basicStoreId, userRole: 'Store Owner'),
           isTrue,
-          reason: 'Basic plan Store Owner must have $coreKey enabled',
+          reason: 'Basic plan Store Owner must have core menu $coreKey enabled',
+        );
+      }
+
+      // ALL addon menus MUST be disabled/hidden on Basic plan
+      for (final addonKey in [
+        'table_reservation',
+        'tables',
+        'data_center',
+        'kds_management',
+        'kds',
+        'employee_management',
+        'employees',
+        'supplier_management',
+        'suppliers',
+        'customer_management',
+        'crm',
+        'customers',
+        'integration_hub',
+        'franchise_management',
+      ]) {
+        expect(
+          service.hasAddon(addonKey, storeId: basicStoreId),
+          isFalse,
+          reason: 'Basic plan must NEVER enable addon $addonKey',
+        );
+        expect(
+          service.isFeatureEnabled(addonKey,
+              storeId: basicStoreId, userRole: 'Store Owner'),
+          isFalse,
+          reason: 'Basic plan Store Owner must have addon menu $addonKey hidden',
         );
       }
 
@@ -378,7 +408,8 @@ void main() {
       );
 
       expect(service.currentPlan(standardStoreId), equals(PlanTier.standard));
-      for (final stdKey in [
+      // Core + installed addons must be enabled on Standard plan
+      for (final enabledKey in [
         'dashboard',
         'pos',
         'inventory',
@@ -386,18 +417,32 @@ void main() {
         'sales',
         'settings',
         'biz_store',
-        'customer_management',
         'employee_management',
         'table_reservation',
-        'supplier_management',
         'kds_management',
-        'data_center',
       ]) {
         expect(
-          service.isFeatureEnabled(stdKey,
+          service.isFeatureEnabled(enabledKey,
               storeId: standardStoreId, userRole: 'Store Owner'),
           isTrue,
-          reason: 'Standard plan Store Owner must have $stdKey enabled',
+          reason: 'Standard plan Store Owner must have $enabledKey enabled',
+        );
+      }
+
+      // Uninstalled addons must remain hidden even on Standard plan
+      for (final uninstalledKey in [
+        'data_center',
+        'supplier_management',
+        'customer_management',
+        'integration_hub',
+        'franchise_management',
+      ]) {
+        expect(
+          service.isFeatureEnabled(uninstalledKey,
+              storeId: standardStoreId, userRole: 'Store Owner'),
+          isFalse,
+          reason:
+              'Standard plan Store Owner must NOT see uninstalled addon $uninstalledKey',
         );
       }
     });
