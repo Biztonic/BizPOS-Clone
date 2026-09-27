@@ -7,6 +7,8 @@ import 'package:biztonic_pos/features/auth/providers/auth_notifier.dart';
 import 'package:biztonic_pos/features/auth/data/auth_repository.dart';
 import 'package:biztonic_pos/features/store/data/store_repository.dart';
 import 'package:biztonic_pos/features/subscriptions/data/subscription_repository.dart';
+import 'package:flutter/foundation.dart';
+import 'package:biztonic_pos/services/offline_service.dart';
 import 'package:biztonic_pos/services/sync_service.dart';
 import '../domain/entities/store.dart';
 import '../domain/entities/settings.dart';
@@ -42,89 +44,146 @@ class StoreNotifier extends _$StoreNotifier {
     return StoreState();
   }
 
-  Future<void> setActiveStoreId(String? storeId) async {
-    if (storeId == state.activeStoreId) return;
+  Future<void> setActiveStoreId(String? storeId, {Store? initialStore}) async {
+    if (storeId == state.activeStoreId &&
+        state.activeStore != null &&
+        initialStore == null) {
+      return;
+    }
     _storeSubscription?.cancel();
 
     try {
-      state = state.copyWith(activeStoreId: storeId, isLoading: true);
+      state = state.copyWith(
+        activeStoreId: storeId,
+        activeStore: initialStore ?? state.activeStore,
+        isLoading: state.activeStore == null && initialStore == null,
+      );
       _syncService.setActiveStoreId(storeId);
 
       if (storeId != null) {
         final user = FirebaseAuth.instance.currentUser;
 
-        // Profile Sync via AuthRepository
-        if (user != null) {
-          await AuthRepository()
-              .updateUserProfile(user.uid, {'storeId': storeId});
+        // 1. Try initialStore or in-memory stores
+        if (initialStore != null) {
+          state = state.copyWith(activeStore: initialStore);
+          await _storeRepo.pinStore(initialStore, uid: user?.uid);
+        } else {
+          final cachedStores =
+              state.stores.where((s) => s.id == storeId).toList();
+          if (cachedStores.isNotEmpty) {
+            state = state.copyWith(activeStore: cachedStores.first);
+            await _storeRepo.pinStore(state.activeStore!, uid: user?.uid);
+          } else {
+            // 2. Try Offline/Pinned Cache
+            try {
+              final pinned =
+                  await OfflineService().getPinnedStore(uid: user?.uid);
+              if (pinned != null &&
+                  (pinned['id'] == storeId ||
+                      (storeId.isNotEmpty && pinned['name'] != null))) {
+                final pinnedStore =
+                    Store.fromMap(pinned, pinned['id'] ?? storeId);
+                state = state.copyWith(activeStore: pinnedStore);
+              } else {
+                // 3. Try user cached stores
+                final userCached =
+                    await _storeRepo.getCachedStores(uid: user?.uid);
+                final match = userCached.where((s) => s.id == storeId).toList();
+                if (match.isNotEmpty) {
+                  state = state.copyWith(activeStore: match.first);
+                }
+              }
+            } catch (cacheErr) {
+              debugPrint('⚠️ StoreNotifier: Cache fallback failed: $cacheErr');
+            }
+          }
         }
 
-        // Try Cache First
-        final cachedStores =
-            state.stores.where((s) => s.id == storeId).toList();
-        if (cachedStores.isNotEmpty) {
-          state = state.copyWith(activeStore: cachedStores.first);
-          await _storeRepo.pinStore(state.activeStore!, uid: user?.uid);
+        // Profile Sync via AuthRepository
+        if (user != null) {
+          try {
+            await AuthRepository()
+                .updateUserProfile(user.uid, {'storeId': storeId});
+          } catch (e) {
+            debugPrint('⚠️ StoreNotifier: updateUserProfile failed: $e');
+          }
         }
 
         // Start Listener
-        _storeSubscription = _storeRepo.storeSnapshots(storeId).listen((snap) {
-          if (snap.exists) {
-            final firestoreStore =
-                Store.fromMap(snap.data() as Map<String, dynamic>, snap.id);
-            final cachedStore = state.activeStore;
+        try {
+          _storeSubscription = _storeRepo.storeSnapshots(storeId).listen((snap) {
+            if (snap.exists && snap.data() != null) {
+              final firestoreStore =
+                  Store.fromMap(snap.data() as Map<String, dynamic>, snap.id);
+              final cachedStore = state.activeStore;
 
-            final updatedStore = firestoreStore.copyWith(
-              address: (firestoreStore.address == null ||
-                      firestoreStore.address!.isEmpty)
-                  ? cachedStore?.address
-                  : firestoreStore.address,
-              phone: (firestoreStore.phone == null ||
-                      firestoreStore.phone!.isEmpty)
-                  ? cachedStore?.phone
-                  : firestoreStore.phone,
-              gstin: (firestoreStore.gstin == null ||
-                      firestoreStore.gstin!.isEmpty)
-                  ? cachedStore?.gstin
-                  : firestoreStore.gstin,
-            );
-
-            state = state.copyWith(activeStore: updatedStore);
-            _storeRepo.pinStore(updatedStore, uid: user?.uid);
-
-            // Update in list
-            final updatedList = state.stores
-                .map((s) => s.id == updatedStore.id ? updatedStore : s)
-                .toList();
-            state = state.copyWith(stores: updatedList);
-          }
-        });
-
-        // Fetch Fresh
-        final onlineStore = await _storeRepo.getStoreOnline(storeId);
-        if (onlineStore != null) {
-          final cachedStore = state.activeStore;
-          final mergedStore = onlineStore.copyWith(
-            address:
-                (onlineStore.address == null || onlineStore.address!.isEmpty)
+              final updatedStore = firestoreStore.copyWith(
+                address: (firestoreStore.address == null ||
+                        firestoreStore.address!.isEmpty)
                     ? cachedStore?.address
-                    : onlineStore.address,
-            phone: (onlineStore.phone == null || onlineStore.phone!.isEmpty)
-                ? cachedStore?.phone
-                : onlineStore.phone,
-            gstin: (onlineStore.gstin == null || onlineStore.gstin!.isEmpty)
-                ? cachedStore?.gstin
-                : onlineStore.gstin,
-          );
-          state = state.copyWith(activeStore: mergedStore);
-          await _storeRepo.pinStore(mergedStore, uid: user?.uid);
+                    : firestoreStore.address,
+                phone: (firestoreStore.phone == null ||
+                        firestoreStore.phone!.isEmpty)
+                    ? cachedStore?.phone
+                    : firestoreStore.phone,
+                gstin: (firestoreStore.gstin == null ||
+                        firestoreStore.gstin!.isEmpty)
+                    ? cachedStore?.gstin
+                    : firestoreStore.gstin,
+              );
+
+              state = state.copyWith(activeStore: updatedStore);
+              _storeRepo.pinStore(updatedStore, uid: user?.uid);
+
+              // Update in list
+              final updatedList = state.stores
+                  .map((s) => s.id == updatedStore.id ? updatedStore : s)
+                  .toList();
+              state = state.copyWith(stores: updatedList);
+            }
+          }, onError: (e) {
+            debugPrint('⚠️ StoreNotifier: storeSnapshots stream error: $e');
+          });
+        } catch (e) {
+          debugPrint('⚠️ StoreNotifier: storeSnapshots listen error: $e');
         }
 
-        await fetchCounters();
+        // Fetch Fresh
+        try {
+          final onlineStore = await _storeRepo.getStoreOnline(storeId);
+          if (onlineStore != null) {
+            final cachedStore = state.activeStore;
+            final mergedStore = onlineStore.copyWith(
+              address:
+                  (onlineStore.address == null || onlineStore.address!.isEmpty)
+                      ? cachedStore?.address
+                      : onlineStore.address,
+              phone: (onlineStore.phone == null || onlineStore.phone!.isEmpty)
+                  ? cachedStore?.phone
+                  : onlineStore.phone,
+              gstin: (onlineStore.gstin == null || onlineStore.gstin!.isEmpty)
+                  ? cachedStore?.gstin
+                  : onlineStore.gstin,
+            );
+            state = state.copyWith(activeStore: mergedStore);
+            await _storeRepo.pinStore(mergedStore, uid: user?.uid);
+          }
+        } catch (e) {
+          debugPrint('⚠️ StoreNotifier: getStoreOnline failed: $e');
+        }
+
+        try {
+          await fetchCounters();
+        } catch (e) {
+          debugPrint('⚠️ StoreNotifier: fetchCounters failed: $e');
+        }
       } else {
         state = state.copyWith(clearActiveStore: true);
         _syncService.setActiveStoreId(null);
       }
+    } catch (e) {
+      debugPrint('⚠️ StoreNotifier: setActiveStoreId error: $e');
+      state = state.copyWith(error: e.toString());
     } finally {
       state = state.copyWith(isLoading: false);
     }

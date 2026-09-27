@@ -43,9 +43,17 @@ class StoreRepository with StoreRepositoryMixin {
   }
 
   Future<Store?> getStoreOnline(String storeId) async {
-    final doc = await _db.collection('stores').doc(storeId).get();
-    if (doc.exists) {
-      return Store.fromMap(doc.data()!, doc.id);
+    try {
+      final doc = await _db
+          .collection('stores')
+          .doc(storeId)
+          .get()
+          .timeout(const Duration(seconds: 4));
+      if (doc.exists && doc.data() != null) {
+        return Store.fromMap(doc.data()!, doc.id);
+      }
+    } catch (e) {
+      debugPrint('⚠️ StoreRepository: getStoreOnline failed ($e). Falling back to local cache.');
     }
     return null;
   }
@@ -197,7 +205,11 @@ class StoreRepository with StoreRepositoryMixin {
       }
     }
     try {
-      final doc = await _db.collection('settings').doc('global').get();
+      final doc = await _db
+          .collection('settings')
+          .doc('global')
+          .get()
+          .timeout(const Duration(seconds: 3));
       if (doc.exists && doc.data()?['store_types'] != null) {
         return List<String>.from(doc.data()!['store_types']);
       }
@@ -213,7 +225,11 @@ class StoreRepository with StoreRepositoryMixin {
       }
     }
     try {
-      final doc = await _db.collection('settings').doc('global').get();
+      final doc = await _db
+          .collection('settings')
+          .doc('global')
+          .get()
+          .timeout(const Duration(seconds: 3));
       if (doc.exists && doc.data()?['store_type_configs'] != null) {
         final configs =
             Map<String, dynamic>.from(doc.data()!['store_type_configs']);

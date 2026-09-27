@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as legacy_provider;
+import '../../providers/dashboard_provider.dart' as legacy;
+import '../../features/store/domain/entities/store.dart';
 import '../../features/store/providers/store_notifier.dart';
 import 'manage_counters_screen.dart';
 import '../../widgets/feature_guard.dart';
@@ -13,7 +16,8 @@ import '../../core/design/components/atoms/app_card.dart';
 
 class StoreSettingsSection extends ConsumerStatefulWidget {
   final bool isSubView;
-  const StoreSettingsSection({super.key, this.isSubView = false});
+  final Store? store;
+  const StoreSettingsSection({super.key, this.isSubView = false, this.store});
 
   @override
   ConsumerState<StoreSettingsSection> createState() =>
@@ -25,7 +29,12 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
   String? _selectedStoreType;
-  List<String> _availableStoreTypes = [];
+  List<String> _availableStoreTypes = [
+    'Restaurant',
+    'Grocery',
+    'Supermarket',
+    'Retail'
+  ];
   Map<String, dynamic> _typeConfigs = {};
 
   bool _isSaving = false;
@@ -40,7 +49,11 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
         _nameController.text = store.name ?? '';
         _addressController.text = store.address ?? '';
         _phoneController.text = store.phone ?? '';
-        _selectedStoreType = store.storeType;
+        _selectedStoreType = store.storeType ?? 'Restaurant';
+        if (_selectedStoreType != null &&
+            !_availableStoreTypes.contains(_selectedStoreType)) {
+          _availableStoreTypes.add(_selectedStoreType!);
+        }
         _dataLoaded = true;
         _lastStoreId = store.id;
       }
@@ -57,7 +70,9 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
         notifier.fetchStoreTypeConfigs().then((configs) {
           if (context.mounted) {
             setState(() {
-              _availableStoreTypes = types;
+              if (types.isNotEmpty) {
+                _availableStoreTypes = types;
+              }
               _typeConfigs = configs;
 
               if (_selectedStoreType != null &&
@@ -82,16 +97,75 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
   @override
   Widget build(BuildContext context) {
     final storeState = ref.watch(storeNotifierProvider);
-    final store = storeState.activeStore;
+    Store? store = widget.store ?? storeState.activeStore;
+
+    // Fallback to legacy DashboardProvider if not found in widget/riverpod
+    if (store == null) {
+      try {
+        final dashboard = legacy_provider.Provider.of<legacy.DashboardProvider>(
+            context,
+            listen: false);
+        store = dashboard.activeStore;
+        if (store != null && mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              ref.read(storeNotifierProvider.notifier).setActiveStoreId(
+                    store!.id,
+                    initialStore: store,
+                  );
+            }
+          });
+        }
+      } catch (_) {}
+    }
 
     if (store == null) {
-      const widget = Center(child: CircularProgressIndicator());
-      if (widget.runtimeType == SizedBox)
-        return widget; // Should not happen but for safety
-
-      return widget.runtimeType == Center
-          ? (widget as Widget)
-          : const SizedBox();
+      if (storeState.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.store_mall_directory_outlined,
+                  size: 64, color: Theme.of(context).disabledColor),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'No Active Store Found',
+                style: AppTypography.titleMedium
+                    .copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Please select an active store to manage settings.',
+                style: AppTypography.bodyMedium
+                    .copyWith(color: Theme.of(context).disabledColor),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppButton(
+                label: 'Retry',
+                onPressed: () {
+                  try {
+                    final dashboard =
+                        legacy_provider.Provider.of<legacy.DashboardProvider>(
+                            context,
+                            listen: false);
+                    if (dashboard.activeStoreId != null) {
+                      ref.read(storeNotifierProvider.notifier).setActiveStoreId(
+                            dashboard.activeStoreId,
+                            initialStore: dashboard.activeStore,
+                          );
+                    }
+                  } catch (_) {}
+                },
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     _populateControllers(store);
@@ -135,10 +209,12 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
                   icon: const Icon(Icons.phone_outlined),
                   keyboardType: TextInputType.phone,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty)
+                    if (value == null || value.trim().isEmpty) {
                       return 'Phone is required';
-                    if (value.trim().length < 10)
+                    }
+                    if (value.trim().length < 10) {
                       return 'Please enter a valid phone number';
+                    }
                     return null;
                   },
                 ),
@@ -146,7 +222,11 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
 
                 // Store Type Dropdown
                 DropdownButtonFormField<String>(
-                  value: _selectedStoreType,
+                  value: _availableStoreTypes.contains(_selectedStoreType)
+                      ? _selectedStoreType
+                      : (_availableStoreTypes.isNotEmpty
+                          ? _availableStoreTypes.first
+                          : null),
                   style: AppTypography.bodyMedium,
                   decoration: const InputDecoration(
                     labelText: 'Store Type',
@@ -211,13 +291,18 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
                   isLoading: _isSaving,
                   onPressed: () async {
                     setState(() => _isSaving = true);
-                    final updatedStore = store.copyWith(
+                    final currentStore = store!;
+                    final updatedStore = currentStore.copyWith(
                       name: _nameController.text,
                       address: _addressController.text,
                       phone: _phoneController.text,
                       storeType: _selectedStoreType,
                     );
                     final messenger = ScaffoldMessenger.of(context);
+                    final dashboard =
+                        legacy_provider.Provider.of<legacy.DashboardProvider>(
+                            context,
+                            listen: false);
                     final successMsg =
                         AppLocalizations.t(context, 'Store Settings Saved');
                     final errorColor = AppColors.adaptiveError(context);
@@ -225,6 +310,9 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
                       await ref
                           .read(storeNotifierProvider.notifier)
                           .updateStoreSettings(updatedStore);
+                      try {
+                        await dashboard.updateStoreSettings(updatedStore);
+                      } catch (_) {}
                       if (mounted) {
                         setState(() => _isSaving = false);
                         messenger.showSnackBar(SnackBar(

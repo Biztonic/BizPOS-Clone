@@ -50,7 +50,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (dashboard.activeStoreId != null) {
         ref
             .read(storeNotifierProvider.notifier)
-            .setActiveStoreId(dashboard.activeStoreId);
+            .setActiveStoreId(
+              dashboard.activeStoreId,
+              initialStore: dashboard.activeStore,
+            );
       }
     });
   }
@@ -64,7 +67,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       {
         'icon': Icons.store,
         'label': AppLocalizations.t(context, 'store'),
-        'widgetBuilder': () => const StoreSettingsSection(isSubView: true),
+        'widgetBuilder': () => StoreSettingsSection(
+              isSubView: true,
+              store: legacy_provider.Provider.of<legacy.DashboardProvider>(
+                      context,
+                      listen: false)
+                  .activeStore,
+            ),
         'color': AppColors.adaptivePrimary(context),
         'roles': ['Super Admin', 'Franchise Owner', 'Store Owner', 'Admin'],
         'key': 'settings.store'
