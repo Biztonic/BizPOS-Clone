@@ -168,11 +168,17 @@ class SyncService with ChangeNotifier {
 
   int get pendingUploadCount {
     if (_queueBox == null || _queueBox!.isEmpty) return 0;
-    if (_activeStoreId == null) return _queueBox!.length;
-    // Filter: Count only items belonging to the active store
     int count = 0;
     for (var val in _queueBox!.values) {
       if (val is Map) {
+        final state = (val['state'] ?? 'PENDING').toString().toUpperCase();
+        if (state != 'PENDING' && state != 'IN_FLIGHT' && state != 'FAILED') {
+          continue;
+        }
+        if (_activeStoreId == null) {
+          count++;
+          continue;
+        }
         final itemStoreId = (val['activeStoreId'] ?? '').toString().trim();
         final payloadStoreId = (val['payload'] is Map
             ? (val['payload']['storeId'] ?? '').toString().trim()
@@ -442,10 +448,10 @@ class SyncService with ChangeNotifier {
     if (_activeStoreId == null) return;
     try {
       _localCounts = await _statsEngine.refreshLocalCounts();
-      if (_isOnline) {
-        unawaited(refreshCloudCounts(notify: false));
-      }
       if (notify) notifyListeners();
+      if (_isOnline) {
+        await refreshCloudCounts(notify: notify);
+      }
     } catch (e) {
       debugPrint('❌ SyncService: Failed to refresh local counts: $e');
     }
@@ -580,6 +586,10 @@ class SyncService with ChangeNotifier {
           await _checkAndPerformAutoCloudLogin();
         }
 
+        if (forceManual) {
+          await _maintenanceEngine.repairAllModules();
+        }
+
         await _orchestrator.processSync(
             forceManual: forceManual, forceFull: forceFull);
       },
@@ -686,6 +696,10 @@ class SyncService with ChangeNotifier {
     if (_queueBox != null) {
       for (var val in _queueBox!.values) {
         if (val is Map) {
+          final state = (val['state'] ?? 'PENDING').toString().toUpperCase();
+          if (state != 'PENDING' && state != 'IN_FLIGHT' && state != 'FAILED') {
+            continue;
+          }
           final itemStoreId = (val['activeStoreId'] ?? '').toString().trim();
           final payloadStoreId = (val['payload'] is Map
               ? (val['payload']['storeId'] ?? '').toString().trim()
@@ -1003,7 +1017,7 @@ class SyncService with ChangeNotifier {
           );
         }
 
-        // 3. Queue inventory movements for cloud sync
+        // 3. Queue inventory movements AND updated inventory items for cloud sync
         for (var movement in event.movements) {
           if (movement is InventoryMovement) {
             await queueOperation(
@@ -1015,6 +1029,18 @@ class SyncService with ChangeNotifier {
                 'createdAt': movement.createdAt.toIso8601String(),
               },
             );
+            final updatedItem = await _repository
+                .getInventoryItem(movement.itemId, storeId: storeId);
+            if (updatedItem != null) {
+              final itemPayload = updatedItem.toHiveMap();
+              itemPayload['storeId'] = storeId;
+              await queueOperation(
+                collection: 'inventory',
+                docId: movement.itemId,
+                action: 'update',
+                payload: itemPayload,
+              );
+            }
           }
         }
 

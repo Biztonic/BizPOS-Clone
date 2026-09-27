@@ -65,11 +65,11 @@ class SubscriptionHistory {
   }
 
   bool get isActive {
-    if (status != 'ACTIVE') return false;
+    if (status.toUpperCase() != 'ACTIVE') return false;
     return DateTime.now().isBefore(endDate);
   }
 
   bool get isQueued {
-    return status == 'QUEUED';
+    return status.toUpperCase() == 'QUEUED';
   }
 }

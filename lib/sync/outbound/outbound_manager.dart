@@ -114,28 +114,41 @@ class OutboundManager {
         return;
       }
 
-      // 1. Fetch ready operations (respecting exponential backoff)
-      final readyOps = await outboxStore.getReadyOperations(
-          storeId: storeId, limit: batchSize * 2);
-      if (readyOps.isEmpty) return;
+      // 1. Fetch and process ready operations until queue is drained (or max passes reached)
+      int totalPushed = 0;
+      int pass = 0;
+      const int maxPasses = 10;
+      while (pass < maxPasses) {
+        pass++;
+        final readyOps = await outboxStore.getReadyOperations(
+          storeId: storeId,
+          limit: batchSize * 2,
+          ignoreBackoff: forceManual,
+        );
+        if (readyOps.isEmpty) break;
 
-      debugPrint(
-          '📤 [OutboundManager] Processing ${readyOps.length} ready outbox operations for store $storeId');
+        debugPrint(
+            '📤 [OutboundManager] Pass $pass: Processing ${readyOps.length} ready outbox operations for store $storeId');
 
-      // 2. Process in chunks
-      for (var i = 0; i < readyOps.length; i += batchSize) {
-        final chunk = readyOps.sublist(
-            i,
-            (i + batchSize < readyOps.length)
-                ? i + batchSize
-                : readyOps.length);
-        await _processBatch(chunk, storeId);
+        // 2. Process in chunks
+        for (var i = 0; i < readyOps.length; i += batchSize) {
+          final chunk = readyOps.sublist(
+              i,
+              (i + batchSize < readyOps.length)
+                  ? i + batchSize
+                  : readyOps.length);
+          await _processBatch(chunk, storeId);
+        }
+        totalPushed += readyOps.length;
+        if (readyOps.length < batchSize * 2) break;
       }
 
-      EventBus.instance.fire(SyncCompletedEvent(
-        storeId: storeId,
-        itemsPushed: readyOps.length,
-      ));
+      if (totalPushed > 0) {
+        EventBus.instance.fire(SyncCompletedEvent(
+          storeId: storeId,
+          itemsPushed: totalPushed,
+        ));
+      }
     } catch (e) {
       debugPrint('📤 [OutboundManager] Error processing queue: $e');
       await logEvent('Outbound sync error: $e', isError: true);

@@ -54,6 +54,7 @@ class SyncCollectionRegistry {
   /// All modules that participate in inbound pull sync.
   static const List<String> pullModules = [
     orders,
+    inventoryMovements,
     inventory,
     customers,
     settings,
@@ -62,7 +63,6 @@ class SyncCollectionRegistry {
     floors,
     suppliers,
     notes,
-    inventoryMovements,
   ];
 
   /// Modules that store heavy data (SQLite on mobile, Hive on web).

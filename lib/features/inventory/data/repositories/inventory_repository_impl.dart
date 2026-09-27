@@ -34,6 +34,12 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
         );
       } else {
         await _legacyRepo.insertInventory(legacyItem);
+        if (Hive.isBoxOpen('cache_inventory')) {
+          final hiveMap = legacyItem.toHiveMap();
+          hiveMap['syncStatus'] = 'PENDING';
+          hiveMap['updatedAt'] = DateTime.now().toIso8601String();
+          await Hive.box('cache_inventory').put(item.id, hiveMap);
+        }
       }
       return InventoryResult.success(null);
     } catch (e, st) {

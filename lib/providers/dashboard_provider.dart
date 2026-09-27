@@ -813,20 +813,68 @@ class DashboardProvider with ChangeNotifier {
         .where((h) => !h.isAddonOnly && h.planName.toLowerCase() != 'basic')
         .toList();
 
-    if (activeBaseSub.isNotEmpty) {
-      final String plan = activeBaseSub.first.planName.isNotEmpty
-          ? activeBaseSub.first.planName
-          : 'Standard';
-      final Set<String> activeAddons = {
-        ...activeStore!.addons,
-        ...activeStore!.purchasedAddons,
-      };
-      for (var sub in activeSubs) {
-        activeAddons.addAll(sub.selectedAddons);
+    // Also inspect approved/completed subscription_requests for this store
+    // so standalone addon purchases and plan requests are always verified.
+    final Set<String> verifiedFromRequests = <String>{};
+    bool hasApprovedRequests = false;
+    try {
+      final reqSnap = await _db
+          .collection('subscription_requests')
+          .where('storeId', isEqualTo: checkingStoreId)
+          .get();
+      for (final doc in reqSnap.docs) {
+        final data = doc.data();
+        final st = (data['status'] ?? '').toString().toUpperCase();
+        if (st == 'APPROVED' || st == 'COMPLETED') {
+          hasApprovedRequests = true;
+          final reqAddons = List<String>.from(data['selectedAddons'] ?? const []);
+          for (final a in reqAddons) {
+            final c = EntitlementService.canonicalizeAddonKey(a);
+            if (c.isNotEmpty) verifiedFromRequests.add(c);
+          }
+        }
       }
-      final List<String> addonList = activeAddons.toList();
+    } catch (e) {
+      debugPrint('⚠️ _checkAndAutoActivateReadySubs request verification: $e');
+    }
+
+    final Set<String> verifiedFromHistory = <String>{};
+    for (final sub in activeSubs) {
+      for (final a in sub.selectedAddons) {
+        final c = EntitlementService.canonicalizeAddonKey(a);
+        if (c.isNotEmpty) verifiedFromHistory.add(c);
+      }
+    }
+
+    final Set<String> verifiedPurchased = {
+      ...verifiedFromHistory,
+      ...verifiedFromRequests,
+    };
+
+    if (activeSubs.isNotEmpty || hasApprovedRequests) {
+      String plan = activeStore!.subscriptionPlan;
+      if (activeBaseSub.isNotEmpty && activeBaseSub.first.planName.isNotEmpty) {
+        plan = activeBaseSub.first.planName;
+      } else if (verifiedPurchased.isNotEmpty &&
+          (plan.toLowerCase() == 'basic' || plan.toLowerCase() == 'starting')) {
+        plan = 'Standard';
+      }
+
+      // Active addons are strictly the verified purchased addons
+      final List<String> addonList = verifiedPurchased.toList();
+      final List<String> currentAddonsCanonical = activeStore!.addons
+          .map(EntitlementService.canonicalizeAddonKey)
+          .where((k) => k.isNotEmpty)
+          .toList();
+      final List<String> currentPurchasedCanonical = activeStore!.purchasedAddons
+          .map(EntitlementService.canonicalizeAddonKey)
+          .where((k) => k.isNotEmpty)
+          .toList();
+
       bool planMismatch = activeStore!.subscriptionPlan != plan;
-      bool addonsMismatch = !listEquals(activeStore!.addons, addonList);
+      bool addonsMismatch =
+          !listEquals(currentAddonsCanonical..sort(), List<String>.from(addonList)..sort()) ||
+          !listEquals(currentPurchasedCanonical..sort(), List<String>.from(addonList)..sort());
 
       if (planMismatch || addonsMismatch) {
         if (activeStore?.id != checkingStoreId) return;
@@ -835,7 +883,9 @@ class DashboardProvider with ChangeNotifier {
           'addons': addonList,
           'purchasedAddons': addonList,
         });
-        await _updateLocalStoreState(plan, addonList);
+        await _updateLocalStoreState(plan, addonList, purchasedAddons: addonList);
+      } else {
+        await _updateLocalStoreState(plan, addonList, purchasedAddons: addonList);
       }
       return;
     }
@@ -850,7 +900,7 @@ class DashboardProvider with ChangeNotifier {
 
         final queuedSubs = snapshot.docs
             .map((d) => SubscriptionHistory.fromMap(d.data(), d.id))
-            .where((h) => h.status == 'QUEUED')
+            .where((h) => h.isQueued)
             .toList();
 
         if (queuedSubs.isNotEmpty) {
@@ -864,6 +914,25 @@ class DashboardProvider with ChangeNotifier {
       }
     }
 
+    final currentPlanLower = activeStore!.subscriptionPlan.toLowerCase();
+    // If store is on Basic or Starting plan with no active subscriptions and no approved requests,
+    // ensure no unpurchased addons remain attached to the store.
+    if (currentPlanLower == 'basic' || currentPlanLower == 'starting') {
+      if (activeStore!.addons.isNotEmpty || activeStore!.purchasedAddons.isNotEmpty) {
+        if (activeStore?.id != checkingStoreId) return;
+        await _db.collection('stores').doc(checkingStoreId).update({
+          'addons': const <String>[],
+          'purchasedAddons': const <String>[],
+        });
+        await _updateLocalStoreState(
+          activeStore!.subscriptionPlan,
+          const <String>[],
+          purchasedAddons: const <String>[],
+        );
+      }
+      return;
+    }
+
     if (!_subscriptionHistoryLoaded || _subscriptionHistory.isEmpty) return;
 
     // Do NOT downgrade if the store document itself has an unexpired subscription or Enterprise/Professional plan
@@ -871,16 +940,10 @@ class DashboardProvider with ChangeNotifier {
         activeStore!.subscriptionExpiry!.isAfter(now)) {
       return;
     }
-    final currentPlanLower = activeStore!.subscriptionPlan.toLowerCase();
     if (currentPlanLower == 'enterprise' ||
         currentPlanLower == 'professional') {
       return;
     }
-
-    final List<String> permanentPurchased = {
-      ...activeStore!.addons,
-      ...activeStore!.purchasedAddons,
-    }.toList();
 
     if (activeStore!.subscriptionPlan != 'Basic' ||
         activeStore!.addons.isNotEmpty) {
@@ -888,9 +951,13 @@ class DashboardProvider with ChangeNotifier {
       await _db.collection('stores').doc(checkingStoreId).update({
         'subscriptionPlan': 'Basic',
         'addons': const <String>[],
-        'purchasedAddons': permanentPurchased,
+        'purchasedAddons': verifiedPurchased.toList(),
       });
-      await _updateLocalStoreState('Basic', const <String>[]);
+      await _updateLocalStoreState(
+        'Basic',
+        const <String>[],
+        purchasedAddons: verifiedPurchased.toList(),
+      );
     }
   }
 
@@ -907,7 +974,7 @@ class DashboardProvider with ChangeNotifier {
         .toList();
     final relevant = histories
         .where((h) =>
-            (h.status == 'ACTIVE' || h.status == 'QUEUED') &&
+            (h.isActive || h.isQueued) &&
             h.endDate.isAfter(DateTime.now()))
         .toList();
     if (relevant.isEmpty) return DateTime.now();
@@ -918,14 +985,28 @@ class DashboardProvider with ChangeNotifier {
     return maxEnd;
   }
 
-  Future<void> _updateLocalStoreState(String plan, List<String> addons) async {
+  Future<void> _updateLocalStoreState(
+    String plan,
+    List<String> addons, {
+    List<String>? purchasedAddons,
+  }) async {
     if (activeStore == null) return;
-    // Actually update the store state via StoreProvider (the source of truth for activeStore)
+    final effectivePurchased = purchasedAddons ?? addons;
+    await EntitlementService.instance.syncFromStore(
+      storeId: activeStore!.id,
+      planName: plan,
+      status: activeStore!.status,
+      addons: addons,
+      purchasedAddons: effectivePurchased,
+      endDate: activeStore!.subscriptionExpiry,
+      fromServer: true,
+    );
     if (_storeProvider != null && _activeStoreId != null) {
       try {
         final updatedStore = activeStore!.copyWith(
           subscriptionPlan: plan,
           addons: addons,
+          purchasedAddons: effectivePurchased,
         );
         await _storeProvider!.updateStoreSettings(updatedStore);
       } catch (e) {
@@ -1185,11 +1266,7 @@ class DashboardProvider with ChangeNotifier {
       return false;
     }
 
-    // Basic and Starting plans NEVER enable addon modules in the sidebar or routes
     final planTier = PlanTier.fromString(store.subscriptionPlan);
-    if (planTier == PlanTier.basic || planTier == PlanTier.starting) {
-      return false;
-    }
 
     if (_userProfile != null &&
         activeRole != 'Store Owner' &&
@@ -1209,10 +1286,19 @@ class DashboardProvider with ChangeNotifier {
       return true;
     }
 
-    final storeId = store.id;
-    if (store.addons.contains(key) || store.addons.contains(canonicalKey)) {
+    final storeAddonsCanonical =
+        store.addons.map(EntitlementService.canonicalizeAddonKey).toSet();
+    final storePurchasedCanonical = store.purchasedAddons
+        .map(EntitlementService.canonicalizeAddonKey)
+        .toSet();
+
+    // An addon is only enabled if it is BOTH installed AND purchased
+    if (storeAddonsCanonical.contains(canonicalKey) &&
+        storePurchasedCanonical.contains(canonicalKey)) {
       return true;
     }
+
+    final storeId = store.id;
     if (EntitlementService.instance.hasAddon(canonicalKey, storeId: storeId)) {
       return true;
     }
@@ -2103,27 +2189,70 @@ class DashboardProvider with ChangeNotifier {
       }
     }
 
+    // Collect verified previously purchased addons from subscription_history and approved requests
+    final Set<String> verifiedPreviousAddons = <String>{};
+    try {
+      final histSnap = await _db
+          .collection('stores')
+          .doc(storeId)
+          .collection('subscription_history')
+          .get();
+      for (final d in histSnap.docs) {
+        final h = SubscriptionHistory.fromMap(d.data(), d.id);
+        if (h.isActive && h.endDate.isAfter(now)) {
+          for (final a in h.selectedAddons) {
+            final c = EntitlementService.canonicalizeAddonKey(a);
+            if (c.isNotEmpty) verifiedPreviousAddons.add(c);
+          }
+        }
+      }
+      final reqSnap = await _db
+          .collection('subscription_requests')
+          .where('storeId', isEqualTo: storeId)
+          .get();
+      for (final d in reqSnap.docs) {
+        final st = (d.data()['status'] ?? '').toString().toUpperCase();
+        if (st == 'APPROVED' || st == 'COMPLETED') {
+          for (final a in List<String>.from(d.data()['selectedAddons'] ?? const [])) {
+            final c = EntitlementService.canonicalizeAddonKey(a);
+            if (c.isNotEmpty) verifiedPreviousAddons.add(c);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ approveSubscriptionRequest verified history fetch: $e');
+    }
+
+    for (final a in request.selectedAddons) {
+      final c = EntitlementService.canonicalizeAddonKey(a);
+      if (c.isNotEmpty) verifiedPreviousAddons.add(c);
+    }
+
     // Hoist outside transaction so we can use them for local state update after commit
-    List<String> finalPurchased = [];
-    List<String> finalActive = [];
+    List<String> finalPurchased = verifiedPreviousAddons.toList();
+    List<String> finalActive = verifiedPreviousAddons.toList();
+    String effectivePlan = request.planType;
+    if ((effectivePlan.toLowerCase() == 'basic' ||
+            effectivePlan.toLowerCase() == 'starting') &&
+        finalPurchased.isNotEmpty) {
+      effectivePlan = 'Standard';
+    }
 
     await _db.runTransaction((tx) async {
       final storeRef = _db.collection('stores').doc(storeId);
       final storeSnap = await tx.get(storeRef);
 
-      final List<String> currentPurchased =
-          List<String>.from(storeSnap.data()?['purchasedAddons'] ?? []);
-      final List<String> currentActive =
-          List<String>.from(storeSnap.data()?['addons'] ?? []);
-
-      for (var addon in request.selectedAddons) {
-        if (!currentPurchased.contains(addon)) currentPurchased.add(addon);
-        if (!currentActive.contains(addon)) currentActive.add(addon);
+      final existingPlan =
+          (storeSnap.data()?['subscriptionPlan'] ?? '').toString();
+      if (request.isAddonOnly &&
+          existingPlan.isNotEmpty &&
+          existingPlan.toLowerCase() != 'basic' &&
+          existingPlan.toLowerCase() != 'starting') {
+        effectivePlan = existingPlan;
       }
 
-      // Capture for post-transaction local state update
-      finalPurchased = currentPurchased;
-      finalActive = currentActive;
+      final List<String> currentPurchased = List<String>.from(finalPurchased);
+      final List<String> currentActive = List<String>.from(finalActive);
 
       // 1. Update Request Status (Move Writes AFTER Reads)
       tx.update(_db.collection('subscription_requests').doc(request.id),
@@ -2134,7 +2263,7 @@ class DashboardProvider with ChangeNotifier {
 
       // 2. Update Store
       tx.update(storeRef, {
-        'subscriptionPlan': request.planType,
+        'subscriptionPlan': effectivePlan,
         'subscriptionStatus': 'ACTIVE',
         'subscriptionExpiry': Timestamp.fromDate(expiry),
         'lastUpgradeDate': FieldValue.serverTimestamp(),
@@ -2144,7 +2273,7 @@ class DashboardProvider with ChangeNotifier {
       });
 
       // 2b. Canonical Server-Controlled Entitlement Document
-      final tier = PlanTier.fromString(request.planType);
+      final tier = PlanTier.fromString(effectivePlan);
       final limits = EntitlementService.defaultPlanLimits[tier] ??
           EntitlementService.defaultPlanLimits[PlanTier.basic]!;
       final features = EntitlementService.defaultPlanFeatures[tier] ??
@@ -2176,7 +2305,7 @@ class DashboardProvider with ChangeNotifier {
       // 4. Add to History
       final historyRef = storeRef.collection('subscription_history').doc();
       tx.set(historyRef, {
-        'planName': request.planType,
+        'planName': effectivePlan,
         'billingCycle': request.billingCycle,
         'durationDays': request.durationInDays,
         'startDate': FieldValue.serverTimestamp(),
@@ -2184,27 +2313,20 @@ class DashboardProvider with ChangeNotifier {
         'price': request.amount,
         'status': 'ACTIVE',
         'storeId': storeId,
-        'selectedAddons': request.selectedAddons,
+        'selectedAddons': currentPurchased,
         'isAddonOnly': request.isAddonOnly,
       });
     });
 
     // Force refresh local store state so sidebar/UI immediately reflects changes
-    await _updateLocalStoreState(request.planType, finalActive);
-    // Also update purchasedAddons locally
-    if (activeStore != null && _storeProvider != null) {
-      try {
-        final updatedStore =
-            activeStore!.copyWith(purchasedAddons: finalPurchased);
-        await _storeProvider!.updateStoreSettings(updatedStore);
-      } catch (e) {
-        debugPrint(
-            '⚠️ DashboardProvider: Error updating purchasedAddons locally: $e');
-      }
-    }
+    await _updateLocalStoreState(
+      effectivePlan,
+      finalActive,
+      purchasedAddons: finalPurchased,
+    );
 
     // Update authoritative EntitlementService & record audit event
-    final newPlanTier = PlanTier.fromValue(request.planType);
+    final newPlanTier = PlanTier.fromValue(effectivePlan);
     final entitlement = StoreEntitlement.create(
       storeId: storeId,
       plan: newPlanTier,
@@ -2212,6 +2334,7 @@ class DashboardProvider with ChangeNotifier {
       startDate: now,
       endDate: expiry,
       addons: Set<String>.from(finalActive),
+      purchasedAddons: Set<String>.from(finalPurchased),
       limits: EntitlementService.defaultPlanLimits[newPlanTier] ??
           EntitlementService.defaultPlanLimits[PlanTier.basic]!,
       features: EntitlementService.defaultPlanFeatures[newPlanTier] ??

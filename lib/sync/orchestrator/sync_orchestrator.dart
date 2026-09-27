@@ -78,7 +78,7 @@ class SyncOrchestrator {
 
       // 3. Outbound (Push local changes first)
       debugPrint('⬆️ [Orchestrator] Starting outbound push...');
-      await _outboundManager.processQueue();
+      await _outboundManager.processQueue(forceManual: forceManual);
 
       // 4. Inbound (Pull cloud changes)
       if (canPull) {

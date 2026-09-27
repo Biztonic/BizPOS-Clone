@@ -38,24 +38,89 @@ class SyncMaintenanceEngine {
   ///
   /// This repairs the "lost write" scenario where a local write succeeded
   /// but the queue entry was lost (crash, box corruption, etc.).
+  /// Scans a Hive cache box and SQLite table for items that are PENDING/ERROR
+  /// but not in the outbound queue, and re-queues them.
   Future<int> repairUnsyncedItems(String module,
       {bool forceAll = false}) async {
     final storeId = _getActiveStoreId();
+    int repairedCount = 0;
+
+    final queueBox = _getQueueBox();
+    final Set<String> queueKeys = {};
+    if (queueBox != null && queueBox.isOpen) {
+      for (final v in queueBox.values) {
+        if (v is Map) {
+          final state = (v['state'] ?? 'PENDING').toString().toUpperCase();
+          if (state == 'PENDING' || state == 'IN_FLIGHT' || state == 'FAILED') {
+            final docId = v['docId']?.toString();
+            if (docId != null && docId.isNotEmpty) queueKeys.add(docId);
+          }
+        }
+      }
+    }
+
+    // 1. Scan SQLite on Native (!kIsWeb) for heavy data modules
+    if (!kIsWeb && storeId != null && storeId.isNotEmpty) {
+      try {
+        final db = await DatabaseHelper().database;
+        String? tableName;
+        if (module == SyncCollectionRegistry.inventory) {
+          tableName = 'inventory';
+        } else if (module == SyncCollectionRegistry.orders) {
+          tableName = 'orders';
+        } else if (module == SyncCollectionRegistry.customers) {
+          tableName = 'customers';
+        } else if (module == SyncCollectionRegistry.inventoryMovements) {
+          tableName = 'inventory_movements';
+        }
+
+        if (tableName != null) {
+          final whereClause = forceAll
+              ? 'storeId = ?'
+              : "storeId = ? AND (syncStatus = 'PENDING' OR syncStatus = 'ERROR' OR syncStatus IS NULL)";
+          final rows = await db.query(
+            tableName,
+            where: whereClause,
+            whereArgs: [storeId],
+          );
+          for (final row in rows) {
+            final docId = row['id']?.toString() ?? '';
+            if (docId.isEmpty || queueKeys.contains(docId)) continue;
+
+            final payload = Map<String, dynamic>.from(row);
+            payload['storeId'] = storeId;
+            if (tableName == 'inventory_movements' &&
+                payload['createdAt'] is int) {
+              payload['createdAt'] = DateTime.fromMillisecondsSinceEpoch(
+                      payload['createdAt'] as int)
+                  .toIso8601String();
+            }
+            final action = (payload['deletedAt'] != null ||
+                    payload['isDeleted'] == 1 ||
+                    payload['isDeleted'] == true)
+                ? 'delete'
+                : 'create';
+            await _queueOperation(
+              collection: module,
+              docId: docId,
+              action: action,
+              payload: payload,
+            );
+            queueKeys.add(docId);
+            repairedCount++;
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [Maintenance] SQLite repair scan failed for $module: $e');
+      }
+    }
+
+    // 2. Scan Hive cache box
     final boxName = SyncCollectionRegistry.getBoxName(module, storeId: storeId);
-    if (boxName == null) return 0;
+    if (boxName == null) return repairedCount;
 
     try {
       final box = await Hive.openBox(boxName);
-      final queueBox = _getQueueBox();
-      final queueKeys = queueBox
-              ?.toMap()
-              .values
-              .map((v) => v is Map ? v['docId'] : null)
-              .where((id) => id != null)
-              .toSet() ??
-          {};
-
-      int repairedCount = 0;
       for (var key in box.keys) {
         final val = box.get(key);
         if (val is! Map) continue;
@@ -76,7 +141,6 @@ class SyncMaintenanceEngine {
           continue;
         }
 
-        // Determine action based on state
         final action = val['deletedAt'] != null
             ? 'delete'
             : (val['createdAt'] == null ? 'update' : 'create');
@@ -87,6 +151,7 @@ class SyncMaintenanceEngine {
           action: action,
           payload: Map<String, dynamic>.from(val),
         );
+        queueKeys.add(key.toString());
         repairedCount++;
       }
 
@@ -97,7 +162,7 @@ class SyncMaintenanceEngine {
       return repairedCount;
     } catch (e) {
       debugPrint('⚠️ [Maintenance] Repair failed for $module: $e');
-      return 0;
+      return repairedCount;
     }
   }
 

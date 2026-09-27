@@ -119,34 +119,51 @@ class OutboxStore {
   }
 
   /// Fetches pending operations that are ready to be processed.
-  /// Respects `nextRetryAt` for backoff.
+  /// Respects `nextRetryAt` for backoff unless [ignoreBackoff] is true.
   Future<List<OutboxOperation>> getReadyOperations({
     String? storeId,
     int limit = 50,
+    bool ignoreBackoff = false,
   }) async {
     final readyOps = <OutboxOperation>[];
+    final keysToPurge = <dynamic>[];
     final now = DateTime.now().millisecondsSinceEpoch;
 
     final box = getQueueBox();
     if (box != null && box.isOpen) {
       for (var key in box.keys) {
-        if (readyOps.length >= limit) break;
         final val = box.get(key);
         if (val is Map) {
+          final rawState = (val['state'] ?? '').toString().toUpperCase();
+          if (rawState == 'CONFIRMED' || rawState == 'PUSHED') {
+            keysToPurge.add(key);
+            continue;
+          }
+          if (readyOps.length >= limit) continue;
+
           final op = OutboxOperation.fromMap(val, key.toString());
 
           // Tenant isolation check
-          if (storeId != null && storeId.isNotEmpty && op.storeId != storeId) {
+          if (storeId != null &&
+              storeId.isNotEmpty &&
+              op.storeId.isNotEmpty &&
+              op.storeId != storeId) {
             continue;
           }
 
           // State eligibility
           if (op.state == OutboxState.pending ||
+              (ignoreBackoff && op.state == OutboxState.inFlight) ||
               (op.state == OutboxState.failed &&
-                  (op.nextRetryAt == null || now >= op.nextRetryAt!))) {
+                  (ignoreBackoff ||
+                      op.nextRetryAt == null ||
+                      now >= op.nextRetryAt!))) {
             readyOps.add(op);
           }
         }
+      }
+      if (keysToPurge.isNotEmpty) {
+        await box.deleteAll(keysToPurge);
       }
     }
 
@@ -238,58 +255,27 @@ class OutboxStore {
     }
   }
 
-  /// Marks an operation as CONFIRMED (safe for eventual pruning).
+  /// Marks an operation as CONFIRMED and removes it from the active queue box.
   Future<void> markConfirmed(String operationId,
       {Map<String, dynamic>? auditMetadata}) async {
     final box = getQueueBox();
     if (box != null && box.isOpen) {
-      final val = box.get(operationId);
-      if (val is Map) {
-        final currentOp = OutboxOperation.fromMap(val, operationId);
-        final op = currentOp.copyWith(
-          state: OutboxState.confirmed,
-          auditMetadata: {
-            ...?currentOp.auditMetadata,
-            ...?auditMetadata,
-            'confirmedAt': DateTime.now().toIso8601String(),
-          },
-        );
-        await box.put(operationId, op.toMap());
-        if (!kIsWeb) {
-          try {
-            await getRepository().updateOutboxOperation(op);
-          } catch (_) {}
-        }
-      }
+      await box.delete(operationId);
+    }
+    if (!kIsWeb) {
+      try {
+        await getRepository().markOutboxBatchConfirmed([operationId]);
+      } catch (_) {}
     }
   }
 
-  /// Marks a batch of operations as CONFIRMED.
+  /// Marks a batch of operations as CONFIRMED and removes them from the active queue box.
   Future<void> markBatchConfirmed(List<String> operationIds,
       {Map<String, dynamic>? auditMetadata}) async {
     if (operationIds.isEmpty) return;
     final box = getQueueBox();
-    final Map<String, dynamic> hiveBatch = {};
-    final nowIso = DateTime.now().toIso8601String();
-    for (var id in operationIds) {
-      if (box != null && box.isOpen) {
-        final val = box.get(id);
-        if (val is Map) {
-          final currentOp = OutboxOperation.fromMap(val, id);
-          final op = currentOp.copyWith(
-            state: OutboxState.confirmed,
-            auditMetadata: {
-              ...?currentOp.auditMetadata,
-              ...?auditMetadata,
-              'confirmedAt': nowIso,
-            },
-          );
-          hiveBatch[id] = op.toMap();
-        }
-      }
-    }
-    if (box != null && box.isOpen && hiveBatch.isNotEmpty) {
-      await box.putAll(hiveBatch);
+    if (box != null && box.isOpen) {
+      await box.deleteAll(operationIds);
     }
     if (!kIsWeb) {
       try {

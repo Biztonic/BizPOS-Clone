@@ -274,7 +274,7 @@ class StoreEntitlement {
     DateTime? endDate,
     int gracePeriodDays = 7,
     Set<String> addons = const {},
-    Set<String> purchasedAddons = const {},
+    Set<String>? purchasedAddons,
     required Map<String, int> limits,
     required Set<String> features,
     int version = 1,
@@ -282,9 +282,10 @@ class StoreEntitlement {
     DateTime? serverTimestamp,
   }) {
     final updated = updatedAt ?? DateTime.now();
-    final effectivePurchased = purchasedAddons.isNotEmpty
-        ? purchasedAddons
-        : (plan == PlanTier.enterprise ? addons : purchasedAddons);
+    final Set<String> effectivePurchased = purchasedAddons ??
+        ((plan == PlanTier.basic || plan == PlanTier.starting)
+            ? const <String>{}
+            : addons);
 
     final hash = computeHash(
       storeId: storeId,

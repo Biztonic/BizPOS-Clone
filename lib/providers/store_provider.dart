@@ -754,12 +754,15 @@ class StoreProvider with ChangeNotifier {
             .doc(docRef.id)
             .collection('subscription_history')
             .add({
+          'storeId': docRef.id,
           'planName': subscriptionPlan,
           'startDate': FieldValue.serverTimestamp(),
           'endDate': expiry,
-          'status': 'Active',
+          'status': 'ACTIVE',
           'amount': 0.0, // Pre-paid
           'paymentId': 'SALES_APP_PREPAID',
+          'selectedAddons': addons,
+          'isAddonOnly': false,
         });
       }
     } catch (e) {

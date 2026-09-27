@@ -296,25 +296,19 @@ class EntitlementService {
             ? tier
             : current.plan);
 
-    final isBasicOrStarting =
-        effectiveTier == PlanTier.basic || effectiveTier == PlanTier.starting;
-
     final effectivePurchased = trustIncoming
         ? <String>{
-            ...current.purchasedAddons,
-            ...?purchasedAddons,
-            if (fromServer) ...addons,
+            if (purchasedAddons != null) ...purchasedAddons,
+            if (purchasedAddons == null && fromServer) ...addons,
           }
         : current.purchasedAddons;
 
-    // Basic/Starting plans cannot have active addons enabled.
-    // Standard/Professional plans enable addons that are installed on the store.
-    final Set<String> effectiveAddons = isBasicOrStarting
-        ? <String>{}
+    // Only enable addons that are both installed on the store (`addons`) and purchased (`effectivePurchased`),
+    // unless the store is on the Enterprise tier.
+    final Set<String> effectiveAddons = (effectiveTier == PlanTier.enterprise)
+        ? addons.toSet()
         : (trustIncoming
-            ? (addons.isNotEmpty
-                ? addons.toSet()
-                : <String>{...?purchasedAddons})
+            ? addons.where((a) => effectivePurchased.contains(a)).toSet()
             : addons.where((a) => current.isAddonAllowed(a)).toSet());
 
     final entitlement = StoreEntitlement.create(
@@ -409,17 +403,47 @@ class EntitlementService {
     'barcode_scanner',
   };
 
+  /// Normalizes any addon alias to its canonical addon key.
+  static String canonicalizeAddonKey(String key) {
+    final clean = key.trim().toLowerCase();
+    if (clean.isEmpty) return '';
+    switch (clean) {
+      case 'crm':
+      case 'customers':
+      case 'customer_management':
+        return 'customer_management';
+      case 'employees':
+      case 'staff':
+      case 'employee_management':
+        return 'employee_management';
+      case 'kds':
+      case 'kds_management':
+        return 'kds_management';
+      case 'tables':
+      case 'floors':
+      case 'table_management':
+      case 'table_reservation':
+        return 'table_reservation';
+      case 'suppliers':
+      case 'supplier_management':
+        return 'supplier_management';
+      case 'franchise':
+      case 'franchise_management':
+        return 'franchise_management';
+      case 'data_sync':
+      case 'cloud_sync':
+      case 'data_center':
+        return 'data_center';
+      default:
+        return clean;
+    }
+  }
+
   /// Authoritative check for whether an addon is enabled.
   bool hasAddon(String addonKey, {required String storeId}) {
     if (storeId.isEmpty) return false;
     final entitlement = getEntitlement(storeId);
     if (!entitlement.isUsable) return false;
-
-    // Basic and Starting plans NEVER unlock addon modules
-    if (entitlement.plan == PlanTier.basic ||
-        entitlement.plan == PlanTier.starting) {
-      return false;
-    }
 
     // Enterprise tier unlocks all addons
     if (entitlement.plan == PlanTier.enterprise ||
@@ -428,7 +452,11 @@ class EntitlementService {
     }
 
     final aliases = _featureAliases[addonKey] ?? {addonKey};
-    if (aliases.any((k) => entitlement.addons.contains(k))) {
+    final isInstalled = aliases.any((k) => entitlement.addons.contains(k));
+    final isPurchased =
+        aliases.any((k) => entitlement.purchasedAddons.contains(k));
+
+    if (isInstalled && isPurchased) {
       return true;
     }
 

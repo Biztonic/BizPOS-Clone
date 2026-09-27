@@ -13,6 +13,7 @@ import 'package:biztonic_pos/core/events/event_bus.dart';
 import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/kernel/idempotency/idempotency_service.dart';
 import 'package:biztonic_pos/services/inventory_movement_repository.dart';
+import 'package:biztonic_pos/services/sync_service.dart';
 
 import '../domain/entities/inventory_entity.dart';
 import '../domain/entities/inventory_movement.dart';
@@ -124,25 +125,47 @@ class InventoryOrchestrator {
         return InventoryOrchestratorResult.failure(insertResult.error);
       }
 
-      // ─── Step 6b: If item has initial quantity > 0 and no movements exist, record INITIAL_STOCK
-      if (enriched.trackStock && enriched.quantity > 0) {
+      // ─── Step 6b: Ensure movement ledger matches item quantity & queue to cloud
+      if (enriched.trackStock) {
         final existingQty = await _movementRepo.getItemQuantity(enriched.id,
             storeId: params.activeStoreId);
-        if (existingQty == 0) {
-          final initMovement = InventoryMovement(
-            id: const Uuid().v4(),
+        final delta = enriched.quantity - existingQty;
+        if (delta != 0) {
+          final isInitial = existingQty == 0 && enriched.quantity > 0;
+          final nowMs = DateTime.now().millisecondsSinceEpoch;
+          final opId = isInitial
+              ? 'init_${enriched.id}'
+              : 'adj_${enriched.id}_$nowMs';
+          final movement = InventoryMovement(
+            id: isInitial ? 'init_${enriched.id}' : const Uuid().v4(),
             itemId: enriched.id,
             storeId: params.activeStoreId,
-            type: MovementType.initialStock,
-            delta: enriched.quantity,
+            type: isInitial
+                ? MovementType.initialStock
+                : MovementType.adjustment,
+            delta: delta,
             unitCost: enriched.cost,
-            reason: 'Initial Stock Creation',
+            reason: isInitial
+                ? 'Initial Stock Creation'
+                : 'Inventory Stock Update',
             deviceId: params.deviceId,
-            operationId: 'init_${enriched.id}',
+            operationId: opId,
             createdAt: DateTime.now(),
             syncStatus: 'PENDING',
           );
-          await _movementRepo.insertMovement(initMovement);
+          await _movementRepo.insertMovement(
+            movement,
+            negativeStockPolicy: NegativeStockPolicy.allow,
+          );
+          await SyncService().queueOperation(
+            collection: 'inventory_movements',
+            docId: movement.id,
+            action: 'create',
+            payload: {
+              ...movement.toMap(),
+              'createdAt': movement.createdAt.toIso8601String(),
+            },
+          );
         }
       }
 

@@ -122,11 +122,7 @@ class PermissionsHelper {
         EntitlementService.instance.getEntitlement(activeStore!.id);
     if (!entitlement.isUsable) return false;
 
-    // Basic and Starting plans NEVER enable addon modules
     final planTier = PlanTier.fromString(activeStore!.subscriptionPlan);
-    if (planTier == PlanTier.basic || planTier == PlanTier.starting) {
-      return false;
-    }
 
     if (profile != null &&
         profile!.role != 'Store Owner' &&
@@ -144,8 +140,15 @@ class PermissionsHelper {
       return true;
     }
 
-    if (activeStore!.addons.contains(key) ||
-        activeStore!.addons.contains(canonicalKey)) {
+    final storeAddonsCanonical = activeStore!.addons
+        .map(EntitlementService.canonicalizeAddonKey)
+        .toSet();
+    final storePurchasedCanonical = activeStore!.purchasedAddons
+        .map(EntitlementService.canonicalizeAddonKey)
+        .toSet();
+
+    if (storeAddonsCanonical.contains(canonicalKey) &&
+        storePurchasedCanonical.contains(canonicalKey)) {
       return true;
     }
 

@@ -207,8 +207,12 @@ class InventoryMovementRepository {
     }
 
     // ─── 4. Negative Stock Policy Enforcement ────────────────
-    final currentStock =
-        await _getItemQuantityWithTxn(txn, movement.itemId, movement.storeId);
+    final currentStock = await _getItemQuantityWithTxn(
+      txn,
+      movement.itemId,
+      movement.storeId,
+      seedIfMissing: movement.type != MovementType.initialStock,
+    );
     final projectedStock = currentStock + movement.delta;
 
     final policy = negativeStockPolicy ?? NegativeStockPolicy.block;
@@ -327,6 +331,8 @@ class InventoryMovementRepository {
         if (raw != null && raw is Map) {
           final itemData = Map<String, dynamic>.from(raw);
           itemData['quantity'] = quantity;
+          itemData['syncStatus'] = 'PENDING';
+          itemData['updatedAt'] = DateTime.now().toIso8601String();
           box.put(itemId, itemData);
         }
       }
@@ -354,16 +360,55 @@ class InventoryMovementRepository {
       getItemQuantity(itemId, storeId: storeId);
 
   Future<int> _getItemQuantityWithTxn(
-      Transaction txn, String itemId, String? storeId) async {
+      Transaction txn, String itemId, String? storeId,
+      {bool seedIfMissing = true}) async {
     String sql =
-        'SELECT SUM(delta) as quantity FROM inventory_movements WHERE itemId = ? AND isDeleted = 0';
+        'SELECT COUNT(*) as cnt, SUM(delta) as quantity FROM inventory_movements WHERE itemId = ? AND isDeleted = 0';
     List<dynamic> args = [itemId];
     if (storeId != null) {
       sql += ' AND storeId = ?';
       args.add(storeId);
     }
     final result = await txn.rawQuery(sql, args);
-    return Sqflite.firstIntValue(result) ?? 0;
+    final cnt = (result.first['cnt'] as num?)?.toInt() ?? 0;
+    if (cnt == 0 && seedIfMissing) {
+      final itemRows = await txn.query(
+        'inventory',
+        columns: ['quantity', 'cost', 'deviceId', 'storeId'],
+        where: 'id = ?',
+        whereArgs: [itemId],
+        limit: 1,
+      );
+      if (itemRows.isNotEmpty) {
+        final existingItemQty =
+            (itemRows.first['quantity'] as num?)?.toInt() ?? 0;
+        if (existingItemQty > 0) {
+          final effStoreId =
+              storeId ?? (itemRows.first['storeId'] as String?) ?? '';
+          await txn.insert(
+            'inventory_movements',
+            {
+              'id': 'init_$itemId',
+              'itemId': itemId,
+              'storeId': effStoreId,
+              'type': 'INITIAL_STOCK',
+              'delta': existingItemQty,
+              'unitCost': (itemRows.first['cost'] as num?)?.toDouble() ?? 0.0,
+              'reason': 'Initial Stock Preserved',
+              'orderId': null,
+              'deviceId': (itemRows.first['deviceId'] as String?) ?? 'system',
+              'operationId': 'init_$itemId',
+              'createdAt': DateTime.now().millisecondsSinceEpoch,
+              'syncStatus': 'PENDING',
+              'isDeleted': 0,
+            },
+            conflictAlgorithm: ConflictAlgorithm.ignore,
+          );
+          return existingItemQty;
+        }
+      }
+    }
+    return (result.first['quantity'] as num?)?.toInt() ?? 0;
   }
 
   /// Get quantities for all items in a store (calculated from movement ledger).
@@ -414,10 +459,10 @@ class InventoryMovementRepository {
         }
       }
 
-      // 2. Fetch all inventory item IDs for this store
+      // 2. Fetch all inventory items (including current quantity & cost) for this store
       final storeItems = await txn.query(
         'inventory',
-        columns: ['id'],
+        columns: ['id', 'quantity', 'cost', 'deviceId'],
         where: 'storeId = ?',
         whereArgs: [storeId],
       );
@@ -430,10 +475,45 @@ class InventoryMovementRepository {
       );
 
       // 4. Batch update cache_inventory_quantities and inventory.quantity
+      //    CRITICAL: Never overwrite a positive item quantity with 0 if no movements
+      //    exist in the ledger for that item (e.g. after cloud pull or legacy item creation).
       final batch = txn.batch();
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
       for (final item in storeItems) {
         final itemId = item['id'] as String;
-        final quantity = ledgerSums[itemId] ?? 0;
+        final currentQty = (item['quantity'] as num?)?.toInt() ?? 0;
+        final itemCost = (item['cost'] as num?)?.toDouble() ?? 0.0;
+        final deviceId = (item['deviceId'] as String?) ?? 'system';
+
+        int quantity;
+        if (!ledgerSums.containsKey(itemId)) {
+          // No ledger rows exist for this item yet -> preserve currentQty!
+          quantity = currentQty;
+          ledgerSums[itemId] = currentQty;
+          if (currentQty > 0) {
+            batch.insert(
+              'inventory_movements',
+              {
+                'id': 'init_$itemId',
+                'itemId': itemId,
+                'storeId': storeId,
+                'type': 'INITIAL_STOCK',
+                'delta': currentQty,
+                'unitCost': itemCost,
+                'reason': 'Initial Stock Preserved',
+                'orderId': null,
+                'deviceId': deviceId,
+                'operationId': 'init_$itemId',
+                'createdAt': nowMs,
+                'syncStatus': 'PENDING',
+                'isDeleted': 0,
+              },
+              conflictAlgorithm: ConflictAlgorithm.ignore,
+            );
+          }
+        } else {
+          quantity = ledgerSums[itemId]!;
+        }
 
         batch.insert('cache_inventory_quantities', {
           'itemId': itemId,
@@ -455,7 +535,8 @@ class InventoryMovementRepository {
         final box = Hive.box('cache_inventory');
         for (final item in storeItems) {
           final itemId = item['id'] as String;
-          final quantity = ledgerSums[itemId] ?? 0;
+          final currentQty = (item['quantity'] as num?)?.toInt() ?? 0;
+          final quantity = ledgerSums[itemId] ?? currentQty;
           final raw = box.get(itemId);
           if (raw != null && raw is Map) {
             final itemData = Map<String, dynamic>.from(raw);
@@ -509,17 +590,47 @@ class InventoryMovementRepository {
       // 2. Read current inventory projection
       final inventoryRows = await txn.query(
         'inventory',
-        columns: ['id', 'quantity'],
+        columns: ['id', 'quantity', 'cost', 'deviceId'],
         where: 'storeId = ?',
         whereArgs: [storeId],
       );
 
       itemsChecked = inventoryRows.length;
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
 
       for (final row in inventoryRows) {
         final itemId = row['id'] as String;
         final actualQty = (row['quantity'] as num?)?.toInt() ?? 0;
-        final expectedQty = ledgerMap[itemId] ?? 0;
+
+        // If no movements exist in the ledger for this item, preserve actualQty
+        // and seed the missing INITIAL_STOCK movement instead of resetting stock to 0.
+        if (!ledgerMap.containsKey(itemId)) {
+          if (actualQty > 0) {
+            await txn.insert(
+              'inventory_movements',
+              {
+                'id': 'init_$itemId',
+                'itemId': itemId,
+                'storeId': storeId,
+                'type': 'INITIAL_STOCK',
+                'delta': actualQty,
+                'unitCost': (row['cost'] as num?)?.toDouble() ?? 0.0,
+                'reason': 'Initial Stock Preserved',
+                'orderId': null,
+                'deviceId': (row['deviceId'] as String?) ?? 'system',
+                'operationId': 'init_$itemId',
+                'createdAt': nowMs,
+                'syncStatus': 'PENDING',
+                'isDeleted': 0,
+              },
+              conflictAlgorithm: ConflictAlgorithm.ignore,
+            );
+            ledgerMap[itemId] = actualQty;
+          }
+          continue;
+        }
+
+        final expectedQty = ledgerMap[itemId] ?? actualQty;
 
         if (actualQty != expectedQty) {
           final drift = actualQty - expectedQty;

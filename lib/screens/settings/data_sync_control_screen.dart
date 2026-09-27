@@ -27,12 +27,13 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
         final provider = Provider.of<DashboardProvider>(context, listen: false);
-        provider.syncService.refreshLocalCounts();
+        await provider.syncService.refreshLocalCounts();
         if (provider.syncService.isOnline) {
-          provider.syncService.refreshCloudCounts();
+          await provider.syncService.processSync(forceManual: true);
+          await provider.syncService.refreshCloudCounts();
         }
       }
     });

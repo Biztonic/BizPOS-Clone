@@ -454,15 +454,6 @@ class _AddonDetailScreenState extends State<AddonDetailScreen>
     final isSuperAdmin = provider.userProfile?.role == 'Super Admin';
     final isPurchased =
         (provider.activeStore?.purchasedAddons ?? []).contains(_addonKey);
-    final isStandardPlan = provider.activeStore?.subscriptionPlan == 'Standard';
-    if (!isStandardPlan && !isSuperAdmin) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(AppLocalizations.t(context,
-            'Addons are only available on the Standard plan. Please upgrade your store subscription first.')),
-        backgroundColor: AppColors.warning,
-      ));
-      return;
-    }
 
     final price = _price;
 
@@ -505,10 +496,16 @@ class _AddonDetailScreenState extends State<AddonDetailScreen>
       final cycle = (selection['cycle'] as String?) ?? 'Monthly';
       final amount = (selection['amount'] ?? 0.0).toDouble();
 
+      final currentPlan = provider.activeStore?.subscriptionPlan ?? 'Standard';
+      final effectivePlanType = (currentPlan.toLowerCase() == 'basic' ||
+              currentPlan.toLowerCase() == 'starting')
+          ? 'Standard'
+          : currentPlan;
+
       final paid = await showDialog<bool?>(
         context: context,
         builder: (ctx) => PaymentQrDialog(
-          planType: provider.activeStore?.subscriptionPlan ?? 'Standard',
+          planType: effectivePlanType,
           billingCycle: cycle,
           amount: amount,
           adminUpiId: upiId,
