@@ -83,8 +83,9 @@ class AppRouter {
     final isEmployeeLogin = state.uri.path == '/employee-login';
     final isSetPassword = state.uri.path == '/set-password';
     final isSplash = state.uri.path == '/splash';
+    final isReset = state.uri.path == '/reset';
 
-    if (isSplash) return null;
+    if (isSplash || isReset) return null;
 
     if (isEmployeeLogin) {
       final queryStr = state.uri.query;
@@ -97,7 +98,7 @@ class AppRouter {
       return '/dashboard';
     }
 
-    if (!isLoggedIn && !isLoggingIn && !isSetPassword) return '/login';
+    if (!isLoggedIn && !isLoggingIn && !isSetPassword && !isReset) return '/login';
 
     if (isLoggedIn) {
       final dashboard = Provider.of<DashboardProvider>(context, listen: false);
@@ -140,8 +141,20 @@ class AppRouter {
         return null;
       }
 
-      if (dashboard.activeStoreId != null && (isCreateStore || isSelectStore)) {
-        return '/dashboard';
+      if (isCreateStore) {
+        if (!dashboard.canCreateAdditionalStore) {
+          return '/dashboard';
+        }
+        return null;
+      }
+
+      if (isSelectStore) {
+        if (dashboard.activeStoreId != null &&
+            !dashboard.isMultiStoreEligible &&
+            !dashboard.isSuperAdmin) {
+          return '/dashboard';
+        }
+        return null;
       }
 
       if (state.uri.path == '/complete-profile') {
@@ -165,6 +178,10 @@ class AppRouter {
         GoRoute(
           path: '/login',
           builder: (context, state) => const AuthScreen(),
+        ),
+        GoRoute(
+          path: '/reset',
+          builder: (context, state) => const _ResetScreen(),
         ),
         GoRoute(
           path: '/create-store',
@@ -389,7 +406,9 @@ class AppRouter {
                   path: entry.key,
                   builder: (context, state) => FeatureGuard(
                     featureKey: module.moduleId,
-                    child: entry.value(context),
+                    child: Builder(
+                      builder: (ctx) => entry.value(ctx),
+                    ),
                   ),
                 );
               });
@@ -398,3 +417,48 @@ class AppRouter {
         ),
       ];
 }
+
+class _ResetScreen extends StatefulWidget {
+  const _ResetScreen();
+
+  @override
+  State<_ResetScreen> createState() => _ResetScreenState();
+}
+
+class _ResetScreenState extends State<_ResetScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _executeReset());
+  }
+
+  Future<void> _executeReset() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final dashboard = Provider.of<DashboardProvider>(context, listen: false);
+    await auth.hardResetAndSignOut();
+    await dashboard.resetAll();
+    if (mounted) {
+      context.go('/login');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Resetting local caches & starting fresh...',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

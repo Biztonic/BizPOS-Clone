@@ -25,8 +25,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   final List<String> _ownerLevelRoles = [
     'Super Admin',
-    'Admin',
+    'Franchise Owner',
     'Store Owner',
+    'Admin',
     'Manager',
     'Cashier',
     'Unauthorized'

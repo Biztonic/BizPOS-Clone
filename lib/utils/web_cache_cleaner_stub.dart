@@ -1,0 +1,2 @@
+void clearWebBrowserStorage() {}
+void reloadWebPage() {}

@@ -3,6 +3,7 @@ import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart' as legacy;
 import '../features/auth/providers/permissions_provider.dart';
 import '../features/auth/providers/profile_notifier.dart';
@@ -88,7 +89,13 @@ class FeatureGuard extends ConsumerWidget {
                     style: TextStyle(color: AppColors.textSecondary(context))),
                 const SizedBox(height: AppSpacing.md),
                 ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else {
+                      GoRouter.of(context).go('/dashboard');
+                    }
+                  },
                   child: const Text("GO BACK"),
                 )
               ],

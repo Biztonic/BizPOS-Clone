@@ -18,6 +18,7 @@ import 'package:biztonic_pos/core/events/app_events.dart';
 import 'package:biztonic_pos/announcement/service/announcement_service.dart';
 import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
 
+import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../domain/repositories/billing_repository.dart';
 import '../../application/checkout_orchestrator.dart';
@@ -116,8 +117,9 @@ class BillingProvider with ChangeNotifier {
     required String deviceId,
     String? idempotencyKey,
     double taxRate = 0.0,
-    bool trackInventory = false,
+    bool trackInventory = true,
     bool checkLimits = true,
+    NegativeStockPolicy? negativeStockPolicy,
   }) async {
     if (_status == BillingStatus.loading) {
       return CheckoutResult.failure("Checkout operation already in progress");
@@ -148,6 +150,8 @@ class BillingProvider with ChangeNotifier {
         idempotencyKey: effectiveKey,
         taxRate: taxRate,
         trackInventory: trackInventory,
+        negativeStockPolicy:
+            negativeStockPolicy ?? NegativeStockPolicy.allowWithWarning,
       ));
 
       if (result.isSuccess && result.order != null) {

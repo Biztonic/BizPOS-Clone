@@ -1,0 +1,30 @@
+{
+  "name": "get-shit-done",
+  "displayName": "Get Shit Done (GSD)",
+  "version": "1.37.1",
+  "description": "Spec-driven hierarchical planning and execution system for Antigravity. Enforces structured development workflows (Discuss -> Plan -> Execute -> Verify), context engineering, atomic task commits, and anti-hallucination protocols.",
+  "author": {
+    "name": "GSD Community & Antigravity",
+    "url": "https://github.com/glittercowboy/get-shit-done"
+  },
+  "keywords": [
+    "gsd",
+    "get-shit-done",
+    "spec-driven-development",
+    "planning",
+    "execution",
+    "verification",
+    "context-engineering",
+    "antigravity"
+  ],
+  "suggestedPrompts": [
+    "Initialize a new spec-driven project with GSD: /gsd:new-project",
+    "Plan the current phase with detailed requirements and tasks: /gsd:plan-phase",
+    "Execute tasks for the active phase atomically: /gsd:execute-phase",
+    "Verify completed work and review acceptance criteria: /gsd:verify-work",
+    "Check current milestone progress and roadmap: /gsd:progress"
+  ],
+  "homepage": "https://github.com/open-gsd/gsd-core",
+  "repository": "https://github.com/dturkuler/GSD-Antigravity",
+  "license": "MIT"
+}

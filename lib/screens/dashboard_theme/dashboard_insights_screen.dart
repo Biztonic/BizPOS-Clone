@@ -25,6 +25,7 @@ import '../../widgets/inventory_image_widget.dart';
 import '../add_edit_customer_screen.dart';
 
 import '../../providers/dashboard_provider.dart';
+import '../../utils/theme.dart';
 import '../../widgets/feature_guard.dart';
 import '../../services/printer_manager_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
@@ -180,6 +181,46 @@ class _DashboardInsightsScreenState
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Return to Standard Dashboard Button
+                      Tooltip(
+                        message: "Return to Standard Theme Dashboard",
+                        child: InkWell(
+                          onTap: () => provider.setUIStyle(UIStyle.standard),
+                          borderRadius: AppRadius.borderSm,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface(context),
+                              borderRadius: AppRadius.borderSm,
+                              border: Border.all(
+                                color: AppColors.border(context),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.dashboard_outlined,
+                                    color: AppColors.adaptivePrimary(context),
+                                    size: 18),
+                                const SizedBox(width: AppSpacing.xs),
+                                Text(
+                                  "Standard Theme",
+                                  style: AppTypography.labelLarge.copyWith(
+                                    color: AppColors.textPrimary(context),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+
                       // Online Status
                       Container(
                         padding: const EdgeInsets.symmetric(

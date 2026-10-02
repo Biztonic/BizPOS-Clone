@@ -159,6 +159,11 @@ class _PosSidebarState extends State<PosSidebar> {
           return isFeatureActive;
         }
 
+        // Allow Franchise Owner to see franchise management item in sidebar to access dashboard and upgrade
+        if (key == 'franchise_management' && role == 'Franchise Owner') {
+          return true;
+        }
+
         // For regular roles, check both activeRole permissions and feature activation
         if (!isFeatureActive) return false;
 
@@ -183,12 +188,11 @@ class _PosSidebarState extends State<PosSidebar> {
             _buildSidebarHeader(context, activeStoreName, userName, userPhoto,
                 isOnline, isCollapsed, dashboardProvider),
 
-          // Store Selector (if multiple stores - include Store Owner)
+          // Store Selector (Only for Super Admin, or Franchise Owner with Franchise Add-on)
           if (!isCollapsed &&
-              (role == 'Store Owner' ||
-                  role == 'Admin' ||
-                  role == 'Franchise Owner' ||
-                  role == 'Super Admin') &&
+              (isSuperAdmin ||
+                  (role == 'Franchise Owner' &&
+                      dashboardProvider.hasFranchiseAddon)) &&
               hasMultipleStores)
             _buildStoreSelector(context, dashboardProvider, authProvider),
 

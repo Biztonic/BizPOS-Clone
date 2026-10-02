@@ -15,7 +15,8 @@ import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/tokens/app_radius.dart';
 
 class DataSyncControlScreen extends StatefulWidget {
-  const DataSyncControlScreen({super.key});
+  final bool isSubView;
+  const DataSyncControlScreen({super.key, this.isSubView = false});
 
   @override
   State<DataSyncControlScreen> createState() => _DataSyncControlScreenState();
@@ -54,6 +55,47 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
             final pendingBreakdown =
                 stats['pendingBreakdown'] as Map<String, int>;
 
+            final content = SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHealthHeader(context, provider, syncService, stats),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildSyncConfigSection(context, syncService),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildMatrixHeader(context, provider, isGridView),
+                  const SizedBox(height: AppSpacing.lg),
+                  if (isGridView)
+                    GridView.count(
+                      crossAxisCount: MediaQuery.of(context).size.width > 1200
+                          ? 3
+                          : (MediaQuery.of(context).size.width > 800 ? 2 : 1),
+                      childAspectRatio: 1.5,
+                      crossAxisSpacing: AppSpacing.lg,
+                      mainAxisSpacing: AppSpacing.lg,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: _buildModuleList(context, syncService, stats,
+                          pendingBreakdown, provider),
+                    )
+                  else
+                    Column(
+                      children: _buildModuleList(context, syncService, stats,
+                          pendingBreakdown, provider,
+                          isList: true),
+                    ),
+                  if (MediaQuery.of(context).size.width < 1100) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildMobileActions(
+                        context, syncService, isOnline, stats, provider),
+                  ],
+                ],
+              ),
+            );
+
+            if (widget.isSubView) return content;
+
             return PosScaffold(
               title:
                   "Data Control Center - ${provider.activeStore?.name ?? 'Global'}",
@@ -69,44 +111,7 @@ class _DataSyncControlScreenState extends State<DataSyncControlScreen> {
                   },
                 )
               ],
-              mainContent: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHealthHeader(context, provider, syncService, stats),
-                    const SizedBox(height: AppSpacing.xl),
-                    _buildSyncConfigSection(context, syncService),
-                    const SizedBox(height: AppSpacing.xl),
-                    _buildMatrixHeader(context, provider, isGridView),
-                    const SizedBox(height: AppSpacing.lg),
-                    if (isGridView)
-                      GridView.count(
-                        crossAxisCount: MediaQuery.of(context).size.width > 1200
-                            ? 3
-                            : (MediaQuery.of(context).size.width > 800 ? 2 : 1),
-                        childAspectRatio: 1.5,
-                        crossAxisSpacing: AppSpacing.lg,
-                        mainAxisSpacing: AppSpacing.lg,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: _buildModuleList(context, syncService, stats,
-                            pendingBreakdown, provider),
-                      )
-                    else
-                      Column(
-                        children: _buildModuleList(context, syncService, stats,
-                            pendingBreakdown, provider,
-                            isList: true),
-                      ),
-                    if (MediaQuery.of(context).size.width < 1100) ...[
-                      const SizedBox(height: AppSpacing.xl),
-                      _buildMobileActions(
-                          context, syncService, isOnline, stats, provider),
-                    ],
-                  ],
-                ),
-              ),
+              mainContent: content,
               rightPanel: MediaQuery.of(context).size.width >= 1100
                   ? _buildDesktopSidebar(context, syncService, stats, provider)
                   : null,

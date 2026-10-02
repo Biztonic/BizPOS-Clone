@@ -41,7 +41,7 @@ class DatabaseHelper {
   static int get version => _version;
   static String? _testDbName;
   @visibleForTesting
-  static void setDbName(String name) => _testDbName = name;
+  static void setDbName(String? name) => _testDbName = name;
 
   Future<Database> _initDatabase() async {
     // Determine partitioned db name
@@ -1636,9 +1636,12 @@ class DatabaseHelper {
   @visibleForTesting
   Future<void> close() async {
     if (_database != null) {
-      await _database!.close();
+      if (_database!.isOpen) {
+        await _database!.close();
+      }
       _database = null;
     }
+    _testDbName = null;
   }
 
   // FORCE RESET (Panic Button)

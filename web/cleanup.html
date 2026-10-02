@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BizPOS Database Reset Tool</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0F172A;
+      color: #F8FAFC;
+      margin: 0;
+      padding: 30px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #1E293B;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      border: 1px solid #334155;
+    }
+    h1 {
+      margin-top: 0;
+      color: #38BDF8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge {
+      background: #EF4444;
+      color: white;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .info-card {
+      background: #0F172A;
+      border-left: 4px solid #38BDF8;
+      padding: 14px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .danger-card {
+      background: rgba(239, 68, 68, 0.1);
+      border-left: 4px solid #EF4444;
+      padding: 14px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .auth-section {
+      background: #0F172A;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    input {
+      background: #1E293B;
+      border: 1px solid #475569;
+      color: #F8FAFC;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      flex: 1;
+      min-width: 200px;
+    }
+    button {
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background: #0284C7;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #0369A1;
+    }
+    .btn-danger {
+      background: #DC2626;
+      color: white;
+      padding: 14px 24px;
+      font-size: 16px;
+    }
+    .btn-danger:hover {
+      background: #B91C1C;
+    }
+    .btn-secondary {
+      background: #334155;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: #475569;
+    }
+    #log {
+      background: #020617;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      height: 350px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #94A3B8;
+      margin-top: 20px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      background: #0F172A;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #334155;
+    }
+    .stat-box .val {
+      font-size: 22px;
+      font-weight: bold;
+      color: #38BDF8;
+    }
+    .stat-box .lbl {
+      font-size: 12px;
+      color: #64748B;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+  </style>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<div class="container">
+  <h1>BizPOS Database Reset Tool <span class="badge">DANGER</span></h1>
+
+  <div class="info-card">
+    <strong>Target Super Admin to KEEP:</strong> <span style="color: #38BDF8; font-weight: bold;">pthorat600@gmail.com</span><br>
+    This utility purges all test stores, orders, inventory, customers, suppliers, and extra users, leaving only the primary Super Admin profile intact.
+  </div>
+
+  <!-- Sign In (Optional if Rules are open, Required if Rules are enabled) -->
+  <div class="auth-section">
+    <input type="email" id="email" value="pthorat600@gmail.com" placeholder="Super Admin Email">
+    <input type="password" id="password" placeholder="Password (Optional if rules allow)">
+    <button class="btn-primary" onclick="signIn()">1. Sign In (If Rules Enforced)</button>
+    <span id="authStatus" style="font-size: 13px; color: #10B981; font-weight: bold;"></span>
+  </div>
+
+  <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+    <button class="btn-secondary" onclick="inspectDatabase()">🔍 Inspect Current Counts</button>
+    <button class="btn-secondary" onclick="clearLocalBrowserData()">🧹 Clear Browser Storage / Caches</button>
+  </div>
+
+  <div class="stats-grid" id="statsGrid" style="display: none;">
+    <div class="stat-box"><div class="val" id="cntStores">-</div><div class="lbl">Stores</div></div>
+    <div class="stat-box"><div class="val" id="cntUsers">-</div><div class="lbl">Users</div></div>
+    <div class="stat-box"><div class="val" id="cntOrders">-</div><div class="lbl">Orders</div></div>
+    <div class="stat-box"><div class="val" id="cntInventory">-</div><div class="lbl">Inventory</div></div>
+    <div class="stat-box"><div class="val" id="cntCustomers">-</div><div class="lbl">Customers</div></div>
+  </div>
+
+  <div class="danger-card">
+    <p><strong>Action Summary:</strong> All stores, transactional records, and user profiles (except pthorat600@gmail.com) will be permanently deleted.</p>
+    <button class="btn-danger" onclick="startPurge()">🔥 Purge All Store & User Data (Keep Super Admin)</button>
+  </div>
+
+  <div id="log">Ready. Click "Inspect Current Counts" or "Purge All Store & User Data" to begin.</div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAQ4ZosJ8RdK0K5kQ7IRQFyb2DjaK3iwM4",
+    authDomain: "bizpos-clone.firebaseapp.com",
+    projectId: "bizpos-clone",
+    storageBucket: "bizpos-clone.firebasestorage.app",
+    messagingSenderId: "259223330355",
+    appId: "1:259223330355:web:1941d2534f55a267dbcd46",
+    measurementId: "G-GMPGJ29B88"
+  };
+
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const SUPER_ADMIN_EMAIL = 'pthorat600@gmail.com';
+
+  function log(msg) {
+    const el = document.getElementById('log');
+    const time = new Date().toLocaleTimeString();
+    el.innerHTML += `[${time}] ${msg}\n`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  auth.onAuthStateChanged(user => {
+    const status = document.getElementById('authStatus');
+    if (user) {
+      status.innerText = `Logged in: ${user.email}`;
+      log(`Authenticated as: ${user.email} (${user.uid})`);
+    } else {
+      status.innerText = "Not logged in (using direct rules)";
+    }
+  });
+
+  async function signIn() {
+    const email = document.getElementById('email').value.trim();
+    const pass = document.getElementById('password').value;
+    if (!pass) {
+      alert("Please enter password for " + email);
+      return;
+    }
+    try {
+      log(`Signing in as ${email}...`);
+      await auth.signInWithEmailAndPassword(email, pass);
+      log(`✅ Successfully signed in as ${email}`);
+    } catch (e) {
+      log(`❌ Sign in failed: ${e.message}`);
+      alert(`Sign In error: ${e.message}\n(If Firestore rules are set to 'allow read, write: if true;', signing in is not required).`);
+    }
+  }
+
+  async function inspectDatabase() {
+    log("Fetching current database statistics...");
+    document.getElementById('statsGrid').style.display = 'grid';
+
+    try {
+      const stores = await db.collection('stores').get();
+      document.getElementById('cntStores').innerText = stores.size;
+      log(`Found ${stores.size} stores in database.`);
+
+      const users = await db.collection('users').get();
+      document.getElementById('cntUsers').innerText = users.size;
+      log(`Found ${users.size} users in database.`);
+
+      const orders = await db.collection('orders').get();
+      document.getElementById('cntOrders').innerText = orders.size;
+
+      const inv = await db.collection('inventory').get();
+      document.getElementById('cntInventory').innerText = inv.size;
+
+      const cust = await db.collection('customers').get();
+      document.getElementById('cntCustomers').innerText = cust.size;
+
+      log("Inspection complete.");
+    } catch (e) {
+      log(`❌ Inspection error: ${e.message}`);
+    }
+  }
+
+  async function deleteCollection(collectionName, filter) {
+    log(`  📦 Cleaning collection: ${collectionName}...`);
+    let query = db.collection(collectionName);
+    let totalDeleted = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const snap = await query.limit(400).get();
+      if (snap.docs.length === 0) {
+        hasMore = false;
+        break;
+      }
+      const batch = db.batch();
+      let batchCount = 0;
+      for (const doc of snap.docs) {
+        if (filter && !filter(doc)) continue;
+        batch.delete(doc.ref);
+        batchCount++;
+      }
+      if (batchCount > 0) {
+        await batch.commit();
+        totalDeleted += batchCount;
+      }
+      if (snap.docs.length < 400) {
+        hasMore = false;
+      }
+    }
+    log(`     ✅ Deleted ${totalDeleted} docs from ${collectionName}`);
+    return totalDeleted;
+  }
+
+  async function deleteSubcollections(parentCollection, subcollections) {
+    log(`  📂 Cleaning subcollections of ${parentCollection}...`);
+    const parentSnap = await db.collection(parentCollection).get();
+    for (const parentDoc of parentSnap.docs) {
+      for (const subCol of subcollections) {
+        const subSnap = await parentDoc.ref.collection(subCol).get();
+        if (subSnap.docs.length > 0) {
+          const batch = db.batch();
+          subSnap.docs.forEach(doc => batch.delete(doc.ref));
+          await batch.commit();
+          log(`     ✅ Deleted ${subSnap.docs.length} docs from ${parentCollection}/${parentDoc.id}/${subCol}`);
+        }
+      }
+    }
+  }
+
+  async function startPurge() {
+    const confirmation = prompt('TYPE "PURGE" TO CONFIRM DELETION:\nThis will permanently remove all store records and non-superadmin users.');
+    if (confirmation !== 'PURGE') {
+      log("❌ Purge cancelled by user.");
+      return;
+    }
+
+    log("══════════════════════════════════════════════");
+    log("🚀 STARTING PURGE (Preserving " + SUPER_ADMIN_EMAIL + ")");
+    log("══════════════════════════════════════════════");
+
+    let totalDeleted = 0;
+    const startTime = Date.now();
+
+    try {
+      // 1. Delete store subcollections
+      log("STEP 1: Deleting store subcollections...");
+      await deleteSubcollections('stores', ['floors', 'tables', 'counters', 'settings', 'members', 'employees']);
+
+      // 2. Delete transactional collections
+      log("STEP 2: Deleting transactional collections...");
+      const dataCollections = [
+        'orders', 'inventory', 'customers', 'employees',
+        'suppliers', 'notes', 'activity_logs', 'business_events',
+        'addon_reviews', 'subscription_requests', 'subscription_history',
+      ];
+      for (const col of dataCollections) {
+        totalDeleted += await deleteCollection(col);
+      }
+
+      // 3. Delete stores
+      log("STEP 3: Deleting stores...");
+      totalDeleted += await deleteCollection('stores');
+
+      // 4. Delete users except Super Admin
+      log("STEP 4: Deleting users (preserving " + SUPER_ADMIN_EMAIL + ")...");
+      totalDeleted += await deleteCollection('users', (doc) => {
+        const data = doc.data();
+        const email = (data?.email || '').toLowerCase().trim();
+        if (email === SUPER_ADMIN_EMAIL.toLowerCase().trim() || data?.role === 'Super Admin') {
+          log(`     🛡️ PRESERVING Super Admin: ${data?.email} (${doc.id})`);
+          return false; // KEEP
+        }
+        return true; // DELETE
+      });
+
+      // 4b. Reset Super Admin store references
+      log("STEP 4b: Clearing store links on Super Admin profile...");
+      const saSnap = await db.collection('users').get();
+      for (const saDoc of saSnap.docs) {
+        const d = saDoc.data();
+        const email = (d?.email || '').toLowerCase().trim();
+        if (email === SUPER_ADMIN_EMAIL.toLowerCase().trim() || d?.role === 'Super Admin') {
+          await saDoc.ref.update({
+            storeId: null,
+            storeIds: [],
+            accessibleStoreIds: [],
+            franchiseId: null,
+            franchiseCode: null,
+          });
+          log(`     ✅ Cleared store links on Super Admin: ${email} (${saDoc.id})`);
+        }
+      }
+
+      // 5. Clean custom roles
+      log("STEP 5: Cleaning non-system roles...");
+      totalDeleted += await deleteCollection('roles', (doc) => {
+        const data = doc.data();
+        if (data?.isSystem === true) {
+          log(`     🛡️ PRESERVING system role: ${data.name}`);
+          return false;
+        }
+        return true;
+      });
+
+      // 6. Clean settings (keep core admin config)
+      log("STEP 6: Cleaning settings...");
+      const settingsToKeep = ['admin_config', 'platform_limits', 'app_version', 'global'];
+      totalDeleted += await deleteCollection('settings', (doc) => {
+        if (settingsToKeep.includes(doc.id)) {
+          log(`     🛡️ PRESERVING settings/${doc.id}`);
+          return false;
+        }
+        return true;
+      });
+
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      log("══════════════════════════════════════════════");
+      log(`🎉 PURGE COMPLETE! Deleted ${totalDeleted} documents in ${elapsed}s.`);
+      log("══════════════════════════════════════════════");
+
+      await inspectDatabase();
+      alert(`Purge Complete! Deleted ${totalDeleted} documents.\nOnly ${SUPER_ADMIN_EMAIL} is preserved.`);
+
+    } catch (err) {
+      log(`❌ ERROR during purge: ${err.message}`);
+      console.error(err);
+      alert(`Purge Error: ${err.message}\nCheck Firestore rules or sign in.`);
+    }
+  }
+
+  async function clearLocalBrowserData() {
+    try {
+      log("🧹 Starting full local browser cache purge...");
+      
+      // 1. Firebase Auth Sign Out
+      try {
+        await auth.signOut();
+        log("✅ Signed out of Firebase Auth.");
+      } catch (_) {}
+
+      // 2. Clear Local & Session Storage
+      localStorage.clear();
+      sessionStorage.clear();
+      log("✅ Cleared localStorage & sessionStorage.");
+
+      // 3. Unregister Service Workers
+      if (navigator.serviceWorker) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+        }
+        log(`✅ Unregistered ${registrations.length} service workers.`);
+      }
+
+      // 4. Clear Cache Storage
+      if (window.caches) {
+        const cacheKeys = await window.caches.keys();
+        for (const key of cacheKeys) {
+          await window.caches.delete(key);
+        }
+        log(`✅ Cleared ${cacheKeys.length} cache storage partitions.`);
+      }
+
+      // 5. Delete all IndexedDB databases
+      if (window.indexedDB && window.indexedDB.databases) {
+        const dbs = await window.indexedDB.databases();
+        let deleted = 0;
+        for (const db of dbs) {
+          if (db.name) {
+            window.indexedDB.deleteDatabase(db.name);
+            log(`   🗑️ Deleted IndexedDB: ${db.name}`);
+            deleted++;
+          }
+        }
+        log(`✅ Wiped ${deleted} IndexedDB databases.`);
+      }
+
+      log("🎉 Deep local browser cache wipe complete!");
+      alert("All local caches, databases, and auth tokens have been completely wiped!\n\nClick OK to open the fresh login screen.");
+      window.location.href = "/#/login";
+    } catch (e) {
+      log(`⚠️ Error clearing local data: ${e.message}`);
+    }
+  }
+</script>
+
+</body>
+</html>

@@ -3,7 +3,9 @@ import 'package:biztonic_pos/l10n/app_localizations.dart';
 
 import 'package:provider/provider.dart';
 import 'package:biztonic_pos/providers/store_provider.dart';
+import 'package:biztonic_pos/providers/dashboard_provider.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
+import '../../core/config/store_type_config.dart';
 import '../../core/design/layouts/pos_scaffold.dart';
 import '../../core/design/components/atoms/app_card.dart';
 import '../../core/design/components/atoms/app_text_field.dart';
@@ -11,6 +13,7 @@ import '../../core/design/components/atoms/app_button.dart';
 import '../../core/design/tokens/app_spacing.dart';
 import '../../core/design/tokens/app_typography.dart';
 import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_radius.dart';
 
 class OtherSettingsScreen extends StatefulWidget {
   const OtherSettingsScreen({super.key});
@@ -27,11 +30,33 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
   bool _isKioskMode = false;
   String _statusMessage = "";
 
-  // New Type Config
+  // New Type Config Peripheral Feature Flags
   bool _isKitchenEnabled = false;
+  bool _isTablesEnabled = false;
+  bool _isBarcodeEnabled = false;
+  bool _isCustomersEnabled = false;
+  bool _isEmployeesEnabled = false;
+  bool _isSuppliersEnabled = false;
+  bool _isDataSyncEnabled = false;
   bool _isDietaryEnabled = false;
   bool _isPackagingEnabled = false;
   bool _isVariantsEnabled = false;
+
+
+  void _clearAllFeatures() {
+    setState(() {
+      _isKitchenEnabled = false;
+      _isTablesEnabled = false;
+      _isBarcodeEnabled = false;
+      _isCustomersEnabled = false;
+      _isEmployeesEnabled = false;
+      _isSuppliersEnabled = false;
+      _isDataSyncEnabled = false;
+      _isDietaryEnabled = false;
+      _isPackagingEnabled = false;
+      _isVariantsEnabled = false;
+    });
+  }
 
   @override
   void initState() {
@@ -93,9 +118,23 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
 
     final config = {
       'enableKitchen': _isKitchenEnabled,
+      'enableTables': _isTablesEnabled,
+      'enableBarcode': _isBarcodeEnabled,
+      'enableCustomers': _isCustomersEnabled,
+      'enableEmployees': _isEmployeesEnabled,
+      'enableSuppliers': _isSuppliersEnabled,
+      'enableDataSync': _isDataSyncEnabled,
       'enableDietary': _isDietaryEnabled,
       'enablePackaging': _isPackagingEnabled,
       'enableVariants': _isVariantsEnabled,
+      // Canonical keys for feature checks
+      'kds_management': _isKitchenEnabled,
+      'table_reservation': _isTablesEnabled,
+      'barcode_scanner': _isBarcodeEnabled,
+      'customer_management': _isCustomersEnabled,
+      'employee_management': _isEmployeesEnabled,
+      'supplier_management': _isSuppliersEnabled,
+      'data_center': _isDataSyncEnabled,
     };
 
     setState(() {
@@ -105,78 +144,240 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
 
     final toAdd = _textCtrl.text.trim();
     _textCtrl.clear();
-    setState(() {
-      _isKitchenEnabled = false;
-      _isDietaryEnabled = false;
-      _isPackagingEnabled = false;
-      _isVariantsEnabled = false;
-    });
+    _clearAllFeatures();
 
-    await Provider.of<StoreProvider>(context, listen: false)
-        .addStoreType(toAdd, initialConfig: config);
+    final storeProvider = Provider.of<StoreProvider>(context, listen: false);
+    final dashboard = Provider.of<DashboardProvider>(context, listen: false);
+    await storeProvider.addStoreType(toAdd, initialConfig: config);
+    try {
+      await dashboard.saveStoreTypeConfig(toAdd, config);
+    } catch (_) {}
   }
 
   Future<void> _editType(String oldType) async {
     final ctrl = TextEditingController(text: oldType);
-    final config = _typeConfigs[oldType] as Map?;
-    bool kitchenEnabled = config?['enableKitchen'] ?? false;
-    bool dietaryEnabled = config?['enableDietary'] ?? false;
-    bool packagingEnabled = config?['enablePackaging'] ?? false;
-    bool variantsEnabled = config?['enableVariants'] ?? false;
+    final rawConfig = _typeConfigs[oldType] as Map?;
+    final config = rawConfig != null
+        ? Map<String, dynamic>.from(rawConfig)
+        : StoreTypeConfig.getDefaultConfig(oldType);
 
-    // Using StatefulBuilder to handle dialog state update for Checkbox
+    bool kitchenEnabled =
+        config['enableKitchen'] == true || config['kds_management'] == true;
+    bool tablesEnabled =
+        config['enableTables'] == true || config['table_reservation'] == true;
+    bool barcodeEnabled =
+        config['enableBarcode'] == true || config['barcode_scanner'] == true;
+    bool customersEnabled =
+        config['enableCustomers'] == true || config['customer_management'] == true;
+    bool employeesEnabled =
+        config['enableEmployees'] == true || config['employee_management'] == true;
+    bool suppliersEnabled =
+        config['enableSuppliers'] == true || config['supplier_management'] == true;
+    bool dataSyncEnabled =
+        config['enableDataSync'] == true || config['data_center'] == true;
+    bool dietaryEnabled = config['enableDietary'] == true;
+    bool packagingEnabled = config['enablePackaging'] == true;
+    bool variantsEnabled = config['enableVariants'] == true;
+
+    // Using StatefulBuilder to handle dialog state update for Checkboxes
     await showDialog(
         context: context,
         builder: (ctx) {
           return StatefulBuilder(builder: (context, setDialogState) {
             return AlertDialog(
               title: Text(AppLocalizations.t(context, 'Edit Store Type')),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                        controller: ctrl,
-                        decoration:
-                            const InputDecoration(labelText: "Store Type")),
-                    const SizedBox(height: AppSpacing.md),
-                    CheckboxListTile(
-                      title: Text(AppLocalizations.t(
-                          context, 'Enable Kitchen & Counters')),
-                      value: kitchenEnabled,
-                      onChanged: (val) =>
-                          setDialogState(() => kitchenEnabled = val ?? false),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    CheckboxListTile(
-                      title: Text(AppLocalizations.t(
-                          context, 'Enable Dietary Types (Veg/Non-Veg)')),
-                      value: dietaryEnabled,
-                      onChanged: (val) =>
-                          setDialogState(() => dietaryEnabled = val ?? false),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    CheckboxListTile(
-                      title: Text(AppLocalizations.t(
-                          context, 'Enable Packaging Types')),
-                      value: packagingEnabled,
-                      onChanged: (val) =>
-                          setDialogState(() => packagingEnabled = val ?? false),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    CheckboxListTile(
-                      title: Text(AppLocalizations.t(
-                          context, 'Enable Variant Categories')),
-                      value: variantsEnabled,
-                      onChanged: (val) =>
-                          setDialogState(() => variantsEnabled = val ?? false),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                    )
-                  ],
+              content: SizedBox(
+                width: 520,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                          controller: ctrl,
+                          decoration:
+                              const InputDecoration(labelText: "Store Type Name")),
+                      const SizedBox(height: AppSpacing.sm),
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: AppRadius.borderSm,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle_outline,
+                                color: AppColors.primary, size: 18),
+                            const SizedBox(width: AppSpacing.xs),
+                            Expanded(
+                              child: Text(
+                                AppLocalizations.t(context,
+                                    'Core features (POS, Inventory, Sales, Reports) are always enabled.'),
+                                style: AppTypography.labelSmall
+                                    .copyWith(color: AppColors.primary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: () {
+                            setDialogState(() {
+                              kitchenEnabled = false;
+                              tablesEnabled = false;
+                              barcodeEnabled = false;
+                              customersEnabled = false;
+                              employeesEnabled = false;
+                              suppliersEnabled = false;
+                              dataSyncEnabled = false;
+                              dietaryEnabled = false;
+                              packagingEnabled = false;
+                              variantsEnabled = false;
+                            });
+                          },
+                          icon: const Icon(Icons.clear_all, size: 16),
+                          label: const Text('Clear All',
+                              style: TextStyle(fontSize: 11)),
+                        ),
+                      ),
+                      const Divider(height: AppSpacing.sm),
+                      Text("Operational Features",
+                          style: AppTypography.bodySmall
+                              .copyWith(fontWeight: FontWeight.bold)),
+                      CheckboxListTile(
+                        dense: true,
+                        title:
+                            Text(AppLocalizations.t(context, 'Kitchen & KDS')),
+                        subtitle: const Text(
+                            'Kitchen display system & order routing',
+                            style: TextStyle(fontSize: 11)),
+                        value: kitchenEnabled,
+                        onChanged: (val) =>
+                            setDialogState(() => kitchenEnabled = val ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        dense: true,
+                        title:
+                            Text(AppLocalizations.t(context, 'Tables & Dining')),
+                        subtitle: const Text(
+                            'Dining floor plans and table reservations',
+                            style: TextStyle(fontSize: 11)),
+                        value: tablesEnabled,
+                        onChanged: (val) =>
+                            setDialogState(() => tablesEnabled = val ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        dense: true,
+                        title:
+                            Text(AppLocalizations.t(context, 'Barcode Scanner')),
+                        subtitle: const Text(
+                            'Hardware barcode scanning & lookup',
+                            style: TextStyle(fontSize: 11)),
+                        value: barcodeEnabled,
+                        onChanged: (val) =>
+                            setDialogState(() => barcodeEnabled = val ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      const Divider(height: AppSpacing.md),
+                      Text("Management & CRM Features",
+                          style: AppTypography.bodySmall
+                              .copyWith(fontWeight: FontWeight.bold)),
+                      CheckboxListTile(
+                        dense: true,
+                        title: Text(AppLocalizations.t(
+                            context, 'Customer CRM & Khata')),
+                        subtitle: const Text(
+                            'Customer ledger, Udhari credit & loyalty',
+                            style: TextStyle(fontSize: 11)),
+                        value: customersEnabled,
+                        onChanged: (val) => setDialogState(
+                            () => customersEnabled = val ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        dense: true,
+                        title: Text(
+                            AppLocalizations.t(context, 'Staff & Attendance')),
+                        subtitle: const Text(
+                            'Staff profiles & attendance tracking',
+                            style: TextStyle(fontSize: 11)),
+                        value: employeesEnabled,
+                        onChanged: (val) => setDialogState(
+                            () => employeesEnabled = val ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        dense: true,
+                        title: Text(AppLocalizations.t(
+                            context, 'Suppliers & Purchase')),
+                        subtitle: const Text(
+                            'Supplier accounts & purchase orders',
+                            style: TextStyle(fontSize: 11)),
+                        value: suppliersEnabled,
+                        onChanged: (val) => setDialogState(
+                            () => suppliersEnabled = val ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        dense: true,
+                        title: Text(
+                            AppLocalizations.t(context, 'Data Center & Sync')),
+                        subtitle: const Text(
+                            'Offline data center synchronization',
+                            style: TextStyle(fontSize: 11)),
+                        value: dataSyncEnabled,
+                        onChanged: (val) => setDialogState(
+                            () => dataSyncEnabled = val ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      const Divider(height: AppSpacing.md),
+                      Text("Product & Catalog Features",
+                          style: AppTypography.bodySmall
+                              .copyWith(fontWeight: FontWeight.bold)),
+                      CheckboxListTile(
+                        dense: true,
+                        title: Text(AppLocalizations.t(
+                            context, 'Dietary Types (Veg/Non-Veg)')),
+                        value: dietaryEnabled,
+                        onChanged: (val) =>
+                            setDialogState(() => dietaryEnabled = val ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        dense: true,
+                        title: Text(AppLocalizations.t(
+                            context, 'Packaging Types & Charges')),
+                        value: packagingEnabled,
+                        onChanged: (val) => setDialogState(
+                            () => packagingEnabled = val ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        dense: true,
+                        title: Text(
+                            AppLocalizations.t(context, 'Product Variants')),
+                        value: variantsEnabled,
+                        onChanged: (val) => setDialogState(
+                            () => variantsEnabled = val ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -190,21 +391,41 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
                       if (newType.isNotEmpty) {
                         final newConfig = {
                           'enableKitchen': kitchenEnabled,
+                          'enableTables': tablesEnabled,
+                          'enableBarcode': barcodeEnabled,
+                          'enableCustomers': customersEnabled,
+                          'enableEmployees': employeesEnabled,
+                          'enableSuppliers': suppliersEnabled,
+                          'enableDataSync': dataSyncEnabled,
                           'enableDietary': dietaryEnabled,
                           'enablePackaging': packagingEnabled,
                           'enableVariants': variantsEnabled,
+                          'kds_management': kitchenEnabled,
+                          'table_reservation': tablesEnabled,
+                          'barcode_scanner': barcodeEnabled,
+                          'customer_management': customersEnabled,
+                          'employee_management': employeesEnabled,
+                          'supplier_management': suppliersEnabled,
+                          'data_center': dataSyncEnabled,
                         };
 
                         setState(() {
                           final index = _types.indexOf(oldType);
                           if (index != -1) _types[index] = newType;
-                          // Update local config map
                           _typeConfigs.remove(oldType);
                           _typeConfigs[newType] = newConfig;
                         });
-                        await Provider.of<StoreProvider>(context, listen: false)
-                            .updateStoreType(oldType, newType,
-                                config: newConfig);
+                        final storeProvider = Provider.of<StoreProvider>(context, listen: false);
+                        final dashboard = Provider.of<DashboardProvider>(context, listen: false);
+                        await storeProvider.updateStoreType(oldType, newType,
+                            config: newConfig);
+                        try {
+                          if (oldType != newType) {
+                            await dashboard.deleteStoreTypeConfig(oldType);
+                          }
+                          await dashboard.saveStoreTypeConfig(
+                              newType, newConfig);
+                        } catch (_) {}
                       }
                     },
                     child: Text(AppLocalizations.t(context, 'Save'))),
@@ -237,8 +458,12 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
         _typeConfigs.remove(type);
       });
       if (!mounted) return;
-      await Provider.of<StoreProvider>(context, listen: false)
-          .deleteStoreType(type);
+      final storeProvider = Provider.of<StoreProvider>(context, listen: false);
+      final dashboard = Provider.of<DashboardProvider>(context, listen: false);
+      await storeProvider.deleteStoreType(type);
+      try {
+        await dashboard.deleteStoreTypeConfig(type);
+      } catch (_) {}
     }
   }
 
@@ -317,17 +542,62 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: AppSpacing.sm),
+                      // Core features banner
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: AppRadius.borderSm,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle_outline,
+                                color: AppColors.primary, size: 16),
+                            const SizedBox(width: AppSpacing.xs),
+                            Expanded(
+                              child: Text(
+                                AppLocalizations.t(context,
+                                    'Core features (POS, Inventory, Sales, Reports) are always enabled. Toggle additional features below:'),
+                                style: AppTypography.labelSmall
+                                    .copyWith(color: AppColors.primary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: _clearAllFeatures,
+                          icon: const Icon(Icons.clear_all, size: 16),
+                          label: const Text('Clear All',
+                              style: TextStyle(fontSize: 11)),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
                       Wrap(
                         spacing: AppSpacing.sm,
                         runSpacing: AppSpacing.xs,
                         children: [
-                          _buildCompactCheckbox("Kitchen", _isKitchenEnabled,
+                          _buildCompactCheckbox("Kitchen/KDS", _isKitchenEnabled,
                               (v) => setState(() => _isKitchenEnabled = v!)),
+                          _buildCompactCheckbox("Tables", _isTablesEnabled,
+                              (v) => setState(() => _isTablesEnabled = v!)),
+                          _buildCompactCheckbox("Barcode", _isBarcodeEnabled,
+                              (v) => setState(() => _isBarcodeEnabled = v!)),
+                          _buildCompactCheckbox("Customer CRM", _isCustomersEnabled,
+                              (v) => setState(() => _isCustomersEnabled = v!)),
+                          _buildCompactCheckbox("Staff", _isEmployeesEnabled,
+                              (v) => setState(() => _isEmployeesEnabled = v!)),
+                          _buildCompactCheckbox("Suppliers", _isSuppliersEnabled,
+                              (v) => setState(() => _isSuppliersEnabled = v!)),
+                          _buildCompactCheckbox("Data Sync", _isDataSyncEnabled,
+                              (v) => setState(() => _isDataSyncEnabled = v!)),
                           _buildCompactCheckbox("Dietary", _isDietaryEnabled,
                               (v) => setState(() => _isDietaryEnabled = v!)),
-                          _buildCompactCheckbox(
-                              "Packaging",
-                              _isPackagingEnabled,
+                          _buildCompactCheckbox("Packaging", _isPackagingEnabled,
                               (v) => setState(() => _isPackagingEnabled = v!)),
                           _buildCompactCheckbox("Variants", _isVariantsEnabled,
                               (v) => setState(() => _isVariantsEnabled = v!)),
@@ -358,23 +628,57 @@ class _OtherSettingsScreenState extends State<OtherSettingsScreen> {
                                   const Divider(height: 1),
                               itemBuilder: (ctx, i) {
                                 final type = _types[i];
-                                final config = _typeConfigs[type] as Map?;
-                                final hasKitchen =
-                                    config?['enableKitchen'] == true;
+                                final allowed = StoreTypeConfig.getAllowedFeatures(
+                                    type,
+                                    storeTypeConfigs: _typeConfigs);
 
                                 return ListTile(
-                                  contentPadding: EdgeInsets.zero,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      vertical: AppSpacing.xs),
                                   title: Text(type,
                                       style: AppTypography.bodyMedium.copyWith(
                                           fontWeight: FontWeight.bold)),
-                                  subtitle: hasKitchen
-                                      ? Text(
-                                          AppLocalizations.t(
-                                              context, 'Kitchen Enabled'),
-                                          style: AppTypography.bodySmall
-                                              .copyWith(
-                                                  color: AppColors.success))
-                                      : null,
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary
+                                                .withValues(alpha: 0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          child: const Text('Core POS',
+                                              style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.primary)),
+                                        ),
+                                        ...allowed.map((meta) => Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.success
+                                                    .withValues(alpha: 0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(meta.label,
+                                                  style: const TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          AppColors.success)),
+                                            )),
+                                      ],
+                                    ),
+                                  ),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [

@@ -15,6 +15,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../core/diagnostics/diagnostics_models.dart';
 import '../core/diagnostics/diagnostics_service.dart';
+import 'database_helper.dart';
 
 enum ConnectionQuality { offline, localNetwork, internet, backendAvailable }
 
@@ -748,4 +749,61 @@ class OfflineService {
     }
     return [];
   }
+
+  /// Completely purge all local caches, offline store sessions, credentials, and SQLite database.
+  Future<void> purgeAllLocalData() async {
+    // 1. Clear secure storage
+    try {
+      await _secureStorage.deleteAll();
+    } catch (_) {}
+
+    // 2. Clear known Hive boxes
+    final allBoxes = [
+      'auth_cache',
+      'user_profile_cache',
+      'pinned_store',
+      'cache_user_stores',
+      'cache_stores',
+      'settings',
+      'cache_orders',
+      'cache_inventory',
+      'cache_customers',
+      'cache_employees',
+      'cache_suppliers',
+      'cache_notes',
+      'cache_floors',
+      'cache_tables',
+      'sync_queue',
+      'sync_queue_v2',
+      'sync_failed_queue_v2',
+      'sync_logs',
+      'sync_inbox_v1',
+      'audit_trail_v1',
+      'diagnostics_v1',
+      'marketing_audio',
+      'store_types',
+      'store_type_configs',
+      'error_logs',
+      'cache_settings',
+    ];
+
+    for (final boxName in allBoxes) {
+      try {
+        if (Hive.isBoxOpen(boxName)) {
+          await Hive.box(boxName).clear();
+        } else {
+          final box = await Hive.openBox(boxName);
+          await box.clear();
+        }
+      } catch (e) {
+        debugPrint('⚠️ OfflineService: Error clearing box $boxName: $e');
+      }
+    }
+
+    // 3. Reset SQLite Database
+    try {
+      await DatabaseHelper().nukeDatabase();
+    } catch (_) {}
+  }
 }
+

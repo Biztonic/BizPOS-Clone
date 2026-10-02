@@ -8,6 +8,7 @@ import '../core/auth/auth_session_types.dart';
 import '../core/diagnostics/diagnostics_models.dart';
 import '../core/diagnostics/diagnostics_service.dart';
 import '../features/auth/data/auth_repository.dart';
+import '../utils/web_cache_cleaner.dart';
 
 /// A virtual user for offline sessions to prevent null checks in UI
 class OfflineUser {
@@ -302,12 +303,14 @@ class AuthProvider with ChangeNotifier {
         // Create User Profile in Firestore
         // We default 'name' to part of email since we aren't asking for it yet
         final name = email.split('@')[0];
+        final bool isSuper =
+            email.toLowerCase().trim() == 'pthorat600@gmail.com';
 
         final Map<String, dynamic> userData = {
           'uid': credential.user!.uid,
           'email': email,
-          'name': name,
-          'role': 'Store Owner', // Default role for self-signup
+          'name': isSuper ? 'Super Admin' : name,
+          'role': isSuper ? 'Super Admin' : 'Store Owner', // Default role for self-signup
           'phoneNumber': mobile,
           'createdAt': FieldValue.serverTimestamp(),
           'accessibleStoreIds': [],
@@ -439,6 +442,29 @@ class AuthProvider with ChangeNotifier {
     _isOfflineLoggedIn = false;
     await OfflineService().setOfflineLoginState(false);
     notifyListeners();
+  }
+
+  /// Completely wipes all local caches, storage, sessions, and signs out.
+  Future<void> hardResetAndSignOut() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _auth?.signOut();
+      await OfflineService().purgeAllLocalData();
+      cleanBrowserStorage();
+      _user = null;
+      _firebaseSession = null;
+      _offlineSession = null;
+      _employeeSession = null;
+      _status = AuthStatus.SIGNED_OUT;
+      _isOfflineLoggedIn = false;
+      await OfflineService().setOfflineLoginState(false);
+    } catch (e) {
+      debugPrint('⚠️ hardResetAndSignOut error: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> sendPasswordResetEmail(String email) async {

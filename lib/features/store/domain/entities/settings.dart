@@ -11,6 +11,7 @@ class StoreSettings {
   final List<String> counters;
   final KdsSettings kds;
   final PaymentSettings payment;
+  final CustomerAddonSettings customerSettings;
 
   StoreSettings({
     required this.id,
@@ -25,6 +26,7 @@ class StoreSettings {
     this.counters = const ['Main Counter'],
     required this.kds,
     required this.payment,
+    this.customerSettings = const CustomerAddonSettings(),
   });
 
   factory StoreSettings.fromMap(Map<String, dynamic> data, String id) {
@@ -44,6 +46,8 @@ class StoreSettings {
           ['Main Counter'],
       kds: KdsSettings.fromMap(data['kds'] ?? {}),
       payment: PaymentSettings.fromMap(data['payment'] ?? {}),
+      customerSettings:
+          CustomerAddonSettings.fromMap(data['customerSettings'] ?? {}),
     );
   }
 
@@ -60,6 +64,7 @@ class StoreSettings {
       'counters': counters,
       'kds': kds.toMap(),
       'payment': payment.toMap(),
+      'customerSettings': customerSettings.toMap(),
     };
   }
 
@@ -77,6 +82,7 @@ class StoreSettings {
     KdsSettings? kds,
     String? storeType,
     PaymentSettings? payment,
+    CustomerAddonSettings? customerSettings,
   }) {
     return StoreSettings(
       id: id ?? this.id,
@@ -91,6 +97,7 @@ class StoreSettings {
       counters: counters ?? this.counters,
       kds: kds ?? this.kds,
       payment: payment ?? this.payment,
+      customerSettings: customerSettings ?? this.customerSettings,
     );
   }
 }
@@ -422,3 +429,333 @@ class PaymentSettings {
     );
   }
 }
+
+class SeasonalCoupon {
+  final String id;
+  final String code;
+  final String title;
+  final String season;
+  final String discountType; // 'percentage' or 'flat'
+  final double discountValue; // percentage (e.g. 20) or flat amount (e.g. 100)
+  final double minOrderValue;
+  final double maxDiscount; // 0 for no cap
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final bool isActive;
+
+  const SeasonalCoupon({
+    required this.id,
+    required this.code,
+    required this.title,
+    this.season = 'General',
+    this.discountType = 'percentage',
+    required this.discountValue,
+    this.minOrderValue = 0.0,
+    this.maxDiscount = 0.0,
+    this.startDate,
+    this.endDate,
+    this.isActive = true,
+  });
+
+  bool get isExpired {
+    if (endDate != null) {
+      final now = DateTime.now();
+      final endOfDay = DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59, 59);
+      if (now.isAfter(endOfDay)) return true;
+    }
+    return false;
+  }
+
+  bool get isStarted {
+    if (startDate != null) {
+      final now = DateTime.now();
+      final startOfDay = DateTime(startDate!.year, startDate!.month, startDate!.day, 0, 0, 0);
+      if (now.isBefore(startOfDay)) return false;
+    }
+    return true;
+  }
+
+  bool get isValid => isActive && !isExpired && isStarted;
+
+  double calculateDiscount(double orderTotal) {
+    if (!isValid || orderTotal < minOrderValue) return 0.0;
+    if (discountType == 'percentage') {
+      double disc = orderTotal * (discountValue / 100.0);
+      if (maxDiscount > 0 && disc > maxDiscount) {
+        disc = maxDiscount;
+      }
+      return disc > orderTotal ? orderTotal : disc;
+    } else {
+      return discountValue > orderTotal ? orderTotal : discountValue;
+    }
+  }
+
+  factory SeasonalCoupon.fromMap(Map data) {
+    DateTime? parseDate(dynamic d) {
+      if (d == null) return null;
+      if (d is DateTime) return d;
+      return DateTime.tryParse(d.toString());
+    }
+
+    return SeasonalCoupon(
+      id: data['id']?.toString() ?? '',
+      code: (data['code']?.toString() ?? '').toUpperCase().trim(),
+      title: data['title']?.toString() ?? '',
+      season: data['season']?.toString() ?? 'General',
+      discountType: data['discountType']?.toString() ?? 'percentage',
+      discountValue: (data['discountValue'] ?? 0.0).toDouble(),
+      minOrderValue: (data['minOrderValue'] ?? 0.0).toDouble(),
+      maxDiscount: (data['maxDiscount'] ?? 0.0).toDouble(),
+      startDate: parseDate(data['startDate']),
+      endDate: parseDate(data['endDate']),
+      isActive: data['isActive'] ?? true,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'code': code,
+        'title': title,
+        'season': season,
+        'discountType': discountType,
+        'discountValue': discountValue,
+        'minOrderValue': minOrderValue,
+        'maxDiscount': maxDiscount,
+        'startDate': startDate?.toIso8601String(),
+        'endDate': endDate?.toIso8601String(),
+        'isActive': isActive,
+      };
+
+  SeasonalCoupon copyWith({
+    String? id,
+    String? code,
+    String? title,
+    String? season,
+    String? discountType,
+    double? discountValue,
+    double? minOrderValue,
+    double? maxDiscount,
+    DateTime? startDate,
+    DateTime? endDate,
+    bool? isActive,
+  }) {
+    return SeasonalCoupon(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      title: title ?? this.title,
+      season: season ?? this.season,
+      discountType: discountType ?? this.discountType,
+      discountValue: discountValue ?? this.discountValue,
+      minOrderValue: minOrderValue ?? this.minOrderValue,
+      maxDiscount: maxDiscount ?? this.maxDiscount,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      isActive: isActive ?? this.isActive,
+    );
+  }
+}
+
+class CustomerAddonSettings {
+  // --- Udhari (Khata / Credit) Settings ---
+  final bool enableUdhari;
+  final double defaultCreditLimit;
+  final bool allowPartialUdhari;
+  final bool blockWhenLimitExceeded;
+  final bool enableWhatsAppReminders;
+
+  // --- Loyalty Points Program Settings ---
+  final bool enableLoyalty;
+  final double earnRateSpendAmount;
+  final int earnRatePoints;
+  final double pointRedemptionValue;
+  final int minPointsToRedeem;
+  final double maxBillDiscountPercent;
+  final int pointsValidityDays;
+
+  // --- Membership & Customer Tiers ---
+  final bool enableMembership;
+  final double silverMinSpend;
+  final double silverMultiplier;
+  final double goldMinSpend;
+  final double goldMultiplier;
+  final double platinumMinSpend;
+  final double platinumMultiplier;
+
+  // --- Coupons & Welcome Rewards ---
+  final bool enableCoupons;
+  final int welcomeBonusPoints;
+  final List<SeasonalCoupon> seasonalCoupons;
+
+  static List<SeasonalCoupon> get defaultSeasonalCoupons => [
+        const SeasonalCoupon(
+          id: 'coupon_festive_diwali',
+          code: 'DIWALI20',
+          title: 'Diwali Festive Dhamaka',
+          season: 'Diwali / Festive',
+          discountType: 'percentage',
+          discountValue: 20.0,
+          minOrderValue: 500.0,
+          maxDiscount: 200.0,
+          isActive: true,
+        ),
+        const SeasonalCoupon(
+          id: 'coupon_summer_special',
+          code: 'SUMMER50',
+          title: 'Summer Chilled Savings',
+          season: 'Summer',
+          discountType: 'flat',
+          discountValue: 50.0,
+          minOrderValue: 300.0,
+          maxDiscount: 50.0,
+          isActive: true,
+        ),
+      ];
+
+  const CustomerAddonSettings({
+    this.enableUdhari = true,
+    this.defaultCreditLimit = 5000.0,
+    this.allowPartialUdhari = true,
+    this.blockWhenLimitExceeded = false,
+    this.enableWhatsAppReminders = true,
+    this.enableLoyalty = true,
+    this.earnRateSpendAmount = 100.0,
+    this.earnRatePoints = 1,
+    this.pointRedemptionValue = 1.0,
+    this.minPointsToRedeem = 50,
+    this.maxBillDiscountPercent = 50.0,
+    this.pointsValidityDays = 365,
+    this.enableMembership = true,
+    this.silverMinSpend = 2000.0,
+    this.silverMultiplier = 1.2,
+    this.goldMinSpend = 5000.0,
+    this.goldMultiplier = 1.5,
+    this.platinumMinSpend = 10000.0,
+    this.platinumMultiplier = 2.0,
+    this.enableCoupons = true,
+    this.welcomeBonusPoints = 50,
+    this.seasonalCoupons = const [],
+  });
+
+  factory CustomerAddonSettings.fromMap(Map data) {
+    List<SeasonalCoupon> parsedCoupons = [];
+    if (data['seasonalCoupons'] is List) {
+      parsedCoupons = (data['seasonalCoupons'] as List)
+          .where((e) => e is Map)
+          .map((e) => SeasonalCoupon.fromMap(e as Map))
+          .toList();
+    }
+    if (parsedCoupons.isEmpty && data['enableCoupons'] == null) {
+      // First time initialization
+      parsedCoupons = CustomerAddonSettings.defaultSeasonalCoupons;
+    }
+
+    return CustomerAddonSettings(
+      enableUdhari: data['enableUdhari'] ?? true,
+      defaultCreditLimit:
+          (data['defaultCreditLimit'] ?? 5000.0).toDouble(),
+      allowPartialUdhari: data['allowPartialUdhari'] ?? true,
+      blockWhenLimitExceeded: data['blockWhenLimitExceeded'] ?? false,
+      enableWhatsAppReminders: data['enableWhatsAppReminders'] ?? true,
+      enableLoyalty: data['enableLoyalty'] ?? true,
+      earnRateSpendAmount:
+          (data['earnRateSpendAmount'] ?? 100.0).toDouble(),
+      earnRatePoints: (data['earnRatePoints'] ?? 1).toInt(),
+      pointRedemptionValue:
+          (data['pointRedemptionValue'] ?? 1.0).toDouble(),
+      minPointsToRedeem: (data['minPointsToRedeem'] ?? 50).toInt(),
+      maxBillDiscountPercent:
+          (data['maxBillDiscountPercent'] ?? 50.0).toDouble(),
+      pointsValidityDays: (data['pointsValidityDays'] ?? 365).toInt(),
+      enableMembership: data['enableMembership'] ?? true,
+      silverMinSpend: (data['silverMinSpend'] ?? 2000.0).toDouble(),
+      silverMultiplier: (data['silverMultiplier'] ?? 1.2).toDouble(),
+      goldMinSpend: (data['goldMinSpend'] ?? 5000.0).toDouble(),
+      goldMultiplier: (data['goldMultiplier'] ?? 1.5).toDouble(),
+      platinumMinSpend: (data['platinumMinSpend'] ?? 10000.0).toDouble(),
+      platinumMultiplier: (data['platinumMultiplier'] ?? 2.0).toDouble(),
+      enableCoupons: data['enableCoupons'] ?? true,
+      welcomeBonusPoints: (data['welcomeBonusPoints'] ?? 50).toInt(),
+      seasonalCoupons: parsedCoupons,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+        'enableUdhari': enableUdhari,
+        'defaultCreditLimit': defaultCreditLimit,
+        'allowPartialUdhari': allowPartialUdhari,
+        'blockWhenLimitExceeded': blockWhenLimitExceeded,
+        'enableWhatsAppReminders': enableWhatsAppReminders,
+        'enableLoyalty': enableLoyalty,
+        'earnRateSpendAmount': earnRateSpendAmount,
+        'earnRatePoints': earnRatePoints,
+        'pointRedemptionValue': pointRedemptionValue,
+        'minPointsToRedeem': minPointsToRedeem,
+        'maxBillDiscountPercent': maxBillDiscountPercent,
+        'pointsValidityDays': pointsValidityDays,
+        'enableMembership': enableMembership,
+        'silverMinSpend': silverMinSpend,
+        'silverMultiplier': silverMultiplier,
+        'goldMinSpend': goldMinSpend,
+        'goldMultiplier': goldMultiplier,
+        'platinumMinSpend': platinumMinSpend,
+        'platinumMultiplier': platinumMultiplier,
+        'enableCoupons': enableCoupons,
+        'welcomeBonusPoints': welcomeBonusPoints,
+        'seasonalCoupons': seasonalCoupons.map((c) => c.toMap()).toList(),
+      };
+
+  CustomerAddonSettings copyWith({
+    bool? enableUdhari,
+    double? defaultCreditLimit,
+    bool? allowPartialUdhari,
+    bool? blockWhenLimitExceeded,
+    bool? enableWhatsAppReminders,
+    bool? enableLoyalty,
+    double? earnRateSpendAmount,
+    int? earnRatePoints,
+    double? pointRedemptionValue,
+    int? minPointsToRedeem,
+    double? maxBillDiscountPercent,
+    int? pointsValidityDays,
+    bool? enableMembership,
+    double? silverMinSpend,
+    double? silverMultiplier,
+    double? goldMinSpend,
+    double? goldMultiplier,
+    double? platinumMinSpend,
+    double? platinumMultiplier,
+    bool? enableCoupons,
+    int? welcomeBonusPoints,
+    List<SeasonalCoupon>? seasonalCoupons,
+  }) {
+    return CustomerAddonSettings(
+      enableUdhari: enableUdhari ?? this.enableUdhari,
+      defaultCreditLimit: defaultCreditLimit ?? this.defaultCreditLimit,
+      allowPartialUdhari: allowPartialUdhari ?? this.allowPartialUdhari,
+      blockWhenLimitExceeded:
+          blockWhenLimitExceeded ?? this.blockWhenLimitExceeded,
+      enableWhatsAppReminders:
+          enableWhatsAppReminders ?? this.enableWhatsAppReminders,
+      enableLoyalty: enableLoyalty ?? this.enableLoyalty,
+      earnRateSpendAmount: earnRateSpendAmount ?? this.earnRateSpendAmount,
+      earnRatePoints: earnRatePoints ?? this.earnRatePoints,
+      pointRedemptionValue:
+          pointRedemptionValue ?? this.pointRedemptionValue,
+      minPointsToRedeem: minPointsToRedeem ?? this.minPointsToRedeem,
+      maxBillDiscountPercent:
+          maxBillDiscountPercent ?? this.maxBillDiscountPercent,
+      pointsValidityDays: pointsValidityDays ?? this.pointsValidityDays,
+      enableMembership: enableMembership ?? this.enableMembership,
+      silverMinSpend: silverMinSpend ?? this.silverMinSpend,
+      silverMultiplier: silverMultiplier ?? this.silverMultiplier,
+      goldMinSpend: goldMinSpend ?? this.goldMinSpend,
+      goldMultiplier: goldMultiplier ?? this.goldMultiplier,
+      platinumMinSpend: platinumMinSpend ?? this.platinumMinSpend,
+      platinumMultiplier: platinumMultiplier ?? this.platinumMultiplier,
+      enableCoupons: enableCoupons ?? this.enableCoupons,
+      welcomeBonusPoints: welcomeBonusPoints ?? this.welcomeBonusPoints,
+      seasonalCoupons: seasonalCoupons ?? this.seasonalCoupons,
+    );
+  }
+}
+

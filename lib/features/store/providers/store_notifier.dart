@@ -220,6 +220,37 @@ class StoreNotifier extends _$StoreNotifier {
 
     state = state.copyWith(isLoading: true);
     try {
+      final existingCount = state.stores.length;
+      if (existingCount >= 1 && user != null) {
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+          final role = doc.data()?['role'] ?? 'Store Owner';
+          if (role != 'Super Admin') {
+            if (role == 'Store Owner') {
+              throw Exception(
+                  'Store Owners cannot add more than one store under their account. Multi-store management requires the Franchise Owner role and Franchise Add-on.');
+            }
+            if (role == 'Franchise Owner') {
+              final hasAddon = state.stores.any((s) =>
+                  s.addons.contains('franchise_management') ||
+                  s.purchasedAddons.contains('franchise_management'));
+              if (!hasAddon) {
+                throw Exception(
+                    'Multi-store feature requires the Franchise Add-on. Please purchase the Franchise Add-on from BizStore to add more stores.');
+              }
+            }
+          }
+        } catch (e) {
+          if (e.toString().contains('Store Owners') ||
+              e.toString().contains('Franchise Add-on')) {
+            rethrow;
+          }
+        }
+      }
+
       // Search for pending subscription
       final subRequest = await _subRepo.findPendingSubscription(email);
 

@@ -341,6 +341,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                         return store.owner == uid ||
                             (email != null && store.ownerEmail == email);
                       }).toList();
+                    } else if (provider.activeRole == 'Store Owner') {
+                      if (allowedStores.length > 1) {
+                        final activeId = provider.activeStoreId ??
+                            provider.userProfile?.storeId;
+                        final primaryStore = allowedStores.firstWhere(
+                          (s) => s.id == activeId,
+                          orElse: () => allowedStores.first,
+                        );
+                        allowedStores = [primaryStore];
+                      }
                     }
 
                     return ListView.separated(

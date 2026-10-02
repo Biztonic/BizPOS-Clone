@@ -42,18 +42,21 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
   Widget build(BuildContext context) {
     final themeData = ref.watch(themeProvider);
 
-    return legacy_provider.Consumer2<LocaleProvider, DashboardProvider>(
-      builder: (context, localeProvider, dashboardProvider, _) {
-        final view = View.of(context);
-        final size = view.physicalSize / view.devicePixelRatio;
-        final isMobile = size.width < 600;
-        final isCarDashboard =
-            themeData.uiStyle == UIStyle.car_dashboard && !isMobile;
+    return legacy_provider.Consumer<LocaleProvider>(
+      builder: (context, localeProvider, _) {
+        return legacy_provider.Selector<DashboardProvider, bool>(
+          selector: (_, p) => p.isClockTampered,
+          builder: (context, isClockTampered, _) {
+            final view = View.of(context);
+            final size = view.physicalSize / view.devicePixelRatio;
+            final isMobile = size.width < 600;
+            final isCarDashboard =
+                themeData.uiStyle == UIStyle.car_dashboard && !isMobile;
 
-        final appDensity =
-            isCarDashboard ? AppDensity.touch : AppDensity.comfortable;
+            final appDensity =
+                isCarDashboard ? AppDensity.touch : AppDensity.comfortable;
 
-        if (dashboardProvider.isClockTampered) {
+            if (isClockTampered) {
           return AppDensityProvider(
             density: appDensity,
             child: MaterialApp(
@@ -146,6 +149,8 @@ class _BizPOSAppState extends ConsumerState<BizPOSApp> {
               );
             },
           ),
+        );
+          },
         );
       },
     );

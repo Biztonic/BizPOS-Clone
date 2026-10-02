@@ -1,0 +1,157 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# ==============================================================================
+# CodeRabbit AI Code Review Configuration
+# Repository: BizPOS_Clone (Production Flutter / Dart POS Engine)
+# ==============================================================================
+
+# Target review language
+language: "en-US"
+
+# Opt-in or opt-out of experimental / early access features
+early_access: false
+
+# ------------------------------------------------------------------------------
+# Tone and Personality Instructions
+# ------------------------------------------------------------------------------
+# Instructs CodeRabbit on how to format review comments and the technical depth required.
+tone_instructions: >-
+  You are reviewing a mission-critical, enterprise Flutter Point-of-Sale (POS) application
+  with offline-first synchronization, SQLite + Hive + Firestore data tier, and Clean Architecture.
+  Focus heavily on:
+  1. Data integrity, financial calculation correctness, and idempotency guarantees.
+  2. Transactional safety in checkout, inventory deduction, and billing outbox.
+  3. Adherence to central design tokens (AppColors, AppSpacing, AppRadius, AppTypography).
+  4. Cross-platform safety (kIsWeb vs native SQLite/IO boundaries).
+  5. Avoiding RenderFlex overflows and state desynchronization.
+  Be concise, actionable, and provide code suggestions where applicable.
+
+# ------------------------------------------------------------------------------
+# Review Workflow and Presentation
+# ------------------------------------------------------------------------------
+reviews:
+  # Review strictness profile: 'chill' (lenient) or 'assertive' (strict on correctness & architecture)
+  profile: "assertive"
+
+  # Whether to use the GitHub request changes workflow
+  request_changes_workflow: false
+
+  # Generates an executive summary of changes at the top of PR review
+  high_level_summary: true
+
+  # Disable frivolous review poems for high-signal enterprise reviews
+  poem: false
+
+  # Publish review status check badge on GitHub commits/PRs
+  review_status: true
+
+  # Keep the detailed file-by-file walkthrough expanded for transparent auditing
+  collapse_walkthrough: false
+
+  # Automated review triggers
+  auto_review:
+    enabled: true
+    drafts: false
+    ignore_title_keywords:
+      - "WIP"
+      - "Draft"
+      - "DO NOT MERGE"
+      - "[Draft]"
+
+  # ----------------------------------------------------------------------------
+  # Path Exclusions (Files and folders excluded from AI code review)
+  # ----------------------------------------------------------------------------
+  path_filters:
+    # Exclude Flutter/Dart build artifacts and caches
+    - "!build/**"
+    - "!.dart_tool/**"
+    - "!pubspec.lock"
+
+    # Exclude code generation outputs
+    - "!**/*.g.dart"
+    - "!**/*.freezed.dart"
+    - "!**/*.mocks.dart"
+
+    # Exclude platform runner scaffolding (native boilerplate)
+    - "!android/**"
+    - "!ios/**"
+    - "!windows/**"
+    - "!linux/**"
+    - "!macos/**"
+    - "!web/**"
+
+    # Exclude binary media and raw assets
+    - "!assets/**"
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!**/*.svg"
+    - "!**/*.ico"
+    - "!**/*.json"
+
+    # Exclude local workspace metadata and planning docs
+    - "!.system_generated/**"
+    - "!.planning/**"
+    - "!.agents/**"
+    - "!.agent/**"
+
+  # ----------------------------------------------------------------------------
+  # Subsystem-Specific Review Instructions
+  # ----------------------------------------------------------------------------
+  path_instructions:
+    # 1. Billing & Checkout Engine
+    - path: "lib/features/billing/**"
+      instructions: >-
+        Inspect for strict financial accuracy, rounding rules (2 decimal places),
+        GST (CGST/SGST/IGST) calculations, payment method transitions, and exactly-once
+        idempotency. Verify that checkout operations are atomic and properly integrated
+        with the transactional outbox and event bus.
+
+    # 2. Inventory & Stock Management
+    - path: "lib/features/inventory/**"
+      instructions: >-
+        Verify authoritative ledger invariants for stock movements. Ensure stock deductions
+        persist across SQLite, Hive cache, and cloud sync. Check that NegativeStockPolicy
+        (BLOCK, ALLOW_WITH_WARNING, ALLOW) is respected and that cross-store inventory leaks
+        are strictly prohibited.
+
+    # 3. Offline-First Sync Engine & Outbox
+    - path: "lib/sync/**"
+      instructions: >-
+        Review for offline-first reliability: outbox queue durability, conflict resolution
+        policies (no arbitrary Last-Write-Wins on financial records), idempotency guards,
+        network connectivity reconnection handling, and tombstone handling for soft deletes.
+
+    # 4. Central Design System & Presentation Screens
+    - path: "lib/core/design/**"
+      instructions: >-
+        Enforce central design token usage. Reject hardcoded color hex values, arbitrary
+        margins/paddings, and non-standard typography. Ensure reusable atoms (e.g. AppButton)
+        and organisms (e.g. PosDataTable) maintain symmetry and consistent touch targets.
+
+    - path: "lib/screens/**"
+      instructions: >-
+        Ensure all views and dialogs use tokens from AppColors, AppSpacing, and AppRadius.
+        Check for LayoutBuilder/Expanded/Flexible usage to prevent RenderFlex overflows
+        (both vertical and horizontal) across desktop, tablet, automotive, and mobile viewports.
+        Verify that user inputs are sanitized and async calls check `mounted`.
+
+    # 5. Domain Contracts & Clean Architecture Boundaries
+    - path: "lib/features/**/domain/**"
+      instructions: >-
+        Ensure Domain entities and use cases are PURE. Absolutely zero infrastructure,
+        UI, or database imports (e.g., no Flutter Material, no SQLite, no Hive, no Firestore).
+        Entities must be immutable with value equality or copyWith methods.
+
+    # 6. Test Suite Completeness & Quality
+    - path: "test/**"
+      instructions: >-
+        Verify test isolation. Tests must use mock repositories, fake providers, or isolated
+        temp SQLite/Hive databases without leaking state or requiring live cloud backends.
+        Ensure edge cases (empty orders, zero totals, negative quantities, boundary discounts)
+        are covered by unit or integration tests.
+
+# ------------------------------------------------------------------------------
+# Chat & PR Comment Interactions
+# ------------------------------------------------------------------------------
+chat:
+  # Automatically reply when users comment or tag CodeRabbit on PR threads
+  auto_reply: true

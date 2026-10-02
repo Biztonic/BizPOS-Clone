@@ -1,6 +1,8 @@
 import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_radius.dart';
 import 'package:biztonic_pos/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../models/store.dart';
@@ -125,6 +127,54 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (!provider.hasFranchiseAddon) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.1),
+                border: Border.all(
+                    color: AppColors.warning.withValues(alpha: 0.4)),
+                borderRadius: AppRadius.borderSm,
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.lock_outline, color: AppColors.warning),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Franchise Add-on Required for Multi-Store',
+                          style: AppTypography.titleSmall.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.warning,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Purchase the Franchise Add-on from BizStore to unlock adding, linking, and managing multiple stores under your franchise.',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.textSecondary(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  ElevatedButton(
+                    onPressed: () => context.push('/biz-store'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.warning,
+                      foregroundColor: Colors.black,
+                    ),
+                    child: const Text('Unlock Add-on'),
+                  ),
+                ],
+              ),
+            ),
+          ],
           AppCard(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
@@ -163,9 +213,21 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
+                    if (provider.hasFranchiseAddon) ...[
+                      AppButton.secondary(
+                        label: 'Create Store',
+                        icon: Icons.add_business,
+                        onPressed: () => context.go('/create-store'),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                    ],
                     AppButton.primary(
-                      label: 'Link Existing Store',
-                      icon: Icons.add,
+                      label: provider.hasFranchiseAddon
+                          ? 'Link Existing Store'
+                          : 'Link Store (Locked)',
+                      icon: provider.hasFranchiseAddon
+                          ? Icons.add
+                          : Icons.lock_outline,
                       onPressed: () =>
                           _showAddExistingStoreDialog(context, provider),
                     ),
@@ -572,6 +634,44 @@ class _FranchiseScreenState extends State<FranchiseScreen> {
 
   void _showAddExistingStoreDialog(
       BuildContext context, DashboardProvider provider) {
+    if (!provider.hasFranchiseAddon) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.lock, color: AppColors.warning),
+              SizedBox(width: AppSpacing.sm),
+              Text('Franchise Add-on Required'),
+            ],
+          ),
+          content: const Text(
+            'To link multiple stores under your franchise, you must purchase the Franchise Add-on from BizStore.\n\n'
+            'Please purchase the add-on to unlock multi-store franchise capabilities.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                context.push('/biz-store');
+              },
+              icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+              label: const Text('Go to BizStore'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();

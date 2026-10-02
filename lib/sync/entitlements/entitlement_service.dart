@@ -97,7 +97,6 @@ class EntitlementService {
       'sales',
       'orders',
       'advanced_reports',
-      'multi_store',
       'api_access',
       'settings',
       'biz_store',
@@ -132,7 +131,7 @@ class EntitlementService {
       'inventory': -1,
       'customers': -1,
       'employees': 15,
-      'stores': 3,
+      'stores': 1,
     },
     PlanTier.professional: {
       'orders': -1,
@@ -141,7 +140,7 @@ class EntitlementService {
       'inventory': -1,
       'customers': -1,
       'employees': -1,
-      'stores': 10,
+      'stores': 1,
     },
     PlanTier.enterprise: {
       'orders': -1,
@@ -501,6 +500,15 @@ class EntitlementService {
     if (entitlement.features.contains('*') ||
         entitlement.plan == PlanTier.enterprise) {
       return true;
+    }
+
+    // Multi-store is strictly for Super Admin or Franchise Owner with the Franchise Add-on
+    if (featureKey == 'multi_store') {
+      if (userRole == 'Super Admin') return true;
+      if (userRole == 'Franchise Owner') {
+        return hasAddon('franchise_management', storeId: storeId);
+      }
+      return false; // Store Owner and others are strictly blocked
     }
 
     // Modular BizStore addons strictly require hasAddon (Standard+ plan & installed addon)

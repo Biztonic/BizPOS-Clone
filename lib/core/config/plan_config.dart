@@ -33,7 +33,7 @@ class PlanConfig {
   static const int standardMaxInventory = -1;
   static const int standardMaxCustomers = -1;
   static const int standardMaxEmployees = 15;
-  static const int standardMaxStores = 3;
+  static const int standardMaxStores = 1;
 
   // ─── Feature Flags by Plan ──────────────────────────────────
   static const Map<String, List<String>> planFeatures = {
@@ -59,7 +59,6 @@ class PlanConfig {
       'floors',
       'suppliers',
       'advanced_reports',
-      'multi_store',
       'api_access',
     ],
     planEnterprise: ['*'], // All features
@@ -106,7 +105,7 @@ class PlanConfig {
       'inventory': -1,
       'customers': -1,
       'employees': -1,
-      'stores': 10,
+      'stores': 1,
     },
     planEnterprise: {
       'orders': -1,

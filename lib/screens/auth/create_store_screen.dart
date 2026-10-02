@@ -29,9 +29,23 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dashboard = Provider.of<DashboardProvider>(context, listen: false);
-      if (dashboard.hasAnyStore && dashboard.activeStoreId == null) {
+      if (!dashboard.canCreateAdditionalStore && dashboard.hasAnyStore) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(dashboard.storeCreationRestrictionReason ??
+                'You cannot create additional stores.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        context.go('/dashboard');
+        return;
+      }
+
+      if (dashboard.hasAnyStore &&
+          dashboard.activeStoreId == null &&
+          !dashboard.canCreateAdditionalStore) {
         debugPrint(
-            'ðŸ†• CreateStoreScreen: Stores exist but none active, redirecting to /select-store');
+            'CreateStoreScreen: Stores exist but none active and cannot create, redirecting to /select-store');
         context.go('/select-store');
       }
 
@@ -71,6 +85,10 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
 
     try {
       final provider = Provider.of<DashboardProvider>(context, listen: false);
+      if (!provider.canCreateAdditionalStore) {
+        throw Exception(provider.storeCreationRestrictionReason ??
+            'You are not permitted to create additional stores.');
+      }
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final user = authProvider.user;
 
@@ -119,8 +137,18 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
   Widget build(BuildContext context) {
     final dashboard = Provider.of<DashboardProvider>(context);
 
-    // Reactive Redirect: If stores are found while on this screen AND no store is active
-    if (dashboard.hasAnyStore && dashboard.activeStoreId == null) {
+    // Reactive Redirect: If user is not allowed to create stores and already has stores
+    if (!dashboard.canCreateAdditionalStore && dashboard.hasAnyStore) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/dashboard');
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // Reactive Redirect: If stores are found while on this screen AND no store is active and cannot create
+    if (dashboard.hasAnyStore &&
+        dashboard.activeStoreId == null &&
+        !dashboard.canCreateAdditionalStore) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.go('/select-store');
       });
@@ -132,7 +160,9 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
     return Scaffold(
       backgroundColor: AppColors.background(context),
       appBar: AppBar(
-        title: Text(AppLocalizations.t(context, 'Setup Your Store')),
+        title: Text(dashboard.stores.isNotEmpty
+            ? AppLocalizations.t(context, 'Add New Store')
+            : AppLocalizations.t(context, 'Setup Your Store')),
         backgroundColor: AppColors.transparent,
         elevation: 0,
         actions: [
@@ -172,15 +202,23 @@ class _CreateStoreScreenState extends State<CreateStoreScreen> {
                       size: 64, color: AppColors.primary),
                   const SizedBox(height: AppSpacing.lg),
                   Text(
-                    AppLocalizations.t(context, 'Welcome to BizPOS!'),
+                    dashboard.stores.isNotEmpty
+                        ? AppLocalizations.t(context, 'Add New Store')
+                        : AppLocalizations.t(context, 'Welcome to BizPOS!'),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                         fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    AppLocalizations.t(context,
-                        'To get started, please create your first store.'),
+                    dashboard.stores.isNotEmpty
+                        ? (dashboard.activeRole == 'Franchise Owner'
+                            ? AppLocalizations.t(context,
+                                'Add and configure an additional store under your franchise.')
+                            : AppLocalizations.t(context,
+                                'Add and configure an additional store.'))
+                        : AppLocalizations.t(context,
+                            'To get started, please create your first store.'),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppColors.textSecondary(context)),
                   ),

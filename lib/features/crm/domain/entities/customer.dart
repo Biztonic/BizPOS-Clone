@@ -23,6 +23,8 @@ class Customer {
   final String syncStatus;
   final String? deviceId;
   final int version; // Optimistic locking version
+  final double udhariBalance; // Outstanding amount owed by customer (Udhari / Borrowed)
+  final double creditLimit; // Maximum credit/udhari allowed for customer
 
   Customer({
     required this.id,
@@ -47,6 +49,8 @@ class Customer {
     this.syncStatus = 'PENDING',
     this.deviceId,
     this.version = 1,
+    this.udhariBalance = 0.0,
+    this.creditLimit = 0.0,
   });
 
   factory Customer.fromMap(Map<String, dynamic> data, String id) {
@@ -94,6 +98,8 @@ class Customer {
       syncStatus: data['syncStatus'] ?? 'PENDING',
       deviceId: data['deviceId'],
       version: parseInt(data['version']) > 0 ? parseInt(data['version']) : 1,
+      udhariBalance: (data['udhariBalance'] ?? data['creditBalance'] ?? 0).toDouble(),
+      creditLimit: (data['creditLimit'] ?? 0).toDouble(),
     );
   }
 
@@ -120,6 +126,8 @@ class Customer {
       'syncStatus': syncStatus,
       'deviceId': deviceId,
       'version': version,
+      'udhariBalance': udhariBalance,
+      'creditLimit': creditLimit,
     };
   }
 
@@ -155,6 +163,8 @@ class Customer {
       'syncStatus': syncStatus,
       'deviceId': deviceId,
       'version': version,
+      'udhariBalance': udhariBalance,
+      'creditLimit': creditLimit,
     };
   }
 
@@ -183,6 +193,8 @@ class Customer {
       'syncStatus': syncStatus,
       'deviceId': deviceId,
       'version': version,
+      'udhariBalance': udhariBalance,
+      'creditLimit': creditLimit,
     };
   }
 
@@ -211,6 +223,8 @@ class Customer {
       syncStatus: row['syncStatus'] ?? 'PENDING',
       deviceId: row['deviceId'],
       version: row['version'] ?? 1,
+      udhariBalance: (row['udhariBalance'] ?? 0).toDouble(),
+      creditLimit: (row['creditLimit'] ?? 0).toDouble(),
     );
   }
   Customer copyWith({
@@ -236,6 +250,8 @@ class Customer {
     String? syncStatus,
     String? deviceId,
     int? version,
+    double? udhariBalance,
+    double? creditLimit,
   }) {
     return Customer(
       id: id ?? this.id,
@@ -260,6 +276,8 @@ class Customer {
       syncStatus: syncStatus ?? this.syncStatus,
       deviceId: deviceId ?? this.deviceId,
       version: version ?? this.version,
+      udhariBalance: udhariBalance ?? this.udhariBalance,
+      creditLimit: creditLimit ?? this.creditLimit,
     );
   }
 }

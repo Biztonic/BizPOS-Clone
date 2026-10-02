@@ -495,6 +495,63 @@ class StoreProvider with ChangeNotifier {
     String? resolvedFranchiseId;
     String? resolvedFranchiseName;
 
+    Map<String, dynamic> callerUserData = {};
+    String callerRole = 'Store Owner';
+    if (uid != null) {
+      try {
+        final callerDoc = await _db.collection('users').doc(uid).get();
+        if (callerDoc.exists && callerDoc.data() != null) {
+          callerUserData = callerDoc.data()!;
+          callerRole = callerUserData['role'] ?? 'Store Owner';
+        }
+      } catch (e) {
+        debugPrint('⚠️ StoreProvider: Could not fetch caller user doc: $e');
+      }
+    }
+
+    final isCallerSuperAdmin = callerRole == 'Super Admin';
+    final existingStoreCount = _stores.length;
+
+    // Multi-store permission check:
+    // Store Owner can NEVER create more than 1 store.
+    // Franchise Owner can only create additional stores if they have purchased Franchise Addon.
+    if (existingStoreCount >= 1 && !isCallerSuperAdmin) {
+      if (callerRole == 'Store Owner') {
+        throw Exception(
+            'Store Owners cannot add more than one store under their account. Multi-store management requires the Franchise Owner role and Franchise Add-on.');
+      }
+      if (callerRole == 'Franchise Owner') {
+        final storeList = [if (_activeStore != null) _activeStore!, ..._stores];
+        final hasFranchiseAddon = storeList.any((s) {
+          final addons =
+              s.addons.map(EntitlementService.canonicalizeAddonKey).toSet();
+          final purchased = s.purchasedAddons
+              .map(EntitlementService.canonicalizeAddonKey)
+              .toSet();
+          return (addons.contains('franchise_management') &&
+                  purchased.contains('franchise_management')) ||
+              EntitlementService.instance
+                  .hasAddon('franchise_management', storeId: s.id);
+        });
+        if (!hasFranchiseAddon) {
+          throw Exception(
+              'Multi-store feature requires the Franchise Add-on. Please purchase the Franchise Add-on from BizStore to add more stores.');
+        }
+      } else {
+        throw Exception(
+            'You do not have permission to create multiple stores.');
+      }
+    }
+
+    // If caller is already a Franchise Owner, auto-link store to their franchise
+    if (callerRole == 'Franchise Owner') {
+      resolvedFranchiseId = uid;
+      resolvedFranchiseName = callerUserData['name'] ??
+          (userEmail != null
+              ? "${userEmail.split('@')[0]} Franchise"
+              : 'Franchise');
+    }
+
     if (franchiseCode != null && franchiseCode.trim().isNotEmpty) {
       try {
         final franchiseQuery = await _db
@@ -806,11 +863,15 @@ class StoreProvider with ChangeNotifier {
           debugPrint('⚠️ StoreProvider: Failed to create owner member doc: $e');
         }
 
+        final currentRole =
+            callerRole.isNotEmpty && callerRole != 'Unauthorized'
+                ? callerRole
+                : 'Store Owner';
         await _db.collection('users').doc(uid).set({
           'storeId': docRef.id,
           'storeIds': FieldValue.arrayUnion([docRef.id]),
           'accessibleStoreIds': FieldValue.arrayUnion([docRef.id]),
-          'role': 'Store Owner'
+          'role': currentRole,
         }, SetOptions(merge: true));
       } else {
         // 2. Admin creating for someone else
@@ -1198,10 +1259,26 @@ class StoreProvider with ChangeNotifier {
     try {
       final doc = await _db.collection('settings').doc('global').get();
       if (doc.exists && doc.data()!['store_types'] != null) {
-        return List<String>.from(doc.data()!['store_types']);
+        final types = List<String>.from(doc.data()!['store_types']);
+        if (Hive.isBoxOpen('store_type_configs')) {
+          Hive.box('store_type_configs').put('types', types);
+        }
+        return types;
+      }
+      if (Hive.isBoxOpen('store_type_configs')) {
+        final cached = Hive.box('store_type_configs').get('types') as List?;
+        if (cached != null && cached.isNotEmpty) {
+          return cached.map((e) => e.toString()).toList();
+        }
       }
       return [];
     } catch (e) {
+      if (Hive.isBoxOpen('store_type_configs')) {
+        final cached = Hive.box('store_type_configs').get('types') as List?;
+        if (cached != null && cached.isNotEmpty) {
+          return cached.map((e) => e.toString()).toList();
+        }
+      }
       return [];
     }
   }
@@ -1210,10 +1287,26 @@ class StoreProvider with ChangeNotifier {
     try {
       final doc = await _db.collection('settings').doc('global').get();
       if (doc.exists && doc.data()!['store_type_configs'] != null) {
-        return Map<String, dynamic>.from(doc.data()!['store_type_configs']);
+        final configs = Map<String, dynamic>.from(doc.data()!['store_type_configs']);
+        if (Hive.isBoxOpen('store_type_configs')) {
+          Hive.box('store_type_configs').put('configs', configs);
+        }
+        return configs;
+      }
+      if (Hive.isBoxOpen('store_type_configs')) {
+        final cached = Hive.box('store_type_configs').get('configs') as Map?;
+        if (cached != null && cached.isNotEmpty) {
+          return Map<String, dynamic>.from(cached);
+        }
       }
       return {};
     } catch (e) {
+      if (Hive.isBoxOpen('store_type_configs')) {
+        final cached = Hive.box('store_type_configs').get('configs') as Map?;
+        if (cached != null && cached.isNotEmpty) {
+          return Map<String, dynamic>.from(cached);
+        }
+      }
       return {};
     }
   }
@@ -1221,8 +1314,20 @@ class StoreProvider with ChangeNotifier {
   Future<void> addStoreType(String type,
       {Map<String, dynamic>? initialConfig}) async {
     try {
+      if (Hive.isBoxOpen('store_type_configs')) {
+        final box = Hive.box('store_type_configs');
+        final currentTypes =
+            (box.get('types') as List?)?.map((e) => e.toString()).toList() ?? [];
+        if (!currentTypes.contains(type)) {
+          currentTypes.add(type);
+          box.put('types', currentTypes);
+        }
+        final currentConfigs =
+            Map<String, dynamic>.from((box.get('configs') as Map?) ?? {});
+        currentConfigs[type] = initialConfig ?? {};
+        box.put('configs', currentConfigs);
+      }
       final ref = _db.collection('settings').doc('global');
-      // Transaction to ensure atomicity if possible, but for simplicity:
       await ref.set({
         'store_types': FieldValue.arrayUnion([type]),
         'store_type_configs': {type: initialConfig ?? {}}
@@ -1235,6 +1340,26 @@ class StoreProvider with ChangeNotifier {
   Future<void> updateStoreType(String oldType, String newType,
       {Map<String, dynamic>? config}) async {
     try {
+      if (Hive.isBoxOpen('store_type_configs')) {
+        final box = Hive.box('store_type_configs');
+        final currentTypes =
+            (box.get('types') as List?)?.map((e) => e.toString()).toList() ?? [];
+        final idx = currentTypes.indexOf(oldType);
+        if (idx != -1) {
+          currentTypes[idx] = newType;
+        } else if (!currentTypes.contains(newType)) {
+          currentTypes.add(newType);
+        }
+        box.put('types', currentTypes);
+
+        final currentConfigs =
+            Map<String, dynamic>.from((box.get('configs') as Map?) ?? {});
+        final oldCfg =
+            currentConfigs.remove(oldType) as Map<String, dynamic>? ?? {};
+        currentConfigs[newType] = config ?? oldCfg;
+        box.put('configs', currentConfigs);
+      }
+
       final ref = _db.collection('settings').doc('global');
 
       // 1. Get current configs
@@ -1266,6 +1391,19 @@ class StoreProvider with ChangeNotifier {
 
   Future<void> deleteStoreType(String type) async {
     try {
+      if (Hive.isBoxOpen('store_type_configs')) {
+        final box = Hive.box('store_type_configs');
+        final currentTypes =
+            (box.get('types') as List?)?.map((e) => e.toString()).toList() ?? [];
+        currentTypes.remove(type);
+        box.put('types', currentTypes);
+
+        final currentConfigs =
+            Map<String, dynamic>.from((box.get('configs') as Map?) ?? {});
+        currentConfigs.remove(type);
+        box.put('configs', currentConfigs);
+      }
+
       final ref = _db.collection('settings').doc('global');
       await ref.update({
         'store_types': FieldValue.arrayRemove([type]),
@@ -1283,63 +1421,111 @@ class StoreProvider with ChangeNotifier {
     }
   }
 
+  // --- SYSTEM ROLES ---
+  static final List<RoleModel> defaultSystemRoles = [
+    RoleModel(
+      id: 'super_admin',
+      name: 'Super Admin',
+      description: 'Platform Super Administrator with unrestricted access',
+      permissions: {
+        'all': true,
+        'admin': true,
+        'pos': true,
+        'inventory': true,
+        'inventory_view': true,
+        'reports': true,
+        'settings': true,
+      },
+      isSystem: true,
+      storeAccessMode: 'multi_full',
+    ),
+    RoleModel(
+      id: 'store_owner',
+      name: 'Store Owner',
+      description: 'Store Owner with management access to assigned store',
+      permissions: {
+        'stores': true,
+        'pos': true,
+        'inventory': true,
+        'inventory_view': true,
+        'reports': true,
+        'settings': true,
+        'admin': true,
+      },
+      isSystem: true,
+      storeAccessMode: 'single',
+    ),
+    RoleModel(
+      id: 'franchise_owner',
+      name: 'Franchise Owner',
+      description: 'Franchise Owner with multi-store management capabilities',
+      permissions: {
+        'stores': true,
+        'multi_store': true,
+        'pos': true,
+        'inventory': true,
+        'inventory_view': true,
+        'reports': true,
+        'settings': true,
+        'admin': false,
+      },
+      isSystem: true,
+      storeAccessMode: 'franchise',
+    ),
+  ];
+
+  static bool isSystemRoleName(String name) {
+    final lower = name.trim().toLowerCase();
+    return lower == 'super admin' ||
+        lower == 'superadmin' ||
+        lower == 'super_admin' ||
+        lower == 'store owner' ||
+        lower == 'storeowner' ||
+        lower == 'store_owner' ||
+        lower == 'franchise owner' ||
+        lower == 'franchiseowner' ||
+        lower == 'franchise_owner';
+  }
+
   // --- ROLES ---
-  List<RoleModel> _roles = [];
+  List<RoleModel> _roles = List.from(defaultSystemRoles);
   List<RoleModel> get roles => _roles;
+  bool _isRolesLoading = false;
+  bool get isRolesLoading => _isRolesLoading;
   final String _activeRole =
       'Store Owner'; // Default to Store Owner for onboarding
   String get activeRole => _activeRole;
 
   Future<void> fetchRoles() async {
+    _isRolesLoading = true;
+    notifyListeners();
     try {
-      final snap = await _db.collection('roles').get();
+      final snap = await _db
+          .collection('roles')
+          .get()
+          .timeout(const Duration(seconds: 5));
       final fetchedRoles =
           snap.docs.map((d) => RoleModel.fromMap(d.data(), d.id)).toList();
 
-      // Ensure System Roles are present
-      final systemRoles = [
-        RoleModel(
-            id: 'super_admin',
-            name: 'Super Admin',
-            permissions: {'admin': true},
-            isSystem: true),
-        RoleModel(
-            id: 'store_owner',
-            name: 'Store Owner',
-            permissions: {'admin': true},
-            isSystem: true),
-      ];
+      // Filter out any roles matching the 3 system roles to prevent overriding system status
+      final customRoles = fetchedRoles
+          .where((r) =>
+              !isSystemRoleName(r.name) &&
+              r.id != 'super_admin' &&
+              r.id != 'store_owner' &&
+              r.id != 'franchise_owner')
+          .toList();
 
-      final hasFranchise =
-          (_activeStore?.addons.contains('franchise_management') ?? false) ||
-              _stores.any((s) => s.addons.contains('franchise_management'));
-      if (hasFranchise) {
-        systemRoles.add(
-          RoleModel(
-            id: 'franchise_owner',
-            name: 'Franchise Owner',
-            permissions: {
-              'pos': true,
-              'inventory': true,
-              'reports': true,
-              'settings': true
-            },
-            isSystem: true,
-          ),
-        );
-      }
-
-      final Set<String> existingNames = fetchedRoles.map((r) => r.name).toSet();
-      for (var sysRole in systemRoles) {
-        if (!existingNames.contains(sysRole.name)) {
-          fetchedRoles.add(sysRole);
-        }
-      }
-
-      _roles = fetchedRoles;
-      notifyListeners();
+      // Canonical 3 system roles are always present and always isSystem: true
+      _roles = [...defaultSystemRoles, ...customRoles];
     } catch (e) {
       debugPrint('❌ StoreProvider: Error fetching roles: $e');
+      if (_roles.isEmpty) {
+        _roles = List.from(defaultSystemRoles);
+      }
+    } finally {
+      _isRolesLoading = false;
+      notifyListeners();
     }
   }
 
@@ -1351,6 +1537,8 @@ class StoreProvider with ChangeNotifier {
         name: role.name,
         permissions: role.permissions,
         isSystem: false,
+        description: role.description,
+        storeAccessMode: role.storeAccessMode,
       );
       await ref.set(newRole.toMap());
       _roles.add(newRole);
@@ -1362,12 +1550,17 @@ class StoreProvider with ChangeNotifier {
 
   Future<void> updateRole(RoleModel role) async {
     try {
-      await _db.collection('roles').doc(role.id).update(role.toMap());
+      await _db
+          .collection('roles')
+          .doc(role.id)
+          .set(role.toMap(), SetOptions(merge: true));
       final i = _roles.indexWhere((r) => r.id == role.id);
       if (i != -1) {
         _roles[i] = role;
-        notifyListeners();
+      } else {
+        _roles.add(role);
       }
+      notifyListeners();
     } catch (e) {
       rethrow;
     }
@@ -1375,7 +1568,20 @@ class StoreProvider with ChangeNotifier {
 
   Future<void> deleteRole(String id) async {
     try {
-      await _db.collection('roles').doc(id).delete();
+      final target = _roles.firstWhere((r) => r.id == id,
+          orElse: () => RoleModel(id: '', name: '', permissions: {}));
+      if (target.isSystem || isSystemRoleName(target.name)) {
+        throw Exception("System roles cannot be deleted");
+      }
+      try {
+        await _db
+            .collection('roles')
+            .doc(id)
+            .delete()
+            .timeout(const Duration(seconds: 5));
+      } catch (e) {
+        debugPrint('⚠️ Error deleting role from Firestore: $e');
+      }
       _roles.removeWhere((r) => r.id == id);
       notifyListeners();
     } catch (e) {

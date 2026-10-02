@@ -12,7 +12,8 @@ import '../../core/design/components/atoms/app_card.dart';
 import '../../core/design/tokens/app_colors.dart';
 
 class KdsSettingsScreen extends StatefulWidget {
-  const KdsSettingsScreen({super.key});
+  final bool isSubView;
+  const KdsSettingsScreen({super.key, this.isSubView = false});
 
   @override
   State<KdsSettingsScreen> createState() => _KdsSettingsScreenState();
@@ -83,9 +84,7 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PosScaffold(
-      title: "KDS Settings",
-      mainContent: ListView(
+    final content = ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           Text(AppLocalizations.t(context, 'Interface Options'),
@@ -163,7 +162,13 @@ class _KdsSettingsScreenState extends State<KdsSettingsScreen> {
             width: double.infinity,
           ),
         ],
-      ),
+      );
+
+    if (widget.isSubView) return content;
+
+    return PosScaffold(
+      title: "KDS Settings",
+      mainContent: content,
     );
   }
 

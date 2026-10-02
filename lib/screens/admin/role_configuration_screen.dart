@@ -35,6 +35,12 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
     return PosScaffold(
       title: "Rule & Role Configuration",
       actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: "Refresh Roles",
+          onPressed: () =>
+              Provider.of<StoreProvider>(context, listen: false).fetchRoles(),
+        ),
         AppButton.primary(
           onPressed: () => _showRoleEditor(context,
               Provider.of<StoreProvider>(context, listen: false), null),
@@ -47,8 +53,31 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
         builder: (context, provider, _) {
           final roles = provider.roles;
 
-          if (roles.isEmpty) {
+          if (provider.isRolesLoading && roles.isEmpty) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          if (roles.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.shield_outlined,
+                      size: 64, color: AppColors.textSecondaryLight),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    AppLocalizations.t(context, 'No roles found'),
+                    style: AppTypography.titleMedium,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  AppButton.secondary(
+                    label: "Reload Roles",
+                    icon: Icons.refresh,
+                    onPressed: () => provider.fetchRoles(),
+                  ),
+                ],
+              ),
+            );
           }
 
           return ListView.builder(
@@ -66,7 +95,7 @@ class _RoleConfigurationScreenState extends State<RoleConfigurationScreen> {
 
   Widget _buildRoleCard(
       BuildContext context, RoleModel role, StoreProvider provider) {
-    final isSystem = role.isSystem;
+    final isSystem = role.isSystem || StoreProvider.isSystemRoleName(role.name);
     final iconColor = isSystem ? AppColors.primaryLight : AppColors.primary;
     final permCount =
         role.permissions.entries.where((e) => e.value == true).length;

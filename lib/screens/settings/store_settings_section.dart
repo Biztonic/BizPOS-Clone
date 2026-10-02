@@ -13,6 +13,8 @@ import '../../core/design/design_system.dart';
 import '../../core/design/components/atoms/app_button.dart';
 import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/components/atoms/app_card.dart';
+import 'package:hive/hive.dart';
+import '../../core/config/store_type_config.dart';
 
 class StoreSettingsSection extends ConsumerStatefulWidget {
   final bool isSubView;
@@ -29,12 +31,7 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
   String? _selectedStoreType;
-  List<String> _availableStoreTypes = [
-    'Restaurant',
-    'Grocery',
-    'Supermarket',
-    'Retail'
-  ];
+  List<String> _availableStoreTypes = [];
   Map<String, dynamic> _typeConfigs = {};
 
   bool _isSaving = false;
@@ -49,10 +46,16 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
         _nameController.text = store.name ?? '';
         _addressController.text = store.address ?? '';
         _phoneController.text = store.phone ?? '';
-        _selectedStoreType = store.storeType ?? 'Restaurant';
-        if (_selectedStoreType != null &&
-            !_availableStoreTypes.contains(_selectedStoreType)) {
-          _availableStoreTypes.add(_selectedStoreType!);
+        final existingType = store.storeType as String?;
+        if (existingType != null && existingType.trim().isNotEmpty) {
+          _selectedStoreType = existingType.trim();
+          if (!_availableStoreTypes.contains(_selectedStoreType)) {
+            _availableStoreTypes.add(_selectedStoreType!);
+          }
+        } else {
+          _selectedStoreType = _availableStoreTypes.isNotEmpty
+              ? _availableStoreTypes.first
+              : null;
         }
         _dataLoaded = true;
         _lastStoreId = store.id;
@@ -63,21 +66,59 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
   @override
   void initState() {
     super.initState();
-    // Initial fetch of metadata
+    // Synchronous initial load from Hive if available
+    if (Hive.isBoxOpen('store_type_configs')) {
+      final box = Hive.box('store_type_configs');
+      final cachedTypes = box.get('types') as List?;
+      final cachedConfigs = box.get('configs') as Map?;
+      if (cachedConfigs != null && cachedConfigs.isNotEmpty) {
+        _typeConfigs = Map<String, dynamic>.from(cachedConfigs);
+      }
+      if (cachedTypes != null && cachedTypes.isNotEmpty) {
+        _availableStoreTypes = cachedTypes.map((e) => e.toString()).toList();
+      } else if (_typeConfigs.isNotEmpty) {
+        _availableStoreTypes = _typeConfigs.keys.toList();
+      }
+    }
+
+    // Initial fetch of metadata from repository & dashboard
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notifier = ref.read(storeNotifierProvider.notifier);
+      final dashboard = legacy_provider.Provider.of<legacy.DashboardProvider>(
+          context,
+          listen: false);
       notifier.fetchStoreTypes().then((types) {
         notifier.fetchStoreTypeConfigs().then((configs) {
           if (context.mounted) {
             setState(() {
-              if (types.isNotEmpty) {
-                _availableStoreTypes = types;
+              if (configs.isNotEmpty) {
+                _typeConfigs = configs;
+              } else if (dashboard.storeTypeConfigs.isNotEmpty) {
+                _typeConfigs = dashboard.storeTypeConfigs;
               }
-              _typeConfigs = configs;
+
+              List<String> resolvedTypes = [];
+              if (types.isNotEmpty) {
+                resolvedTypes = List<String>.from(types);
+              } else if (dashboard.storeTypes.isNotEmpty) {
+                resolvedTypes = List<String>.from(dashboard.storeTypes);
+              } else if (configs.isNotEmpty) {
+                resolvedTypes = configs.keys.toList();
+              } else if (_availableStoreTypes.isNotEmpty) {
+                resolvedTypes = List<String>.from(_availableStoreTypes);
+              }
+
+              if (resolvedTypes.isNotEmpty) {
+                _availableStoreTypes = resolvedTypes;
+              }
 
               if (_selectedStoreType != null &&
+                  _selectedStoreType!.isNotEmpty &&
                   !_availableStoreTypes.contains(_selectedStoreType)) {
                 _availableStoreTypes.add(_selectedStoreType!);
+              } else if (_selectedStoreType == null &&
+                  _availableStoreTypes.isNotEmpty) {
+                _selectedStoreType = _availableStoreTypes.first;
               }
             });
           }
@@ -170,10 +211,18 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
 
     _populateControllers(store);
 
-    final currentConfig = _selectedStoreType != null
-        ? (_typeConfigs[_selectedStoreType] as Map?)
-        : null;
-    final showKitchen = currentConfig?['enableKitchen'] ?? false;
+    final showKitchen = _selectedStoreType != null &&
+        StoreTypeConfig.isFeatureAllowed(
+          _selectedStoreType!,
+          'kds',
+          storeTypeConfigs: _typeConfigs,
+        );
+    final allowedFeatures = _selectedStoreType != null
+        ? StoreTypeConfig.getAllowedFeatures(
+            _selectedStoreType!,
+            storeTypeConfigs: _typeConfigs,
+          )
+        : <PeripheralFeatureMeta>[];
 
     final content = ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -240,6 +289,77 @@ class _StoreSettingsSectionState extends ConsumerState<StoreSettingsSection> {
                     return DropdownMenuItem(value: type, child: Text(type));
                   }).toList(),
                   onChanged: (val) => setState(() => _selectedStoreType = val),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                // Allowed features indicator card for the selected store type
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: AppRadius.borderMd,
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .dividerColor
+                          .withValues(alpha: 0.15),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.tune_rounded,
+                              size: 16,
+                              color: AppColors.adaptivePrimary(context)),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            AppLocalizations.t(context,
+                                'Included features for ${_selectedStoreType ?? 'this Store Type'}:'),
+                            style: AppTypography.labelSmall
+                                .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: [
+                          Chip(
+                            avatar: const Icon(Icons.check_circle_outline,
+                                size: 14, color: AppColors.primary),
+                            label: const Text('Core: POS, Inventory & Reports',
+                                style: TextStyle(fontSize: 11)),
+                            backgroundColor:
+                                AppColors.primary.withValues(alpha: 0.08),
+                            padding: EdgeInsets.zero,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          ...allowedFeatures.map((feat) => Chip(
+                                avatar: Icon(feat.icon,
+                                    size: 14, color: AppColors.success),
+                                label: Text(feat.label,
+                                    style: const TextStyle(fontSize: 11)),
+                                backgroundColor:
+                                    AppColors.success.withValues(alpha: 0.08),
+                                padding: EdgeInsets.zero,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              )),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        AppLocalizations.t(context,
+                            'Feature visibility in navigation and settings adapts automatically when you save.'),
+                        style: AppTypography.labelSmall.copyWith(
+                            color: AppColors.textSecondary(context),
+                            fontSize: 10),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
 

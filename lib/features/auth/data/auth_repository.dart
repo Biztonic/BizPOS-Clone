@@ -89,11 +89,12 @@ class AuthRepository {
     final user = credential.user;
     if (user != null) {
       final name = email.split('@')[0];
+      final isSuper = email.toLowerCase().trim() == 'pthorat600@gmail.com';
       await _firestore.collection('users').doc(user.uid).set({
         'uid': user.uid,
         'email': email,
-        'name': name,
-        'role': 'Store Owner',
+        'name': isSuper ? 'Super Admin' : name,
+        'role': isSuper ? 'Super Admin' : 'Store Owner',
         'phoneNumber': mobile,
         'createdAt': FieldValue.serverTimestamp(),
         'accessibleStoreIds': [],

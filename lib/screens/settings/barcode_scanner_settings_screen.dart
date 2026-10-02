@@ -12,7 +12,8 @@ import '../../core/design/components/atoms/app_text_field.dart';
 import '../../core/design/components/atoms/app_card.dart';
 
 class BarcodeScannerSettingsScreen extends StatefulWidget {
-  const BarcodeScannerSettingsScreen({super.key});
+  final bool isSubView;
+  const BarcodeScannerSettingsScreen({super.key, this.isSubView = false});
 
   @override
   State<BarcodeScannerSettingsScreen> createState() =>
@@ -39,13 +40,11 @@ class _BarcodeScannerSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return PosScaffold(
-      title: "Barcode Scanners",
-      showSidebar: false,
-      mainContent: ListView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        children: [
-          // --- Back Button ---
+    final content = ListView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      children: [
+        // --- Back Button ---
+        if (!widget.isSubView) ...[
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
@@ -55,6 +54,7 @@ class _BarcodeScannerSettingsScreenState
             ),
           ),
           const SizedBox(height: AppSpacing.md),
+        ],
 
           // --- Connected Scanners Section ---
           Text(AppLocalizations.t(context, 'Connected Scanners'),
@@ -304,7 +304,14 @@ class _BarcodeScannerSettingsScreenState
           ),
           const SizedBox(height: AppSpacing.xl),
         ],
-      ),
+      );
+
+    if (widget.isSubView) return content;
+
+    return PosScaffold(
+      title: "Barcode Scanners",
+      showSidebar: false,
+      mainContent: content,
     );
   }
 

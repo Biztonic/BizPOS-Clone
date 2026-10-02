@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:biztonic_pos/sync/entitlements/entitlement_model.dart';
 import 'package:biztonic_pos/sync/entitlements/entitlement_service.dart';
+import 'package:biztonic_pos/core/config/store_type_config.dart';
 import '../../auth/domain/entities/user_profile.dart';
 import '../../store/domain/entities/store.dart';
 import '../../auth/providers/profile_notifier.dart';
@@ -44,20 +45,15 @@ class PermissionsHelper {
       }
     }
 
-    if ([
-          'dashboard',
-          'pos',
-          'inventory',
-          'reports',
-          'sales',
-          'settings',
-          'biz_store'
-        ].contains(key) ||
-        key.startsWith('settings.') ||
-        key.startsWith('dashboard.') ||
-        key.startsWith('card.') ||
-        key.startsWith('feature.pos.')) {
+    // Core features are always allowed
+    if (StoreTypeConfig.isCoreFeature(key)) {
       return true;
+    }
+
+    // Peripheral features restricted by store type
+    if (activeStore != null &&
+        !StoreTypeConfig.isFeatureAllowed(activeStore!.storeType, key)) {
+      return false;
     }
 
     String internalAddonKey = key;
@@ -102,6 +98,11 @@ class PermissionsHelper {
   bool hasAddon(String key) {
     if (profile?.role == 'Super Admin') return true;
     if (activeStore == null) return false;
+
+    // Check store type feature configuration first
+    if (!StoreTypeConfig.isFeatureAllowed(activeStore!.storeType, key)) {
+      return false;
+    }
 
     String canonicalKey = key;
     if (key == 'crm' || key == 'customers') {

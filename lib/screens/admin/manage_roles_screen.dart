@@ -37,7 +37,12 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
 
   void _toggleSelectAll(List<RoleModel> roles) {
     final selectableRoles = roles
-        .where((r) => r.id != 'super_admin' && r.name != 'Store Owner')
+        .where((r) =>
+            !r.isSystem &&
+            !StoreProvider.isSystemRoleName(r.name) &&
+            r.id != 'super_admin' &&
+            r.id != 'store_owner' &&
+            r.id != 'franchise_owner')
         .map((r) => r.id)
         .toSet();
     setState(() {
@@ -55,7 +60,11 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
     final rolesToDelete = _selectedRoleIds.where((id) {
       final role = provider.roles.firstWhere((r) => r.id == id,
           orElse: () => RoleModel(id: '', name: '', permissions: {}));
-      return role.id != 'super_admin' && role.name != 'Store Owner';
+      return !role.isSystem &&
+          !StoreProvider.isSystemRoleName(role.name) &&
+          role.id != 'super_admin' &&
+          role.id != 'store_owner' &&
+          role.id != 'franchise_owner';
     }).toList();
 
     if (rolesToDelete.isEmpty) return;
@@ -164,8 +173,11 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
           ),
           actions: [
             if (isEditing &&
+                !role.isSystem &&
+                !StoreProvider.isSystemRoleName(role.name) &&
                 role.id != 'super_admin' &&
-                role.name != 'Store Owner')
+                role.id != 'store_owner' &&
+                role.id != 'franchise_owner')
               TextButton(
                 onPressed: () async {
                   final provider =
@@ -205,23 +217,32 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                 child: Text(AppLocalizations.t(context, 'Cancel'))),
             ElevatedButton(
               onPressed: () async {
-                if (nameController.text.trim().isEmpty) return;
+                final trimmedName = nameController.text.trim();
+                if (trimmedName.isEmpty) return;
+
+                final messenger = ScaffoldMessenger.of(context);
+                if (!isEditing && StoreProvider.isSystemRoleName(trimmedName)) {
+                  messenger.showSnackBar(const SnackBar(
+                      content: Text('Cannot create a custom role with a system role name.')));
+                  return;
+                }
 
                 final provider =
                     Provider.of<StoreProvider>(context, listen: false);
-                final messenger = ScaffoldMessenger.of(context);
                 try {
+                  final isSys = isEditing &&
+                      (role.isSystem || StoreProvider.isSystemRoleName(role.name));
                   final newRole = RoleModel(
                       id: isEditing ? role.id : '',
-                      name: nameController.text.trim(),
+                      name: trimmedName,
                       permissions: permissions,
-                      isSystem: isEditing ? role.isSystem : false);
+                      isSystem: isSys,
+                      description: isEditing ? role.description : '',
+                      storeAccessMode: isEditing ? role.storeAccessMode : 'single');
 
                   if (isEditing) {
-                    // Maintain existing permissions when editing if UI is removed
                     await provider.updateRole(newRole);
                   } else {
-                    // Default permissions for new roles
                     await provider.addRole(newRole);
                   }
                   if (ctx.mounted) Navigator.pop(ctx);
@@ -275,8 +296,12 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
       builder: (context, provider, child) {
         final roles = provider.roles;
         int total = roles.length;
-        int system = roles.where((r) => r.isSystem).length;
-        int custom = roles.where((r) => !r.isSystem).length;
+        int system = roles
+            .where((r) => r.isSystem || StoreProvider.isSystemRoleName(r.name))
+            .length;
+        int custom = roles
+            .where((r) => !r.isSystem && !StoreProvider.isSystemRoleName(r.name))
+            .length;
 
         return Row(
           children: [
@@ -387,12 +412,13 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
         final roles = provider.roles;
 
         List<RoleModel> displayedRoles = roles.where((r) {
+          final isSys = r.isSystem || StoreProvider.isSystemRoleName(r.name);
           bool matchesSearch = r.name
               .toLowerCase()
               .contains(_searchController.text.toLowerCase());
           bool matchesType = _filterType == 'All' ||
-              (_filterType == 'System' && r.isSystem) ||
-              (_filterType == 'Custom' && !r.isSystem);
+              (_filterType == 'System' && isSys) ||
+              (_filterType == 'Custom' && !isSys);
 
           return matchesSearch && matchesType;
         }).toList();
@@ -467,14 +493,20 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                       Checkbox(
                         value: displayedRoles
                                 .where((r) =>
+                                    !r.isSystem &&
+                                    !StoreProvider.isSystemRoleName(r.name) &&
                                     r.id != 'super_admin' &&
-                                    r.name != 'Store Owner')
+                                    r.id != 'store_owner' &&
+                                    r.id != 'franchise_owner')
                                 .every(
                                     (r) => _selectedRoleIds.contains(r.id)) &&
                             displayedRoles
                                 .where((r) =>
+                                    !r.isSystem &&
+                                    !StoreProvider.isSystemRoleName(r.name) &&
                                     r.id != 'super_admin' &&
-                                    r.name != 'Store Owner')
+                                    r.id != 'store_owner' &&
+                                    r.id != 'franchise_owner')
                                 .isNotEmpty,
                         onChanged: (val) => _toggleSelectAll(displayedRoles),
                       ),
@@ -529,7 +561,13 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
   Widget _buildRoleRow(
       BuildContext context, StoreProvider provider, RoleModel role) {
     bool isMobile = MediaQuery.of(context).size.width < 700;
-    bool canEdit = role.id != 'super_admin' && role.name != 'Store Owner';
+    final isSystem = role.isSystem || StoreProvider.isSystemRoleName(role.name);
+    bool canEdit =
+        role.id != 'super_admin' && role.name.toLowerCase() != 'super admin';
+    bool canDelete = !isSystem &&
+        role.id != 'super_admin' &&
+        role.id != 'store_owner' &&
+        role.id != 'franchise_owner';
 
     if (isMobile) {
       return ListTile(
@@ -537,12 +575,12 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
             horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
         leading: CircleAvatar(
           backgroundColor:
-              (role.isSystem ? AppColors.primary : AppColors.success)
+              (isSystem ? AppColors.primary : AppColors.success)
                   .withValues(alpha: 0.1),
           child: Icon(
-            role.isSystem ? Icons.lock : Icons.person_outline,
+            isSystem ? Icons.lock : Icons.person_outline,
             size: 20,
-            color: role.isSystem ? AppColors.primary : AppColors.success,
+            color: isSystem ? AppColors.primary : AppColors.success,
           ),
         ),
         title: Text(role.name,
@@ -565,7 +603,7 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                     size: 20, color: AppColors.primary),
                 onPressed: () => _showRoleDialog(role: role),
               ),
-            if (canEdit)
+            if (canDelete)
               IconButton(
                 icon: const Icon(Icons.delete_outline,
                     size: 20, color: AppColors.error),
@@ -583,7 +621,7 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
         children: [
           Checkbox(
             value: _selectedRoleIds.contains(role.id),
-            onChanged: canEdit ? (val) => _toggleSelection(role.id) : null,
+            onChanged: canDelete ? (val) => _toggleSelection(role.id) : null,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -595,14 +633,14 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                   height: 40,
                   decoration: BoxDecoration(
                     color:
-                        (role.isSystem ? AppColors.primary : AppColors.success)
+                        (isSystem ? AppColors.primary : AppColors.success)
                             .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.zero,
                   ),
                   child: Icon(
-                    role.isSystem ? Icons.lock : Icons.person_outline,
+                    isSystem ? Icons.lock : Icons.person_outline,
                     color:
-                        role.isSystem ? AppColors.primary : AppColors.success,
+                        isSystem ? AppColors.primary : AppColors.success,
                     size: 20,
                   ),
                 ),
@@ -634,15 +672,15 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 10, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
-                  color: (role.isSystem ? AppColors.primary : AppColors.success)
+                  color: (isSystem ? AppColors.primary : AppColors.success)
                       .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.zero,
                 ),
                 child: Text(
-                  role.isSystem ? 'SYSTEM' : 'CUSTOM',
+                  isSystem ? 'SYSTEM' : 'CUSTOM',
                   style: TextStyle(
                     color:
-                        role.isSystem ? AppColors.primary : AppColors.success,
+                        isSystem ? AppColors.primary : AppColors.success,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -660,7 +698,7 @@ class _ManageRolesScreenState extends State<ManageRolesScreen> {
                   onPressed: () => _showRoleDialog(role: role),
                   tooltip: "Edit Role",
                 ),
-              if (canEdit)
+              if (canDelete)
                 IconButton(
                   icon: const Icon(Icons.delete_outline,
                       size: 20, color: AppColors.error),

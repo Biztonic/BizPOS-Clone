@@ -107,4 +107,5 @@ windows/flutter/ephemeral/
 # Agent & Scratch Files
 superpowers-main/
 scratch/
+inspect_and_purge_cdp.mjs
 

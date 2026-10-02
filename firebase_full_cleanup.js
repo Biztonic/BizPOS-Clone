@@ -158,13 +158,31 @@ async function fullCleanup() {
         console.log('\n--- STEP 4: Users (keeping super admin) ---');
         totalDeleted += await deleteCollection(db, 'users', (doc) => {
             const data = doc.data();
-            const email = data?.email || '';
-            if (email === SUPER_ADMIN_EMAIL) {
-                console.log(`     🛡️  KEEPING super admin: ${email} (${doc.id})`);
+            const email = (data?.email || '').toLowerCase().trim();
+            if (email === SUPER_ADMIN_EMAIL.toLowerCase().trim() || data?.role === 'Super Admin') {
+                console.log(`     🛡️  KEEPING super admin: ${data?.email} (${doc.id})`);
                 return false; // Don't delete
             }
             return true; // Delete
         });
+
+        // 4b. Reset stale store links on Super Admin profile
+        console.log('\n--- STEP 4b: Resetting store references on Super Admin profile ---');
+        const saSnap = await db.collection('users').get();
+        for (const saDoc of saSnap.docs) {
+            const d = saDoc.data();
+            const email = (d?.email || '').toLowerCase().trim();
+            if (email === SUPER_ADMIN_EMAIL.toLowerCase().trim() || d?.role === 'Super Admin') {
+                await saDoc.ref.update({
+                    storeId: null,
+                    storeIds: [],
+                    accessibleStoreIds: [],
+                    franchiseId: null,
+                    franchiseCode: null,
+                });
+                console.log(`     ✅ Reset store links on Super Admin: ${email} (${saDoc.id})`);
+            }
+        }
         
         // 5. Clean roles (keep system roles)
         console.log('\n--- STEP 5: Custom roles ---');

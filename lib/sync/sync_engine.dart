@@ -812,6 +812,10 @@ class SyncService with ChangeNotifier {
     int? baseVersion,
     int? newVersion,
   }) async {
+    if (!_isInitialized) {
+      return operationId ?? 'op_${DateTime.now().millisecondsSinceEpoch}';
+    }
+
     final opId = await _outboundManager.queueOperation(
       collection: collection,
       docId: docId,
@@ -877,7 +881,7 @@ class SyncService with ChangeNotifier {
     }
 
     // 3. Web Direct Write (Bypass Queue for Reliability)
-    if (kIsWeb) {
+    if (kIsWeb && _isInitialized) {
       await _outboundManager.performWebDirectWrite(
         collection: collection,
         docId: docId,
@@ -1018,8 +1022,21 @@ class SyncService with ChangeNotifier {
         }
 
         // 3. Queue inventory movements AND updated inventory items for cloud sync
-        for (var movement in event.movements) {
-          if (movement is InventoryMovement) {
+        for (var rawMovement in event.movements) {
+          InventoryMovement? movement;
+          if (rawMovement is InventoryMovement) {
+            movement = rawMovement;
+          } else if (rawMovement is Map) {
+            try {
+              movement = InventoryMovement.fromMap(
+                Map<String, dynamic>.from(rawMovement),
+                rawMovement['id']?.toString() ?? '',
+              );
+            } catch (e) {
+              debugPrint('⚠️ SyncBridge: Failed to parse movement map: $e');
+            }
+          }
+          if (movement != null) {
             await queueOperation(
               collection: 'inventory_movements',
               docId: movement.id,
@@ -1031,8 +1048,16 @@ class SyncService with ChangeNotifier {
             );
             final updatedItem = await _repository
                 .getInventoryItem(movement.itemId, storeId: storeId);
+            Map<String, dynamic>? itemPayload;
             if (updatedItem != null) {
-              final itemPayload = updatedItem.toHiveMap();
+              itemPayload = updatedItem.toHiveMap();
+            } else if (Hive.isBoxOpen('cache_inventory')) {
+              final raw = Hive.box('cache_inventory').get(movement.itemId);
+              if (raw is Map) {
+                itemPayload = Map<String, dynamic>.from(raw);
+              }
+            }
+            if (itemPayload != null) {
               itemPayload['storeId'] = storeId;
               await queueOperation(
                 collection: 'inventory',

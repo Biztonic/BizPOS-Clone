@@ -30,7 +30,9 @@ import '../domain/policies/order_policy.dart';
 import '../domain/use_cases/calculate_tax.dart';
 
 import 'package:biztonic_pos/features/inventory/domain/entities/inventory_movement.dart';
+import 'package:biztonic_pos/features/inventory/domain/policies/inventory_policy.dart';
 import 'package:biztonic_pos/features/reporting/domain/entities/business_ledger.dart';
+import 'package:biztonic_pos/services/sync_service.dart';
 
 /// Parameters for the checkout orchestration.
 class CheckoutParams {
@@ -40,14 +42,16 @@ class CheckoutParams {
   final String idempotencyKey;
   final bool trackInventory;
   final double taxRate;
+  final NegativeStockPolicy negativeStockPolicy;
 
   const CheckoutParams({
     required this.order,
     required this.activeStoreId,
     required this.deviceId,
     required this.idempotencyKey,
-    this.trackInventory = false,
+    this.trackInventory = true,
     this.taxRate = 0.0,
+    this.negativeStockPolicy = NegativeStockPolicy.allowWithWarning,
   });
 }
 
@@ -85,6 +89,7 @@ class CheckoutOrchestrator {
   final Repository _repository = Repository();
   final TokenService _tokenService = TokenService();
   final CalculateTaxUseCase _calculateTax = CalculateTaxUseCase();
+  final SyncService _syncService = SyncService();
 
   CheckoutOrchestrator({
     required BillingRepository billingRepository,
@@ -212,16 +217,29 @@ class CheckoutOrchestrator {
       // ─── Step 5: Persist to Hive Cache ──────────────────────
       await _persistToCache(enrichedOrder);
 
-      // Decrement stock in-memory Hive cache
+      // Decrement stock in-memory Hive cache & sync to cloud
       if (movements.isNotEmpty) {
-        final invBox = Hive.box('cache_inventory');
+        final invBox = Hive.isBoxOpen('cache_inventory')
+            ? Hive.box('cache_inventory')
+            : await Hive.openBox('cache_inventory');
         for (var m in movements) {
           final raw = invBox.get(m.itemId);
           if (raw != null && raw is Map) {
             final itemData = Map<String, dynamic>.from(raw);
             final currentQty = (itemData['quantity'] as num?)?.toInt() ?? 0;
             itemData['quantity'] = currentQty + m.delta; // Keep true net stock
+            itemData['updatedAt'] = now.toIso8601String();
             await invBox.put(m.itemId, itemData);
+
+            // Authoritatively persist updated inventory item to cloud & local outbox
+            await _syncService.performLocalWrite(
+              collection: 'inventory',
+              docId: m.itemId,
+              data: itemData,
+              action: 'update',
+              localCacheBox: 'cache_inventory',
+              refreshCounts: true,
+            );
           }
         }
       }
@@ -248,6 +266,7 @@ class CheckoutOrchestrator {
           storeId: params.activeStoreId,
           yearMonth: '${now.year}-${now.month.toString().padLeft(2, '0')}',
           outboxOperations: [outboxOp],
+          negativeStockPolicy: params.negativeStockPolicy,
         );
       } else {
         // WEB: Standard Repository Write

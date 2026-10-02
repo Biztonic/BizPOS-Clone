@@ -199,6 +199,10 @@ class StoreRepository with StoreRepositoryMixin {
   // --- Global Store Types ---
   Future<List<String>> fetchStoreTypes() async {
     if (Hive.isBoxOpen('store_type_configs')) {
+      final types = Hive.box('store_type_configs').get('types') as List?;
+      if (types != null && types.isNotEmpty) {
+        return types.map((e) => e.toString()).toList();
+      }
       final configs = Hive.box('store_type_configs').get('configs') as Map?;
       if (configs != null && configs.isNotEmpty) {
         return configs.keys.map((e) => e.toString()).toList();
@@ -211,10 +215,14 @@ class StoreRepository with StoreRepositoryMixin {
           .get()
           .timeout(const Duration(seconds: 3));
       if (doc.exists && doc.data()?['store_types'] != null) {
-        return List<String>.from(doc.data()!['store_types']);
+        final types = List<String>.from(doc.data()!['store_types']);
+        if (Hive.isBoxOpen('store_type_configs')) {
+          Hive.box('store_type_configs').put('types', types);
+        }
+        return types;
       }
     } catch (_) {}
-    return ['Restaurant', 'Grocery', 'Supermarket', 'Retail'];
+    return [];
   }
 
   Future<Map<String, dynamic>> fetchStoreTypeConfigs() async {
@@ -244,6 +252,19 @@ class StoreRepository with StoreRepositoryMixin {
 
   Future<void> addStoreType(String type,
       {Map<String, dynamic>? initialConfig}) async {
+    if (Hive.isBoxOpen('store_type_configs')) {
+      final box = Hive.box('store_type_configs');
+      final currentTypes =
+          (box.get('types') as List?)?.map((e) => e.toString()).toList() ?? [];
+      if (!currentTypes.contains(type)) {
+        currentTypes.add(type);
+        box.put('types', currentTypes);
+      }
+      final currentConfigs =
+          Map<String, dynamic>.from((box.get('configs') as Map?) ?? {});
+      currentConfigs[type] = initialConfig ?? {};
+      box.put('configs', currentConfigs);
+    }
     await _db.collection('settings').doc('global').set({
       'store_types': FieldValue.arrayUnion([type]),
       'store_type_configs': {type: initialConfig ?? {}}
@@ -251,6 +272,18 @@ class StoreRepository with StoreRepositoryMixin {
   }
 
   Future<void> deleteStoreType(String type) async {
+    if (Hive.isBoxOpen('store_type_configs')) {
+      final box = Hive.box('store_type_configs');
+      final currentTypes =
+          (box.get('types') as List?)?.map((e) => e.toString()).toList() ?? [];
+      currentTypes.remove(type);
+      box.put('types', currentTypes);
+
+      final currentConfigs =
+          Map<String, dynamic>.from((box.get('configs') as Map?) ?? {});
+      currentConfigs.remove(type);
+      box.put('configs', currentConfigs);
+    }
     await _db.collection('settings').doc('global').update({
       'store_types': FieldValue.arrayRemove([type]),
       'store_type_configs.$type': FieldValue.delete()

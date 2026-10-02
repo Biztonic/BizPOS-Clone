@@ -1,5 +1,6 @@
 import '../core/design/tokens/app_colors.dart';
 // ignore_for_file: unused_field, deprecated_member_use_from_same_package, dead_code, curly_braces_in_flow_control_structures, unused_element, avoid_types_as_parameter_names, dead_null_aware_expression, body_might_complete_normally_catch_error, deprecated_member_use, unused_local_variable
+import 'package:biztonic_pos/core/config/store_type_config.dart';
 import 'package:biztonic_pos/models/role_model.dart';
 import 'package:biztonic_pos/models/franchise.dart';
 import 'package:biztonic_pos/core/theme/theme_provider.dart';
@@ -24,6 +25,7 @@ import 'package:biztonic_pos/models/inventory_item.dart';
 import 'package:biztonic_pos/models/order_model.dart';
 import 'package:biztonic_pos/models/counter_model.dart';
 import 'package:biztonic_pos/models/customer.dart';
+import 'package:biztonic_pos/models/customer_crm_models.dart';
 import 'package:biztonic_pos/models/settings.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:biztonic_pos/services/google_drive_service.dart';
@@ -667,10 +669,69 @@ class DashboardProvider with ChangeNotifier {
   }
 
   Future<List<OrderModel>> fetchCustomerOrders(String customerId) async {
+    final Map<String, OrderModel> orderMap = {};
+
+    // 1. Check in-memory OrderProvider
     if (_orderProvider != null) {
-      return await _repository.getOrdersByCustomer(_activeStoreId!, customerId);
+      final customer = _customers.where((c) => c.id == customerId).firstOrNull;
+      final inMem = _orderProvider!.orders.where((o) =>
+          o.customerRefId == customerId ||
+          o.customer?.id == customerId ||
+          (customer != null &&
+              customer.mobile != null &&
+              customer.mobile!.isNotEmpty &&
+              o.customerPhone == customer.mobile));
+      for (var o in inMem) {
+        orderMap[o.id] = o;
+      }
     }
-    return [];
+
+    // 2. Check Repository / SQLite if activeStoreId is present
+    if (_activeStoreId != null && _activeStoreId!.isNotEmpty) {
+      try {
+        final repoOrders =
+            await _repository.getOrdersByCustomer(_activeStoreId!, customerId);
+        for (var o in repoOrders) {
+          orderMap[o.id] = o;
+        }
+      } catch (e) {
+        debugPrint("fetchCustomerOrders repo check failed: $e");
+      }
+    }
+
+    // 3. Check Hive cache_orders on Web / Local
+    try {
+      if (Hive.isBoxOpen('cache_orders') || await Hive.boxExists('cache_orders')) {
+        final box = await Hive.openBox('cache_orders');
+        final customer = _customers.where((c) => c.id == customerId).firstOrNull;
+        for (var v in box.values) {
+          if (v is Map) {
+            final cId = (v['customerId'] ?? '').toString();
+            final phone = (v['customerPhone'] ?? '').toString();
+            if (cId == customerId ||
+                (customer != null &&
+                    customer.mobile != null &&
+                    customer.mobile!.isNotEmpty &&
+                    phone == customer.mobile)) {
+              final id = (v['id'] ?? '').toString();
+              if (id.isNotEmpty && !orderMap.containsKey(id)) {
+                try {
+                  final order =
+                      OrderModel.fromMap(Map<String, dynamic>.from(v), id);
+                  orderMap[id] = order;
+                } catch (_) {}
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("fetchCustomerOrders Hive check failed: $e");
+    }
+
+    final result = orderMap.values.toList();
+    result.sort((a, b) => b.date.compareTo(a.date));
+    return result;
   }
 
   // --- INVENTORY METHODS (LEGACY BRIDGE) ---
@@ -1013,6 +1074,22 @@ class DashboardProvider with ChangeNotifier {
         debugPrint('⚠️ DashboardProvider._updateLocalStoreState: $e');
       }
     }
+    final hasFranchise = addons.any((a) {
+      final c = EntitlementService.canonicalizeAddonKey(a);
+      return c == 'franchise_management' ||
+          c == 'franchise' ||
+          c == 'addon_franchise';
+    }) && effectivePurchased.any((a) {
+      final c = EntitlementService.canonicalizeAddonKey(a);
+      return c == 'franchise_management' ||
+          c == 'franchise' ||
+          c == 'addon_franchise';
+    });
+    if (hasFranchise &&
+        (_activeRole == 'Store Owner' ||
+            _userProfile?.role == 'Store Owner')) {
+      await autoPromoteToFranchiseOwner();
+    }
     notifyListeners();
   }
 
@@ -1093,9 +1170,115 @@ class DashboardProvider with ChangeNotifier {
       }
     }
     try {
-      await _db.collection('users').doc(uid).update({'role': role});
+      final Map<String, dynamic> updateData = {'role': role};
+      if (role == 'Franchise Owner') {
+        final userDoc = await _db.collection('users').doc(uid).get();
+        final userData = userDoc.data() ?? {};
+        String franchiseCode = (userData['franchiseCode'] ?? '').toString();
+        if (franchiseCode.isEmpty) {
+          franchiseCode = (Random().nextInt(900000) + 100000).toString();
+        }
+        updateData['franchiseCode'] = franchiseCode;
+        updateData['franchiseId'] = uid;
+
+        final userName = (userData['name'] ?? '').toString();
+        final userEmail = (userData['email'] ?? '').toString();
+        await _db.collection('franchises').doc(uid).set({
+          'id': uid,
+          'name': userName.isNotEmpty ? "$userName Franchise" : "Franchise",
+          'ownerEmail': userEmail,
+          'code': franchiseCode,
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+      await _db
+          .collection('users')
+          .doc(uid)
+          .set(updateData, SetOptions(merge: true));
     } catch (_) {}
+
+    if (_userProfile != null && _userProfile!.uid == uid) {
+      _userProfile = _userProfile!.copyWith(role: role);
+      _activeRole = role;
+      OfflineService().cacheUserProfile(_userProfile!.toMap(), uid: uid);
+    }
     notifyListeners();
+  }
+
+  /// Automatically promotes a Store Owner to Franchise Owner upon purchasing/activating the Franchise Add-on.
+  Future<void> autoPromoteToFranchiseOwner({String? uid}) async {
+    final targetUid = uid ?? _userProfile?.uid ?? _auth?.currentUser?.uid;
+    if (targetUid == null || targetUid.isEmpty) return;
+
+    try {
+      final userDoc = await _db.collection('users').doc(targetUid).get();
+      final userData = userDoc.data() ?? {};
+      final currentRole = userData['role'] ?? _userProfile?.role ?? '';
+
+      // Do not demote Super Admin
+      if (currentRole == 'Super Admin' || _activeRole == 'Super Admin') return;
+
+      String franchiseCode =
+          (userData['franchiseCode'] ?? _userProfile?.franchiseCode ?? '')
+              .toString();
+      if (franchiseCode.isEmpty) {
+        franchiseCode = (Random().nextInt(900000) + 100000).toString();
+      }
+      final franchiseId = targetUid;
+      final ownerName =
+          (userData['name'] ?? _userProfile?.name ?? '').toString();
+      final ownerEmail =
+          (userData['email'] ?? _userProfile?.email ?? '').toString();
+
+      // Update Firestore user document
+      await _db.collection('users').doc(targetUid).set({
+        'role': 'Franchise Owner',
+        'franchiseId': franchiseId,
+        'franchiseCode': franchiseCode,
+      }, SetOptions(merge: true));
+
+      // Ensure franchise document exists in 'franchises' collection
+      await _db.collection('franchises').doc(targetUid).set({
+        'id': targetUid,
+        'name': ownerName.isNotEmpty ? "$ownerName Franchise" : "Franchise",
+        'ownerEmail': ownerEmail,
+        'code': franchiseCode,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // Update store membership docs for all stores owned by user
+      for (final s in _stores) {
+        try {
+          await _db
+              .collection('stores')
+              .doc(s.id)
+              .collection('members')
+              .doc(targetUid)
+              .set({
+            'role': 'Franchise Owner',
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        } catch (_) {}
+      }
+
+      // If this matches current active user, update local session and cache
+      if (_userProfile != null && _userProfile!.uid == targetUid) {
+        _userProfile = _userProfile!.copyWith(
+          role: 'Franchise Owner',
+          franchiseId: franchiseId,
+          franchiseCode: franchiseCode,
+        );
+        _activeRole = 'Franchise Owner';
+        await OfflineService()
+            .cacheUserProfile(_userProfile!.toMap(), uid: targetUid);
+        notifyListeners();
+      }
+
+      debugPrint(
+          '👑 DashboardProvider: User $targetUid auto-promoted to Franchise Owner (code: $franchiseCode)');
+    } catch (e) {
+      debugPrint('⚠️ DashboardProvider: Error during auto-promotion: $e');
+    }
   }
 
   Future<void> updateUserStores(String uid, List<String> storeIds) async {
@@ -1181,6 +1364,14 @@ class DashboardProvider with ChangeNotifier {
       String? phone,
       String? franchiseCode,
       String storeType = 'Restaurant'}) async {
+    // 1. Permission check: Store Owner cannot add > 1 store; Franchise Owner needs Franchise Add-on
+    if (!canCreateAdditionalStore) {
+      final reason = storeCreationRestrictionReason ??
+          'Store Owners cannot add more than one store under their account. Multi-store management requires the Franchise Owner role and Franchise Add-on.';
+      debugPrint('⛔ DashboardProvider.addStore BLOCKED: $reason');
+      throw Exception(reason);
+    }
+
     if (_storeProvider != null) {
       final newStoreId = await _storeProvider!.addStore(name, owner,
           address: address,
@@ -1199,11 +1390,12 @@ class DashboardProvider with ChangeNotifier {
           ...(_userProfile!.accessibleStoreIds ?? []),
           newStoreId,
         }.toList();
+        final currentRole = _userProfile!.role;
+        final nextRole = (currentRole.isEmpty || currentRole == 'Unauthorized')
+            ? 'Store Owner'
+            : currentRole;
         _userProfile = _userProfile!.copyWith(
-          role: (_userProfile!.role.isEmpty ||
-                  _userProfile!.role == 'Unauthorized')
-              ? 'Store Owner'
-              : _userProfile!.role,
+          role: nextRole,
           storeId: newStoreId,
           accessibleStoreIds: updatedStoreIds,
         );
@@ -1266,6 +1458,12 @@ class DashboardProvider with ChangeNotifier {
       return false;
     }
 
+    if (!isStoreTypeFeatureAllowed(store.storeType, key)) {
+      debugPrint(
+          '🔒 hasAddon($key): BLOCKED by store type (${store.storeType}) configuration');
+      return false;
+    }
+
     final planTier = PlanTier.fromString(store.subscriptionPlan);
 
     if (_userProfile != null &&
@@ -1306,10 +1504,105 @@ class DashboardProvider with ChangeNotifier {
     return false;
   }
 
+  /// Whether the user has the Franchise Add-on purchased and active across any of their stores.
+  bool get hasFranchiseAddon {
+    if (isSuperAdmin) return true;
+    if (hasAddon('franchise_management') || hasAddon('franchise')) return true;
+    for (final s in _stores) {
+      final storeAddons =
+          s.addons.map(EntitlementService.canonicalizeAddonKey).toSet();
+      final storePurchased =
+          s.purchasedAddons.map(EntitlementService.canonicalizeAddonKey).toSet();
+      if ((storeAddons.contains('franchise_management') &&
+              storePurchased.contains('franchise_management')) ||
+          EntitlementService.instance
+              .hasAddon('franchise_management', storeId: s.id)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Whether the current user is eligible for multi-store management.
+  /// 
+  /// Rules:
+  /// - Super Admin is always eligible.
+  /// - Franchise Owner is eligible ONLY IF they have purchased the Franchise Add-on.
+  /// - Store Owner is strictly single-store and NEVER eligible for multi-store.
+  /// - All other roles (Cashier, Staff, Admin) are not eligible.
+  bool get isMultiStoreEligible {
+    if (isSuperAdmin) return true;
+    if (activeRole == 'Franchise Owner') {
+      return hasFranchiseAddon;
+    }
+    return false;
+  }
+
+  /// Whether the current user can create an additional store.
+  ///
+  /// Rules:
+  /// - Super Admin can always create stores.
+  /// - Initial onboarding (0 stores) is allowed for business owners setting up.
+  /// - Store Owner can NEVER create more than 1 store (strictly single-store).
+  /// - Franchise Owner can create additional stores ONLY with the Franchise Add-on.
+  bool get canCreateAdditionalStore {
+    if (isSuperAdmin) return true;
+    if (stores.isEmpty) return true; // Initial first store allowed
+    if (activeRole == 'Store Owner') {
+      return false; // Single store only
+    }
+    if (activeRole == 'Franchise Owner') {
+      return hasFranchiseAddon;
+    }
+    return false;
+  }
+
+  /// Detailed human-readable explanation when store creation is restricted.
+  String? get storeCreationRestrictionReason {
+    if (canCreateAdditionalStore) return null;
+    if (activeRole == 'Store Owner') {
+      return 'Store Owners cannot add more than one store under their account. Multi-store management is available exclusively for Franchise Owners with the Franchise Add-on.';
+    }
+    if (activeRole == 'Franchise Owner') {
+      return 'Multi-store feature requires the Franchise Add-on. Please purchase the Franchise Add-on from BizStore to add more stores under your franchise.';
+    }
+    return 'You do not have permission to add additional stores.';
+  }
+
+  @visibleForTesting
+  void setStoresForTesting(List<Store> stores) {
+    _stores = stores;
+    if (_stores.isNotEmpty && _activeStoreId == null) {
+      _activeStoreId = _stores.first.id;
+    }
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void setUserProfileForTesting(UserProfile? profile) {
+    _userProfile = profile;
+    if (profile != null) {
+      _activeRole = profile.role;
+    }
+    notifyListeners();
+  }
+
   Future<void> updateStoreAddons(List<String> newAddons) async {
     if (activeStore == null) return;
+    final bool hasFranchise = newAddons.any((a) {
+      final c = EntitlementService.canonicalizeAddonKey(a);
+      return c == 'franchise_management' ||
+          c == 'franchise' ||
+          c == 'addon_franchise';
+    });
+
     if (_storeProvider != null) {
       await _storeProvider!.updateStoreAddons(activeStore!.id, newAddons);
+      if (hasFranchise &&
+          (_activeRole == 'Store Owner' ||
+              _userProfile?.role == 'Store Owner')) {
+        await autoPromoteToFranchiseOwner();
+      }
       notifyListeners();
       return;
     }
@@ -1328,6 +1621,11 @@ class DashboardProvider with ChangeNotifier {
         'addons': newAddons,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      if (hasFranchise &&
+          (_activeRole == 'Store Owner' ||
+              _userProfile?.role == 'Store Owner')) {
+        await autoPromoteToFranchiseOwner();
+      }
     } catch (e) {
       // Don't notify on error — state hasn't changed
       rethrow;
@@ -1563,6 +1861,24 @@ class DashboardProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> resetAll() async {
+    _activeStoreId = null;
+    _subscriptionHistoryLoaded = false;
+    _subscriptionHistory = [];
+    _userProfile = null;
+    _originalProfile = null;
+    _stores = [];
+    _hasCheckedStores = false;
+    _isInitialized = true;
+    _activeRole = 'Unauthorized';
+    if (_storeProvider != null) {
+      _storeProvider!.clearStores();
+    }
+    _superAdmins.clear();
+    notifyListeners();
+    _routerNotifier?.notify();
+  }
+
   bool isFeatureEnabled(String key) {
     if (isSuperAdmin) return true;
 
@@ -1598,21 +1914,16 @@ class DashboardProvider with ChangeNotifier {
       }
     }
 
-    // Core features and core sub-sections that are always permitted for active/usable stores
-    if ([
-          'dashboard',
-          'pos',
-          'inventory',
-          'reports',
-          'sales',
-          'settings',
-          'biz_store'
-        ].contains(key) ||
-        key.startsWith('settings.') ||
-        key.startsWith('dashboard.') ||
-        key.startsWith('card.') ||
-        key.startsWith('feature.pos.')) {
+    // Core features that are always permitted for active/usable stores
+    if (StoreTypeConfig.isCoreFeature(key)) {
       return true;
+    }
+
+    // Peripheral features gated by store type configuration
+    if (store != null && !isStoreTypeFeatureAllowed(store.storeType, key)) {
+      debugPrint(
+          '⛔ isFeatureEnabled($key): BLOCKED by store type (${store.storeType})');
+      return false;
     }
 
     String internalAddonKey = key;
@@ -2155,8 +2466,12 @@ class DashboardProvider with ChangeNotifier {
     final expiry = now.add(Duration(days: request.durationInDays));
 
     // Find if franchise addon is being approved
-    final bool hasFranchiseAddon =
-        request.selectedAddons.contains('franchise_management');
+    final bool hasFranchiseAddon = request.selectedAddons.any((a) {
+      final c = EntitlementService.canonicalizeAddonKey(a);
+      return c == 'franchise_management' ||
+          c == 'franchise' ||
+          c == 'addon_franchise';
+    });
     DocumentReference? userRefToUpdate;
 
     if (hasFranchiseAddon) {
@@ -2353,17 +2668,14 @@ class DashboardProvider with ChangeNotifier {
       addedAddons: request.selectedAddons,
     );
 
-    // Update local user role state if matching current user
-    final matchesUid =
-        request.userId.isNotEmpty && _userProfile?.uid == request.userId;
-    final matchesEmail = request.ownerEmail.isNotEmpty &&
-        _userProfile?.email.toLowerCase() == request.ownerEmail.toLowerCase();
-    if (hasFranchiseAddon &&
-        _userProfile != null &&
-        (matchesUid || matchesEmail)) {
-      _userProfile = _userProfile!.copyWith(role: 'Franchise Owner');
-      _activeRole = 'Franchise Owner';
-      notifyListeners();
+    // Automatically promote target user to Franchise Owner if franchise addon approved
+    if (hasFranchiseAddon) {
+      final targetUid = request.userId.isNotEmpty
+          ? request.userId
+          : (userRefToUpdate?.id ?? '');
+      if (targetUid.isNotEmpty) {
+        await autoPromoteToFranchiseOwner(uid: targetUid);
+      }
     }
 
     await fetchSubscriptionHistory();
@@ -2576,6 +2888,10 @@ class DashboardProvider with ChangeNotifier {
           .doc(updatedStore.id)
           .update(updatedStore.toMap());
     }
+    final idx = _stores.indexWhere((s) => s.id == updatedStore.id);
+    if (idx != -1) {
+      _stores[idx] = updatedStore;
+    }
     notifyListeners();
   }
 
@@ -2647,11 +2963,65 @@ class DashboardProvider with ChangeNotifier {
   }
 
   Future<void> updateCustomerLoyalty(String id, num points) async {
-    await _db
-        .collection('customers')
-        .doc(id)
-        .update({'loyaltyPoints': FieldValue.increment(points)});
+    if (_customerProvider != null) {
+      await _customerProvider!.updateCustomerLoyalty(id, points.toInt());
+    } else {
+      await _db
+          .collection('customers')
+          .doc(id)
+          .update({'loyaltyPoints': FieldValue.increment(points)});
+    }
     notifyListeners();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // CRM BRIDGES (UDHARI, COUPONS, GIFTS, LOYALTY)
+  // ─────────────────────────────────────────────────────────────
+
+  Future<void> addUdhariTransaction(UdhariTransaction tx) async {
+    await _customerProvider?.addUdhariTransaction(tx);
+    notifyListeners();
+  }
+
+  Future<List<UdhariTransaction>> getUdhariTransactions(String customerId) async {
+    return await _customerProvider?.getUdhariTransactions(customerId) ?? [];
+  }
+
+  Future<void> addCustomerCoupon(CustomerCoupon coupon) async {
+    await _customerProvider?.addCustomerCoupon(coupon);
+    notifyListeners();
+  }
+
+  Future<List<CustomerCoupon>> getCustomerCoupons(String customerId) async {
+    return await _customerProvider?.getCustomerCoupons(customerId) ?? [];
+  }
+
+  Future<void> redeemCustomerCoupon(String customerId, String couponId) async {
+    await _customerProvider?.redeemCustomerCoupon(customerId, couponId);
+    notifyListeners();
+  }
+
+  Future<void> addCustomerGift(CustomerGift gift) async {
+    await _customerProvider?.addCustomerGift(gift);
+    notifyListeners();
+  }
+
+  Future<List<CustomerGift>> getCustomerGifts(String customerId) async {
+    return await _customerProvider?.getCustomerGifts(customerId) ?? [];
+  }
+
+  Future<void> redeemCustomerGift(String customerId, String giftId) async {
+    await _customerProvider?.redeemCustomerGift(customerId, giftId);
+    notifyListeners();
+  }
+
+  Future<void> addLoyaltyTransaction(LoyaltyTransaction tx) async {
+    await _customerProvider?.addLoyaltyTransaction(tx);
+    notifyListeners();
+  }
+
+  Future<List<LoyaltyTransaction>> getLoyaltyHistory(String customerId) async {
+    return await _customerProvider?.getLoyaltyHistory(customerId) ?? [];
   }
 
   Timer? _backupTimer;
@@ -2891,12 +3261,7 @@ class DashboardProvider with ChangeNotifier {
 
   List<RoleModel> get roles =>
       _storeProvider != null ? _storeProvider!.roles : _roles;
-  List<RoleModel> _roles = [
-    RoleModel(id: 'admin', name: 'Admin', permissions: {}, isSystem: true),
-    RoleModel(id: 'manager', name: 'Manager', permissions: {}, isSystem: true),
-    RoleModel(id: 'cashier', name: 'Cashier', permissions: {}, isSystem: true),
-    RoleModel(id: 'waiter', name: 'Waiter', permissions: {}, isSystem: true),
-  ];
+  List<RoleModel> _roles = List.from(StoreProvider.defaultSystemRoles);
 
   final List<Franchise> _franchises = [];
   List<Franchise> get franchises => _franchises;
@@ -3099,8 +3464,21 @@ class DashboardProvider with ChangeNotifier {
   void reportDemoTarget(String step, Rect rect, String instruction) {}
 
   // --- STORE TYPE CONFIGS ---
+  List<String> _storeTypes = [];
+  List<String> get storeTypes => List.unmodifiable(_storeTypes);
+
   Map<String, dynamic> _storeTypeConfigs = {};
   Map<String, dynamic> get storeTypeConfigs => _storeTypeConfigs;
+
+  /// Checks if a feature key is allowed for a given store type according to Superadmin configuration.
+  bool isStoreTypeFeatureAllowed(String? storeType, String key) {
+    if (isSuperAdmin) return true;
+    return StoreTypeConfig.isFeatureAllowed(
+      storeType,
+      key,
+      storeTypeConfigs: _storeTypeConfigs,
+    );
+  }
 
   void _listenToGlobalSettings() {
     try {
@@ -3111,6 +3489,12 @@ class DashboardProvider with ChangeNotifier {
         if (cached is Map) {
           _storeTypeConfigs = Map<String, dynamic>.from(cached);
         }
+        final cachedTypes = box.get('types', defaultValue: []);
+        if (cachedTypes is List && cachedTypes.isNotEmpty) {
+          _storeTypes = List<String>.from(cachedTypes);
+        } else if (_storeTypeConfigs.isNotEmpty) {
+          _storeTypes = _storeTypeConfigs.keys.toList();
+        }
       }
 
       final globalSub =
@@ -3118,14 +3502,34 @@ class DashboardProvider with ChangeNotifier {
         if (_isDisposed) return;
         if (snap.exists) {
           final data = snap.data();
-          if (data != null && data['store_type_configs'] is Map) {
-            final configs =
-                Map<String, dynamic>.from(data['store_type_configs'] as Map);
-            _storeTypeConfigs = configs;
-            if (Hive.isBoxOpen('store_type_configs')) {
-              Hive.box('store_type_configs').put('configs', configs);
+          if (data != null) {
+            bool hasChanged = false;
+            if (data['store_type_configs'] is Map) {
+              final configs =
+                  Map<String, dynamic>.from(data['store_type_configs'] as Map);
+              _storeTypeConfigs = configs;
+              if (Hive.isBoxOpen('store_type_configs')) {
+                Hive.box('store_type_configs').put('configs', configs);
+              }
+              hasChanged = true;
             }
-            notifyListeners();
+            if (data['store_types'] is List) {
+              final types = List<String>.from(data['store_types'] as List);
+              _storeTypes = types;
+              if (Hive.isBoxOpen('store_type_configs')) {
+                Hive.box('store_type_configs').put('types', types);
+              }
+              hasChanged = true;
+            } else if (_storeTypeConfigs.isNotEmpty && _storeTypes.isEmpty) {
+              _storeTypes = _storeTypeConfigs.keys.toList();
+              if (Hive.isBoxOpen('store_type_configs')) {
+                Hive.box('store_type_configs').put('types', _storeTypes);
+              }
+              hasChanged = true;
+            }
+            if (hasChanged) {
+              notifyListeners();
+            }
           }
         }
       }, onError: (e) {
@@ -3141,14 +3545,19 @@ class DashboardProvider with ChangeNotifier {
   Future<void> saveStoreTypeConfig(
       String type, Map<String, dynamic> config) async {
     try {
-      _storeTypeConfigs[type] = config;
+      final sanitized = StoreTypeConfig.sanitizeConfig(config);
+      _storeTypeConfigs[type] = sanitized;
+      if (!_storeTypes.contains(type)) {
+        _storeTypes.add(type);
+      }
       if (Hive.isBoxOpen('store_type_configs')) {
         await Hive.box('store_type_configs').put('configs', _storeTypeConfigs);
+        await Hive.box('store_type_configs').put('types', _storeTypes);
       }
 
       await _db.collection('settings').doc('global').set({
         'store_types': FieldValue.arrayUnion([type]),
-        'store_type_configs': {type: config}
+        'store_type_configs': {type: sanitized}
       }, SetOptions(merge: true));
       notifyListeners();
     } catch (e) {
@@ -3159,8 +3568,10 @@ class DashboardProvider with ChangeNotifier {
   Future<void> deleteStoreTypeConfig(String type) async {
     try {
       _storeTypeConfigs.remove(type);
+      _storeTypes.remove(type);
       if (Hive.isBoxOpen('store_type_configs')) {
         await Hive.box('store_type_configs').put('configs', _storeTypeConfigs);
+        await Hive.box('store_type_configs').put('types', _storeTypes);
       }
 
       await _db.collection('settings').doc('global').update({
@@ -3190,7 +3601,21 @@ class DashboardProvider with ChangeNotifier {
   void _listenToCentralCatalog() {}
   void _listenToCounters() {}
   void _listenToAuthChanges() {}
-  void _loadGlobalSettingsFromCache() {}
+  void _loadGlobalSettingsFromCache() {
+    if (Hive.isBoxOpen('store_type_configs')) {
+      final box = Hive.box('store_type_configs');
+      final cached = box.get('configs', defaultValue: {});
+      if (cached is Map) {
+        _storeTypeConfigs = Map<String, dynamic>.from(cached);
+      }
+      final cachedTypes = box.get('types', defaultValue: []);
+      if (cachedTypes is List && cachedTypes.isNotEmpty) {
+        _storeTypes = List<String>.from(cachedTypes);
+      } else if (_storeTypeConfigs.isNotEmpty) {
+        _storeTypes = _storeTypeConfigs.keys.toList();
+      }
+    }
+  }
   void _loadConsumableDurationFromCache() {}
   void loadLayout() {}
   void _loadAdminConfig() {
@@ -3316,20 +3741,25 @@ class DashboardProvider with ChangeNotifier {
         } else if (_auth?.currentUser != null &&
             _auth!.currentUser!.uid == uid) {
           debugPrint(
-              '⚠️ DashboardProvider: User document NOT FOUND in Firestore for $uid. Creating default Store Owner profile.');
+              '⚠️ DashboardProvider: User document NOT FOUND in Firestore for $uid. Creating profile.');
           final currentUser = _auth!.currentUser!;
           final email = currentUser.email ?? '';
+          final bool isInitialSuperAdmin =
+              email.toLowerCase().trim() == 'pthorat600@gmail.com';
           final name = currentUser.displayName ??
-              (email.isNotEmpty ? email.split('@').first : 'Store Owner');
+              (isInitialSuperAdmin
+                  ? 'Super Admin'
+                  : (email.isNotEmpty ? email.split('@').first : 'Store Owner'));
+          final defaultRole = isInitialSuperAdmin ? 'Super Admin' : 'Store Owner';
           userData = {
             'uid': uid,
             'email': email,
             'name': name,
-            'role': 'Store Owner',
+            'role': defaultRole,
             'accessibleStoreIds': <String>[],
           };
           _userProfile = UserProfile.fromMap(userData, uid);
-          _activeRole = 'Store Owner';
+          _activeRole = defaultRole;
           try {
             await _db.collection('users').doc(uid).set({
               ...userData,
@@ -3339,7 +3769,12 @@ class DashboardProvider with ChangeNotifier {
           } catch (_) {}
         } else {
           debugPrint(
-              '⚠️ DashboardProvider: User document NOT FOUND in Firestore for $uid.');
+              '⚠️ DashboardProvider: User document NOT FOUND in Firestore for $uid. Resetting stale cached profile.');
+          _userProfile = null;
+          _activeRole = 'Unauthorized';
+          _activeStoreId = null;
+          _stores = [];
+          await OfflineService().unpinStore(uid: uid);
         }
       } catch (e) {
         debugPrint('❌ DashboardProvider: GET USER DOC FAILED for $uid: $e');
@@ -4174,6 +4609,10 @@ class DashboardProvider with ChangeNotifier {
     required String email,
     required String password,
   }) async {
+    if (!isMultiStoreEligible) {
+      throw Exception(
+          "To link multiple stores under your franchise, please purchase the Franchise Add-on from BizStore.");
+    }
     final uid = _userProfile?.uid;
     if (uid == null) {
       throw Exception("User not authenticated.");

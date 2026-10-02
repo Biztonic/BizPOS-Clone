@@ -28,6 +28,7 @@ class Store {
   final ReceiptSettings receipt;
   final PaymentSettings payment;
   final KdsSettings kds;
+  final CustomerAddonSettings customerSettings;
   final List<String> customRoles;
   final Map<String, Map<String, bool>> rolePermissions;
 
@@ -59,6 +60,7 @@ class Store {
     required this.receipt,
     required this.payment,
     required this.kds,
+    this.customerSettings = const CustomerAddonSettings(),
     this.customRoles = const [
       'Cashier',
       'Manager',
@@ -102,6 +104,8 @@ class Store {
       receipt: ReceiptSettings.fromMap(data['receipt'] ?? {}),
       payment: PaymentSettings.fromMap(data['payment'] ?? {}),
       kds: KdsSettings.fromMap(data['kds'] ?? {}),
+      customerSettings:
+          CustomerAddonSettings.fromMap(data['customerSettings'] ?? {}),
       customRoles: (data['customRoles'] as List<dynamic>?)
               ?.map((e) => e?.toString() ?? '')
               .toList() ??
@@ -168,6 +172,7 @@ class Store {
       'receipt': receipt.toMap(),
       'payment': payment.toMap(),
       'kds': kds.toMap(),
+      'customerSettings': customerSettings.toMap(),
       'customRoles': customRoles,
       'rolePermissions': rolePermissions.map((k, v) => MapEntry(k, v)),
       'autoActivateSubscription': autoActivateSubscription,
@@ -198,6 +203,7 @@ class Store {
     ReceiptSettings? receipt,
     PaymentSettings? payment,
     KdsSettings? kds,
+    CustomerAddonSettings? customerSettings,
     List<String>? customRoles,
     Map<String, Map<String, bool>>? rolePermissions,
     bool? autoActivateSubscription,
@@ -227,6 +233,7 @@ class Store {
       receipt: receipt ?? this.receipt,
       payment: payment ?? this.payment,
       kds: kds ?? this.kds,
+      customerSettings: customerSettings ?? this.customerSettings,
       customRoles: customRoles ?? this.customRoles,
       rolePermissions: rolePermissions ?? this.rolePermissions,
       autoActivateSubscription:

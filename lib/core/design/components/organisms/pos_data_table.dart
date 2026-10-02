@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:biztonic_pos/core/design/density/app_density.dart';
@@ -43,6 +44,8 @@ class PosDataTable extends StatefulWidget {
   final int? sortColumnIndex;
   final bool sortAscending;
   final Function(int columnIndex, bool ascending)? onSort;
+  final double? rowHeight;
+  final double? headerHeight;
 
   // Pagination
   final int? currentPage;
@@ -58,6 +61,8 @@ class PosDataTable extends StatefulWidget {
     this.sortColumnIndex,
     this.sortAscending = true,
     this.onSort,
+    this.rowHeight,
+    this.headerHeight,
     this.currentPage,
     this.totalPages,
     this.onNextPage,
@@ -107,7 +112,7 @@ class _PosDataTableState extends State<PosDataTable> {
 
   void _scrollToFocusedRow() {
     final densityConfig = AppDensityProvider.configOf(context);
-    final rowHeight = densityConfig.rowHeight;
+    final rowHeight = widget.rowHeight ?? (densityConfig.rowHeight < 56.0 ? 56.0 : densityConfig.rowHeight);
     final offset = _focusedRowIndex * rowHeight;
 
     // Simplistic scroll alignment
@@ -129,75 +134,90 @@ class _PosDataTableState extends State<PosDataTable> {
   Widget build(BuildContext context) {
     final densityConfig = AppDensityProvider.configOf(context);
     final theme = Theme.of(context);
+    final totalFixedWidth = widget.columns.fold<double>(
+        0.0, (sum, col) => sum + (col.fixedWidth ?? 150.0));
 
     return KeyboardListener(
       focusNode: _focusNode,
       onKeyEvent: _handleKeyEvent,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Sticky Header
-          Container(
-            height: densityConfig.rowHeight,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              border: Border(
-                  bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
-            ),
-            child: Scrollbar(
-              controller: _horizontalController,
-              child: SingleChildScrollView(
-                controller: _horizontalController,
-                scrollDirection: Axis.horizontal,
-                physics:
-                    const ClampingScrollPhysics(), // Prevent bounce on header
-                child: Row(
-                  children: List.generate(widget.columns.length, (index) {
-                    final col = widget.columns[index];
-                    return _buildHeaderCell(col, index, densityConfig, theme);
-                  }),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double tableWidth =
+              math.max(constraints.maxWidth, totalFixedWidth);
+          final bool hasBoundedHeight = constraints.hasBoundedHeight;
+
+          Widget tableContent = SizedBox(
+            width: tableWidth,
+            height: hasBoundedHeight ? constraints.maxHeight : null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Sticky Header
+                Container(
+                  height: widget.headerHeight ?? densityConfig.rowHeight,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    border: Border(
+                        bottom: BorderSide(
+                            color: theme.colorScheme.outlineVariant)),
+                  ),
+                  child: Row(
+                    children: List.generate(widget.columns.length, (index) {
+                      final col = widget.columns[index];
+                      return _buildHeaderCell(col, index, densityConfig, theme);
+                    }),
+                  ),
                 ),
-              ),
+
+                // Body
+                hasBoundedHeight
+                    ? Expanded(child: _buildBody(densityConfig, theme))
+                    : _buildBody(densityConfig, theme),
+
+                // Pagination Footer
+                if (widget.totalPages != null && widget.totalPages! > 1)
+                  _buildPaginationFooter(densityConfig, theme),
+              ],
             ),
-          ),
+          );
 
-          // Body
-          Expanded(
-            child: widget.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : widget.rows.isEmpty
-                    ? Center(
-                        child: Text('No data available',
-                            style: AppTypography.bodyMedium.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant)))
-                    : Scrollbar(
-                        controller: _verticalController,
-                        child: SingleChildScrollView(
-                          controller: _verticalController,
-                          child: SingleChildScrollView(
-                            // Sync horizontal scroll with header if needed, but Flutter's native DataTable handles this better internally.
-                            // For this custom implementation, we'll keep it simple or require fixed flex columns.
-                            // Note: In a true enterprise grid, you'd use a synchronized horizontal scroll or flex layouts.
-                            // For POS, Flex layout is preferred so it always fills the screen width without horizontal scroll.
-                            scrollDirection: Axis.horizontal,
-                            child: Column(
-                              children:
-                                  List.generate(widget.rows.length, (index) {
-                                final row = widget.rows[index];
-                                final isFocused = _focusedRowIndex == index;
-                                return _buildRow(row, index, isFocused,
-                                    densityConfig, theme);
-                              }),
-                            ),
-                          ),
-                        ),
-                      ),
-          ),
+          return Scrollbar(
+            controller: _horizontalController,
+            thumbVisibility: true,
+            child: SingleChildScrollView(
+              controller: _horizontalController,
+              scrollDirection: Axis.horizontal,
+              child: tableContent,
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-          // Pagination Footer
-          if (widget.totalPages != null && widget.totalPages! > 1)
-            _buildPaginationFooter(densityConfig, theme),
-        ],
+  Widget _buildBody(DensityConfig densityConfig, ThemeData theme) {
+    if (widget.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (widget.rows.isEmpty) {
+      return Center(
+        child: Text('No data available',
+            style: AppTypography.bodyMedium
+                .copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      );
+    }
+    return Scrollbar(
+      controller: _verticalController,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: _verticalController,
+        child: Column(
+          children: List.generate(widget.rows.length, (index) {
+            final row = widget.rows[index];
+            final isFocused = _focusedRowIndex == index;
+            return _buildRow(row, index, isFocused, densityConfig, theme);
+          }),
+        ),
       ),
     );
   }
@@ -266,6 +286,8 @@ class _PosDataTableState extends State<PosDataTable> {
 
   Widget _buildRow(PosDataRow row, int index, bool isFocused,
       DensityConfig densityConfig, ThemeData theme) {
+    final double effectiveRowHeight = widget.rowHeight ??
+        (densityConfig.rowHeight < 56.0 ? 56.0 : densityConfig.rowHeight);
     return InkWell(
       onTap: () {
         setState(() {
@@ -275,7 +297,7 @@ class _PosDataTableState extends State<PosDataTable> {
         _focusNode.requestFocus();
       },
       child: Container(
-        height: densityConfig.rowHeight,
+        height: effectiveRowHeight,
         decoration: BoxDecoration(
           color: isFocused
               ? theme.colorScheme.primaryContainer.withValues(alpha: 0.5)
@@ -293,7 +315,8 @@ class _PosDataTableState extends State<PosDataTable> {
             return SizedBox(
               width: col.fixedWidth ?? 150.0,
               child: Padding(
-                padding: densityConfig.contentPadding,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                 child: Align(
                   alignment: col.numeric
                       ? Alignment.centerRight

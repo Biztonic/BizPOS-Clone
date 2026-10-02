@@ -96,6 +96,9 @@ class AppButton extends StatelessWidget {
   }
 
   EdgeInsetsGeometry _getPadding() {
+    if (label == null && icon != null) {
+      return EdgeInsets.zero;
+    }
     switch (size) {
       case AppButtonSize.small:
         return const EdgeInsets.symmetric(horizontal: AppSpacing.md);
@@ -213,10 +216,16 @@ class AppButton extends StatelessWidget {
         ),
       ),
       padding: WidgetStateProperty.all(_getPadding()),
-      minimumSize: WidgetStateProperty.all(Size(width ?? 0, _getHeight())),
-      fixedSize: width != null
-          ? WidgetStateProperty.all(Size(width!, _getHeight()))
-          : null,
+      minimumSize: WidgetStateProperty.all(
+        label == null && icon != null
+            ? Size(_getHeight(), _getHeight())
+            : Size(width ?? 0, _getHeight()),
+      ),
+      fixedSize: (label == null && icon != null && width == null)
+          ? WidgetStateProperty.all(Size(_getHeight(), _getHeight()))
+          : (width != null
+              ? WidgetStateProperty.all(Size(width!, _getHeight()))
+              : null),
     );
 
     Widget content = Row(

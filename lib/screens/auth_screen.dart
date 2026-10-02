@@ -7,6 +7,7 @@ import '../core/design/layouts/pos_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/dashboard_provider.dart';
 import 'package:go_router/go_router.dart';
 import '../core/design/tokens/app_typography.dart';
 import '../widgets/employee_pin_dialog.dart';
@@ -127,6 +128,60 @@ class _AuthScreenState extends State<AuthScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(e.toString()), backgroundColor: AppColors.error),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmAndClearLocalCache() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.cleaning_services, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text("Clear Local Cache?"),
+          ],
+        ),
+        content: const Text(
+          "This will completely erase all client-side cached auth sessions, stored credentials, and offline databases from this browser.\n\nUse this for a 100% fresh start. Continue?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text("Clear Everything"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Clearing local caches and databases...")),
+      );
+
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final dashboardProvider =
+          Provider.of<DashboardProvider>(context, listen: false);
+
+      await authProvider.hardResetAndSignOut();
+      await dashboardProvider.resetAll();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("✅ All local cache cleared! Starting fresh."),
+            backgroundColor: AppColors.success,
+          ),
         );
       }
     }
@@ -632,6 +687,32 @@ class _AuthScreenState extends State<AuthScreen>
                           ),
                         ),
                       ],
+                      const SizedBox(height: AppSpacing.md),
+                      Divider(
+                        height: 1,
+                        color: isDark
+                            ? Colors.white.withOpacity(0.08)
+                            : Colors.black.withOpacity(0.08),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      TextButton.icon(
+                        key: const Key('clear_cache_button'),
+                        onPressed: _confirmAndClearLocalCache,
+                        icon: Icon(
+                          Icons.cleaning_services_outlined,
+                          size: 15,
+                          color: isDark ? Colors.white60 : Colors.black54,
+                        ),
+                        label: Text(
+                          AppLocalizations.t(
+                              context, 'Clear Browser Cache & Reset App'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white60 : Colors.black54,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

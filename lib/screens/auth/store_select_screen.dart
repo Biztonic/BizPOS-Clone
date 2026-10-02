@@ -4,6 +4,7 @@ import 'package:biztonic_pos/l10n/app_localizations.dart';
 import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 
 import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_radius.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design/tokens/app_typography.dart';
@@ -216,22 +217,131 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
   }
 
   Widget _buildOwnerHeader(DashboardProvider dashboard, bool isDark) {
+    final isFranchiseOwner = dashboard.activeRole == 'Franchise Owner';
+    final hasFranchiseAddon = dashboard.hasFranchiseAddon;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Text(
-            AppLocalizations.t(context, 'Welcome back!'),
-            style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textSecondary(context),
-                fontWeight: FontWeight.w500),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      AppLocalizations.t(context, 'Welcome back!'),
+                      style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary(context),
+                          fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: (isFranchiseOwner
+                                ? AppColors.primary
+                                : AppColors.secondary)
+                            .withValues(alpha: 0.1),
+                        borderRadius: AppRadius.borderSm,
+                        border: Border.all(
+                            color: (isFranchiseOwner
+                                    ? AppColors.primary
+                                    : AppColors.secondary)
+                                .withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        isFranchiseOwner ? 'Franchise' : 'Single Store',
+                        style: AppTypography.labelSmall.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isFranchiseOwner
+                              ? AppColors.primary
+                              : AppColors.secondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  AppLocalizations.t(context, 'Choose a store to manage'),
+                  style: AppTypography.headlineSmall
+                      .copyWith(color: AppColors.textPrimary(context)),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            AppLocalizations.t(context, 'Choose a store to manage'),
-            style: AppTypography.headlineSmall
-                .copyWith(color: AppColors.textPrimary(context)),
+          if (isFranchiseOwner) ...[
+            ElevatedButton.icon(
+              onPressed: () {
+                if (hasFranchiseAddon) {
+                  context.go('/create-store');
+                } else {
+                  _showFranchiseAddonRequiredDialog(context);
+                }
+              },
+              icon: Icon(
+                hasFranchiseAddon ? Icons.add : Icons.lock_outline,
+                size: 18,
+              ),
+              label: Text(
+                  hasFranchiseAddon ? 'Add Store' : 'Add Store (Locked)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: hasFranchiseAddon
+                    ? AppColors.primary
+                    : AppColors.surface(context),
+                foregroundColor: hasFranchiseAddon
+                    ? Colors.white
+                    : AppColors.textSecondary(context),
+                elevation: 0,
+                side: hasFranchiseAddon
+                    ? null
+                    : BorderSide(color: AppColors.border(context)),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showFranchiseAddonRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.lock, color: AppColors.warning),
+            SizedBox(width: AppSpacing.sm),
+            Text('Franchise Add-on Required'),
+          ],
+        ),
+        content: const Text(
+          'Multi-store management is available for Franchise Owners with the Franchise Add-on.\n\n'
+          'To add and manage multiple stores under your franchise, please purchase the Franchise Add-on from BizStore.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.push('/biz-store');
+            },
+            icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+            label: const Text('Go to BizStore'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
           ),
         ],
       ),
@@ -558,7 +668,12 @@ class _StoreSelectScreenState extends State<StoreSelectScreen> {
               style: AppTypography.bodyMedium
                   .copyWith(color: AppColors.textSecondary(context))),
           const SizedBox(height: AppSpacing.xl),
-          if (dashboard.activeRole == 'Store Owner')
+          if (dashboard.canCreateAdditionalStore ||
+              dashboard.activeRole == 'Store Owner' ||
+              dashboard.activeRole == 'Franchise Owner' ||
+              dashboard.activeRole == 'Super Admin' ||
+              dashboard.activeRole == 'Unauthorized' ||
+              dashboard.activeRole.isEmpty)
             ElevatedButton(
               onPressed: () => context.go('/create-store'),
               style: ElevatedButton.styleFrom(

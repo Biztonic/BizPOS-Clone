@@ -104,14 +104,17 @@ enum PaymentMethod {
   cash('Cash'),
   card('Card'),
   upi('UPI'),
-  split('Split');
+  split('Split'),
+  udhari('Udhari');
 
   final String value;
   const PaymentMethod(this.value);
 
   static PaymentMethod fromString(String method) {
     return PaymentMethod.values.firstWhere(
-      (e) => e.value == method,
+      (e) =>
+          e.value.toLowerCase() == method.toLowerCase() ||
+          e.name.toLowerCase() == method.toLowerCase(),
       orElse: () => PaymentMethod.cash,
     );
   }

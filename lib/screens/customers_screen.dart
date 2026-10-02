@@ -8,17 +8,18 @@ import '../providers/dashboard_provider.dart';
 import '../models/customer.dart';
 import 'add_edit_customer_screen.dart';
 import 'customer_detail_screen.dart';
+import '../widgets/customer_whatsapp_dialog.dart';
 import '../l10n/app_localizations.dart';
 import '../core/design/layouts/pos_scaffold.dart';
 import '../core/design/components/atoms/app_button.dart';
 import '../core/design/components/atoms/app_card.dart';
 import '../core/design/components/atoms/app_text_field.dart';
 import '../core/design/components/organisms/pos_data_table.dart';
-import '../core/design/components/molecules/app_empty_state.dart';
 import '../core/design/tokens/app_spacing.dart';
 import '../core/design/tokens/app_typography.dart';
 import '../core/design/density/app_density.dart';
 import '../core/design/tokens/app_colors.dart';
+import '../core/design/tokens/app_radius.dart';
 
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
@@ -32,6 +33,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
   Timer? _debounce;
   String _searchQuery = "";
   String _sortBy = 'Name';
+  String _filterType = 'All'; // 'All', 'Udhari Due', 'VIP'
   bool _isSelectionMode = false;
   final Set<String> _selectedIds = {};
 
@@ -47,12 +49,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
       });
     });
 
-    // Trigger initial fetch
+    // Trigger initial fetch only if not already populated
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final provider = Provider.of<DashboardProvider>(context, listen: false);
-      if (provider.activeStoreId != null) {
+      if (provider.activeStoreId != null && provider.customers.isEmpty) {
         provider.customerProvider
-            ?.fetchCustomers(provider.activeStoreId, refresh: true);
+            ?.fetchCustomers(provider.activeStoreId, refresh: false);
       }
     });
   }
@@ -77,17 +80,30 @@ class _CustomersScreenState extends State<CustomersScreen> {
       builder: (context, data, _) {
         final provider = Provider.of<DashboardProvider>(context, listen: false);
         final isDesktop = MediaQuery.of(context).size.width >= 1100;
+        // Merchants always have full access to CRM tools (Udhari Khata & Loyalty)
+        const bool isUdhariEnabled = true;
+        const bool isLoyaltyEnabled = true;
 
-        List<Customer> displayedCustomers = provider.customers
-            .where((c) =>
-                c.name.toLowerCase().contains(_searchQuery) ||
-                (c.mobile?.contains(_searchQuery) ?? false) ||
-                (c.email.toLowerCase().contains(_searchQuery)))
-            .toList();
+        List<Customer> displayedCustomers = provider.customers.where((c) {
+          final matchesSearch = c.name.toLowerCase().contains(_searchQuery) ||
+              (c.mobile?.contains(_searchQuery) ?? false) ||
+              (c.email.toLowerCase().contains(_searchQuery));
+          if (!matchesSearch) return false;
+
+          if (isUdhariEnabled && _filterType == 'Udhari Due') {
+            return c.udhariBalance > 0;
+          }
+          if (_filterType == 'VIP') return c.tier == 'VIP' || c.totalSpent > 1000;
+          return true;
+        }).toList();
 
         displayedCustomers.sort((a, b) {
-          if (_sortBy == 'Points')
+          if (isUdhariEnabled && _sortBy == 'Udhari') {
+            return b.udhariBalance.compareTo(a.udhariBalance);
+          }
+          if (isLoyaltyEnabled && _sortBy == 'Points') {
             return b.loyaltyPoints.compareTo(a.loyaltyPoints);
+          }
           if (_sortBy == 'Spent') return b.totalSpent.compareTo(a.totalSpent);
           return a.name.toLowerCase().compareTo(b.name.toLowerCase());
         });
@@ -99,43 +115,56 @@ class _CustomersScreenState extends State<CustomersScreen> {
           actions: _buildScaffoldActions(context, provider),
           mainContent: provider.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : CustomScrollView(
-                  slivers: [
-                    if (isDesktop)
-                      SliverToBoxAdapter(child: _buildStatsRow(provider)),
-                    SliverToBoxAdapter(child: _buildFilterBar(context)),
-                    if (displayedCustomers.isEmpty)
-                      SliverFillRemaining(child: _buildEmptyState())
-                    else if (isDesktop)
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md),
-                        sliver: SliverFillRemaining(
-                          hasScrollBody: true,
-                          child: _buildTableView(
-                              context, provider, displayedCustomers),
+              : isDesktop
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildStatsRow(
+                            provider, isUdhariEnabled, isLoyaltyEnabled),
+                        _buildFilterBar(
+                            context, isUdhariEnabled, isLoyaltyEnabled),
+                        Expanded(
+                          child: displayedCustomers.isEmpty
+                              ? _buildEmptyState()
+                              : Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      AppSpacing.md,
+                                      0,
+                                      AppSpacing.md,
+                                      AppSpacing.md),
+                                  child: _buildTableView(context, provider,
+                                      displayedCustomers, isUdhariEnabled, isLoyaltyEnabled),
+                                ),
                         ),
-                      )
-                    else
-                      SliverPadding(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (ctx, i) => Padding(
-                              padding:
-                                  const EdgeInsets.only(bottom: AppSpacing.md),
-                              child: _buildCustomerCard(
-                                  context, displayedCustomers[i], provider),
+                      ],
+                    )
+                  : CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(
+                            child: _buildFilterBar(
+                                context, isUdhariEnabled, isLoyaltyEnabled)),
+                        if (displayedCustomers.isEmpty)
+                          SliverFillRemaining(child: _buildEmptyState())
+                        else
+                          SliverPadding(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            sliver: SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (ctx, i) => Padding(
+                                  padding:
+                                      const EdgeInsets.only(bottom: AppSpacing.md),
+                                  child: _buildCustomerCard(context,
+                                      displayedCustomers[i], provider, isUdhariEnabled, isLoyaltyEnabled),
+                                ),
+                                childCount: displayedCustomers.length,
+                                addAutomaticKeepAlives: false,
+                              ),
                             ),
-                            childCount: displayedCustomers.length,
-                            addAutomaticKeepAlives: false,
                           ),
-                        ),
-                      ),
-                    const SliverToBoxAdapter(
-                        child: SizedBox(height: AppSpacing.xl)),
-                  ],
-                ),
+                        const SliverToBoxAdapter(
+                            child: SizedBox(height: AppSpacing.xl)),
+                      ],
+                    ),
         );
       },
     );
@@ -188,13 +217,12 @@ class _CustomersScreenState extends State<CustomersScreen> {
       AppButton.primary(
         label: MediaQuery.of(context).size.width > 600 ? "Add Customer" : null,
         icon: Icons.add,
-        onPressed: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const AddEditCustomerScreen())),
+        onPressed: () => AddEditCustomerScreen.showAsDialog(context),
       ),
     ];
   }
 
-  Widget _buildFilterBar(BuildContext context) {
+  Widget _buildFilterBar(BuildContext context, bool isUdhariEnabled, bool isLoyaltyEnabled) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
@@ -202,39 +230,70 @@ class _CustomersScreenState extends State<CustomersScreen> {
           Expanded(
             child: AppTextField(
               controller: _searchController,
-              hintText: "Search customers...",
+              hintText: "Search by name, phone or email...",
               prefixIcon: const Icon(Icons.search),
               onChanged: (val) =>
                   setState(() => _searchQuery = val.toLowerCase()),
             ),
           ),
           const SizedBox(width: AppSpacing.md),
+          // Filter by Type (All / Udhari Due / VIP)
           Container(
+            height: 44,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             decoration: BoxDecoration(
               color: AppColors.surface(context),
               border: Border.all(color: AppColors.border(context)),
-              borderRadius: BorderRadius.zero,
+              borderRadius: AppRadius.borderMd,
             ),
             child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-              value: _sortBy,
-              dropdownColor: AppColors.surface(context),
-              style: AppTypography.bodyMedium
-                  .copyWith(color: AppColors.textPrimary(context)),
-              items: [
-                DropdownMenuItem(
-                    value: 'Name',
-                    child: Text(AppLocalizations.t(context, 'Sort by Name'))),
-                DropdownMenuItem(
-                    value: 'Points',
-                    child: Text(AppLocalizations.t(context, 'Sort by Points'))),
-                DropdownMenuItem(
-                    value: 'Spent',
-                    child: Text(AppLocalizations.t(context, 'Sort by Spent'))),
-              ],
-              onChanged: (v) => setState(() => _sortBy = v!),
-            )),
+              child: DropdownButton<String>(
+                value: _filterType,
+                dropdownColor: AppColors.surface(context),
+                style: AppTypography.bodyMedium
+                    .copyWith(color: AppColors.textPrimary(context)),
+                items: [
+                  const DropdownMenuItem(value: 'All', child: Text('All Customers')),
+                  if (isUdhariEnabled)
+                    const DropdownMenuItem(
+                        value: 'Udhari Due', child: Text('⚠️ Has Udhari Due')),
+                  const DropdownMenuItem(value: 'VIP', child: Text('⭐ VIP Customers')),
+                ],
+                onChanged: (v) => setState(() => _filterType = v ?? 'All'),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          // Sort Dropdown
+          Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.surface(context),
+              border: Border.all(color: AppColors.border(context)),
+              borderRadius: AppRadius.borderMd,
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _sortBy,
+                dropdownColor: AppColors.surface(context),
+                style: AppTypography.bodyMedium
+                    .copyWith(color: AppColors.textPrimary(context)),
+                items: [
+                  const DropdownMenuItem(
+                      value: 'Name', child: Text('Sort by Name')),
+                  if (isUdhariEnabled)
+                    const DropdownMenuItem(
+                        value: 'Udhari', child: Text('Sort by Udhari Due')),
+                  if (isLoyaltyEnabled)
+                    const DropdownMenuItem(
+                        value: 'Points', child: Text('Sort by Loyalty Points')),
+                  const DropdownMenuItem(
+                      value: 'Spent', child: Text('Sort by Total Spent')),
+                ],
+                onChanged: (v) => setState(() => _sortBy = v!),
+              ),
+            ),
           ),
           const SizedBox(width: AppSpacing.sm),
           AppButton.secondary(
@@ -247,15 +306,19 @@ class _CustomersScreenState extends State<CustomersScreen> {
   }
 
   Widget _buildTableView(BuildContext context, DashboardProvider provider,
-      List<Customer> customers) {
+      List<Customer> customers, bool isUdhariEnabled, bool isLoyaltyEnabled) {
+    final columns = [
+      const PosDataColumn(label: 'Customer', fixedWidth: 240),
+      const PosDataColumn(label: 'Contact', fixedWidth: 160),
+      const PosDataColumn(label: 'Udhari (Due)', fixedWidth: 140),
+      const PosDataColumn(label: 'Loyalty Points', fixedWidth: 130),
+      const PosDataColumn(label: 'Total Spent', fixedWidth: 130),
+      const PosDataColumn(label: 'Actions', fixedWidth: 190),
+    ];
+
     return PosDataTable(
-      columns: const [
-        PosDataColumn(label: 'Customer', fixedWidth: 300),
-        PosDataColumn(label: 'Contact', fixedWidth: 250),
-        PosDataColumn(label: 'Points', fixedWidth: 120),
-        PosDataColumn(label: 'Spent', fixedWidth: 120),
-        PosDataColumn(label: 'Actions', fixedWidth: 200),
-      ],
+      rowHeight: 64.0,
+      columns: columns,
       rows: customers
           .map((c) => PosDataRow(
                 cells: [
@@ -268,61 +331,138 @@ class _CustomersScreenState extends State<CustomersScreen> {
                           activeColor: AppColors.adaptivePrimary(context),
                         ),
                       CircleAvatar(
+                        radius: 16,
                         backgroundColor: _getAvatarColor(context, c.name)
                             .withValues(alpha: 0.1),
                         child: Text(
                             c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
                             style: TextStyle(
                                 color: _getAvatarColor(context, c.name),
-                                fontWeight: FontWeight.bold)),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13)),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(c.name,
-                                style: AppTypography.bodyMedium
-                                    .copyWith(fontWeight: FontWeight.bold)),
-                            if (c.tier == 'VIP')
-                              Text(AppLocalizations.t(context, 'VIP'),
-                                  style: TextStyle(
-                                      color: AppColors.adaptivePrimary(context),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold)),
+                            Text(
+                              c.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.bodyMedium
+                                  .copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            if (c.tier.isNotEmpty)
+                              Container(
+                                margin: const EdgeInsets.only(top: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: AppColors.adaptivePrimary(context)
+                                      .withValues(alpha: 0.1),
+                                  borderRadius: AppRadius.borderSm,
+                                ),
+                                child: Text(c.tier.toUpperCase(),
+                                    style: TextStyle(
+                                        color: AppColors.adaptivePrimary(context),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold)),
+                              ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  Text(c.email.isNotEmpty ? c.email : (c.mobile ?? 'N/A')),
-                  Text("${c.loyaltyPoints} pts",
-                      style: AppTypography.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.adaptiveWarning(context))),
-                  Text("\$${c.totalSpent.toStringAsFixed(2)}",
+                  Text(
+                    c.mobile?.isNotEmpty == true
+                        ? c.mobile!
+                        : (c.phone?.isNotEmpty == true
+                            ? c.phone!
+                            : (c.email.isNotEmpty ? c.email : 'N/A')),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodyMedium,
+                  ),
+                  if (isUdhariEnabled)
+                    c.udhariBalance > 0
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.adaptiveError(context)
+                                  .withValues(alpha: 0.1),
+                              borderRadius: AppRadius.borderSm,
+                              border: Border.all(
+                                  color: AppColors.adaptiveError(context)
+                                      .withValues(alpha: 0.3)),
+                            ),
+                            child: Text(
+                              "₹${c.udhariBalance.toStringAsFixed(0)} Due",
+                              style: AppTypography.labelSmall.copyWith(
+                                  color: AppColors.adaptiveError(context),
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          )
+                        : Text("₹0.00",
+                            style: AppTypography.bodyMedium.copyWith(
+                                color: AppColors.textSecondary(context))),
+                  if (isLoyaltyEnabled)
+                    Text("${c.loyaltyPoints} pts",
+                        style: AppTypography.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.adaptiveWarning(context))),
+                  Text("₹${c.totalSpent.toStringAsFixed(0)}",
                       style: AppTypography.bodyMedium.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.adaptiveSuccess(context))),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      AppButton.secondary(
-                        icon: Icons.edit_outlined,
-                        onPressed: () => Navigator.push(
+                      Tooltip(
+                        message: "View Customer Overview",
+                        child: AppButton.secondary(
+                          size: AppButtonSize.small,
+                          icon: Icons.visibility_outlined,
+                          onPressed: () => _handleCustomerTap(c),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Tooltip(
+                        message: "WhatsApp Hub",
+                        child: AppButton.secondary(
+                          size: AppButtonSize.small,
+                          icon: Icons.chat_outlined,
+                          onPressed: () => CustomerWhatsAppDialog.show(
                             context,
-                            MaterialPageRoute(
-                                builder: (_) =>
-                                    AddEditCustomerScreen(customer: c))),
+                            customer: c,
+                            provider: provider,
+                            initialCategory: c.udhariBalance > 0
+                                ? WhatsAppTemplateCategory.udhariDue
+                                : WhatsAppTemplateCategory.promotions,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
-                      AppButton.secondary(
-                        icon: Icons.star_outline,
-                        onPressed: () => _showAdjustPointsDialog(c, provider),
+                      Tooltip(
+                        message: "Edit Customer",
+                        child: AppButton.secondary(
+                          size: AppButtonSize.small,
+                          icon: Icons.edit_outlined,
+                          onPressed: () => AddEditCustomerScreen.showAsDialog(
+                              context,
+                              customer: c),
+                        ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
-                      AppButton.danger(
-                        icon: Icons.delete_outline,
-                        onPressed: () => _confirmDelete(c, provider),
+                      Tooltip(
+                        message: "Delete Customer",
+                        child: AppButton.danger(
+                          size: AppButtonSize.small,
+                          icon: Icons.delete_outline,
+                          onPressed: () => _confirmDelete(c, provider),
+                        ),
                       ),
                     ],
                   ),
@@ -345,13 +485,54 @@ class _CustomersScreenState extends State<CustomersScreen> {
   }
 
   Widget _buildEmptyState() {
-    return const AppEmptyState(
-      type: AppEmptyStateType.employee,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              decoration: BoxDecoration(
+                color: AppColors.adaptivePrimary(context).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.people_outline,
+                size: 64,
+                color: AppColors.adaptivePrimary(context),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              "No Customers Found",
+              style: AppTypography.headlineSmall
+                  .copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Text(
+                "Add customer profiles to maintain bill history, track Udhari (credit khata/borrows), and reward customers with loyalty points.",
+                textAlign: TextAlign.center,
+                style: AppTypography.bodyMedium
+                    .copyWith(color: AppColors.textSecondary(context)),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            AppButton.primary(
+              label: "Add Customer",
+              icon: Icons.person_add_outlined,
+              onPressed: () => AddEditCustomerScreen.showAsDialog(context),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildCustomerCard(
-      BuildContext context, Customer c, DashboardProvider provider) {
+      BuildContext context, Customer c, DashboardProvider provider, bool isUdhariEnabled, bool isLoyaltyEnabled) {
     final isSelected = _selectedIds.contains(c.id);
     final density = AppDensityProvider.configOf(context);
     return AppCard(
@@ -373,13 +554,81 @@ class _CustomersScreenState extends State<CustomersScreen> {
                         color: _getAvatarColor(context, c.name),
                         fontWeight: FontWeight.bold)),
               ),
-        title: Text(c.name,
-            style: AppTypography.titleMedium
-                .copyWith(fontWeight: FontWeight.bold)),
-        subtitle:
-            Text(c.email.isNotEmpty ? c.email : (c.mobile ?? 'No Contact')),
-        trailing:
-            _isSelectionMode ? null : const Icon(Icons.chevron_right, size: 16),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(c.name,
+                  style: AppTypography.titleMedium
+                      .copyWith(fontWeight: FontWeight.bold)),
+            ),
+            if (isUdhariEnabled && c.udhariBalance > 0)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color:
+                      AppColors.adaptiveError(context).withValues(alpha: 0.1),
+                  borderRadius: AppRadius.borderSm,
+                ),
+                child: Text(
+                  "Due: ₹${c.udhariBalance.toStringAsFixed(0)}",
+                  style: TextStyle(
+                    color: AppColors.adaptiveError(context),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 2),
+            Text(c.mobile?.isNotEmpty == true
+                ? c.mobile!
+                : (c.phone ?? (c.email.isNotEmpty ? c.email : 'No Contact'))),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                if (isLoyaltyEnabled) ...[
+                  Text("${c.loyaltyPoints} Coins",
+                      style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.adaptiveWarning(context),
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text("•",
+                      style: TextStyle(color: AppColors.textSecondary(context))),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
+                Text("Spent: ₹${c.totalSpent.toStringAsFixed(0)}",
+                    style: AppTypography.labelSmall.copyWith(
+                        color: AppColors.adaptiveSuccess(context),
+                        fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ],
+        ),
+        trailing: _isSelectionMode
+            ? null
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chat_outlined, color: Color(0xFF25D366)),
+                    tooltip: "WhatsApp Hub",
+                    onPressed: () => CustomerWhatsAppDialog.show(
+                      context,
+                      customer: c,
+                      provider: provider,
+                      initialCategory: c.udhariBalance > 0
+                          ? WhatsAppTemplateCategory.udhariDue
+                          : WhatsAppTemplateCategory.promotions,
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, size: 16),
+                ],
+              ),
         onTap: () => _handleCustomerTap(c),
         onLongPress: () {
           if (!_isSelectionMode) {
@@ -412,8 +661,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
     }
   }
 
-  Widget _buildStatsRow(DashboardProvider provider) {
+  Widget _buildStatsRow(DashboardProvider provider, bool isUdhariEnabled, bool isLoyaltyEnabled) {
     final total = provider.customers.length;
+    final totalUdhari = provider.customers.fold<double>(
+        0.0, (sum, c) => sum + (c.udhariBalance > 0 ? c.udhariBalance : 0.0));
     final loyalty = provider.customers.where((c) => c.loyaltyPoints > 0).length;
     final vips = provider.customers
         .where((c) => c.tier == 'VIP' || c.totalSpent > 1000)
@@ -427,6 +678,15 @@ class _CustomersScreenState extends State<CustomersScreen> {
           Expanded(
               child: _buildStatCard("Total Customers", "$total", Icons.people,
                   AppColors.adaptivePrimary(context))),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+              child: _buildStatCard(
+                  "Total Udhari Due",
+                  "₹${totalUdhari.toStringAsFixed(0)}",
+                  Icons.account_balance_wallet,
+                  totalUdhari > 0
+                      ? AppColors.adaptiveError(context)
+                      : AppColors.adaptiveSuccess(context))),
           const SizedBox(width: AppSpacing.md),
           Expanded(
               child: _buildStatCard("Loyalty Active", "$loyalty", Icons.stars,
@@ -443,66 +703,46 @@ class _CustomersScreenState extends State<CustomersScreen> {
   Widget _buildStatCard(
       String label, String value, IconData icon, Color color) {
     return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.zero),
-            child: Icon(icon, color: color, size: 28),
+              color: color.withValues(alpha: 0.1),
+              borderRadius: AppRadius.borderMd,
+            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: AppSpacing.md),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.labelMedium.copyWith(
-                      color: AppColors.textSecondary(context),
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: AppSpacing.xs),
-              Text(value,
+                    color: AppColors.textSecondary(context),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.headlineSmall
-                      .copyWith(fontWeight: FontWeight.bold)),
-            ],
-          )
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
-  }
-
-  void _showAdjustPointsDialog(Customer c, DashboardProvider provider) {
-    final controller = TextEditingController();
-    showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-              backgroundColor: AppColors.surface(context),
-              title: Text("Adjust Points for ${c.name}"),
-              shape:
-                  const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-              content: AppTextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                label: "Points (+/-)",
-                prefixIcon: const Icon(Icons.stars_outlined),
-              ),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text(AppLocalizations.t(context, 'Cancel'),
-                        style: TextStyle(
-                            color: AppColors.textSecondary(context)))),
-                AppButton.primary(
-                    onPressed: () {
-                      final points = int.tryParse(controller.text) ?? 0;
-                      if (points != 0)
-                        provider.updateCustomerLoyalty(c.id, points);
-                      Navigator.pop(ctx);
-                    },
-                    label: "Save"),
-              ],
-            ));
   }
 
   void _confirmDelete(Customer c, DashboardProvider provider) {

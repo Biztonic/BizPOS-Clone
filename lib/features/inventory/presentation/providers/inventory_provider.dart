@@ -160,6 +160,9 @@ class InventoryProvider extends ChangeNotifier {
         if (orderItem is OrderItem) {
           itemId = orderItem.item.id;
           qty = orderItem.quantity;
+        } else if (orderItem is Map) {
+          itemId = (orderItem['itemId'] ?? orderItem['id'])?.toString() ?? '';
+          qty = (orderItem['quantity'] as num?)?.toInt() ?? 0;
         } else {
           itemId = (orderItem as dynamic).itemId as String;
           qty = (orderItem as dynamic).quantity as int;
@@ -170,6 +173,8 @@ class InventoryProvider extends ChangeNotifier {
           final currentQty = _items[idx].quantity;
           _items[idx] = _items[idx].copyWith(quantity: currentQty + qty);
           didUpdate = true;
+          // Persist refunded stock to repository (DB/Hive/Cloud)
+          _repository.insertItem(_items[idx]);
         }
       }
 
@@ -182,8 +187,8 @@ class InventoryProvider extends ChangeNotifier {
     }
   }
 
-  /// Decrement stock in-memory for each item in the order.
-  /// This gives instant UI feedback without waiting for a full reload.
+  /// Decrement stock in-memory for each item in the order and persist to repository.
+  /// This gives instant UI feedback AND ensures stock persists across logouts/restarts.
   void _handleOrderCreatedEvent(OrderCreatedEvent event) {
     try {
       // If store inventory tracking is OFF, do not reduce stock after billing
@@ -208,6 +213,9 @@ class InventoryProvider extends ChangeNotifier {
         if (orderItem is OrderItem) {
           itemId = orderItem.item.id;
           qty = orderItem.quantity;
+        } else if (orderItem is Map) {
+          itemId = (orderItem['itemId'] ?? orderItem['id'])?.toString() ?? '';
+          qty = (orderItem['quantity'] as num?)?.toInt() ?? 0;
         } else {
           // OrderItemEntity from checkout orchestrator
           itemId = (orderItem as dynamic).itemId as String;
@@ -220,6 +228,8 @@ class InventoryProvider extends ChangeNotifier {
           final newQty = currentQty - qty; // Maintain true net stock
           _items[idx] = _items[idx].copyWith(quantity: newQty);
           didUpdate = true;
+          // Persist deducted stock to repository (DB/Hive/Cloud)
+          _repository.insertItem(_items[idx]);
         }
       }
 
