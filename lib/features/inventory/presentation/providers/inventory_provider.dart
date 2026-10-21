@@ -54,14 +54,20 @@ class InventoryProvider extends ChangeNotifier {
 
     // Listen to SyncCompletedEvent to reload inventory from cache/DB
     _syncCompletedSub = EventBus.instance.on<SyncCompletedEvent>((event) {
-      if (event.storeId == _storeProvider.activeStore?.id) {
-        loadInventory();
+      final currentStore =
+          _storeProvider.activeStore?.id ?? _storeProvider.activeStoreId;
+      if (currentStore == null ||
+          event.storeId.isEmpty ||
+          event.storeId.toLowerCase() == currentStore.toLowerCase()) {
+        loadInventory(currentStore ?? event.storeId);
       }
     });
 
     // Initial load if store is already selected
-    if (_storeProvider.activeStore != null) {
-      loadInventory();
+    final initialStore =
+        _storeProvider.activeStore?.id ?? _storeProvider.activeStoreId;
+    if (initialStore != null && initialStore.isNotEmpty) {
+      loadInventory(initialStore);
     }
   }
 
@@ -275,17 +281,20 @@ class InventoryProvider extends ChangeNotifier {
   }
 
   void _onStoreChanged() {
-    if (_storeProvider.activeStore != null) {
-      loadInventory();
+    final sid = _storeProvider.activeStore?.id ?? _storeProvider.activeStoreId;
+    if (sid != null && sid.isNotEmpty) {
+      loadInventory(sid);
     }
   }
 
   // ─── Data Loading ────────────────────────────────────────
 
   /// Loads all inventory items for the current store.
-  Future<void> loadInventory() async {
-    final storeId = _storeProvider.activeStore?.id;
-    if (storeId == null) return;
+  Future<void> loadInventory([String? explicitStoreId]) async {
+    final storeId = explicitStoreId ??
+        _storeProvider.activeStore?.id ??
+        _storeProvider.activeStoreId ??
+        (_storeProvider.stores.isNotEmpty ? _storeProvider.stores.first.id : null);
 
     _isLoading = true;
     _error = null;
@@ -298,7 +307,9 @@ class InventoryProvider extends ChangeNotifier {
       final healedItems = <InventoryEntity>[];
 
       for (final item in rawItems) {
-        if (item.storeId == null || item.storeId!.isEmpty) {
+        if ((item.storeId == null || item.storeId!.isEmpty) &&
+            storeId != null &&
+            storeId.isNotEmpty) {
           final healed = item.copyWith(storeId: storeId);
           healedItems.add(healed);
           // Async self-healing save in background
@@ -309,8 +320,13 @@ class InventoryProvider extends ChangeNotifier {
       }
 
       _items = healedItems;
-      await _loadCategories(storeId);
-      await _loadStats(storeId);
+      if (storeId != null && storeId.isNotEmpty) {
+        await _loadCategories(storeId);
+        await _loadStats(storeId);
+      } else {
+        final cats = _items.map((e) => e.category).toSet().toList()..sort();
+        _categories = ['All', ...cats.where((c) => c.isNotEmpty && c != 'All')];
+      }
     } else {
       _error = result.error;
     }
@@ -462,7 +478,7 @@ class InventoryProvider extends ChangeNotifier {
 
   /// Backward compatibility for legacy fetch requests.
   Future<void> fetchInventory(String uid, {bool refresh = false}) =>
-      loadInventory();
+      loadInventory(uid);
 
   /// Clears the current inventory state.
   void clearInventory() {

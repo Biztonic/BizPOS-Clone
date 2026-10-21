@@ -25,6 +25,42 @@ class CustomerDetailScreen extends StatefulWidget {
 }
 
 class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
+  Future<List<OrderModel>>? _ordersFuture;
+  Future<List<UdhariTransaction>>? _udhariFuture;
+  Future<List<LoyaltyTransaction>>? _loyaltyFuture;
+  Future<List<CustomerCoupon>>? _couponsFuture;
+  Future<List<CustomerGift>>? _giftsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFutures();
+  }
+
+  void _loadFutures() {
+    final provider = Provider.of<DashboardProvider>(context, listen: false);
+    final customerId = widget.customer.id;
+    _ordersFuture = provider.fetchCustomerOrders(customerId);
+    _udhariFuture = provider.getUdhariTransactions(customerId);
+    _loyaltyFuture = provider.getLoyaltyHistory(customerId);
+    _couponsFuture = provider.getCustomerCoupons(customerId);
+    _giftsFuture = provider.getCustomerGifts(customerId);
+  }
+
+  void _reloadFutures() {
+    setState(() {
+      _loadFutures();
+    });
+  }
+
+  @override
+  void didUpdateWidget(CustomerDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.customer.id != widget.customer.id) {
+      _loadFutures();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DashboardProvider>(context);
@@ -80,6 +116,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         showSidebar: false,
         title: customer.name,
         actions: [
+          AppButton.secondary(
+            icon: Icons.arrow_back,
+            label: "Back",
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          const SizedBox(width: AppSpacing.xs),
           AppButton.secondary(
             icon: Icons.chat_outlined,
             label: "WhatsApp Hub",
@@ -362,7 +404,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Widget _buildTransactionsTab(Customer c, DashboardProvider provider) {
     return FutureBuilder<List<OrderModel>>(
-      future: provider.fetchCustomerOrders(c.id),
+      future: _ordersFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -481,7 +523,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Widget _buildUdhariTab(Customer c, DashboardProvider provider) {
     return FutureBuilder<List<UdhariTransaction>>(
-      future: provider.getUdhariTransactions(c.id),
+      future: _udhariFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -751,7 +793,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Widget _buildLoyaltyTab(Customer c, DashboardProvider provider, {required CustomerAddonSettings cs}) {
     return FutureBuilder<List<LoyaltyTransaction>>(
-      future: provider.getLoyaltyHistory(c.id),
+      future: _loyaltyFuture,
       builder: (context, snapshot) {
         final txs = snapshot.data ?? [];
 
@@ -984,7 +1026,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           FutureBuilder<List<CustomerCoupon>>(
-            future: provider.getCustomerCoupons(c.id),
+            future: _couponsFuture,
             builder: (ctx, snapshot) {
               final coupons = snapshot.data ?? [];
               if (coupons.isEmpty) {
@@ -1077,7 +1119,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                               label: "Redeem",
                               onPressed: () async {
                                 await provider.redeemCustomerCoupon(c.id, coupon.id);
-                                setState(() {});
+                                _reloadFutures();
                               },
                             ),
                         ],
@@ -1117,7 +1159,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           FutureBuilder<List<CustomerGift>>(
-            future: provider.getCustomerGifts(c.id),
+            future: _giftsFuture,
             builder: (ctx, snapshot) {
               final gifts = snapshot.data ?? [];
               if (gifts.isEmpty) {
@@ -1190,7 +1232,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                                   label: "Redeem",
                                   onPressed: () async {
                                     await provider.redeemCustomerGift(c.id, gift.id);
-                                    setState(() {});
+                                    _reloadFutures();
                                   },
                                 )
                               else
@@ -1418,7 +1460,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
                   if (ctx.mounted) Navigator.pop(ctx);
                   if (context.mounted) {
-                    setState(() {});
+                    _reloadFutures();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(isBorrow
@@ -1498,7 +1540,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 await provider.addLoyaltyTransaction(tx);
               }
               if (ctx.mounted) Navigator.pop(ctx);
-              setState(() {});
+              _reloadFutures();
             },
           ),
         ],
@@ -1607,7 +1649,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
                 await provider.addCustomerCoupon(coupon);
                 if (ctx.mounted) Navigator.pop(ctx);
-                setState(() {});
+                _reloadFutures();
               },
             ),
           ],
@@ -1677,7 +1719,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
               await provider.addCustomerGift(gift);
               if (ctx.mounted) Navigator.pop(ctx);
-              setState(() {});
+              _reloadFutures();
             },
           ),
         ],

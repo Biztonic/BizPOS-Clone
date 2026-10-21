@@ -347,6 +347,7 @@ class PrinterManagerService {
       seatNumbers: (order.seatNumbers?.isNotEmpty ?? false)
           ? order.seatNumbers!.join(', ')
           : null,
+      device: _assignments[PrinterPurpose.receipt],
     );
   }
 
@@ -401,6 +402,7 @@ class PrinterManagerService {
             ? order.seatNumbers!.join(', ')
             : null,
         receiptWidth: width,
+        device: _assignments[PrinterPurpose.kds],
       );
 
       // Reduced delay for speed

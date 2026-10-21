@@ -87,7 +87,7 @@ class ReportingRepository {
 
   Future<void> insertBusinessEvent(BusinessEvent event) async {
     final db = await dbHelper.database;
-    await db.insert('business_events', event.toMap(),
+    await db.insert('business_events', event.toSqlMap(),
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 

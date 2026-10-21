@@ -651,9 +651,7 @@ class _AuthScreenState extends State<AuthScreen>
                               ? "Don't have an account? Sign Up"
                               : "Already have an account? Sign In",
                           style: TextStyle(
-                            color: onGradient
-                                ? Colors.white.withOpacity(0.9)
-                                : AppColors.adaptivePrimary(context),
+                            color: AppColors.adaptivePrimary(context),
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -678,9 +676,7 @@ class _AuthScreenState extends State<AuthScreen>
                             AppLocalizations.t(context,
                                 'Converted from Sales App? Activate Account'),
                             style: AppTypography.labelMedium.copyWith(
-                              color: onGradient
-                                  ? Colors.white
-                                  : AppColors.adaptivePrimary(context),
+                              color: AppColors.adaptivePrimary(context),
                               fontWeight: FontWeight.w700,
                               decoration: TextDecoration.underline,
                             ),

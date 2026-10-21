@@ -167,11 +167,13 @@ class BillingProvider with ChangeNotifier {
         await _syncService.refreshLocalCounts(notify: true);
       } else {
         _setStatus(BillingStatus.error, result.error);
+        _activeCheckoutId = null;
       }
 
       return result;
     } catch (e) {
       _setStatus(BillingStatus.error, e.toString());
+      _activeCheckoutId = null;
       return CheckoutResult.failure(e.toString());
     }
   }

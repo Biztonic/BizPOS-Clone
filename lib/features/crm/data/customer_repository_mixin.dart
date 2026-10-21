@@ -14,6 +14,28 @@ mixin CustomerRepositoryMixin {
       await db.insert('customers', customer.toSqlMap(),
           conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
+      if (e.toString().contains('no column named')) {
+        try {
+          await db.execute(
+              'ALTER TABLE customers ADD COLUMN udhariBalance REAL DEFAULT 0.0');
+        } catch (_) {}
+        try {
+          await db.execute(
+              'ALTER TABLE customers ADD COLUMN creditLimit REAL DEFAULT 0.0');
+        } catch (_) {}
+        try {
+          await db.insert('customers', customer.toSqlMap(),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+          return;
+        } catch (_) {
+          final sanitized = Map<String, dynamic>.from(customer.toSqlMap())
+            ..remove('udhariBalance')
+            ..remove('creditLimit');
+          await db.insert('customers', sanitized,
+              conflictAlgorithm: ConflictAlgorithm.replace);
+          return;
+        }
+      }
       rethrow;
     }
   }
@@ -23,16 +45,39 @@ mixin CustomerRepositoryMixin {
     if (customers.isEmpty) return;
 
     final db = await dbHelper.database;
-    final batch = db.batch();
-
-    for (var customer in customers) {
-      batch.insert(
-        'customers',
-        customer.toSqlMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+    try {
+      final batch = db.batch();
+      for (var customer in customers) {
+        batch.insert(
+          'customers',
+          customer.toSqlMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await batch.commit(noResult: true);
+    } catch (e) {
+      if (e.toString().contains('no column named')) {
+        try {
+          await db.execute(
+              'ALTER TABLE customers ADD COLUMN udhariBalance REAL DEFAULT 0.0');
+        } catch (_) {}
+        try {
+          await db.execute(
+              'ALTER TABLE customers ADD COLUMN creditLimit REAL DEFAULT 0.0');
+        } catch (_) {}
+        final batch = db.batch();
+        for (var customer in customers) {
+          batch.insert(
+            'customers',
+            customer.toSqlMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+        await batch.commit(noResult: true);
+        return;
+      }
+      rethrow;
     }
-    await batch.commit(noResult: true);
   }
 
   Future<List<Customer>> getCustomers(String? storeId,

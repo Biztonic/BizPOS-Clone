@@ -26,7 +26,7 @@ class AddEditCustomerScreen extends StatefulWidget {
   static Future<Customer?> showAsDialog(BuildContext context, {Customer? customer}) {
     return showDialog<Customer>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -164,8 +164,9 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
       }
 
       if (mounted) {
-        Navigator.pop(context, newCustomer);
-        ScaffoldMessenger.of(context).showSnackBar(
+        final messenger = ScaffoldMessenger.of(context);
+        _closeDialog(newCustomer);
+        messenger.showSnackBar(
           SnackBar(
             content: Text(widget.customer == null
                 ? AppLocalizations.t(context, 'Customer created successfully')
@@ -187,6 +188,21 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _closeDialog([Customer? result]) {
+    if (!mounted) return;
+    if (widget.isDialog) {
+      final rootNav = Navigator.of(context, rootNavigator: true);
+      if (rootNav.canPop()) {
+        rootNav.pop(result);
+        return;
+      }
+    }
+    final nav = Navigator.of(context);
+    if (nav.canPop()) {
+      nav.pop(result);
     }
   }
 
@@ -235,7 +251,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context, false),
+                    onPressed: () => _closeDialog(),
                     tooltip: 'Close',
                   ),
                 ],
@@ -264,7 +280,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                 children: [
                   AppButton.secondary(
                     label: "Cancel",
-                    onPressed: () => Navigator.pop(context, false),
+                    onPressed: () => _closeDialog(),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   AppButton.primary(

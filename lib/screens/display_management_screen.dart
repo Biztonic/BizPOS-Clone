@@ -13,14 +13,32 @@ import '../l10n/app_localizations.dart';
 
 import '../utils/responsive.dart';
 
+import 'package:go_router/go_router.dart';
+import '../core/design/layouts/pos_scaffold.dart';
+
 class DisplayManagementScreen extends StatelessWidget {
   const DisplayManagementScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.t(context, 'display'))),
-      body: ListView(
+    return PosScaffold(
+      showSidebar: true,
+      title: AppLocalizations.t(context, 'display'),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Back',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
+        ),
+        title: Text(AppLocalizations.t(context, 'display')),
+      ),
+      mainContent: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           Text(

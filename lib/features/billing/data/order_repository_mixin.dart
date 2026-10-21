@@ -88,14 +88,14 @@ mixin OrderRepositoryMixin {
             collection: 'orders',
             entityId: order.id,
             operation: 'CREATE',
-            payload: order.toSqlMap(),
+            payload: order.toHiveMap(),
           )
         ];
 
     final payload = jsonEncode({
       'order': order.toSqlMap(),
       'orderItems': order.items.map((e) => e.toSqlMap(order.id)).toList(),
-      'event': event.toMap(),
+      'event': event.toSqlMap(),
       'movements': movements.map((e) => e.toSqlMap()).toList(),
       'outboxOperations': effectiveOutboxOps.map((e) => e.toSqlRow()).toList(),
       'yearMonth': yearMonth,
@@ -130,7 +130,7 @@ mixin OrderRepositoryMixin {
       // 3. Insert Business Event
       await txn.insert(
         'business_events',
-        event.toMap(),
+        event.toSqlMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
@@ -404,7 +404,26 @@ mixin OrderRepositoryMixin {
       String sql =
           "SELECT * FROM orders WHERE synced = 0 AND storeId = ? AND (deletedAt IS NULL OR status = 'Cancelled') ORDER BY date DESC";
       final rows = await db.rawQuery(sql, [storeId]);
-      return rows.map((r) => OrderModel.fromSql(r, [])).toList();
+      if (rows.isEmpty) return [];
+
+      final orderIds = rows.map((r) => r['id'] as String).toList();
+      final placeholders = List.filled(orderIds.length, '?').join(',');
+      final itemRows = await db.rawQuery(
+          'SELECT * FROM order_items WHERE orderId IN ($placeholders)',
+          orderIds);
+
+      Map<String, List<OrderItem>> itemsMap = {};
+      for (var row in itemRows) {
+        final item = OrderItem.fromSql(row);
+        if (item.orderId != null) {
+          itemsMap.putIfAbsent(item.orderId!, () => []).add(item);
+        }
+      }
+
+      return rows.map((r) {
+        final String orderId = r['id'] as String;
+        return OrderModel.fromSql(r, itemsMap[orderId] ?? []);
+      }).toList();
     } catch (e) {
       return [];
     }

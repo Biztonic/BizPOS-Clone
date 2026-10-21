@@ -13,3 +13,10 @@ void reloadWebPage() {
     html.window.location.reload();
   } catch (_) {}
 }
+
+void purgeStaleAppCheckWebStorage() {
+  try {
+    html.window.localStorage.remove('FlutterFire-[DEFAULT]-recaptchaType');
+    html.window.localStorage.remove('FlutterFire-[DEFAULT]-recaptchaSiteKey');
+  } catch (_) {}
+}

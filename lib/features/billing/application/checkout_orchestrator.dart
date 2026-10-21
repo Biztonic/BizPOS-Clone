@@ -256,7 +256,7 @@ class CheckoutOrchestrator {
           collection: 'orders',
           entityId: orderId,
           operation: 'CREATE',
-          payload: legacyOrder.toSqlMap(),
+          payload: legacyOrder.toHiveMap(),
         );
 
         await _repository.performAtomicCheckout(
@@ -300,14 +300,8 @@ class CheckoutOrchestrator {
   Future<void> _persistToCache(OrderEntity order) async {
     try {
       final orderBox = Hive.box('cache_orders');
-      await orderBox.put(order.id, {
-        'id': order.id,
-        'storeId': order.storeId,
-        'total': order.total,
-        'status': order.status.value,
-        'date': order.date.toIso8601String(),
-        'syncStatus': 'PENDING',
-      });
+      final legacyOrder = OrderModel.fromEntity(order);
+      await orderBox.put(order.id, legacyOrder.toHiveMap());
     } catch (e) {
       debugPrint('⚠️ Cache persist failed (non-fatal): $e');
     }

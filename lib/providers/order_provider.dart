@@ -288,6 +288,8 @@ class OrderProvider with ChangeNotifier {
         deviceId: _syncService.deviceId ?? 'unknown',
         idempotencyKey: key,
         trackInventory: activeStore.trackInventory,
+        negativeStockPolicy: activeStore.negativeStockPolicyEnum,
+        taxRate: (activeStore.taxRate ?? 0).toDouble(),
       ));
 
       if (result.isSuccess && result.order != null) {

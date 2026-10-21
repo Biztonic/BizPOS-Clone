@@ -37,7 +37,7 @@ class DatabaseHelper {
     return _database!;
   }
 
-  static const int _version = 27;
+  static const int _version = 28;
   static int get version => _version;
   static String? _testDbName;
   @visibleForTesting
@@ -1027,6 +1027,18 @@ class DatabaseHelper {
             'CREATE INDEX IF NOT EXISTS idx_events_store_created ON business_events(storeId, createdAt DESC)');
       } catch (e) {/* Error ignored */}
     }
+
+    // Migration V28: Customer Udhari & Credit Limit Columns
+    if (oldVersion < 28) {
+      try {
+        await db.execute(
+            'ALTER TABLE customers ADD COLUMN udhariBalance REAL DEFAULT 0.0');
+      } catch (_) {}
+      try {
+        await db.execute(
+            'ALTER TABLE customers ADD COLUMN creditLimit REAL DEFAULT 0.0');
+      } catch (_) {}
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -1156,6 +1168,8 @@ class DatabaseHelper {
         deviceId TEXT,
         lastSyncedAt TEXT,
         version INTEGER DEFAULT 1,
+        udhariBalance REAL DEFAULT 0.0,
+        creditLimit REAL DEFAULT 0.0,
         isDeleted INTEGER DEFAULT 0,
         deletedBy TEXT
       )

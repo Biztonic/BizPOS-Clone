@@ -215,25 +215,20 @@ class AnnouncementService {
   void playAlertSound() => playActionSound(PosTouchAction.alert);
 
   /// Called on global pointer down in app.dart.
-  /// Debounced slightly so specialized action buttons play their unique sound cleanly.
+  /// Instant touch feedback without artificial delay; debounced against multi-touch jitter.
   void playInteractionSound() {
     try {
       if (!_settings.enableSounds) return;
       final sound = _settings.interactionSound;
       if (sound == 'none') return;
 
-      // Suppress generic tap sound if an action sound was played recently
-      if (DateTime.now().difference(_lastActionTime).inMilliseconds < 120) {
+      final now = DateTime.now();
+      // Debounce rapid multi-touch jitter (< 50ms) without artificial timer delay
+      if (now.difference(_lastActionTime).inMilliseconds < 50) {
         return;
       }
 
-      _pendingTapTimer?.cancel();
-      _pendingTapTimer = Timer(const Duration(milliseconds: 40), () {
-        if (DateTime.now().difference(_lastActionTime).inMilliseconds < 120) {
-          return;
-        }
-        playActionSound(PosTouchAction.tap);
-      });
+      playActionSound(PosTouchAction.tap);
     } catch (_) {}
   }
 

@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
+import 'package:hive/hive.dart';
 import '../services/image_cache_service.dart';
 import '../features/inventory/presentation/providers/inventory_provider.dart';
 import '../core/design/tokens/app_spacing.dart';
@@ -123,29 +124,44 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
       final packaging = await provider
           .fetchMetadata('packaging_types')
           .timeout(const Duration(seconds: 5), onTimeout: () => []);
-      final variants = await provider
-          .fetchMetadata('variant_types')
-          .timeout(const Duration(seconds: 5), onTimeout: () => []);
+
+      final store = provider.activeStore;
+      final storeId = store?.id ?? provider.activeStoreId ?? '';
+
+      // Load store-scoped categories from local storage (never global cross-store)
+      List<String> storeCustomCategories = [];
+      if (storeId.isNotEmpty) {
+        try {
+          final settingsBox = Hive.isBoxOpen('settings')
+              ? Hive.box('settings')
+              : await Hive.openBox('settings');
+          final raw = settingsBox.get('store_categories_$storeId');
+          if (raw is List) {
+            storeCustomCategories = raw.map((e) => e.toString()).toList();
+          }
+        } catch (_) {}
+      }
 
       List<String> existingCategories = [];
-      try {
-        final inventoryProvider =
-            Provider.of<InventoryProvider>(context, listen: false);
-        existingCategories =
-            inventoryProvider.categories.where((c) => c != 'All').toList();
-      } catch (e) {
-        debugPrint("No InventoryProvider found: $e");
+      if (mounted) {
+        try {
+          final inventoryProvider =
+              Provider.of<InventoryProvider>(context, listen: false);
+          existingCategories =
+              inventoryProvider.categories.where((c) => c != 'All').toList();
+        } catch (e) {
+          debugPrint("No InventoryProvider found: $e");
+        }
       }
 
       final mergedVariants = <String>{
-        ...variants,
+        ...storeCustomCategories,
         ...existingCategories,
         if (widget.item?.category != null && widget.item!.category.isNotEmpty)
           widget.item!.category,
       }.toList()
         ..sort();
 
-      final store = provider.activeStore;
       bool showD = false, showP = false;
 
       if (store != null) {
@@ -210,7 +226,23 @@ class _AddEditInventoryScreenState extends State<AddEditInventoryScreen> {
         if (mounted) {
           final dashboardProvider =
               Provider.of<DashboardProvider>(context, listen: false);
-          await dashboardProvider.addMetadata('variant_types', newCategory);
+          final storeId = dashboardProvider.activeStoreId ?? '';
+          if (storeId.isNotEmpty) {
+            try {
+              final settingsBox = Hive.isBoxOpen('settings')
+                  ? Hive.box('settings')
+                  : await Hive.openBox('settings');
+              final raw = settingsBox.get('store_categories_$storeId');
+              List<String> list = [];
+              if (raw is List) {
+                list = raw.map((e) => e.toString()).toList();
+              }
+              if (!list.contains(newCategory)) {
+                list.add(newCategory);
+                await settingsBox.put('store_categories_$storeId', list);
+              }
+            } catch (_) {}
+          }
         }
       } else {
         setState(() => _selectedCategory = newCategory);

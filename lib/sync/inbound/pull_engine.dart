@@ -119,11 +119,37 @@ class PullEngine {
         try {
           pageSnapshot = await pageQuery.get();
         } catch (e) {
-          isCompleteDataset = false;
-          debugPrint('📥 [PullEngine] Page fetch failed for $collection: $e');
-          await logEvent('Page fetch failed for $collection: $e',
-              isError: true);
-          break;
+          final errStr = e.toString();
+          if (errStr.contains('failed-precondition') ||
+              errStr.contains('index')) {
+            try {
+              debugPrint(
+                  '⚠️ [PullEngine] Missing composite index for $collection. Falling back to storeId-only query...');
+              Query fallbackQuery = _db
+                  .collection(collection)
+                  .where('storeId', isEqualTo: storeId)
+                  .limit(pageSize);
+              if (lastVisibleDoc != null) {
+                fallbackQuery =
+                    fallbackQuery.startAfterDocument(lastVisibleDoc);
+              }
+              pageSnapshot = await fallbackQuery.get();
+            } catch (fallbackErr) {
+              isCompleteDataset = false;
+              debugPrint(
+                  '📥 [PullEngine] Fallback fetch failed for $collection: $fallbackErr');
+              await logEvent(
+                  'Page fetch failed for $collection: $fallbackErr',
+                  isError: true);
+              break;
+            }
+          } else {
+            isCompleteDataset = false;
+            debugPrint('📥 [PullEngine] Page fetch failed for $collection: $e');
+            await logEvent('Page fetch failed for $collection: $e',
+                isError: true);
+            break;
+          }
         }
 
         if (pageSnapshot.docs.isEmpty) {

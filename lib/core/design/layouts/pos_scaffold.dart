@@ -217,10 +217,13 @@ class _PosScaffoldState extends State<PosScaffold> {
       elevation: 0,
       backgroundColor:
           layoutType == PosLayoutType.desktop ? AppColors.transparent : null,
-      foregroundColor: layoutType == PosLayoutType.desktop
-          ? Theme.of(context).textTheme.bodyLarge?.color
-          : null,
       actions: [
+        if (canPop &&
+            (layoutType == PosLayoutType.mobile ||
+                (layoutType == PosLayoutType.tablet &&
+                    !(widget.showSidebar && widget.rightPanel == null))) &&
+            widget.showSidebar)
+          _buildDrawerMenuButton(context),
         if (widget.actions != null) ...widget.actions!,
         if (widget.showGlobalActions) ...[
           // Sync Status & Manual Sync
@@ -348,7 +351,13 @@ class _PosScaffoldState extends State<PosScaffold> {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: InkWell(
-        onTap: () => Scaffold.of(context).openDrawer(),
+        onTap: () {
+          if (_scaffoldKey.currentState?.hasDrawer ?? false) {
+            _scaffoldKey.currentState?.openDrawer();
+          } else {
+            Scaffold.maybeOf(context)?.openDrawer();
+          }
+        },
         borderRadius: AppRadius.borderSm,
         child: Container(
           decoration: BoxDecoration(

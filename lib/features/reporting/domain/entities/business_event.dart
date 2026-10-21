@@ -51,18 +51,20 @@ class BusinessEvent {
     };
   }
 
-  factory BusinessEvent.fromMap(Map<String, dynamic> map, String id) {
+  factory BusinessEvent.fromMap(Map<String, dynamic> map, [String? id]) {
     return BusinessEvent(
-      id: id,
+      id: id ?? map['id']?.toString() ?? '',
       storeId: map['storeId'] ?? '',
       entityType: map['entityType'] ?? '',
       entityId: map['entityId'] ?? '',
       eventType: map['eventType'] ?? '',
-      payload: Map<String, dynamic>.from(map['payload'] ?? {}),
+      payload: Map<String, dynamic>.from(
+          map['payload'] is Map ? map['payload'] : {}),
       deviceId: map['deviceId'],
       createdAt: (map['createdAt'] is Timestamp)
           ? (map['createdAt'] as Timestamp).toDate()
-          : DateTime.parse(map['createdAt'].toString()),
+          : DateTime.tryParse(map['createdAt']?.toString() ?? '') ??
+              DateTime.now(),
       userId: map['userId'],
     );
   }

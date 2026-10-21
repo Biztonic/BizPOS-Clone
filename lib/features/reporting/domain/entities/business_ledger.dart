@@ -41,6 +41,8 @@ class BusinessEvent {
     };
   }
 
+  Map<String, dynamic> toSqlMap() => toMap();
+
   factory BusinessEvent.fromMap(Map<String, dynamic> map) {
     DateTime parseDate(dynamic val) {
       if (val == null) return DateTime.now();

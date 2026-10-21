@@ -44,9 +44,6 @@ class DashboardInsightsScreen extends ConsumerStatefulWidget {
 
 class _DashboardInsightsScreenState
     extends ConsumerState<DashboardInsightsScreen> with WidgetsBindingObserver {
-  Timer? _timer;
-  DateTime _now = DateTime.now();
-
   // Battery State
   int _batteryLevel = 100;
   BatteryState _batteryState = BatteryState.full;
@@ -65,21 +62,7 @@ class _DashboardInsightsScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _startClock();
     _initBattery();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      if (mounted) setState(() => _now = DateTime.now());
-    }
-  }
-
-  void _startClock() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) setState(() => _now = DateTime.now());
-    });
   }
 
   Future<void> _initBattery() async {
@@ -108,7 +91,6 @@ class _DashboardInsightsScreenState
 
   @override
   void dispose() {
-    _timer?.cancel();
     _batteryTimer?.cancel();
     _batteryStateSubscription?.cancel();
     _reminderTimer?.cancel();
@@ -311,19 +293,7 @@ class _DashboardInsightsScreenState
                       _buildPrinterStatusIndicator(isDarkMode),
                       const SizedBox(width: AppSpacing.xl),
                       // Clock (Enhanced text style)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(DateFormat('hh:mm:ss a').format(_now),
-                              style: AppTypography.displaySmall.copyWith(
-                                  fontSize: 26,
-                                  color: AppColors.adaptivePrimary(context),
-                                  fontWeight: FontWeight.bold)),
-                          Text(DateFormat('EEEE, MMM d, yyyy').format(_now),
-                              style: AppTypography.labelMedium.copyWith(
-                                  color: AppColors.textSecondary(context))),
-                        ],
-                      ),
+                      const _DashboardHeaderClock(),
                       const SizedBox(width: AppSpacing.xl),
 
                       // Logout
@@ -995,7 +965,7 @@ class _DashboardInsightsScreenState
                                                 ));
 
                                         if (confirm == true) {
-                                          // ignore: use_build_context_synchronously
+                                          if (!context.mounted) return;
                                           final provider = legacy.Provider.of<
                                                   DashboardProvider>(context,
                                               listen:
@@ -1430,7 +1400,7 @@ class _SupplierQuickAccessCard extends StatelessWidget {
             right: -10,
             child: Opacity(
               opacity: isDarkMode ? 0.05 : 0.08,
-              child: Icon(Icons.local_shipping,
+              child: const Icon(Icons.local_shipping,
                   size: 100, color: AppColors.warning),
             ),
           ),
@@ -1576,7 +1546,7 @@ class _RushedHoursCardState extends State<_RushedHoursCard>
       vsync: this,
       duration: const Duration(seconds: 1),
     );
-    _tickTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+    _tickTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
           _currentTime = DateTime.now();
@@ -1976,7 +1946,7 @@ class _CustomerQuickAccessCard extends StatelessWidget {
             right: -10,
             child: Opacity(
               opacity: isDarkMode ? 0.05 : 0.08,
-              child: Icon(Icons.people, size: 100, color: AppColors.primary),
+              child: const Icon(Icons.people, size: 100, color: AppColors.primary),
             ),
           ),
           Column(
@@ -2091,6 +2061,65 @@ class _CustomerQuickAccessCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DashboardHeaderClock extends StatefulWidget {
+  const _DashboardHeaderClock();
+
+  @override
+  State<_DashboardHeaderClock> createState() => _DashboardHeaderClockState();
+}
+
+class _DashboardHeaderClockState extends State<_DashboardHeaderClock>
+    with WidgetsBindingObserver {
+  Timer? _timer;
+  DateTime _now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      setState(() => _now = DateTime.now());
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          DateFormat('hh:mm:ss a').format(_now),
+          style: AppTypography.displaySmall.copyWith(
+            fontSize: 26,
+            color: AppColors.adaptivePrimary(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          DateFormat('EEEE, MMM d, yyyy').format(_now),
+          style: AppTypography.labelMedium.copyWith(
+            color: AppColors.textSecondary(context),
+          ),
+        ),
+      ],
     );
   }
 }

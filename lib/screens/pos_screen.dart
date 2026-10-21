@@ -22,7 +22,7 @@ import '../utils/responsive.dart';
 import 'dashboard_theme/car_dashboard_pos_screen.dart';
 import '../widgets/demo_target.dart'; // Import DemoTarget
 import '../models/table_model.dart'; // NEW
-// NEW
+import '../models/store.dart';
 import '../services/printer_manager_service.dart';
 import '../announcement/service/announcement_service.dart';
 import '../utils/theme.dart';
@@ -63,9 +63,16 @@ class _POSScreenState extends State<POSScreen> {
   void initState() {
     super.initState();
 
-    // Check for printer setup on enter
+    // Check for printer setup on enter and ensure inventory is loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPrinterSetupPopup();
+      if (mounted) {
+        final inventoryProvider =
+            Provider.of<InventoryProvider>(context, listen: false);
+        if (inventoryProvider.allItems.isEmpty) {
+          inventoryProvider.loadInventory();
+        }
+      }
     });
 
     // Initialize with pre-selected table if available
@@ -3729,7 +3736,7 @@ class _POSScreenState extends State<POSScreen> {
 
       // 4. BACKGROUND PRINTING (Convert to model for legacy service)
       if (result.order != null) {
-        _printReceiptInBackground(OrderModel.fromEntity(result.order!));
+        _printReceiptInBackground(OrderModel.fromEntity(result.order!), activeStore);
       }
     } catch (e) {
       if (mounted) {
@@ -3740,26 +3747,26 @@ class _POSScreenState extends State<POSScreen> {
     }
   }
 
-  Future<void> _printReceiptInBackground(OrderModel order) async {
+  Future<void> _printReceiptInBackground(OrderModel order, [Store? passedStore]) async {
     try {
       final dashboardProvider =
           Provider.of<DashboardProvider>(context, listen: false);
-      final store = dashboardProvider.activeStore;
+      final store = passedStore ?? dashboardProvider.activeStore;
 
       if (store == null) return;
 
       final cashierName = dashboardProvider.userProfile?.name ?? "Cashier";
-      final action = store.receipt.printAction;
+      final action = (store.receipt.printAction).trim().toLowerCase();
 
       // 1. Print Main Receipt
-      if (action == 'Main' || action == 'Both') {
+      if (action == 'main' || action == 'both' || action.isEmpty) {
         await PrinterManagerService()
             .printOrderReceipt(order, store, cashierName: cashierName);
       }
 
       // 2. Print KDS
-      if (action == 'KDS' || action == 'Both') {
-        if (action == 'Both') {
+      if (action == 'kds' || action == 'both') {
+        if (action == 'both') {
           await Future.delayed(const Duration(milliseconds: 500));
         }
         await PrinterManagerService().printOrderKDS(order,

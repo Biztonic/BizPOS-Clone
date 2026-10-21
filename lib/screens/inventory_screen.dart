@@ -35,6 +35,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = Provider.of<InventoryProvider>(context, listen: false);
+        if (provider.allItems.isEmpty) {
+          provider.loadInventory();
+        }
+      }
+    });
     _searchController.addListener(() {
       _debounce?.cancel();
       _debounce = Timer(const Duration(milliseconds: 300), () {

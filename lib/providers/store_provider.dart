@@ -863,22 +863,30 @@ class StoreProvider with ChangeNotifier {
           debugPrint('⚠️ StoreProvider: Failed to create owner member doc: $e');
         }
 
-        final currentRole =
-            callerRole.isNotEmpty && callerRole != 'Unauthorized'
-                ? callerRole
-                : 'Store Owner';
-        await _db.collection('users').doc(uid).set({
-          'storeId': docRef.id,
-          'storeIds': FieldValue.arrayUnion([docRef.id]),
-          'accessibleStoreIds': FieldValue.arrayUnion([docRef.id]),
-          'role': currentRole,
-        }, SetOptions(merge: true));
+        try {
+          final currentRole =
+              callerRole.isNotEmpty && callerRole != 'Unauthorized'
+                  ? callerRole
+                  : 'Store Owner';
+          await _db.collection('users').doc(uid).set({
+            'storeId': docRef.id,
+            'storeIds': FieldValue.arrayUnion([docRef.id]),
+            'accessibleStoreIds': FieldValue.arrayUnion([docRef.id]),
+            'role': currentRole,
+          }, SetOptions(merge: true));
+        } catch (e) {
+          debugPrint('⚠️ StoreProvider: Failed to link store to owner user document: $e');
+        }
       } else {
         // 2. Admin creating for someone else
         // Link to the Admin so they can manage/onboard it
-        await _db.collection('users').doc(uid).set({
-          'accessibleStoreIds': FieldValue.arrayUnion([docRef.id]),
-        }, SetOptions(merge: true));
+        try {
+          await _db.collection('users').doc(uid).set({
+            'accessibleStoreIds': FieldValue.arrayUnion([docRef.id]),
+          }, SetOptions(merge: true));
+        } catch (e) {
+          debugPrint('⚠️ StoreProvider: Failed to link store to admin accessibleStoreIds: $e');
+        }
 
         // 3. Try to find the actual owner and link them
         try {

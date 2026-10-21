@@ -68,10 +68,8 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
   String _globalCardStyle =
       'image'; // Card Style ('image', 'label', 'minimal_rect')
 
-  // Session Timer
-  Timer? _sessionTimer;
-  Duration _sessionDuration = Duration.zero;
-  bool _isRightHanded = false; // Layout state
+  // Layout state
+  bool _isRightHanded = false;
   Offset? _miniCartPosition; // Draggable Mini Cart Position
 
   StreamSubscription<String>? _scanSubscription;
@@ -81,7 +79,6 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
     super.initState();
     _scannerService.init();
     _scanSubscription = _scannerService.scanStream.listen(_onBarcodeScanned);
-    _startSessionTimer();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _loadSavedBackground();
   }
@@ -108,23 +105,11 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
     } catch (_) {}
   }
 
-  void _startSessionTimer() {
-    _sessionTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() {
-          _sessionDuration += const Duration(seconds: 1);
-        });
-      }
-    });
-  }
-
   @override
   void dispose() {
     _gridController.dispose();
-    // _categoryScrollController.dispose(); // Added - This line was commented out in the original, but the user's instruction implies it should be there. I will keep it as it was in the original, but add the timer dispose.
     _customerNameController.dispose();
     _customerMobileController.dispose();
-    _sessionTimer?.cancel();
     _scanSubscription?.cancel();
     super.dispose();
   }
@@ -923,6 +908,10 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
         customerPhone: _customerMobileController.text.isNotEmpty
             ? _customerMobileController.text
             : null,
+        subtotal: subtotal,
+        cgst: (subtotal * taxRate) / 2,
+        sgst: (subtotal * taxRate) / 2,
+        taxRateSnapshot: (provider.activeStore?.taxRate ?? 0).toDouble(),
       );
 
       // 3. INSTANT PRINTING (Optimistic)
@@ -969,19 +958,19 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
       final provider = Provider.of<DashboardProvider>(context, listen: false);
       final store = provider.activeStore;
 
-      final action = store?.receipt.printAction ?? 'Both'; // Default Both
+      final action = (store?.receipt.printAction ?? 'Both').trim().toLowerCase(); // Default Both
       final cashierName = provider.userProfile?.name ?? "Cashier";
 
       // 1. Print Main Receipt
-      if (action == 'Main' || action == 'Both') {
+      if (action == 'main' || action == 'both' || action.isEmpty) {
         await PrinterManagerService()
             .printOrderReceipt(order, store, cashierName: cashierName);
       }
 
       // 2. Print KDS Receipt (if applicable)
-      if (action == 'KDS' || action == 'Both') {
+      if (action == 'kds' || action == 'both') {
         // Small buffer if printing both sequentially on same printer (rare but possible in dev)
-        if (action == 'Both') {
+        if (action == 'both') {
           await Future.delayed(const Duration(milliseconds: 500));
         }
         await PrinterManagerService().printOrderKDS(order,
@@ -1447,9 +1436,9 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
             ),
 
           // Session Timer
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: _buildSessionTimer(isDarkMode),
+          const Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: _SessionTimerWidget(),
           ),
           Divider(
               color: AppColors.border(effectiveContext).withValues(alpha: 0.3),
@@ -1681,36 +1670,6 @@ class _CarDashboardPOSScreenState extends State<CarDashboardPOSScreen> {
           child: Icon(icon,
               color: isSolid ? AppColors.surfaceLight : color, size: 24),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSessionTimer(bool isDarkMode) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    final hours = twoDigits(_sessionDuration.inHours);
-    final minutes = twoDigits(_sessionDuration.inMinutes.remainder(60));
-    final seconds = twoDigits(_sessionDuration.inSeconds.remainder(60));
-
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppColors.background(context),
-        borderRadius: AppRadius.borderSm,
-        border: Border.all(color: AppColors.border(context)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.timer,
-              size: 16, color: AppColors.adaptivePrimary(context)),
-          const SizedBox(width: AppSpacing.sm),
-          Text("$hours:$minutes:$seconds",
-              style: TextStyle(
-                  color: AppColors.textPrimary(context),
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)), // Increased to 16
-        ],
       ),
     );
   }
@@ -3213,6 +3172,70 @@ class _CentralCatalogPickerDialogState
             )
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SessionTimerWidget extends StatefulWidget {
+  const _SessionTimerWidget();
+
+  @override
+  State<_SessionTimerWidget> createState() => _SessionTimerWidgetState();
+}
+
+class _SessionTimerWidgetState extends State<_SessionTimerWidget> {
+  Timer? _timer;
+  Duration _duration = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {
+          _duration += const Duration(seconds: 1);
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    final hours = twoDigits(_duration.inHours);
+    final minutes = twoDigits(_duration.inMinutes.remainder(60));
+    final seconds = twoDigits(_duration.inSeconds.remainder(60));
+
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppColors.background(context),
+        borderRadius: AppRadius.borderSm,
+        border: Border.all(color: AppColors.border(context)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.timer,
+              size: 16, color: AppColors.adaptivePrimary(context)),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            "$hours:$minutes:$seconds",
+            style: TextStyle(
+              color: AppColors.textPrimary(context),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }

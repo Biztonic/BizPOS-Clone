@@ -176,10 +176,11 @@ class InventoryMovementRepository {
     }
 
     // ─── 2. Cross-Store & Item Isolation Validation ──────────
+    bool itemTracksStock = true;
     if (checkItemStore) {
       final itemRows = await txn.query(
         'inventory',
-        columns: ['id', 'storeId'],
+        columns: ['id', 'storeId', 'trackStock'],
         where: 'id = ?',
         whereArgs: [movement.itemId],
         limit: 1,
@@ -196,6 +197,14 @@ class InventoryMovementRepository {
             itemId: movement.itemId,
           );
         }
+
+        final trackVal = itemRows.first['trackStock'];
+        if (trackVal != null && (trackVal == 0 || trackVal == false)) {
+          itemTracksStock = false;
+        }
+      } else {
+        // Line item not found in local inventory table (e.g. custom charge or service)
+        itemTracksStock = false;
       }
     }
 
@@ -216,7 +225,7 @@ class InventoryMovementRepository {
     final projectedStock = currentStock + movement.delta;
 
     final policy = negativeStockPolicy ?? NegativeStockPolicy.block;
-    if (projectedStock < 0) {
+    if (itemTracksStock && projectedStock < 0) {
       if (policy == NegativeStockPolicy.block) {
         throw InsufficientStockException(
           itemId: movement.itemId,

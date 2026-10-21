@@ -108,13 +108,13 @@ service cloud.firestore {
         )
       );
 
-      // Normal users CANNOT modify privileged authorization fields
+      // Normal users CANNOT modify privileged authorization fields, except when linking their own store as owner
       allow update: if isSuperAdmin() || (
         isAuthenticated() && request.auth.uid == uid && 
-        (!('role' in request.resource.data) || ('role' in resource.data && request.resource.data.role == resource.data.role)) &&
-        (!('storeId' in request.resource.data) || ('storeId' in resource.data && request.resource.data.storeId == resource.data.storeId)) &&
-        (!('storeIds' in request.resource.data) || ('storeIds' in resource.data && request.resource.data.storeIds == resource.data.storeIds)) &&
-        (!('accessibleStoreIds' in request.resource.data) || ('accessibleStoreIds' in resource.data && request.resource.data.accessibleStoreIds == resource.data.accessibleStoreIds)) &&
+        (!('role' in request.resource.data) || ('role' in resource.data && request.resource.data.role == resource.data.role) || (!('role' in resource.data) && request.resource.data.role in ['Store Owner', 'Owner']) || (resource.data.role in ['', 'Unauthorized'] && request.resource.data.role in ['Store Owner', 'Owner'])) &&
+        (!('storeId' in request.resource.data) || ('storeId' in resource.data && request.resource.data.storeId == resource.data.storeId) || !('storeId' in resource.data) || resource.data.storeId == null || resource.data.storeId == '' || isStoreOwner(request.resource.data.storeId)) &&
+        (!('storeIds' in request.resource.data) || ('storeIds' in resource.data && request.resource.data.storeIds == resource.data.storeIds) || !('storeIds' in resource.data) || resource.data.storeIds == null) &&
+        (!('accessibleStoreIds' in request.resource.data) || ('accessibleStoreIds' in resource.data && request.resource.data.accessibleStoreIds == resource.data.accessibleStoreIds) || !('accessibleStoreIds' in resource.data) || resource.data.accessibleStoreIds == null) &&
         (!('franchiseId' in request.resource.data) || ('franchiseId' in resource.data && request.resource.data.franchiseId == resource.data.franchiseId)) &&
         (!('isSuperAdmin' in request.resource.data) || ('isSuperAdmin' in resource.data && request.resource.data.isSuperAdmin == resource.data.isSuperAdmin))
       );

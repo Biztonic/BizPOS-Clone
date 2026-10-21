@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "biztonic-pos-v2"
+    "default": "bizpos-clone"
   },
   "targets": {},
   "etags": {}

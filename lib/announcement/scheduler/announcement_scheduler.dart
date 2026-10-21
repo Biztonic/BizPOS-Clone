@@ -39,7 +39,7 @@ class AnnouncementScheduler {
     _mergeBuffers[type]!.add(announcement);
 
     _mergeTimers[type]?.cancel();
-    _mergeTimers[type] = Timer(const Duration(milliseconds: 1200), () {
+    _mergeTimers[type] = Timer(const Duration(milliseconds: 250), () {
       _flushMergeBuffer(type);
     });
   }

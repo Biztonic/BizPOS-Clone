@@ -686,8 +686,8 @@ class DashboardProvider with ChangeNotifier {
       }
     }
 
-    // 2. Check Repository / SQLite if activeStoreId is present
-    if (_activeStoreId != null && _activeStoreId!.isNotEmpty) {
+    // 2. Check Repository / SQLite if activeStoreId is present (Native only)
+    if (!kIsWeb && _activeStoreId != null && _activeStoreId!.isNotEmpty) {
       try {
         final repoOrders =
             await _repository.getOrdersByCustomer(_activeStoreId!, customerId);
@@ -1409,6 +1409,11 @@ class DashboardProvider with ChangeNotifier {
           storeId: newStoreId,
           accessibleStoreIds: [newStoreId],
         );
+      }
+      if (_userProfile != null) {
+        try {
+          OfflineService().cacheUserProfile(_userProfile!.toMap(), uid: _userProfile!.uid);
+        } catch (_) {}
       }
       _routerNotifier?.notify();
       notifyListeners();
@@ -3767,9 +3772,12 @@ class DashboardProvider with ChangeNotifier {
             }, SetOptions(merge: true));
             await OfflineService().cacheUserProfile(userData, uid: uid);
           } catch (_) {}
+        } else if (_userProfile != null) {
+          debugPrint(
+              '⚠️ DashboardProvider: User document NOT FOUND in Firestore for $uid. Retaining valid cached profile (${_userProfile?.role}).');
         } else {
           debugPrint(
-              '⚠️ DashboardProvider: User document NOT FOUND in Firestore for $uid. Resetting stale cached profile.');
+              '⚠️ DashboardProvider: User document NOT FOUND in Firestore for $uid and no cache exists. Resetting.');
           _userProfile = null;
           _activeRole = 'Unauthorized';
           _activeStoreId = null;

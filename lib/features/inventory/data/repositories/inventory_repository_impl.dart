@@ -59,18 +59,7 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
           return InventoryResult.failure('Item not found.');
         }
 
-        Map<String, dynamic> recursiveCast(Map map) {
-          return map.map((key, value) {
-            if (value is Map)
-              return MapEntry(key.toString(), recursiveCast(value));
-            if (value is List)
-              return MapEntry(key.toString(),
-                  value.map((e) => e is Map ? recursiveCast(e) : e).toList());
-            return MapEntry(key.toString(), value);
-          });
-        }
-
-        final legacyItem = InventoryItem.fromMap(recursiveCast(raw), itemId);
+        final legacyItem = InventoryItem.fromMap(_recursiveCast(raw), itemId);
         return InventoryResult.success(InventoryMapper.fromLegacy(legacyItem));
       }
 
@@ -86,6 +75,55 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
     }
   }
 
+  bool _isItemValid(
+    Map v, {
+    String? targetStoreId,
+    String? category,
+  }) {
+    final itemStoreId = (v['storeId'] ?? '').toString().trim().toLowerCase();
+    final targetSid = (targetStoreId ?? '').trim().toLowerCase();
+    final matchesStore = targetSid.isEmpty ||
+        targetSid == 'global' ||
+        itemStoreId.isEmpty ||
+        itemStoreId == targetSid;
+
+    final rawDeletedAt = v['deletedAt'];
+    final isNotDeletedAt = rawDeletedAt == null ||
+        rawDeletedAt == false ||
+        rawDeletedAt == '' ||
+        rawDeletedAt == 'null';
+    final isNotDeletedFlag = v['isDeleted'] != true &&
+        v['isDeleted'] != 1 &&
+        v['isDeleted'] != 'true';
+    final notDeleted = isNotDeletedAt && isNotDeletedFlag;
+
+    if (category == null || category == 'All') {
+      return matchesStore && notDeleted;
+    }
+
+    final itemCategory = (v['category'] ?? '').toString().trim().toLowerCase();
+    final targetCategory = category.trim().toLowerCase();
+    final matchesCategory = targetCategory.isEmpty ||
+        targetCategory == 'all' ||
+        itemCategory == targetCategory;
+
+    return matchesStore && notDeleted && matchesCategory;
+  }
+
+  Map<String, dynamic> _recursiveCast(Map map) {
+    return map.map((key, value) {
+      if (value is Map) return MapEntry(key.toString(), _recursiveCast(value));
+      if (value is List) {
+        return MapEntry(
+            key.toString(),
+            value
+                .map((e) => e is Map ? _recursiveCast(e) : e)
+                .toList());
+      }
+      return MapEntry(key.toString(), value);
+    });
+  }
+
   @override
   Future<InventoryResult<List<InventoryEntity>>> getItems(
     String? storeId, {
@@ -94,36 +132,12 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
     try {
       if (kIsWeb) {
         final box = await Hive.openBox('cache_inventory');
-        final targetStoreId = storeId?.trim();
-        if (targetStoreId == null) return InventoryResult.success([]);
-
-        Map<String, dynamic> recursiveCast(Map map) {
-          return map.map((key, value) {
-            if (value is Map)
-              return MapEntry(key.toString(), recursiveCast(value));
-            if (value is List)
-              return MapEntry(key.toString(),
-                  value.map((e) => e is Map ? recursiveCast(e) : e).toList());
-            return MapEntry(key.toString(), value);
-          });
-        }
-
         final cached = box.values
-            .where((v) {
-              if (v is! Map) return false;
-              final vStoreId = (v['storeId'] ?? '').toString().trim();
-              final matchesStore =
-                  vStoreId.isEmpty || vStoreId == targetStoreId;
-              final notDeleted = v['deletedAt'] == null &&
-                  v['isDeleted'] != true &&
-                  v['isDeleted'] != 1;
-              final matchesCategory = category == null ||
-                  category == 'All' ||
-                  v['category'] == category;
-              return matchesStore && notDeleted && matchesCategory;
-            })
-            .map((e) =>
-                InventoryItem.fromMap(recursiveCast(e as Map), (e)['id'] ?? ''))
+            .where((v) =>
+                v is Map &&
+                _isItemValid(v, targetStoreId: storeId, category: category))
+            .map((e) => InventoryItem.fromMap(
+                _recursiveCast(e as Map), (e)['id'] ?? ''))
             .toList();
 
         final items = cached.map(InventoryMapper.fromLegacy).toList();
@@ -132,8 +146,28 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
 
       final legacyItems =
           await _legacyRepo.getInventory(storeId, category: category);
-      final items = legacyItems.map(InventoryMapper.fromLegacy).toList();
-      return InventoryResult.success(items);
+      if (legacyItems.isNotEmpty) {
+        final items = legacyItems.map(InventoryMapper.fromLegacy).toList();
+        return InventoryResult.success(items);
+      }
+
+      // Fallback: If SQLite returned empty on native, check Hive cache_inventory
+      if (Hive.isBoxOpen('cache_inventory') ||
+          await Hive.boxExists('cache_inventory')) {
+        final box = await Hive.openBox('cache_inventory');
+        final cached = box.values
+            .where((v) =>
+                v is Map &&
+                _isItemValid(v, targetStoreId: storeId, category: category))
+            .map((e) => InventoryItem.fromMap(
+                _recursiveCast(e as Map), (e)['id'] ?? ''))
+            .toList();
+
+        final items = cached.map(InventoryMapper.fromLegacy).toList();
+        return InventoryResult.success(items);
+      }
+
+      return InventoryResult.success([]);
     } catch (e, st) {
       debugPrint('🔥 Error fetching inventory items: $e\n$st');
       return InventoryResult.failure('Failed to fetch items: $e');
@@ -159,8 +193,9 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
       } else {
         // Fetch current to soft delete
         final legacyItem = await _legacyRepo.getInventoryItem(itemId);
-        if (legacyItem == null)
+        if (legacyItem == null) {
           return InventoryResult.failure('Item not found');
+        }
 
         final deletedItem = legacyItem.copyWith(deletedAt: DateTime.now());
         await _legacyRepo.insertInventory(deletedItem);
@@ -259,36 +294,23 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
       List<InventoryItem> legacyItems = [];
       if (kIsWeb) {
         final box = await Hive.openBox('cache_inventory');
-        final targetStoreId = storeId.trim();
-
-        Map<String, dynamic> recursiveCast(Map map) {
-          return map.map((key, value) {
-            if (value is Map)
-              return MapEntry(key.toString(), recursiveCast(value));
-            if (value is List)
-              return MapEntry(key.toString(),
-                  value.map((e) => e is Map ? recursiveCast(e) : e).toList());
-            return MapEntry(key.toString(), value);
-          });
-        }
-
-        final cached = box.values
-            .where((v) {
-              if (v is! Map) return false;
-              final vStoreId = (v['storeId'] ?? '').toString().trim();
-              final matchesStore = vStoreId == targetStoreId;
-              final notDeleted = v['deletedAt'] == null &&
-                  v['isDeleted'] != true &&
-                  v['isDeleted'] != 1;
-              return matchesStore && notDeleted;
-            })
-            .map((e) =>
-                InventoryItem.fromMap(recursiveCast(e as Map), (e)['id'] ?? ''))
+        legacyItems = box.values
+            .where((v) => v is Map && _isItemValid(v, targetStoreId: storeId))
+            .map((e) => InventoryItem.fromMap(
+                _recursiveCast(e as Map), (e)['id'] ?? ''))
             .toList();
-
-        legacyItems = cached;
       } else {
         legacyItems = await _legacyRepo.getInventory(storeId);
+        if (legacyItems.isEmpty &&
+            (Hive.isBoxOpen('cache_inventory') ||
+                await Hive.boxExists('cache_inventory'))) {
+          final box = await Hive.openBox('cache_inventory');
+          legacyItems = box.values
+              .where((v) => v is Map && _isItemValid(v, targetStoreId: storeId))
+              .map((e) => InventoryItem.fromMap(
+                  _recursiveCast(e as Map), (e)['id'] ?? ''))
+              .toList();
+        }
       }
 
       int totalItems = legacyItems.length;
@@ -334,37 +356,23 @@ class InventoryRepositoryImpl implements InventoryRepositoryInterface {
       List<InventoryItem> legacyItems = [];
       if (kIsWeb) {
         final box = await Hive.openBox('cache_inventory');
-        final targetStoreId = storeId?.trim();
-        if (targetStoreId == null) return InventoryResult.success([]);
-
-        Map<String, dynamic> recursiveCast(Map map) {
-          return map.map((key, value) {
-            if (value is Map)
-              return MapEntry(key.toString(), recursiveCast(value));
-            if (value is List)
-              return MapEntry(key.toString(),
-                  value.map((e) => e is Map ? recursiveCast(e) : e).toList());
-            return MapEntry(key.toString(), value);
-          });
-        }
-
-        final cached = box.values
-            .where((v) {
-              if (v is! Map) return false;
-              final vStoreId = (v['storeId'] ?? '').toString().trim();
-              final matchesStore = vStoreId == targetStoreId;
-              final notDeleted = v['deletedAt'] == null &&
-                  v['isDeleted'] != true &&
-                  v['isDeleted'] != 1;
-              return matchesStore && notDeleted;
-            })
-            .map((e) =>
-                InventoryItem.fromMap(recursiveCast(e as Map), (e)['id'] ?? ''))
+        legacyItems = box.values
+            .where((v) => v is Map && _isItemValid(v, targetStoreId: storeId))
+            .map((e) => InventoryItem.fromMap(
+                _recursiveCast(e as Map), (e)['id'] ?? ''))
             .toList();
-
-        legacyItems = cached;
       } else {
         legacyItems = await _legacyRepo.getInventory(storeId);
+        if (legacyItems.isEmpty &&
+            (Hive.isBoxOpen('cache_inventory') ||
+                await Hive.boxExists('cache_inventory'))) {
+          final box = await Hive.openBox('cache_inventory');
+          legacyItems = box.values
+              .where((v) => v is Map && _isItemValid(v, targetStoreId: storeId))
+              .map((e) => InventoryItem.fromMap(
+                  _recursiveCast(e as Map), (e)['id'] ?? ''))
+              .toList();
+        }
       }
 
       final categories = legacyItems.map((e) => e.category).toSet().toList();

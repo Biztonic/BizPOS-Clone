@@ -8,9 +8,14 @@ import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
 import '../../firebase_options.dart';
 import '../../core/design/tokens/app_colors.dart';
+import '../utils/web_cache_cleaner_stub.dart'
+    if (dart.library.html) '../utils/web_cache_cleaner_web.dart' as cache_cleaner;
 
 class FirebaseBootstrap {
   static Future<void> init() async {
+    if (kIsWeb) {
+      cache_cleaner.purgeStaleAppCheckWebStorage();
+    }
     debugPrint('🔥 Initializing Firebase...');
 
     await Firebase.initializeApp(
@@ -25,10 +30,13 @@ class FirebaseBootstrap {
 
   static Future<void> _setupAppCheck() async {
     try {
+      if (kIsWeb) {
+        // Bypass dummy AppCheck key on web to prevent 400 Bad Request & token rejection on Chrome
+        debugPrint('🛡️ Firebase App Check bypassed for web');
+        return;
+      }
       // ignore: deprecated_member_use
       await FirebaseAppCheck.instance.activate(
-        // ignore: deprecated_member_use
-        webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
         // ignore: deprecated_member_use
         androidProvider: kReleaseMode
             ? AndroidProvider.playIntegrity

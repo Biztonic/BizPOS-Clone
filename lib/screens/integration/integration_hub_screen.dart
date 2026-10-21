@@ -6,6 +6,9 @@ import 'package:biztonic_pos/core/design/tokens/app_spacing.dart';
 import 'package:flutter/material.dart';
 import '../../utils/responsive.dart';
 
+import 'package:go_router/go_router.dart';
+import '../../core/design/layouts/pos_scaffold.dart';
+
 class IntegrationHubScreen extends StatefulWidget {
   const IntegrationHubScreen({super.key});
 
@@ -24,8 +27,21 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PosScaffold(
+      showSidebar: true,
+      title: AppLocalizations.t(context, 'Integration Hub'),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Back',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/dashboard');
+            }
+          },
+        ),
         title: Text(AppLocalizations.t(context, 'Integration Hub')),
         actions: [
           IconButton(
@@ -34,7 +50,7 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
               tooltip: "Sync Logs"),
         ],
       ),
-      body: Padding(
+      mainContent: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

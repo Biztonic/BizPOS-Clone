@@ -171,9 +171,9 @@ class UniversalPrinterService {
         debugPrint('🖨️ PRINT: ERROR - No printer service available!');
         throw Exception('Printer service unavailable');
       }
-      completer.complete();
+      if (!completer.isCompleted) completer.complete();
     } catch (e) {
-      completer.completeError(e);
+      if (!completer.isCompleted) completer.completeError(e);
     }
   }
 
@@ -188,10 +188,10 @@ class UniversalPrinterService {
     try {
       await previousLock.catchError((_) {});
       final result = await _verifyConnectionInternal();
-      completer.complete();
+      if (!completer.isCompleted) completer.complete();
       return result;
     } catch (e) {
-      completer.completeError(e);
+      if (!completer.isCompleted) completer.completeError(e);
       return false;
     }
   }
@@ -392,6 +392,7 @@ class UniversalPrinterService {
     String paymentMethod = "Cash",
     String? tableName,
     String? seatNumbers,
+    PrinterDevice? device,
   }) async {
     if (kIsWeb) return;
     // 1. Setup Config
@@ -579,7 +580,7 @@ class UniversalPrinterService {
         printBytes += imgGenerator.feed(3);
         printBytes += imgGenerator.cut();
 
-        await printRaw(printBytes);
+        await printRaw(printBytes, device: device);
         return;
       }
     }
@@ -591,7 +592,7 @@ class UniversalPrinterService {
     debugPrint('🖨️ RECEIPT: Generated ${bytes.length} bytes');
 
     // 4. Print
-    await printRaw(bytes);
+    await printRaw(bytes, device: device);
   }
 
   Future<void> printKDSReceipt({
@@ -604,6 +605,7 @@ class UniversalPrinterService {
     String? tableName,
     String? seatNumbers,
     int receiptWidth = 80, // Added width parameter, default 80mm
+    PrinterDevice? device,
   }) async {
     if (kIsWeb) return;
     final hasMarathi = ReceiptGenerator.containsNonLatin1(counterName) ||
@@ -772,7 +774,7 @@ class UniversalPrinterService {
     // GS V 1 : Partial cut (universally supported)
     bytes += [0x1D, 0x56, 0x01];
 
-    await printRaw(bytes);
+    await printRaw(bytes, device: device);
   }
 
   // --- Mappers ---

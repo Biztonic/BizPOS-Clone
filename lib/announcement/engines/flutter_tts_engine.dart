@@ -21,6 +21,10 @@ class FlutterTtsEngine {
 
 class AndroidTtsEngine implements VoiceEngine {
   final FlutterTts _flutterTts = FlutterTts();
+  static final Map<String, bool> _langAvailabilityCache = {'en-US': true, 'en': true};
+  String? _currentLang;
+  double? _currentVolume;
+  double? _currentRate;
 
   AndroidTtsEngine() {
     _init();
@@ -29,6 +33,10 @@ class AndroidTtsEngine implements VoiceEngine {
   Future<void> _init() async {
     try {
       await _flutterTts.setQueueMode(1); // Android queue mode
+      await _flutterTts.awaitSpeakCompletion(false);
+      // Pre-warm Android TTS engine process so initial speech has zero cold-start delay
+      await _flutterTts.setLanguage('en-US');
+      _currentLang = 'en-US';
     } catch (_) {}
   }
 
@@ -43,24 +51,48 @@ class AndroidTtsEngine implements VoiceEngine {
       var targetText = text;
 
       if (targetLang != 'en') {
-        try {
-          final ttsLang = targetLang == 'hi'
-              ? 'hi-IN'
-              : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
-          final isAvailable = await _flutterTts.isLanguageAvailable(ttsLang);
-          if (isAvailable == false) {
-            targetLang = 'en';
-            targetText = englishFallback ?? text;
+        final ttsLang = targetLang == 'hi'
+            ? 'hi-IN'
+            : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
+
+        bool isAvailable = _langAvailabilityCache[ttsLang] ?? true;
+        if (!_langAvailabilityCache.containsKey(ttsLang)) {
+          try {
+            final res = await _flutterTts.isLanguageAvailable(ttsLang);
+            isAvailable = res == true || res == 1;
+            _langAvailabilityCache[ttsLang] = isAvailable;
+          } catch (_) {
+            _langAvailabilityCache[ttsLang] = true;
           }
-        } catch (_) {}
+        }
+
+        if (!isAvailable) {
+          targetLang = 'en';
+          targetText = englishFallback ?? text;
+        }
       }
 
       final resolvedLang = targetLang == 'hi'
           ? 'hi-IN'
           : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
-      await _flutterTts.setLanguage(resolvedLang);
-      await _flutterTts.setVolume(volume);
-      await _flutterTts.setSpeechRate(rate * 0.5);
+
+      if (_currentLang != resolvedLang) {
+        await _flutterTts.setLanguage(resolvedLang);
+        _currentLang = resolvedLang;
+      }
+
+      final targetVol = volume.clamp(0.0, 1.0);
+      if (_currentVolume == null || (_currentVolume! - targetVol).abs() > 0.05) {
+        await _flutterTts.setVolume(targetVol);
+        _currentVolume = targetVol;
+      }
+
+      final targetRate = rate * 0.5;
+      if (_currentRate == null || (_currentRate! - targetRate).abs() > 0.05) {
+        await _flutterTts.setSpeechRate(targetRate);
+        _currentRate = targetRate;
+      }
+
       await _flutterTts.speak(targetText);
     } catch (_) {}
   }
@@ -82,6 +114,10 @@ class AndroidTtsEngine implements VoiceEngine {
 
 class IosTtsEngine implements VoiceEngine {
   final FlutterTts _flutterTts = FlutterTts();
+  static final Map<String, bool> _langAvailabilityCache = {'en-US': true, 'en': true};
+  String? _currentLang;
+  double? _currentVolume;
+  double? _currentRate;
 
   IosTtsEngine() {
     _init();
@@ -97,6 +133,9 @@ class IosTtsEngine implements VoiceEngine {
           IosTextToSpeechAudioCategoryOptions.duckOthers,
         ],
       );
+      await _flutterTts.awaitSpeakCompletion(false);
+      await _flutterTts.setLanguage('en-US');
+      _currentLang = 'en-US';
     } catch (_) {}
   }
 
@@ -111,24 +150,48 @@ class IosTtsEngine implements VoiceEngine {
       var targetText = text;
 
       if (targetLang != 'en') {
-        try {
-          final ttsLang = targetLang == 'hi'
-              ? 'hi-IN'
-              : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
-          final isAvailable = await _flutterTts.isLanguageAvailable(ttsLang);
-          if (isAvailable == false) {
-            targetLang = 'en';
-            targetText = englishFallback ?? text;
+        final ttsLang = targetLang == 'hi'
+            ? 'hi-IN'
+            : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
+
+        bool isAvailable = _langAvailabilityCache[ttsLang] ?? true;
+        if (!_langAvailabilityCache.containsKey(ttsLang)) {
+          try {
+            final res = await _flutterTts.isLanguageAvailable(ttsLang);
+            isAvailable = res == true || res == 1;
+            _langAvailabilityCache[ttsLang] = isAvailable;
+          } catch (_) {
+            _langAvailabilityCache[ttsLang] = true;
           }
-        } catch (_) {}
+        }
+
+        if (!isAvailable) {
+          targetLang = 'en';
+          targetText = englishFallback ?? text;
+        }
       }
 
       final resolvedLang = targetLang == 'hi'
           ? 'hi-IN'
           : (targetLang == 'mr' ? 'mr-IN' : 'en-US');
-      await _flutterTts.setLanguage(resolvedLang);
-      await _flutterTts.setVolume(volume);
-      await _flutterTts.setSpeechRate(rate * 0.5);
+
+      if (_currentLang != resolvedLang) {
+        await _flutterTts.setLanguage(resolvedLang);
+        _currentLang = resolvedLang;
+      }
+
+      final targetVol = volume.clamp(0.0, 1.0);
+      if (_currentVolume == null || (_currentVolume! - targetVol).abs() > 0.05) {
+        await _flutterTts.setVolume(targetVol);
+        _currentVolume = targetVol;
+      }
+
+      final targetRate = rate * 0.5;
+      if (_currentRate == null || (_currentRate! - targetRate).abs() > 0.05) {
+        await _flutterTts.setSpeechRate(targetRate);
+        _currentRate = targetRate;
+      }
+
       await _flutterTts.speak(targetText);
     } catch (_) {}
   }

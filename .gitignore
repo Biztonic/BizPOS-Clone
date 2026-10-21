@@ -108,4 +108,5 @@ windows/flutter/ephemeral/
 superpowers-main/
 scratch/
 inspect_and_purge_cdp.mjs
+emulator_screen*.png
 
