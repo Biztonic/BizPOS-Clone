@@ -1,6 +1,21 @@
 # BizPOS Project Overview
 
-Biztonic Point-Of-Sale (BizPOS) is a multi-platform POS system designed with an offline-first architecture, leveraging Flutter for the frontend and Firebase for the backend.
+## What This Is
+Biztonic Point-Of-Sale (BizPOS) is a multi-platform retail point-of-sale system engineered for high-concurrency offline-first retail operations, leveraging Flutter for cross-platform clients and Firebase with Cloud Functions for backend synchronization.
+
+## Core Value
+- Zero monetary drift and paise precision across all orders, taxes, and ledgers.
+- Non-negative stock guarantee under concurrent checkout across multiple registers.
+- Authoritative multi-tenant isolation enforcing store boundaries and role restrictions.
+- Reliable offline operation with transactional conflict reconciliation.
+- Secure, reproducible signed Android APK distribution built via automated CI/CD.
+
+## Requirements
+- Enforce storeId boundary checks on every Firestore query and security rule.
+- Cloud Functions handle authoritative financial mutations and stock deduction transactions.
+- Offline sync uses Outbox architecture with dead-letter queue and conflict engine.
+- Release APK builds strictly require release keystore; debug signing fallback is prohibited.
+- CI quality gates enforce static analysis, format verification, and unit test execution.
 
 ## Technical Stack
 

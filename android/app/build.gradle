@@ -74,20 +74,33 @@ android {
 
     buildTypes {
         release {
-            if (keystoreProperties['storeFile'] != null) {
-                signingConfig signingConfigs.release
-            } else {
-                signingConfig signingConfigs.debug
-            }
+            // Strictly require release signing — debug fallback permanently removed
+            signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            signingConfig signingConfigs.debug
         }
     }
     
     lintOptions {
         abortOnError false
         checkReleaseBuilds false
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    def isReleaseTask = taskGraph.allTasks.any { 
+        (it.name.equalsIgnoreCase("assembleRelease") || 
+         it.name.equalsIgnoreCase("bundleRelease") || 
+         it.name.equalsIgnoreCase("packageRelease")) 
+    }
+    if (isReleaseTask) {
+        if (keystoreProperties['storeFile'] == null || !file(keystoreProperties['storeFile']).exists()) {
+            throw new GradleException("🚨 PRODUCTION SECURITY ENFORCEMENT: Release builds require a valid release keystore configured in android/key.properties. Fallback to debug signing has been removed.")
+        }
     }
 }
 

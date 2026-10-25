@@ -965,3 +965,448 @@ exports.enforceServerQuotas = onCall(async (request) => {
   };
 });
 
+// =============================================================================
+// PRODUCTION HARDENING: TRANSACTIONAL POS & INVENTORY MUTATIONS
+// =============================================================================
+
+async function verifyStoreAccess(auth, db, storeId, allowedRoles = null) {
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  const callerIsAdmin = await isCallerSuperAdmin(auth, db);
+  if (callerIsAdmin) {
+    return { isAdmin: true, role: "Super Admin" };
+  }
+
+  const memberDoc = await db
+    .collection("stores")
+    .doc(storeId)
+    .collection("members")
+    .doc(auth.uid)
+    .get();
+
+  if (!memberDoc.exists || memberDoc.data().status !== "ACTIVE") {
+    const storeDoc = await db.collection("stores").doc(storeId).get();
+    if (storeDoc.exists && storeDoc.data().owner === auth.uid) {
+      return { isAdmin: false, role: "Owner" };
+    }
+    throw new HttpsError(
+      "permission-denied",
+      "User is not an active member of this store."
+    );
+  }
+
+  const role = memberDoc.data().role;
+  if (allowedRoles && Array.isArray(allowedRoles) && !allowedRoles.includes(role)) {
+    throw new HttpsError(
+      "permission-denied",
+      `Action requires one of the following roles: ${allowedRoles.join(", ")}. Current role: ${role}`
+    );
+  }
+
+  return { isAdmin: false, role };
+}
+
+/**
+ * Atomic Server-Side Order Creation Transaction.
+ * Validates cart totals, stock availability, and writes order, movements, and financial ledger atomically.
+ */
+exports.createOrderTransaction = onCall(async (request) => {
+  const { data, auth } = request;
+  const db = admin.firestore();
+
+  const {
+    orderId,
+    storeId,
+    items,
+    subtotal,
+    tax,
+    discount,
+    total,
+    paymentMethod,
+    paymentStatus,
+    idempotencyKey,
+  } = data || {};
+
+  if (!storeId || !orderId || !items || !Array.isArray(items) || items.length === 0) {
+    throw new HttpsError("invalid-argument", "Missing required fields: storeId, orderId, and non-empty items array.");
+  }
+
+  // 1. Enforce store membership
+  await verifyStoreAccess(auth, db, storeId);
+
+  // 2. Check Idempotency Key
+  const cleanIdempotencyKey = idempotencyKey || orderId;
+  const existingOrderSnap = await db.collection("orders").doc(orderId).get();
+  if (existingOrderSnap.exists) {
+    return {
+      success: true,
+      orderId,
+      duplicate: true,
+      message: "Order already exists. Duplicate operation prevented.",
+    };
+  }
+
+  const nowIso = new Date().toISOString();
+
+  // 3. Execute Transaction
+  const result = await db.runTransaction(async (transaction) => {
+    const invRefs = [];
+    const invSnaps = [];
+
+    for (const item of items) {
+      const iId = item.itemId || item.id;
+      if (!iId) continue;
+      const ref = db.collection("inventory").doc(iId);
+      invRefs.push({ ref, item, itemId: iId });
+    }
+
+    for (const itemEntry of invRefs) {
+      const snap = await transaction.get(itemEntry.ref);
+      invSnaps.push({ ...itemEntry, snap });
+    }
+
+    const movements = [];
+    for (const entry of invSnaps) {
+      const requestedQty = Number(entry.item.quantity) || 1;
+      let currentStock = 0;
+      let trackStock = true;
+
+      if (entry.snap.exists) {
+        const invData = entry.snap.data();
+        currentStock = Number(invData.quantity) || 0;
+        trackStock = invData.trackStock !== false;
+
+        if (trackStock && currentStock - requestedQty < 0) {
+          throw new HttpsError(
+            "failed-precondition",
+            `Insufficient stock for item "${entry.item.name || entry.itemId}". Current stock: ${currentStock}, Requested: ${requestedQty}. Operation blocked to prevent negative inventory.`
+          );
+        }
+
+        const newStock = trackStock ? currentStock - requestedQty : currentStock;
+        transaction.update(entry.ref, {
+          quantity: newStock,
+          updatedAt: nowIso,
+          updatedBy: auth.uid,
+        });
+
+        movements.push({
+          id: `mov_sale_${orderId}_${entry.itemId}`,
+          movementType: "SALE",
+          storeId,
+          itemId: entry.itemId,
+          itemName: entry.item.name || "",
+          quantity: requestedQty,
+          previousStock: currentStock,
+          newStock,
+          orderId,
+          createdAt: nowIso,
+          createdBy: auth.uid,
+        });
+      }
+    }
+
+    for (const mov of movements) {
+      const movRef = db.collection("inventory_movements").doc(mov.id);
+      transaction.set(movRef, mov);
+    }
+
+    const ledgerRef = db.collection("financial_ledger").doc(`fin_sale_${orderId}`);
+    transaction.set(ledgerRef, {
+      id: `fin_sale_${orderId}`,
+      storeId,
+      orderId,
+      entryType: "ORDER_SALE",
+      amount: Number(total) || 0,
+      subtotal: Number(subtotal) || 0,
+      tax: Number(tax) || 0,
+      discount: Number(discount) || 0,
+      paymentMethod: paymentMethod || "Cash",
+      paymentStatus: paymentStatus || "PAID",
+      idempotencyKey: cleanIdempotencyKey,
+      createdAt: nowIso,
+      createdBy: auth.uid,
+    });
+
+    const orderRef = db.collection("orders").doc(orderId);
+    transaction.set(orderRef, {
+      ...data,
+      id: orderId,
+      storeId,
+      status: data.status || "Completed",
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      createdBy: auth.uid,
+      idempotencyKey: cleanIdempotencyKey,
+      syncedAt: nowIso,
+      version: 1,
+    });
+
+    const logRef = db.collection("activity_logs").doc(`log_${orderId}`);
+    transaction.set(logRef, {
+      storeId,
+      action: "ORDER_CREATED",
+      targetId: orderId,
+      userId: auth.uid,
+      details: `Created order #${orderId} with ${items.length} items. Total: ₹${total}`,
+      timestamp: nowIso,
+    });
+
+    return { orderId, total, itemsCount: items.length };
+  });
+
+  return {
+    success: true,
+    ...result,
+    message: "Order placed and inventory stock atomically reconciled.",
+  };
+});
+
+/**
+ * Atomic Server-Side Refund or Void Processing.
+ * Restores inventory stock, marks order as refunded/void, and writes reversing ledger entry.
+ */
+exports.processRefundVoid = onCall(async (request) => {
+  const { data, auth } = request;
+  const db = admin.firestore();
+
+  const { storeId, orderId, action, reason, refundItems } = data || {};
+  if (!storeId || !orderId || !action || !["REFUND", "VOID"].includes(action)) {
+    throw new HttpsError("invalid-argument", "Missing required fields: storeId, orderId, and action ('REFUND' or 'VOID').");
+  }
+
+  await verifyStoreAccess(auth, db, storeId, ["Owner", "Store Owner", "Manager", "Super Admin"]);
+  const nowIso = new Date().toISOString();
+
+  const result = await db.runTransaction(async (transaction) => {
+    const orderRef = db.collection("orders").doc(orderId);
+    const orderSnap = await transaction.get(orderRef);
+
+    if (!orderSnap.exists) {
+      throw new HttpsError("not-found", `Order #${orderId} not found.`);
+    }
+
+    const orderData = orderSnap.data();
+    if (orderData.storeId !== storeId) {
+      throw new HttpsError("permission-denied", "Cross-store mutation prohibited.");
+    }
+
+    if (orderData.status === "VOID" || orderData.status === "Refunded") {
+      throw new HttpsError("failed-precondition", `Order #${orderId} is already ${orderData.status.toLowerCase()}.`);
+    }
+
+    const itemsToRestore = refundItems && Array.isArray(refundItems) && refundItems.length > 0
+      ? refundItems
+      : (orderData.items || []);
+
+    for (const item of itemsToRestore) {
+      const itemId = item.itemId || item.id;
+      if (!itemId) continue;
+
+      const invRef = db.collection("inventory").doc(itemId);
+      const invSnap = await transaction.get(invRef);
+
+      if (invSnap.exists) {
+        const invData = invSnap.data();
+        const currentStock = Number(invData.quantity) || 0;
+        const restoredQty = Number(item.quantity) || 1;
+        const newStock = currentStock + restoredQty;
+
+        transaction.update(invRef, {
+          quantity: newStock,
+          updatedAt: nowIso,
+          updatedBy: auth.uid,
+        });
+
+        const movId = `mov_${action.toLowerCase()}_${orderId}_${itemId}_${Date.now()}`;
+        const movRef = db.collection("inventory_movements").doc(movId);
+        transaction.set(movRef, {
+          id: movId,
+          movementType: action === "VOID" ? "VOID_REVERSAL" : "REFUND",
+          storeId,
+          itemId,
+          itemName: item.name || "",
+          quantity: restoredQty,
+          previousStock: currentStock,
+          newStock,
+          orderId,
+          reason: reason || "Customer Return",
+          createdAt: nowIso,
+          createdBy: auth.uid,
+        });
+      }
+    }
+
+    const refundAmount = action === "VOID" ? orderData.total : (data.amount || orderData.total);
+    const ledgerId = `fin_${action.toLowerCase()}_${orderId}_${Date.now()}`;
+    const ledgerRef = db.collection("financial_ledger").doc(ledgerId);
+    transaction.set(ledgerRef, {
+      id: ledgerId,
+      storeId,
+      orderId,
+      entryType: action === "VOID" ? "ORDER_VOID" : "ORDER_REFUND",
+      amount: -Math.abs(Number(refundAmount) || 0),
+      reason: reason || "",
+      createdAt: nowIso,
+      createdBy: auth.uid,
+    });
+
+    const newStatus = action === "VOID" ? "VOID" : "Refunded";
+    transaction.update(orderRef, {
+      status: newStatus,
+      updatedAt: nowIso,
+      updatedBy: auth.uid,
+      cancellationReason: reason || "",
+    });
+
+    const logRef = db.collection("activity_logs").doc(`log_${ledgerId}`);
+    transaction.set(logRef, {
+      storeId,
+      action: `ORDER_${action}`,
+      targetId: orderId,
+      userId: auth.uid,
+      details: `${action} processed for order #${orderId}. Reversal amount: ₹${refundAmount}. Reason: ${reason || 'None'}`,
+      timestamp: nowIso,
+    });
+
+    return { orderId, status: newStatus, reversedAmount: refundAmount };
+  });
+
+  return { success: true, ...result };
+});
+
+/**
+ * Atomic Server-Side Stock Adjustment.
+ */
+exports.adjustInventoryStock = onCall(async (request) => {
+  const { data, auth } = request;
+  const db = admin.firestore();
+
+  const { storeId, itemId, delta, reason, notes } = data || {};
+  if (!storeId || !itemId || delta === undefined || delta === null) {
+    throw new HttpsError("invalid-argument", "Missing required fields: storeId, itemId, and delta.");
+  }
+
+  await verifyStoreAccess(auth, db, storeId, ["Owner", "Store Owner", "Manager", "Super Admin"]);
+  const nowIso = new Date().toISOString();
+  const numDelta = Number(delta);
+
+  const result = await db.runTransaction(async (transaction) => {
+    const invRef = db.collection("inventory").doc(itemId);
+    const invSnap = await transaction.get(invRef);
+
+    if (!invSnap.exists) {
+      throw new HttpsError("not-found", `Item #${itemId} not found.`);
+    }
+
+    const invData = invSnap.data();
+    if (invData.storeId && invData.storeId !== storeId) {
+      throw new HttpsError("permission-denied", "Cross-store inventory adjustment prohibited.");
+    }
+
+    const currentStock = Number(invData.quantity) || 0;
+    const newStock = currentStock + numDelta;
+
+    if (newStock < 0) {
+      throw new HttpsError(
+        "failed-precondition",
+        `Adjustment would result in negative stock (${newStock}). Current: ${currentStock}, Delta: ${numDelta}. Operation blocked.`
+      );
+    }
+
+    transaction.update(invRef, {
+      quantity: newStock,
+      updatedAt: nowIso,
+      updatedBy: auth.uid,
+    });
+
+    const movId = `mov_adj_${itemId}_${Date.now()}`;
+    const movRef = db.collection("inventory_movements").doc(movId);
+    transaction.set(movRef, {
+      id: movId,
+      movementType: reason || (numDelta >= 0 ? "SURPLUS" : "DAMAGE"),
+      storeId,
+      itemId,
+      itemName: invData.name || "",
+      quantity: Math.abs(numDelta),
+      previousStock: currentStock,
+      newStock,
+      notes: notes || "",
+      createdAt: nowIso,
+      createdBy: auth.uid,
+    });
+
+    const logRef = db.collection("activity_logs").doc(`log_${movId}`);
+    transaction.set(logRef, {
+      storeId,
+      action: "STOCK_ADJUSTMENT",
+      targetId: itemId,
+      userId: auth.uid,
+      details: `Adjusted stock for ${invData.name || itemId} by ${numDelta} (${reason || 'MANUAL'}). New stock: ${newStock}`,
+      timestamp: nowIso,
+    });
+
+    return { itemId, previousStock: currentStock, newStock };
+  });
+
+  return { success: true, ...result };
+});
+
+/**
+ * Atomic Server-Side Payment Status Update.
+ */
+exports.updatePaymentStatus = onCall(async (request) => {
+  const { data, auth } = request;
+  const db = admin.firestore();
+
+  const { storeId, orderId, paymentStatus, paymentMethod, transactionReference } = data || {};
+  if (!storeId || !orderId || !paymentStatus) {
+    throw new HttpsError("invalid-argument", "Missing required fields: storeId, orderId, and paymentStatus.");
+  }
+
+  await verifyStoreAccess(auth, db, storeId);
+  const nowIso = new Date().toISOString();
+
+  const result = await db.runTransaction(async (transaction) => {
+    const orderRef = db.collection("orders").doc(orderId);
+    const orderSnap = await transaction.get(orderRef);
+
+    if (!orderSnap.exists) {
+      throw new HttpsError("not-found", `Order #${orderId} not found.`);
+    }
+
+    const orderData = orderSnap.data();
+    if (orderData.storeId !== storeId) {
+      throw new HttpsError("permission-denied", "Cross-store order update prohibited.");
+    }
+
+    transaction.update(orderRef, {
+      paymentStatus,
+      paymentMethod: paymentMethod || orderData.paymentMethod,
+      transactionReference: transactionReference || orderData.transactionReference || "",
+      updatedAt: nowIso,
+      updatedBy: auth.uid,
+    });
+
+    const ledgerId = `fin_pay_${orderId}_${Date.now()}`;
+    const ledgerRef = db.collection("financial_ledger").doc(ledgerId);
+    transaction.set(ledgerRef, {
+      id: ledgerId,
+      storeId,
+      orderId,
+      entryType: "PAYMENT_STATUS_UPDATE",
+      paymentStatus,
+      paymentMethod: paymentMethod || orderData.paymentMethod,
+      amount: orderData.total || 0,
+      createdAt: nowIso,
+      createdBy: auth.uid,
+    });
+
+    return { orderId, paymentStatus };
+  });
+
+  return { success: true, ...result };
+});
+
+

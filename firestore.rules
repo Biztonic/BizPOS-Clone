@@ -338,7 +338,8 @@ service cloud.firestore {
       allow create: if isSuperAdmin() || (
         request.resource.data.storeId != null && 
         isStoreMember(request.resource.data.storeId) &&
-        isStoreActive(request.resource.data.storeId)
+        isStoreActive(request.resource.data.storeId) &&
+        (!('total' in request.resource.data) || request.resource.data.total >= 0)
       );
       allow update: if isSuperAdmin() || (
         resource.data.storeId != null && 
@@ -362,10 +363,17 @@ service cloud.firestore {
       allow create: if isSuperAdmin() || (
         request.resource.data.storeId != null && 
         isStoreMember(request.resource.data.storeId) &&
-        isStoreActive(request.resource.data.storeId)
+        isStoreActive(request.resource.data.storeId) &&
+        (!('quantity' in request.resource.data) || request.resource.data.quantity >= 0) &&
+        (!('stock' in request.resource.data) || request.resource.data.stock >= 0)
       );
-      allow update: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId) && 
-                                           request.resource.data.storeId == resource.data.storeId);
+      allow update: if isSuperAdmin() || (
+        resource.data.storeId != null && 
+        isStoreMember(resource.data.storeId) && 
+        request.resource.data.storeId == resource.data.storeId &&
+        (!('quantity' in request.resource.data) || request.resource.data.quantity >= 0) &&
+        (!('stock' in request.resource.data) || request.resource.data.stock >= 0)
+      );
       allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
     }
 
@@ -381,12 +389,23 @@ service cloud.firestore {
       allow delete: if isSuperAdmin() || (resource.data.storeId != null && isStoreOwnerOrManager(resource.data.storeId));
     }
 
+    // Immutable Append-Only Financial Ledger
+    match /financial_ledger/{id} {
+      allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
+      allow create: if isSuperAdmin() || (
+        request.resource.data.storeId != null && 
+        isStoreMember(request.resource.data.storeId) &&
+        isStoreActive(request.resource.data.storeId)
+      );
+      // Append-only immutable ledger - updates and deletes are strictly prohibited
+      allow update, delete: if false;
+    }
+
     match /inventory_movements/{id} {
       allow read: if isSuperAdmin() || (resource.data.storeId != null && isStoreMember(resource.data.storeId));
       allow create: if isSuperAdmin() || (request.resource.data.storeId != null && isStoreMember(request.resource.data.storeId));
-      // Append-only ledger
-      allow update: if false;
-      allow delete: if isSuperAdmin();
+      // Append-only ledger - updates and deletes are strictly prohibited
+      allow update, delete: if false;
     }
 
     match /business_events/{id} {
